@@ -88,7 +88,7 @@ const traders = (tooltipbg:string) => ({
                 },
                 label: (context: TooltipItem<'bar'>) => {
                     const label = context.dataset.label || '';
-                    const value = context.parsed.y * 100;
+                    const value = (context.parsed.y ?? 0) * 100;
                     return `${label}: ${formatTooltipValue(value)}`;
                 },
             },

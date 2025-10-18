@@ -108,13 +108,13 @@ const generatePnLData = ({
         data: pnlData,
         segment: {
           borderColor: (ctx: ScriptableLineSegmentContext) => {
-            const value = ctx.p1.parsed.y;
+            const value = ctx.p1.parsed.y ?? 0;
             return value < 0 
               ? "rgba(177, 163, 251, 1)" 
               : "rgba(83, 192, 141, 1)"; 
           },
           backgroundColor: (ctx: ScriptableLineSegmentContext) => {
-            const value = ctx.p1.parsed.y;
+            const value = ctx.p1.parsed.y ?? 0;
             return value < 0 
               ? "rgba(177, 163, 251, 0.2)" 
               : "rgba(83, 192, 141, 0.2)"; 
@@ -213,7 +213,8 @@ export function PnLChart({
             return `SOL Price: $${Math.round(price).toLocaleString()}`;
           },
           label: (context) => {
-            return `P&L: $${(context.parsed.y * Math.max(Math.floor(invested / premium), 1)).toLocaleString()}`;
+            const pnlValue = (context.parsed.y ?? 0) * Math.max(Math.floor(invested / premium), 1);
+            return `P&L: $${pnlValue.toLocaleString()}`;
           },
         },
       },
