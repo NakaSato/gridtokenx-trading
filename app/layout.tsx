@@ -21,7 +21,7 @@ export default function RootLayout({
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <Connectionprovider>
             <div className="px-6 min-h-screen mx-auto flex flex-col">
-              <NavBar></NavBar>
+              <NavBar />
               {children}
             </div>
           </Connectionprovider>
