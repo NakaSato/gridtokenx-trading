@@ -17,7 +17,11 @@ export function formatCountdown(timeLeft: number): string {
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export function formatPrice(price: number): string {
+export function formatPrice(price: number | null | undefined): string {
+  if (price === null || price === undefined || isNaN(price)) {
+    return "0.00";
+  }
+  
   if (price < 10 && price != 0) {
     const priceString = price.toString();
     const [, decimalPart] = priceString.split(".");

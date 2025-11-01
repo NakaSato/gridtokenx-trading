@@ -1,6 +1,6 @@
 {
-  "name": "olive-finance",
-  "version": "0.1.0",
+  "name": "gridtokenx-trading",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

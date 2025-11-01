@@ -21,6 +21,7 @@ import { ArrowDown, EarnIcon, MoreIcon, OptionsIcon, WalletIcon} from "@/public/
 import NavBarMobile from "./NavBarMobile";
 import Notifications from "./Notifications";
 import PointsDropDown from "./PointsDropDown";
+import NetworkSelector from "./NetworkSelector";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ArrowUpDown, BookOpenText, ChartLine, ConciergeBell, ExternalLink, FileChartColumn, MessagesSquare, TableColumnsSplit } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -196,6 +197,7 @@ export default function NavBar(){
                 <PointsDropDown setActive={setActive} />
                 <Settings />
                 <Notifications />
+                <NetworkSelector />
                 
                 {connected ? (
                     <WalletSideBar />
