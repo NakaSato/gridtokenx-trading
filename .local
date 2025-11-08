@@ -1,0 +1,3 @@
+# Mapbox Configuration
+# Get your token from: https://account.mapbox.com/access-tokens/
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1IjoiMjQxMDcxNzMwMjAwMyIsImEiOiJjbWhxZmpiMWcwdW1yMmpwZ2t5dmJ0d2Z5In0.CjnLKshVT1BodIKZTs9Teg
