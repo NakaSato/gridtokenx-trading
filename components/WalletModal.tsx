@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { cn } from "@/lib/utils";
 import WalletButton from "./WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { toast, ToastContainer } from "react-toastify";
+import toast from "react-hot-toast";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -51,42 +51,34 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       const wallet = wallets.find((value) => value.adapter.name === walletName);
 
       if (!wallet) {
-        toast.error(`Wallet "${walletName}" not found`, {
-          position: 'bottom-right',
-        });
+        toast.error(`Wallet "${walletName}" not found`);
         return;
       }
 
       select(wallet.adapter.name);
       await wallet.adapter.connect();
 
-      toast.success(`${walletName} Wallet Connected`, {
-        position: 'bottom-right',
-      });
+      toast.success(`${walletName} Wallet Connected`);
 
       onClose();
     } catch (error: any) {
-      console.error('Wallet connection error:', error);
-      toast.error(`Failed to connect: ${error?.message || 'Unknown error'}`, {
-        position: 'bottom-right',
-      });
+      console.error("Wallet connection error:", error);
+      toast.error(`Failed to connect: ${error?.message || "Unknown error"}`);
     } finally {
       setIsConnecting(false);
     }
   };
-
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-2xl md:max-h-[90%] p-10 bg-accent">
         <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between md:pb-5">
           <DialogTitle className="text-2xl">Connect Wallet</DialogTitle>
-          <Button 
+          <Button
             className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border md:hidden"
             onClick={() => onClose()}
           >
-            <XIcon size={18} className="text-secondary-foreground"/>
+            <XIcon size={18} className="text-secondary-foreground" />
           </Button>
         </DialogHeader>
         <div className="w-full flex flex-col justify-between space-y-10">

@@ -4,9 +4,10 @@ import NavBar from "@/components/NavBar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Script from "next/script";
 import Connectionprovider from "@/contexts/connectionprovider";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Olive Finance",
+  title: "GridTokenX",
   description: "Options and Futures Trading App on Solana",
 };
 
@@ -26,6 +27,16 @@ export default function RootLayout({
             </div>
           </Connectionprovider>
         </ThemeProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#1a1a1a",
+              color: "#fff",
+              border: "1px solid #333",
+            },
+          }}
+        />
         <Script
           src="/charting_library/charting_library.standalone.js"
           strategy="beforeInteractive"

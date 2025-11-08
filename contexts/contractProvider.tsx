@@ -134,6 +134,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     program: Program<OptionContract>,
     publicKey: PublicKey
   ) => {
+    if (!program || !program.account || !publicKey) return [[], [], []];
     const pinfo = [];
     const expiredpinfo = [];
     const doneInfo = [];
@@ -394,7 +395,10 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
       );
 
       const transaction = await program.methods
-        .close_option({ optionIndex: new BN(optionIndex), poolName: "SOL-USDC" })
+        .close_option({
+          optionIndex: new BN(optionIndex),
+          poolName: "SOL-USDC",
+        })
         .accountsPartial({
           owner: publicKey,
           funding_account: fundingAccount,

@@ -1,70 +1,87 @@
-'use client'
+"use client";
 
-import { Search, ArrowLeft, Plus } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { useEffect, useState } from 'react'
-import { ScrollArea } from './ui/scroll-area'
-import { formatPrice } from '@/utils/formatter'
+import { Search, ArrowLeft, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { ScrollArea } from "./ui/scroll-area";
+import { formatPrice } from "@/utils/formatter";
 
 interface StrikePriceDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSelectPrice: (price: string) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelectPrice: (price: string) => void;
   onStrikePriceChange: (amount: string) => void;
   onDefaultStrikePrices: (prices: string[]) => void;
-  currentPrice: string
-  marketPrice?: number
+  currentPrice: string;
+  marketPrice?: number;
 }
 
 interface StrikePrice {
-  price: string
-  liquidity: string
+  price: string;
+  liquidity: string;
 }
 
-export function StrikePriceDialog({ open, onOpenChange, onSelectPrice,onStrikePriceChange, onDefaultStrikePrices, currentPrice, marketPrice = 0 }: StrikePriceDialogProps) {
-  const [searchStrike, setSearchStrike] = useState('')
-  const [customStrike, setCustomStrike] = useState('')
-  const [showCustomStrike, setShowCustomStrike] = useState(false)
-  const [strikePrices, setStrikePrices] = useState<StrikePrice[]>([])
+export function StrikePriceDialog({
+  open,
+  onOpenChange,
+  onSelectPrice,
+  onStrikePriceChange,
+  onDefaultStrikePrices,
+  currentPrice,
+  marketPrice = 0,
+}: StrikePriceDialogProps) {
+  const [searchStrike, setSearchStrike] = useState("");
+  const [customStrike, setCustomStrike] = useState("");
+  const [showCustomStrike, setShowCustomStrike] = useState(false);
+  const [strikePrices, setStrikePrices] = useState<StrikePrice[]>([]);
 
   const getIncrement = (currentPrice: number) => {
-    if (typeof currentPrice !== 'number' || isNaN(currentPrice) || currentPrice <= 0) {
-        return 0;
+    if (
+      typeof currentPrice !== "number" ||
+      isNaN(currentPrice) ||
+      currentPrice <= 0
+    ) {
+      return 0;
     }
 
     const exponent = Math.floor(Math.log10(currentPrice));
     return Math.pow(10, exponent - 1);
-  }
+  };
 
   useEffect(() => {
     const prices: StrikePrice[] = [];
     const lowerBound = marketPrice * 0.8;
     const upperBound = marketPrice * 1.3;
 
-    let currentPrice = lowerBound
-    while(currentPrice <= upperBound) {
-      let increment: number
+    let currentPrice = lowerBound;
+    while (currentPrice <= upperBound) {
+      let increment: number;
 
-      increment = getIncrement(currentPrice)
+      increment = getIncrement(currentPrice);
 
       if (currentPrice === lowerBound) {
-        currentPrice = Math.ceil(currentPrice / increment) * increment
+        currentPrice = Math.ceil(currentPrice / increment) * increment;
       }
 
       if (currentPrice <= upperBound) {
         prices.push({
           price: currentPrice.toString(),
-          liquidity: '384.2K'
-        })
+          liquidity: "384.2K",
+        });
       }
 
-      currentPrice += increment
+      currentPrice += increment;
     }
 
-    const priceNumbers = prices.map(p => parseFloat(p.price))
-    const closestIndex = priceNumbers.findLastIndex(p => p <= marketPrice);
+    const priceNumbers = prices.map((p) => parseFloat(p.price));
+    const closestIndex = priceNumbers.findLastIndex((p) => p <= marketPrice);
 
     let defaultStrikes: string[] = [];
     if (closestIndex !== -1) {
@@ -81,33 +98,30 @@ export function StrikePriceDialog({ open, onOpenChange, onSelectPrice,onStrikePr
         start = Math.max(0, end - 3);
       }
 
-      defaultStrikes = priceNumbers
-        .slice(start, end)
-        .map(p => p.toString());
-      }
+      defaultStrikes = priceNumbers.slice(start, end).map((p) => p.toString());
+    }
 
-      onDefaultStrikePrices(defaultStrikes);
-      setStrikePrices(prices)
-  }, [marketPrice])
-  
+    onDefaultStrikePrices(defaultStrikes);
+    setStrikePrices(prices);
+  }, [marketPrice, onDefaultStrikePrices]);
 
-  const filteredStrikePrices = strikePrices.filter(strike => 
-    strike.price.includes(searchStrike.replace(/[^0-9]/g, ''))
-  )
+  const filteredStrikePrices = strikePrices.filter((strike) =>
+    strike.price.includes(searchStrike.replace(/[^0-9]/g, ""))
+  );
 
   const formatStrikePrice = (price: string) => {
-    const num = parseFloat(price)
-    return `$${num.toLocaleString()}`
-  }
+    const num = parseFloat(price);
+    return `$${num.toLocaleString()}`;
+  };
 
   const handleCustomStrikeSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (customStrike && !isNaN(Number(customStrike))) {
-      onSelectPrice(customStrike)
-      onStrikePriceChange(customStrike)
-      onOpenChange(false)
+      onSelectPrice(customStrike);
+      onStrikePriceChange(customStrike);
+      onOpenChange(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,27 +146,33 @@ export function StrikePriceDialog({ open, onOpenChange, onSelectPrice,onStrikePr
               <span>Liquidity</span>
             </div>
             <ScrollArea className="h-[250px]">
-              <div className='space-y-2'>
-              {filteredStrikePrices.map((strike) => (
-                <Button
-                  key={strike.price}
-                  onClick={() => {
-                    onSelectPrice(strike.price)
-                    onStrikePriceChange(strike.price)
-                    onOpenChange(false)
-                    setShowCustomStrike(false)
-                    setCustomStrike('')
-                  }}
-                  className={`w-full justify-between h-auto py-3 ${
-                    currentPrice === strike.price 
-                    ? 'bg-primary hover:bg-gradient-primary text-backgroundSecondary'
-                    : 'bg-backgroundSecondary text-secondary-foreground hover:bg-secondary'
-                  }`}
-                >
-                  <span>{parseFloat(strike.price) < 1 ? '$'+formatPrice(parseFloat(strike.price)) : formatStrikePrice(strike.price) }</span>
-                  <span className="text-sm opacity-80">${strike.liquidity}</span>
-                </Button>
-              ))}
+              <div className="space-y-2">
+                {filteredStrikePrices.map((strike) => (
+                  <Button
+                    key={strike.price}
+                    onClick={() => {
+                      onSelectPrice(strike.price);
+                      onStrikePriceChange(strike.price);
+                      onOpenChange(false);
+                      setShowCustomStrike(false);
+                      setCustomStrike("");
+                    }}
+                    className={`w-full justify-between h-auto py-3 ${
+                      currentPrice === strike.price
+                        ? "bg-primary hover:bg-gradient-primary text-backgroundSecondary"
+                        : "bg-backgroundSecondary text-secondary-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <span>
+                      {parseFloat(strike.price) < 1
+                        ? "$" + formatPrice(parseFloat(strike.price))
+                        : formatStrikePrice(strike.price)}
+                    </span>
+                    <span className="text-sm opacity-80">
+                      ${strike.liquidity}
+                    </span>
+                  </Button>
+                ))}
               </div>
             </ScrollArea>
           </div>
@@ -177,10 +197,13 @@ export function StrikePriceDialog({ open, onOpenChange, onSelectPrice,onStrikePr
                     placeholder="Enter price"
                     min="0"
                     step="any"
-                    className='border-border rounded-sm focus:border-primary py-2 px-2 placeholder:text-muted'
+                    className="border-border rounded-sm focus:border-primary py-2 px-2 placeholder:text-muted"
                   />
                 </div>
-                <Button type="submit" className="w-full bg-inherit border py-5 px-4 text-primary hover:border-primary">
+                <Button
+                  type="submit"
+                  className="w-full bg-inherit border py-5 px-4 text-primary hover:border-primary"
+                >
                   Set Custom Price
                 </Button>
               </form>
@@ -189,5 +212,5 @@ export function StrikePriceDialog({ open, onOpenChange, onSelectPrice,onStrikePr
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

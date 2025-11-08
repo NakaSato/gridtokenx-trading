@@ -595,7 +595,14 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
         }
       }
     })();
-  }, [wallet]);
+  }, [
+    wallet,
+    publicKey,
+    id,
+    getTransactionDetail,
+    updateWholeTransactionDetail,
+    DefaultTransactionDetails,
+  ]);
 
   return (
     <div className="w-full border rounded-sm">

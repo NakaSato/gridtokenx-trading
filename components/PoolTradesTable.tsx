@@ -24,7 +24,7 @@ import { createSolanaRpc, type Signature } from "@solana/kit";
 import { BorshInstructionCoder } from "@coral-xyz/anchor";
 import { OptionContract } from "@/lib/idl/option_contract";
 import * as idl from "../lib/idl/option_contract.json";
-import { ToastContainer, toast } from "react-toastify";
+import toast from "react-hot-toast";
 import { PublicKey } from "@solana/web3.js";
 
 interface PoolTrade {
@@ -151,9 +151,7 @@ export default function PoolTradesTable() {
     const fetchTrades = async () => {
       try {
         setIsLoading(true);
-        toast.info("Fetching trades...", {
-          position: "bottom-right",
-        });
+        toast.loading("Fetching trades...");
 
         const response = await axios.get(
           `/api/get_option_transactions?programId=${Option_Program_Address}`
@@ -266,9 +264,6 @@ export default function PoolTradesTable() {
           {memoizedTableContent}
         </Table>
       </ScrollArea>
-      <ToastContainer
-          theme="dark"
-      />
     </div>
   );
 }

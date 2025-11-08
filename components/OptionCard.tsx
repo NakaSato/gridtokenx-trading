@@ -28,7 +28,7 @@ import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import WalletModal from "./WalletModal";
 import { ContractContext } from "@/contexts/contractProvider";
 import { WSOL_DECIMALS } from "@/utils/const";
-import { toast } from "react-toastify";
+import toast from "react-hot-toast";
 import BuyOption from "./toasts/BuyOption";
 
 interface OptionCardProps {
@@ -40,7 +40,7 @@ interface OptionCardProps {
   onStrikePriceChange: (amount: string) => void;
   onPayAmountChange: (amount: string) => void;
   onCurrencyChange: (currency: string) => void;
-  onContractTypeChange: (type: 'Call' | 'Put') => void;
+  onContractTypeChange: (type: "Call" | "Put") => void;
   active: number;
   priceData: PythPriceState;
   marketData: MarketDataState;
@@ -48,11 +48,22 @@ interface OptionCardProps {
   marketLoading: boolean;
 }
 
-
-export default function OptionCard(
-  {orderType, onIdxChange, onSymbolChange, active, onPayAmountChange, selectedSymbol, priceData, priceLoading, marketData, marketLoading, onStrikePriceChange, onExpiryChange, onContractTypeChange, onCurrencyChange} 
-  : 
-  OptionCardProps) {
+export default function OptionCard({
+  orderType,
+  onIdxChange,
+  onSymbolChange,
+  active,
+  onPayAmountChange,
+  selectedSymbol,
+  priceData,
+  priceLoading,
+  marketData,
+  marketLoading,
+  onStrikePriceChange,
+  onExpiryChange,
+  onContractTypeChange,
+  onCurrencyChange,
+}: OptionCardProps) {
   const { connected } = useWallet();
   const wallet = useAnchorWallet();
 
@@ -79,8 +90,8 @@ export default function OptionCard(
   // console.log(defaultStrikePrices)
 
   useEffect(() => {
-    onCurrencyChange(payCurrency)
-  }, [payCurrency]);
+    onCurrencyChange(payCurrency);
+  }, [payCurrency, onCurrencyChange]);
 
   useEffect(() => {
     setHasSetInitialStrike(false);
@@ -99,7 +110,13 @@ export default function OptionCard(
       onStrikePriceChange(firstStrike);
       setHasSetInitialStrike(true);
     }
-  }, [selectedSymbol, priceData.price, defaultStrikePrices]);
+  }, [
+    selectedSymbol,
+    priceData.price,
+    defaultStrikePrices,
+    hasSetInitialStrike,
+    onStrikePriceChange,
+  ]);
 
   const defaultExpirations = [
     { label: "1 week", value: addWeeks(new Date(), 1) },
@@ -175,8 +192,7 @@ export default function OptionCard(
               }`}
             >
               {isPositive ? "+" : "-"}
-              {formatChange(percentChange)}
-              %
+              {formatChange(percentChange)}%
             </div>
           </div>
         ) : (
@@ -243,10 +259,7 @@ export default function OptionCard(
             />
             Put
           </Button>
-          <Button
-            variant={'outline'}
-            className="col-span-1"
-          >
+          <Button variant={"outline"} className="col-span-1">
             <EllipsisVertical />
           </Button>
         </div>

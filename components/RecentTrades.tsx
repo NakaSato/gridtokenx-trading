@@ -28,7 +28,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { Wallet } from "@coral-xyz/anchor/dist/cjs/provider";
 
 import { pools } from "@/lib/data/pools";
-import { toast, ToastContainer } from "react-toastify";
+import toast from "react-hot-toast";
 
 import { getPythPrice } from "@/hooks/usePythPrice";
 import { formatAddress, formatAmount, formatPrice } from "@/utils/formatter";
@@ -170,9 +170,7 @@ export default function RecentTrades() {
     const fetchTrades = async () => {
       try {
         setIsLoading(true);
-        toast.info("Fetching trades...", {
-          position: "bottom-right",
-        });
+        toast.loading("Fetching trades...");
 
         const { data } = await axios.post(clusterUrl, {
           jsonrpc: "2.0",
@@ -393,9 +391,6 @@ export default function RecentTrades() {
           </TableHeader>
           {memoizedTableContent}
         </Table>
-        <ToastContainer
-          theme="dark"
-        />
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
     </div>

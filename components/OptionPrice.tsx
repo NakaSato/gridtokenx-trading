@@ -1,15 +1,36 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useTheme } from 'next-themes';
-import { setSymbolLogo } from '@/lib/datafeed';
-import { Button } from './ui/button';
-import { Activity, ArrowUpDown, BarChart, BarChart3, CandlestickChart, ChevronDown, LineChart, PlusCircle, Search, TrendingUp } from 'lucide-react';
-import { Separator } from './ui/separator';
-import { AreaIcon, BarsIcon, CandleStickIcon, IndicatorsIcon } from '@/public/svgs/icons';
-import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { optionsDatafeed, setOptionParameters } from '@/lib/optionsDatafeed';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
+import { setSymbolLogo } from "@/lib/datafeed";
+import { Button } from "./ui/button";
+import {
+  Activity,
+  ArrowUpDown,
+  BarChart,
+  BarChart3,
+  CandlestickChart,
+  ChevronDown,
+  LineChart,
+  PlusCircle,
+  Search,
+  TrendingUp,
+} from "lucide-react";
+import { Separator } from "./ui/separator";
+import {
+  AreaIcon,
+  BarsIcon,
+  CandleStickIcon,
+  IndicatorsIcon,
+} from "@/public/svgs/icons";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { optionsDatafeed, setOptionParameters } from "@/lib/optionsDatafeed";
 
 declare global {
   interface Window {
@@ -22,7 +43,7 @@ interface OptionPriceProps {
   symbol?: string;
   logo?: string;
   strikePrice: string;
-  contractType: 'Call' | 'Put';
+  contractType: "Call" | "Put";
   expiry: Date;
 }
 
@@ -37,59 +58,61 @@ const getFormatConfig = (price: number) => {
 };
 
 const INTERVALS = [
-  { label: '1m', value: '1' },
-  { label: '30m', value: '30' },
-  { label: '1h', value: '60' },
-  { label: 'D', value: 'D' },
+  { label: "1m", value: "1" },
+  { label: "30m", value: "30" },
+  { label: "1h", value: "60" },
+  { label: "D", value: "D" },
 ];
 
 const ALL_INTERVALS = [
-  { label: '1m', value: '1' },
-  { label: '5m', value: '5' },
-  { label: '15m', value: '15' },
-  { label: '30m', value: '30' },
-  { label: '1h', value: '60' },
-  { label: '4h', value: '240' },
-  { label: 'D', value: 'D' },
+  { label: "1m", value: "1" },
+  { label: "5m", value: "5" },
+  { label: "15m", value: "15" },
+  { label: "30m", value: "30" },
+  { label: "1h", value: "60" },
+  { label: "4h", value: "240" },
+  { label: "D", value: "D" },
 ];
 
 const CHART_TYPES = [
-  { label: 'Bars', value: 0, icon: BarsIcon },
-  { label: 'Candles', value: 1, icon: CandleStickIcon },
-  { label: 'Line', value: 2, icon: AreaIcon },
+  { label: "Bars", value: 0, icon: BarsIcon },
+  { label: "Candles", value: 1, icon: CandleStickIcon },
+  { label: "Line", value: 2, icon: AreaIcon },
 ];
 
 const ALL_CHART_TYPES = [
-  { label: 'Bars', value: 0, icon: BarChart3 },
-  { label: 'Candles', value: 1, icon: CandlestickChart },
-  { label: 'Hollow candles', value: 9, icon: CandlestickChart },
-  { label: 'Line', value: 2, icon: LineChart },
-  { label: 'Line with markers', value: 3, icon: Activity },
-  { label: 'Step line', value: 4, icon: TrendingUp },
-  { label: 'Area', value: 5, icon: LineChart },
-  { label: 'HLC area', value: 6, icon: LineChart },
-  { label: 'Baseline', value: 7, icon: TrendingUp },
-  { label: 'Columns', value: 8, icon: BarChart },
-  { label: 'High-low', value: 10, icon: ArrowUpDown },
-  { label: 'Heikin Ashi', value: 11, icon: CandlestickChart },
+  { label: "Bars", value: 0, icon: BarChart3 },
+  { label: "Candles", value: 1, icon: CandlestickChart },
+  { label: "Hollow candles", value: 9, icon: CandlestickChart },
+  { label: "Line", value: 2, icon: LineChart },
+  { label: "Line with markers", value: 3, icon: Activity },
+  { label: "Step line", value: 4, icon: TrendingUp },
+  { label: "Area", value: 5, icon: LineChart },
+  { label: "HLC area", value: 6, icon: LineChart },
+  { label: "Baseline", value: 7, icon: TrendingUp },
+  { label: "Columns", value: 8, icon: BarChart },
+  { label: "High-low", value: 10, icon: ArrowUpDown },
+  { label: "Heikin Ashi", value: 11, icon: CandlestickChart },
 ];
 
-const OptionPrice: React.FC<OptionPriceProps> = ({ 
-  symbol = 'Crypto.BTC/USD', 
-  logo = '/images/bitcoin.png',
+const OptionPrice: React.FC<OptionPriceProps> = ({
+  symbol = "Crypto.BTC/USD",
+  logo = "/images/bitcoin.png",
   strikePrice,
   contractType,
-  expiry 
+  expiry,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const widgetRef = useRef<any>(null);
   const { resolvedTheme } = useTheme();
-  const [chartTheme, setChartTheme] = useState<'Light' | 'Dark'>('Dark');
+  const [chartTheme, setChartTheme] = useState<"Light" | "Dark">("Dark");
   const [isChartReady, setIsChartReady] = useState(false);
-  const [selectedInterval, setSelectedInterval] = useState('D');
+  const [selectedInterval, setSelectedInterval] = useState("D");
   const [chartType, setChartType] = useState(1);
-  const [displaySymbol, setDisplaySymbol] = useState(symbol.replace('Crypto.', ''));
+  const [displaySymbol, setDisplaySymbol] = useState(
+    symbol.replace("Crypto.", "")
+  );
 
   useEffect(() => {
     setOptionParameters(parseFloat(strikePrice), expiry, contractType);
@@ -99,27 +122,32 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
       chartRef.current = null;
       setIsChartReady(false);
     }
-    if (typeof window.TradingView !== 'undefined' && containerRef.current) {
+    if (typeof window.TradingView !== "undefined" && containerRef.current) {
       initChart();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strikePrice, expiry, contractType]);
 
   useEffect(() => {
     setSymbolLogo(symbol, logo);
-    setDisplaySymbol(symbol.replace('Crypto.', '').replace('/USD', ''));
+    setDisplaySymbol(symbol.replace("Crypto.", "").replace("/USD", ""));
   }, [symbol, logo]);
 
   useEffect(() => {
-    setChartTheme(resolvedTheme === 'dark-purple' || resolvedTheme === 'dark-green' ? 'Dark' : 'Light');
+    setChartTheme(
+      resolvedTheme === "dark-purple" || resolvedTheme === "dark-green"
+        ? "Dark"
+        : "Light"
+    );
   }, [resolvedTheme]);
 
   const resetPriceScale = () => {
     if (!widgetRef.current) return;
-    
+
     const chart = widgetRef.current.activeChart();
     const panes = chart.getPanes();
     if (!panes || panes.length === 0) return;
-    
+
     const priceScale = panes[0].getMainSourcePriceScale();
     if (!priceScale) return;
 
@@ -130,7 +158,7 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
     setSelectedInterval(interval);
     if (chartRef.current) {
       chartRef.current.setResolution(interval);
-      resetPriceScale()
+      resetPriceScale();
     }
   };
 
@@ -143,26 +171,26 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
 
   const handleSymbolSearch = () => {
     if (widgetRef.current) {
-      widgetRef.current.chart().executeActionById('symbolSearch');
+      widgetRef.current.chart().executeActionById("symbolSearch");
     }
   };
 
   const handleCompareSymbol = () => {
     if (widgetRef.current) {
-      widgetRef.current.chart().executeActionById('compareOrAdd');
+      widgetRef.current.chart().executeActionById("compareOrAdd");
     }
   };
 
   const handleIndicators = () => {
     if (widgetRef.current) {
-      widgetRef.current.chart().executeActionById('insertIndicator');
+      widgetRef.current.chart().executeActionById("insertIndicator");
     }
   };
 
-  const initChart = async () => {
+  const initChart = useCallback(async () => {
     try {
-      const tempEl = document.createElement('div');
-      tempEl.className = 'text-primary';
+      const tempEl = document.createElement("div");
+      tempEl.className = "text-primary";
       document.body.appendChild(tempEl);
       const primaryColor = window.getComputedStyle(tempEl).color;
       document.body.removeChild(tempEl);
@@ -189,15 +217,16 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
         enabled_features: [
           "hide_left_toolbar_by_default",
           "show_symbol_logos",
-          "show_symbol_logo_in_legend"
+          "show_symbol_logo_in_legend",
         ],
         theme: chartTheme,
-        custom_css_url: '/styles/tradingview-theme.css',
+        custom_css_url: "/styles/tradingview-theme.css",
         loading_screen: {
-          backgroundColor: chartTheme === 'Dark' ? "#141519" : "#FFFFFF",
+          backgroundColor: chartTheme === "Dark" ? "#141519" : "#FFFFFF",
         },
         overrides: {
-          "paneProperties.background": chartTheme === 'Dark' ? "#141519" : "#FFFFFF",
+          "paneProperties.background":
+            chartTheme === "Dark" ? "#141519" : "#FFFFFF",
           "paneProperties.backgroundType": "solid",
           "mainSeriesProperties.candleStyle.upColor": "#53C08D",
           "mainSeriesProperties.candleStyle.downColor": "#FF6889",
@@ -205,9 +234,12 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
           "mainSeriesProperties.candleStyle.wickDownColor": "#FF6889",
           "mainSeriesProperties.candleStyle.borderUpColor": "#53C08D",
           "mainSeriesProperties.candleStyle.borderDownColor": "#FF6889",
-          "mainSeriesProperties.highLowAvgPrice.highLowPriceLinesVisible":false,
-          "mainSeriesProperties.highLowAvgPrice.highLowPriceLabelsVisible": true,
-          "mainSeriesProperties.highLowAvgPrice.highLowPriceLinesColor": primaryColor,
+          "mainSeriesProperties.highLowAvgPrice.highLowPriceLinesVisible":
+            false,
+          "mainSeriesProperties.highLowAvgPrice.highLowPriceLabelsVisible":
+            true,
+          "mainSeriesProperties.highLowAvgPrice.highLowPriceLinesColor":
+            primaryColor,
           "mainSeriesProperties.showPriceLine": false,
           "scalesProperties.showSymbolLabels": false,
         },
@@ -224,30 +256,38 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
               format: (price: number) => {
                 const config = getFormatConfig(price);
                 return price.toFixed(config.precision);
-              }
+              },
             };
-          }
-        }
+          },
+        },
       };
 
       const widget = new window.TradingView.widget(widgetOptions);
       widgetRef.current = widget;
 
       widget.onChartReady(() => {
-        const priceScale = widget.activeChart().getPanes()[0].getMainSourcePriceScale();
-        priceScale.setAutoScale(false)
+        const priceScale = widget
+          .activeChart()
+          .getPanes()[0]
+          .getMainSourcePriceScale();
+        priceScale.setAutoScale(false);
         chartRef.current = widget.chart();
         chartRef.current.setChartType(chartType);
         setIsChartReady(true);
         resetPriceScale();
       });
     } catch (error) {
-      console.error('Error initializing chart:', error);
+      console.error("Error initializing chart:", error);
     }
-  };
+  }, [symbol, selectedInterval, chartTheme, chartType]);
 
   useEffect(() => {
-    if (typeof window.TradingView === 'undefined' || !containerRef.current || widgetRef.current) return;
+    if (
+      typeof window.TradingView === "undefined" ||
+      !containerRef.current ||
+      widgetRef.current
+    )
+      return;
     initChart();
 
     return () => {
@@ -258,12 +298,12 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
         setIsChartReady(false);
       }
     };
-  }, [chartTheme]);
+  }, [chartTheme, initChart]);
 
   useEffect(() => {
     if (isChartReady && chartRef.current) {
       chartRef.current.setSymbol(symbol);
-      setDisplaySymbol(symbol.replace('Crypto.', '').replace('/USD', ''));
+      setDisplaySymbol(symbol.replace("Crypto.", "").replace("/USD", ""));
       resetPriceScale();
     }
   }, [symbol, isChartReady]);
@@ -288,29 +328,34 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
 
   return (
     <div className="tradingview-chart-container rounded-b-sm overflow-hidden w-full h-full border border-t-0 border-border flex flex-col">
-      <div className='px-2 py-1 w-full flex border-b border-border items-center'>
-        <div className='w-[140px] flex justify-between'>
-          <Button 
-            className='bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary'
+      <div className="px-2 py-1 w-full flex border-b border-border items-center">
+        <div className="w-[140px] flex justify-between">
+          <Button
+            className="bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary"
             onClick={handleSymbolSearch}
           >
-            <Search size={20}/>
+            <Search size={20} />
             <span>{displaySymbol}</span>
           </Button>
-          <Button 
-            className='bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary'
+          <Button
+            className="bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary"
             onClick={handleCompareSymbol}
           >
-            <PlusCircle size={20}/>
+            <PlusCircle size={20} />
           </Button>
         </div>
 
-        <Separator orientation='vertical' className='mx-2 h-8'/>
+        <Separator orientation="vertical" className="mx-2 h-8" />
 
         {INTERVALS.map((interval) => (
-          <Button 
+          <Button
             key={interval.value}
-            className={cn((selectedInterval===interval.value ? 'text-primary' : 'text-secondary-foreground'),'bg-inherit p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary')}
+            className={cn(
+              selectedInterval === interval.value
+                ? "text-primary"
+                : "text-secondary-foreground",
+              "bg-inherit p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary"
+            )}
             onClick={() => handleIntervalChange(interval.value)}
           >
             {interval.label}
@@ -318,15 +363,20 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
         ))}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className='bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary focus-visible:ring-0'>
+            <Button className="bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary focus-visible:ring-0">
               <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
+          <DropdownMenuContent align="end">
             {ALL_INTERVALS.map((interval) => (
               <DropdownMenuItem
                 key={interval.value}
-                className={cn((selectedInterval === interval.value ? 'text-primary' : 'text-secondary-foreground'), 'focus:bg-inherit focus:text-primary-foreground cursor-pointer')}
+                className={cn(
+                  selectedInterval === interval.value
+                    ? "text-primary"
+                    : "text-secondary-foreground",
+                  "focus:bg-inherit focus:text-primary-foreground cursor-pointer"
+                )}
                 onClick={() => handleIntervalChange(interval.value)}
               >
                 {interval.label}
@@ -335,12 +385,17 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Separator orientation='vertical' className='mx-2 h-8'/>
+        <Separator orientation="vertical" className="mx-2 h-8" />
 
         {CHART_TYPES.map((type) => (
-          <Button 
+          <Button
             key={type.value}
-            className={cn((chartType === type.value ? 'text-primary' : 'text-secondary-foreground'),'bg-inherit p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary')}
+            className={cn(
+              chartType === type.value
+                ? "text-primary"
+                : "text-secondary-foreground",
+              "bg-inherit p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary"
+            )}
             onClick={() => handleChartTypeChange(type.value)}
           >
             <type.icon />
@@ -348,15 +403,20 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
         ))}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className='bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary focus-visible:ring-0'>
+            <Button className="bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal hover:text-primary focus-visible:ring-0">
               <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
+          <DropdownMenuContent align="end">
             {ALL_CHART_TYPES.map((type) => (
               <DropdownMenuItem
                 key={type.value}
-                className={cn((chartType === type.value ? 'text-primary' : 'text-secondary-foreground'), 'focus:bg-inherit focus:text-primary-foreground cursor-pointer')}
+                className={cn(
+                  chartType === type.value
+                    ? "text-primary"
+                    : "text-secondary-foreground",
+                  "focus:bg-inherit focus:text-primary-foreground cursor-pointer"
+                )}
                 onClick={() => handleChartTypeChange(type.value)}
               >
                 {type.label}
@@ -364,21 +424,25 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Separator orientation='vertical' className='mx-2 h-8'/>
+        <Separator orientation="vertical" className="mx-2 h-8" />
 
-        <Button 
-          className='bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary'
+        <Button
+          className="bg-inherit text-secondary-foreground p-2 flex gap-2 shadow-none text-sm font-normal [&_svg]:size-5 hover:text-primary"
           onClick={handleIndicators}
         >
           <IndicatorsIcon />
           <span>Indicators</span>
         </Button>
       </div>
-      <div 
-        id="tv_chart_container" 
-        ref={containerRef} 
-        className={`tradingview-chart ${chartTheme === 'Dark' ? 'theme-dark' : ''} w-full h-full py-2`}
-        style={{ backgroundColor: chartTheme === 'Dark' ? "#141519" : "#FFFFFF" }}
+      <div
+        id="tv_chart_container"
+        ref={containerRef}
+        className={`tradingview-chart ${
+          chartTheme === "Dark" ? "theme-dark" : ""
+        } w-full h-full py-2`}
+        style={{
+          backgroundColor: chartTheme === "Dark" ? "#141519" : "#FFFFFF",
+        }}
       />
     </div>
   );

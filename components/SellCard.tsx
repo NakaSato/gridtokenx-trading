@@ -61,13 +61,13 @@ export default function SellCard() {
   };
 
   const onSellOptionHandler = async () => {
-    console.log(1)
+    console.log(1);
     if (selectedOption) {
-    console.log(2, selectedOption)
+      console.log(2, selectedOption);
 
       await sc.onCloseOption(selectedOption.id);
     }
-  }
+  };
 
   useEffect(() => {
     (async () => {
@@ -95,9 +95,9 @@ export default function SellCard() {
           [Buffer.from("user"), wallet.publicKey.toBuffer()],
           program.programId
         );
-        const userData = await program.account.User
-          .fetch(userPDA)
-          .catch((e) => null);
+        const userData = await program.account.User.fetch(userPDA).catch(
+          (e) => null
+        );
         if (!userData) return [];
         const optionDatas: Option[] = [];
         for (let i = 1; i <= userData.option_index.toNumber(); i++) {
@@ -109,13 +109,15 @@ export default function SellCard() {
           const optionData = await program.account.OptionDetail.fetch(
             optionDetailAccount
           );
-          const lockedAssetData = await program.account.Custody.fetch(optionData.locked_asset);
-          console.log("premium", i, optionData.premium.toNumber())
+          const lockedAssetData = await program.account.Custody.fetch(
+            optionData.locked_asset
+          );
+          console.log("premium", i, optionData.premium.toNumber());
           optionDatas.push({
             id: optionData.index.toNumber(),
             type: optionData.locked_asset.equals(custody) ? "Call" : "Put",
             strikePrice: optionData.strike_price,
-            size: optionData.amount.toNumber() / (10 ** lockedAssetData.decimals),
+            size: optionData.amount.toNumber() / 10 ** lockedAssetData.decimals,
             status: optionData.valid ? "Active" : "Invalid",
             expiration: new Date(optionData.expired_date.toNumber() * 1000),
             purchaseDate: new Date(
@@ -128,7 +130,7 @@ export default function SellCard() {
         setOptions(optionDatas);
       }
     })();
-  }, [connected]);
+  }, [connected, sc, wallet]);
 
   return selectedOption ? (
     <div className="w-full flex flex-col flex-grow bg-card rounded-sm rounded-t-none p-6 space-y-5 border border-t-0">

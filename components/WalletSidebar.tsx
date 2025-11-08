@@ -11,12 +11,12 @@ import WalletActivity from "./WalletActivity";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { allWallets } from "./WalletModal";
 import { XIcon } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
+import toast from "react-hot-toast";
 
 export default function WalletSideBar() {
   const { wallet, publicKey, disconnect, connected } = useWallet();
   const [activeTab, setActiveTab] = useState<string>("portfolio");
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   const [iconPath, setIconPath] = useState<string>("");
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -25,9 +25,7 @@ export default function WalletSideBar() {
     if (publicKey) {
       navigator.clipboard.writeText(publicKey.toBase58());
     }
-    toast.success('Address Copied', {
-      position: 'bottom-right'
-    })
+    toast.success("Address Copied");
   };
   const handleClickTab = (state: string) => {
     if (activeTab !== state) {
@@ -35,16 +33,17 @@ export default function WalletSideBar() {
     }
   };
   const handleDisconnect = () => {
-    toast.success('Wallet Disconnected', {
-      position: 'bottom-right'
-    })
+    toast.success("Wallet Disconnected");
     disconnect();
-  }
+  };
   useEffect(() => {
     if (wallet) {
-        setIconPath(allWallets.filter((value) => value.name === wallet.adapter.name)[0].iconPath);
+      setIconPath(
+        allWallets.filter((value) => value.name === wallet.adapter.name)[0]
+          .iconPath
+      );
     }
-  }, [publicKey, connected]);
+  }, [publicKey, connected, wallet]);
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -58,7 +57,9 @@ export default function WalletSideBar() {
               className="rounded-full"
             />
           )}
-          {publicKey?.toBase58() ? truncateAddress(publicKey?.toBase58()) : "Connected"}
+          {publicKey?.toBase58()
+            ? truncateAddress(publicKey?.toBase58())
+            : "Connected"}
         </button>
       </SheetTrigger>
       <SheetContent className="bg-accent rounded-none md:rounded-l-sm p-6 space-y-4 w-full md:w-[550px]">
@@ -68,7 +69,9 @@ export default function WalletSideBar() {
               <Image src={iconPath} alt="Wallet Icon" width={20} height={20} />
             )}
             <span className="text-base text-foreground font-medium items-center pt-1">
-              {publicKey?.toBase58() ? truncateAddress(publicKey?.toBase58()) : "Connected"}
+              {publicKey?.toBase58()
+                ? truncateAddress(publicKey?.toBase58())
+                : "Connected"}
             </span>
             <SendIcon />
           </div>
@@ -85,11 +88,11 @@ export default function WalletSideBar() {
             >
               <LogOutIcon />
             </Button>
-            <Button 
-                className="bg-secondary p-2 h-fit shadow-none rounded-sm md:hidden"
-                onClick={()=>setIsOpen(false)}
+            <Button
+              className="bg-secondary p-2 h-fit shadow-none rounded-sm md:hidden"
+              onClick={() => setIsOpen(false)}
             >
-                <XIcon className="text-foreground"/>
+              <XIcon className="text-foreground" />
             </Button>
           </div>
         </SheetTitle>
@@ -132,9 +135,6 @@ export default function WalletSideBar() {
           </Tabs>
           {activeTab === "portfolio" ? <WalletPortfolio /> : <WalletActivity />}
         </div>
-        <ToastContainer 
-          theme="dark"
-        />
       </SheetContent>
     </Sheet>
   );

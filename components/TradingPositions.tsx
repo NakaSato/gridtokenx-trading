@@ -1,8 +1,4 @@
-import {
-  Ban,
-  EllipsisVertical,
-  RotateCw,
-} from "lucide-react";
+import { Ban, EllipsisVertical, RotateCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { useContext, useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
@@ -38,9 +34,9 @@ export default function TradingPositions() {
   const onClaim = (optionindex: number, solPrice: number) => {
     onClaimOption(optionindex, solPrice);
   };
-  const onExercise =(index: number)=>{
+  const onExercise = (index: number) => {
     onExerciseOption(index);
-  }
+  };
   useEffect(() => {
     (async () => {
       if (program && pub) {
@@ -53,12 +49,12 @@ export default function TradingPositions() {
         setDoneInfo(doneinfo);
       }
     })();
-  }, [program]);
+  }, [program, pub, getDetailInfos]);
 
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const dummyPositions = positions;
   const dummyOrders = orders;
 
@@ -67,8 +63,6 @@ export default function TradingPositions() {
     OpenOrders: "Cancel all",
     Expired: "Claim all",
   };
-
-  
 
   return (
     <div className="w-full h-fit border rounded-sm flex flex-col">
@@ -109,7 +103,7 @@ export default function TradingPositions() {
           <Button className="bg-secondary p-2 w-full h-auto rounded-sm">
             <RotateCw className="text-secondary-foreground" />
           </Button>
-          {activeTab !== 'History' && (
+          {activeTab !== "History" && (
             <Button className="bg-secondary w-full h-auto py-[6px] px-[10px] rounded-sm">
               <Ban className="text-secondary-foreground p-0" />
               {actionTextMap[activeTab] && (
@@ -175,7 +169,9 @@ export default function TradingPositions() {
               </div>
             </>
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">No Positions Open <br /> Start Trading Now</div>
+            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+              No Positions Open <br /> Start Trading Now
+            </div>
           )}
 
           {/* {dummyPositions.map((position, index) => (
@@ -209,9 +205,10 @@ export default function TradingPositions() {
           {expiredInfos.length > 0 ? (
             <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">No Expired Positions <br /> Start Trading Now</div>
+            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+              No Expired Positions <br /> Start Trading Now
+            </div>
           )}
-          
         </div>
       )}
       {activeTab === "OpenOrders" && (
@@ -219,33 +216,37 @@ export default function TradingPositions() {
           {dummyOrders.length > 0 ? (
             <>
               <div className="flex flex-col space-y-[10px]">
-              {dummyOrders.slice(indexOfFirstItem, indexOfLastItem).map((pos, idx) => (
-                <OpenOptionOrders 
-                  key={idx}
-                  logo={pos.logo}
-                  token={pos.token}
-                  symbol={pos.symbol}
-                  type={pos.type}
-                  limitPrice={pos.limitPrice}
-                  transaction={pos.transaction}
-                  strikePrice={pos.strikePrice}
-                  expiry={pos.expiry}
-                  size={pos.size}
-                  orderDate={pos.orderDate}
-                />
-              ))}
+                {dummyOrders
+                  .slice(indexOfFirstItem, indexOfLastItem)
+                  .map((pos, idx) => (
+                    <OpenOptionOrders
+                      key={idx}
+                      logo={pos.logo}
+                      token={pos.token}
+                      symbol={pos.symbol}
+                      type={pos.type}
+                      limitPrice={pos.limitPrice}
+                      transaction={pos.transaction}
+                      strikePrice={pos.strikePrice}
+                      expiry={pos.expiry}
+                      size={pos.size}
+                      orderDate={pos.orderDate}
+                    />
+                  ))}
               </div>
               <div className="pb-4 w-full">
-                  <Pagination
-                      currentPage={currentPage}
-                      totalItems={dummyOrders.length}
-                      itemsPerPage={itemsPerPage}
-                      onPageChange={setCurrentPage}
-                  />
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={dummyOrders.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             </>
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">No Orders Open <br /> Start Trading Now</div>
+            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+              No Orders Open <br /> Start Trading Now
+            </div>
           )}
         </div>
       )}
@@ -254,7 +255,10 @@ export default function TradingPositions() {
           {doneInfo.length > 0 ? (
             <OrderHistory doneOptioninfos={doneInfo} />
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">No History Available<br /> Start Trading Now</div>
+            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+              No History Available
+              <br /> Start Trading Now
+            </div>
           )}
         </div>
       )}

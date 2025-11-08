@@ -18,9 +18,20 @@ export function formatCountdown(timeLeft: number): string {
 }
 
 export function formatPrice(price: number): string {
+  // Handle null, undefined, or NaN values
+  if (price == null || isNaN(price)) {
+    return "0.00";
+  }
+
   if (price < 10 && price != 0) {
     const priceString = price.toString();
     const [, decimalPart] = priceString.split(".");
+
+    // Handle cases where there's no decimal part
+    if (!decimalPart) {
+      return price.toFixed(2);
+    }
+
     const firstNonZeroIndex = decimalPart.search(/[1-9]/);
 
     if (firstNonZeroIndex === -1) {
@@ -44,5 +55,5 @@ export function formatAddress(address: string): string {
 
 export const formatGreek = (val: number): string => {
   if (typeof val !== "number" || isNaN(val)) return "N/A";
-  return val.toFixed(4); 
+  return val.toFixed(4);
 };
