@@ -57,13 +57,11 @@ export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const routes: Record<string, string> = {
-    "/": "Options",
-    "/trade": "Trade",
+    "/": "Trade",
     "/futures": "futures",
     "/earn": "Earn",
     "/portfolio": "Portfolio",
     "/analytics": "Analytics",
-    "/options-chain": "Options Chain",
     "/feedback": "Feedback",
   };
   const currentPath = pathname?.split("/")[1] || "";
@@ -90,31 +88,6 @@ export default function NavBar() {
         <nav className="hidden md:flex justify-evenly items-center gap-8">
           <Link
             href="/"
-            className={cn(
-              buttonVariants({
-                variant: active === "Options" ? "active" : "inactive",
-              }),
-              "p-0 w-auto h-auto flex justify-between gap-1 hover:text-primary group"
-            )}
-            onClick={() => handleClick("Options")}
-          >
-            <OptionsIcon />
-            <h1 className="text-sm font-medium group-hover:text-primary">
-              Options
-            </h1>
-            <Badge
-              className={cn(
-                active === "Options"
-                  ? "border-primary text-gradient-primary"
-                  : "border-secondary-foreground text-secondary-foreground",
-                "border px-1 pt-[3px] rounded-[2px] h-3 bg-transparent flex justify-center items-center group-hover:border-primary group-hover:text-primary"
-              )}
-            >
-              <span className="text-[8px] font-semibold">BETA</span>
-            </Badge>
-          </Link>
-          <Link
-            href="/trade"
             className={cn(
               buttonVariants({
                 variant: active === "Trade" ? "active" : "inactive",

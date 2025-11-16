@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { ChevronDown, ChevronUp, XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import WalletButton from "./WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
+import SignInForm from "./SignInForm";
+import SignUpForm from "./SignUpForm";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -29,6 +31,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { select, wallets } = useWallet();
   const [isMoreWalletOpen, setIsMoreWalletOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [view, setView] = useState<"wallet" | "signin" | "signup">("wallet");
   const installedWallets = wallets.filter(
     (wallet) => wallet.readyState === "Installed"
   );
@@ -73,7 +76,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-2xl md:max-h-[90%] p-10 bg-accent">
         <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between md:pb-5">
-          <DialogTitle className="text-2xl">Connect Wallet</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {view === "wallet" && "Connect Wallet"}
+            {view === "signin" && "Sign In"}
+            {/* {view === "signup" && "Sign Up"} */}
+          </DialogTitle>
           <Button
             className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border md:hidden"
             onClick={() => onClose()}
@@ -81,46 +88,72 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             <XIcon size={18} className="text-secondary-foreground" />
           </Button>
         </DialogHeader>
-        <div className="w-full flex flex-col justify-between space-y-10">
-          <div className="space-y-5 flex flex-col justify-between">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {primaryWallets.map((wallet) => (
-                <WalletButton
-                  key={wallet.name}
-                  {...wallet}
-                  onClick={() =>
-                    handleWalletConnect(wallet.name, wallet.iconPath)
-                  }
-                />
-              ))}
+
+        {view === "wallet" && (
+          <div className="w-full flex flex-col justify-between space-y-10">
+            <div className="space-y-5 flex flex-col justify-between">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {primaryWallets.map((wallet) => (
+                  <WalletButton
+                    key={wallet.name}
+                    {...wallet}
+                    onClick={() =>
+                      handleWalletConnect(wallet.name, wallet.iconPath)
+                    }
+                  />
+                ))}
+              </div>
+              <div
+                id="more-wallets"
+                className={cn(
+                  "grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-200 mb-4",
+                  isMoreWalletOpen ? "opacity-100" : "hidden opacity-0"
+                )}
+              >
+                {moreWallets.map((wallet) => (
+                  <WalletButton
+                    key={wallet.name}
+                    {...wallet}
+                    onClick={() =>
+                      handleWalletConnect(wallet.name, wallet.iconPath)
+                    }
+                  />
+                ))}
+              </div>
             </div>
-            <div
-              id="more-wallets"
-              className={cn(
-                "grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-200 mb-4",
-                isMoreWalletOpen ? "opacity-100" : "hidden opacity-0"
-              )}
+            <Button
+              variant="outline"
+              className="w-full rounded-sm"
+              onClick={() => setView("signin")}
             >
-              {moreWallets.map((wallet) => (
-                <WalletButton
-                  key={wallet.name}
-                  {...wallet}
-                  onClick={() =>
-                    handleWalletConnect(wallet.name, wallet.iconPath)
-                  }
-                />
-              ))}
-            </div>
+              Sign In
+            </Button>
+            <Button
+              variant="selected"
+              className="w-full flex justify-between rounded-sm"
+              onClick={() => setIsMoreWalletOpen(!isMoreWalletOpen)}
+            >
+              {isMoreWalletOpen ? "Less" : "More"} Wallets
+              {isMoreWalletOpen ? <ChevronUp /> : <ChevronDown />}
+            </Button>
           </div>
-          <Button
-            variant="selected"
-            className="w-full flex justify-between rounded-sm"
-            onClick={() => setIsMoreWalletOpen(!isMoreWalletOpen)}
-          >
-            {isMoreWalletOpen ? "Less" : "More"} Wallets
-            {isMoreWalletOpen ? <ChevronUp /> : <ChevronDown />}
-          </Button>
-        </div>
+        )}
+
+        {view === "signin" && (
+          <SignInForm
+            onSuccess={onClose}
+            onSwitchToSignUp={() => setView("signup")}
+            onBack={() => setView("wallet")}
+          />
+        )}
+
+        {view === "signup" && (
+          <SignUpForm
+            onSuccess={onClose}
+            onSwitchToSignIn={() => setView("signin")}
+            onBack={() => setView("wallet")}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
