@@ -107,34 +107,49 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getCustodies = async (program: Program<OptionContract>) => {
-    if (connected && publicKey != null && program) {
-      const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from("pool"), Buffer.from("SOL-USDC")],
-        program.programId
-      );
-      const custodies = new Map<string, any>();
-      const ratios = new Map<string, any>();
-      const poolData = await program.account.Pool.fetch(pool);
-      for await (let custody of poolData.custodies) {
-        let c = await program.account.Custody.fetch(new PublicKey(custody));
-        let mint = c.mint;
-        custodies.set(mint.toBase58(), c);
-        ratios.set(
-          mint.toBase58(),
-          poolData.ratios[
-            poolData.custodies.findIndex((e) => e.equals(custody))
-          ]
+    if (connected && publicKey != null && program && program.account && program.programId) {
+      try {
+        const [pool] = PublicKey.findProgramAddressSync(
+          [Buffer.from("pool"), Buffer.from("SOL-USDC")],
+          program.programId
         );
+        const custodies = new Map<string, any>();
+        const ratios = new Map<string, any>();
+        const poolData = await program.account.Pool.fetch(pool);
+        for await (let custody of poolData.custodies) {
+          let c = await program.account.Custody.fetch(new PublicKey(custody));
+          let mint = c.mint;
+          custodies.set(mint.toBase58(), c);
+          ratios.set(
+            mint.toBase58(),
+            poolData.ratios[
+              poolData.custodies.findIndex((e) => e.equals(custody))
+            ]
+          );
+        }
+        return [custodies, ratios];
+      } catch (error) {
+        console.error("Error fetching custodies:", error);
+        return [new Map(), new Map()];
       }
-      return [custodies, ratios];
     }
+    return [new Map(), new Map()];
   };
 
   const getDetailInfos = async (
     program: Program<OptionContract>,
     publicKey: PublicKey
   ) => {
-    if (!program || !program.account || !publicKey) return [[], [], []];
+    // Check if program and required properties exist
+    if (!program || !program.account || !program.programId || !publicKey) {
+      return [[], [], []];
+    }
+
+    // Additional check for User account type
+    if (!program.account.User) {
+      return [[], [], []];
+    }
+
     const pinfo = [];
     const expiredpinfo = [];
     const doneInfo = [];
