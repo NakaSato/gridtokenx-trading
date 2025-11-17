@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button, buttonVariants } from "./ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { AuthButton } from "./auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import WalletModal from "./WalletModal";
 import WalletSideBar from "./WalletSidebar";
 import { useTheme } from "next-themes";
 import x from "@/public/svgs/x.svg";
@@ -25,12 +25,7 @@ import { Logo } from "./Logo";
 import { Badge } from "./ui/badge";
 import Settings from "./Settings";
 import Profile from "./Profile";
-import {
-  ArrowDown,
-  EarnIcon,
-  MoreIcon,
-  WalletIcon,
-} from "@/public/svgs/icons";
+import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from "@/public/svgs/icons";
 import NavBarMobile from "./NavBarMobile";
 import Notifications from "./Notifications";
 import PointsDropDown from "./PointsDropDown";
@@ -51,7 +46,6 @@ import { usePathname } from "next/navigation";
 export default function NavBar() {
   const pathname = usePathname();
   const { theme } = useTheme();
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const { connected } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -276,21 +270,13 @@ export default function NavBar() {
         {connected ? (
           <WalletSideBar />
         ) : (
-          <Button
-            onClick={() => setIsWalletModalOpen(true)}
-            className="w-full h-fit border border-transparent py-[7px] px-4 rounded-sm gap-2 text-background bg-primary hover:bg-gradient-primary"
-          >
-            <WalletIcon />
-            <span className="text-sm font-semibold flex gap-2">
-              Connect <span className="hidden md:flex">Wallet</span>
-            </span>
-          </Button>
+          <AuthButton
+            signInVariant="default"
+            className="w-full h-fit border border-transparent py-[7px] px-4 rounded-sm text-background bg-primary hover:bg-gradient-primary"
+            signInText="Connect"
+          />
         )}
         <NavBarMobile />
-        <WalletModal
-          isOpen={isWalletModalOpen}
-          onClose={() => setIsWalletModalOpen(false)}
-        />
       </div>
     </header>
   );

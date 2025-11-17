@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { ChevronDown, ChevronUp, XIcon } from "lucide-react";
+import { XIcon, Mail, Lock, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { cn } from "@/lib/utils";
 import WalletButton from "./WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Separator } from "./ui/separator";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -27,22 +31,16 @@ export const allWallets: Wallet[] = [
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { select, wallets } = useWallet();
-  const [isMoreWalletOpen, setIsMoreWalletOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const installedWallets = wallets.filter(
-    (wallet) => wallet.readyState === "Installed"
-  );
-  const filterSet = new Set(
-    installedWallets.map((item) => String(item.adapter.name))
-  );
-  const primaryWallets =
-    installedWallets.length > 0
-      ? allWallets.filter((item) => filterSet.has(item.name))
-      : allWallets.slice(0, 1);
-  const moreWallets =
-    installedWallets.length > 0
-      ? allWallets.filter((item) => !filterSet.has(item.name))
-      : allWallets.slice(1);
+  const [authMode, setAuthMode] = useState<"wallet" | "email">("wallet");
+
+  // Email/Password form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleWalletConnect = async (walletName: string, iconPath: string) => {
     if (isConnecting) return;
 
@@ -69,11 +67,77 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
   };
 
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: Implement actual sign-in logic with your backend
+      // const response = await fetch('/api/auth/signin', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ email, password })
+      // });
+
+      // Simulated sign-in
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast.success("Signed in successfully");
+      onClose();
+    } catch (error: any) {
+      toast.error(`Sign in failed: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || !confirmPassword || !fullName) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: Implement actual sign-up logic with your backend
+      // const response = await fetch('/api/auth/signup', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ email, password, fullName })
+      // });
+
+      // Simulated sign-up
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast.success("Account created successfully");
+      onClose();
+    } catch (error: any) {
+      toast.error(`Sign up failed: ${error?.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-2xl md:max-h-[90%] p-10 bg-accent">
+      <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-2xl md:max-h-[90%] p-10 bg-accent overflow-y-auto">
         <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between md:pb-5">
-          <DialogTitle className="text-2xl">Connect Wallet</DialogTitle>
+          <DialogTitle className="text-2xl">
+            {authMode === "wallet" ? "Connect Wallet" : "Sign In / Sign Up"}
+          </DialogTitle>
           <Button
             className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border md:hidden"
             onClick={() => onClose()}
@@ -81,27 +145,29 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             <XIcon size={18} className="text-secondary-foreground" />
           </Button>
         </DialogHeader>
-        <div className="w-full flex flex-col justify-between space-y-10">
-          <div className="space-y-5 flex flex-col justify-between">
+
+        {/* Auth Mode Toggle */}
+        <div className="flex gap-2 w-full mb-4">
+          <Button
+            variant={authMode === "wallet" ? "default" : "outline"}
+            className="flex-1 rounded-sm"
+            onClick={() => setAuthMode("wallet")}
+          >
+            Wallet
+          </Button>
+          <Button
+            variant={authMode === "email" ? "default" : "outline"}
+            className="flex-1 rounded-sm"
+            onClick={() => setAuthMode("email")}
+          >
+            Email
+          </Button>
+        </div>
+
+        {authMode === "wallet" ? (
+          <div className="w-full flex flex-col justify-between space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {primaryWallets.map((wallet) => (
-                <WalletButton
-                  key={wallet.name}
-                  {...wallet}
-                  onClick={() =>
-                    handleWalletConnect(wallet.name, wallet.iconPath)
-                  }
-                />
-              ))}
-            </div>
-            <div
-              id="more-wallets"
-              className={cn(
-                "grid grid-cols-1 md:grid-cols-3 gap-4 transition-all duration-200 mb-4",
-                isMoreWalletOpen ? "opacity-100" : "hidden opacity-0"
-              )}
-            >
-              {moreWallets.map((wallet) => (
+              {allWallets.map((wallet) => (
                 <WalletButton
                   key={wallet.name}
                   {...wallet}
@@ -112,15 +178,146 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
               ))}
             </div>
           </div>
-          <Button
-            variant="selected"
-            className="w-full flex justify-between rounded-sm"
-            onClick={() => setIsMoreWalletOpen(!isMoreWalletOpen)}
-          >
-            {isMoreWalletOpen ? "Less" : "More"} Wallets
-            {isMoreWalletOpen ? <ChevronUp /> : <ChevronDown />}
-          </Button>
-        </div>
+        ) : (
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="signin">Sign In</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="signin" className="space-y-4">
+              <form onSubmit={handleEmailSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full rounded-sm bg-primary hover:bg-gradient-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-sm text-muted-foreground"
+                  onClick={() =>
+                    toast("Password reset coming soon", { icon: "ℹ️" })
+                  }
+                >
+                  Forgot password?
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="signup" className="space-y-4">
+              <form onSubmit={handleEmailSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="Create a password (min 8 characters)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10"
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="signup-confirm-password"
+                      type="password"
+                      placeholder="Confirm your password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10"
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full rounded-sm bg-primary hover:bg-gradient-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating account..." : "Sign Up"}
+                </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  By signing up, you agree to our Terms of Service and Privacy
+                  Policy
+                </p>
+              </form>
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );
