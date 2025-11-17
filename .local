@@ -1,3 +1,23 @@
 # Mapbox Configuration
 # Get your token from: https://account.mapbox.com/access-tokens/
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1IjoiMjQxMDcxNzMwMjAwMyIsImEiOiJjbWhxZmpiMWcwdW1yMmpwZ2t5dmJ0d2Z5In0.CjnLKshVT1BodIKZTs9Teg
+
+# -----------------------------------------------------------------------------
+# Solana Network Configuration
+# -----------------------------------------------------------------------------
+NEXT_PUBLIC_SOLANA_NETWORK=localnet
+NEXT_PUBLIC_SOLANA_RPC_URL=http://localhost:8899
+NEXT_PUBLIC_SOLANA_WS_URL=ws://localhost:8900
+
+# -----------------------------------------------------------------------------
+# API Gateway Configuration
+# -----------------------------------------------------------------------------
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_WS_BASE_URL=ws://localhost:8080
+
+# -----------------------------------------------------------------------------
+# Feature Flags
+# -----------------------------------------------------------------------------
+NEXT_PUBLIC_ENABLE_ANALYTICS=false
+NEXT_PUBLIC_ENABLE_DEBUG=true
+NEXT_PUBLIC_SHOW_DEV_TOOLS=true

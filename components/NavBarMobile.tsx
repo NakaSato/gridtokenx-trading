@@ -1,5 +1,6 @@
 import {
   BookOpenText,
+  ChartLine,
   ChevronDown,
   FileChartColumn,
   MenuIcon,
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./ui/dialog";
 import Image from "next/image";
 import { Button, buttonVariants } from "./ui/button";
 import { useState } from "react";
-import { EarnIcon, MoreIcon, OptionsIcon } from "@/public/svgs/icons";
+import { EarnIcon, MoreIcon } from "@/public/svgs/icons";
 import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -27,7 +28,7 @@ import { Logo } from "./Logo";
 
 export default function NavBarMobile() {
   const [isOpen, setIsOpen] = useState(false);
-  const [active, setActive] = useState<string>("Options");
+  const [active, setActive] = useState<string>("Trade");
   const [isDropped, setIsDropped] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const { connected } = useWallet();
@@ -62,29 +63,29 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === "Options" ? "active" : "inactive",
+                  variant: active === "Trade" ? "active" : "inactive",
                 }),
                 "bg-accent justify-start px-5 py-3 md:hidden lg:flex rounded-sm"
               )}
               onClick={() => {
-                handleClick("Options");
+                handleClick("Trade");
                 router.push("/");
                 setIsOpen(false);
               }}
             >
-              <OptionsIcon />
+              <ChartLine size={16} />
               <h1 className="text-sm font-medium group-hover:text-primary">
-                Options
+                Trade
               </h1>
               <Badge
                 className={cn(
-                  active === "Options"
+                  active === "Trade"
                     ? "border-primary text-gradient-primary"
                     : "border-secondary-foreground text-secondary-foreground",
                   "border text-[8px] px-1 py-[3px] rounded-[3px] h-4 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"
                 )}
               >
-                BETA
+                NEW
               </Badge>
             </Button>
             <Button
@@ -100,13 +101,13 @@ export default function NavBarMobile() {
                 setIsOpen(false);
               }}
             >
-              <OptionsIcon />
+              <ChartLine size={16} />
               <h1 className="text-sm font-medium group-hover:text-primary">
                 Futures
               </h1>
               <Badge
                 className={cn(
-                  active === "Options"
+                  active === "Futures"
                     ? "border-primary text-gradient-primary"
                     : "border-secondary-foreground text-secondary-foreground",
                   "border text-[8px] px-1 py-[3px] rounded-[3px] h-4 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"

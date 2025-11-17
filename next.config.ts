@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -11,6 +12,11 @@ const nextConfig: NextConfig = {
     ],
     unoptimized: true,
     formats: [],
+  },
+  experimental: {
+    turbo: {
+      root: path.resolve(__dirname),
+    },
   },
 };
 

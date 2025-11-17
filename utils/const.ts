@@ -1,6 +1,7 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
-export const clusterUrl = "https://api.devnet.solana.com";
+// Use environment variables for Solana connection
+export const clusterUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 export const connection = new Connection(clusterUrl, "confirmed");
 
 // Mainnet
