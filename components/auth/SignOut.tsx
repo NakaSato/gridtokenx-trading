@@ -45,10 +45,10 @@ export default function SignOut({
       onClick={handleSignOut}
       variant={variant}
       size={size}
-      className={`gap-2 ${className}`}
+      className={className}
     >
       {showIcon && <LogOutIcon />}
-      <span className="text-sm font-semibold">{text}</span>
+      <span className="font-medium">{text}</span>
     </Button>
   );
 }

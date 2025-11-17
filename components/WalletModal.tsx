@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { XIcon, Mail, Lock, User } from "lucide-react";
+import { XIcon, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { cn } from "@/lib/utils";
 import WalletButton from "./WalletButton";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
+import { Checkbox } from "./ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
 
 interface WalletModalProps {
@@ -32,7 +32,9 @@ export const allWallets: Wallet[] = [
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { select, wallets } = useWallet();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [authMode, setAuthMode] = useState<"wallet" | "email">("wallet");
+  const [authMode, setAuthMode] = useState<"wallet" | "signin" | "signup">(
+    "wallet"
+  );
 
   // Email/Password form states
   const [email, setEmail] = useState("");
@@ -40,6 +42,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const handleWalletConnect = async (walletName: string, iconPath: string) => {
     if (isConnecting) return;
@@ -101,6 +107,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       return;
     }
 
+    if (!agreeToTerms) {
+      toast.error("Please agree to the terms and conditions");
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -133,36 +144,22 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-2xl md:max-h-[90%] p-10 bg-accent overflow-y-auto">
-        <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between md:pb-5">
-          <DialogTitle className="text-2xl">
-            {authMode === "wallet" ? "Connect Wallet" : "Sign In / Sign Up"}
+      <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-1xl md:max-h-[90%] md:p-10 bg-accent overflow-y-auto">
+        <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between pb-4 md:pb-5">
+          <DialogTitle className="text-2xl text-foreground font-medium">
+            {authMode === "wallet"
+              ? "Connect Wallet"
+              : authMode === "signin"
+              ? "Sign In"
+              : "Sign Up"}
           </DialogTitle>
           <Button
-            className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border md:hidden"
+            className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border-border md:hidden"
             onClick={() => onClose()}
           >
             <XIcon size={18} className="text-secondary-foreground" />
           </Button>
         </DialogHeader>
-
-        {/* Auth Mode Toggle */}
-        <div className="flex gap-2 w-full mb-4">
-          <Button
-            variant={authMode === "wallet" ? "default" : "outline"}
-            className="flex-1 rounded-sm"
-            onClick={() => setAuthMode("wallet")}
-          >
-            Wallet
-          </Button>
-          <Button
-            variant={authMode === "email" ? "default" : "outline"}
-            className="flex-1 rounded-sm"
-            onClick={() => setAuthMode("email")}
-          >
-            Email
-          </Button>
-        </div>
 
         {authMode === "wallet" ? (
           <div className="w-full flex flex-col justify-between space-y-5">
@@ -177,146 +174,283 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 />
               ))}
             </div>
+            <div className="text-center">
+              <button
+                onClick={() => setAuthMode("signin")}
+                className="text-secondary-foreground hover:text-primary text-sm font-medium transition-colors"
+              >
+                Or sign in with email →
+              </button>
+            </div>
           </div>
-        ) : (
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin" className="space-y-4">
+        ) : authMode === "signin" ? (
+          <div className="w-full max-w-md mx-auto">
+            <>
               <form onSubmit={handleEmailSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    required
+                  />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
+                      id="password"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
+                      placeholder="Enter your password"
+                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) =>
+                        setRememberMe(checked === true)
+                      }
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm text-secondary-foreground cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast("Password reset coming soon", { icon: "ℹ️" })
+                    }
+                    className="text-primary hover:text-primary/80 transition-colors text-sm"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 <Button
                   type="submit"
-                  className="w-full rounded-sm bg-primary hover:bg-gradient-primary"
                   disabled={isLoading}
+                  className="w-full rounded-sm"
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="w-full text-sm text-muted-foreground"
-                  onClick={() =>
-                    toast("Password reset coming soon", { icon: "ℹ️" })
-                  }
-                >
-                  Forgot password?
+                  {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
-            </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-accent text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {allWallets.map((wallet) => (
+                  <Button
+                    key={wallet.name}
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      handleWalletConnect(wallet.name, wallet.iconPath)
+                    }
+                    className="h-10 rounded-sm"
+                  >
+                    <img
+                      src={wallet.iconPath}
+                      alt={wallet.name}
+                      className="w-6 h-6"
+                    />
+                  </Button>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-secondary-foreground text-center text-sm">
+                  Don't have an account?{" "}
+                  <button
+                    onClick={() => setAuthMode("signup")}
+                    className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              </div>
+            </>
+          </div>
+        ) : (
+          <div className="w-full max-w-md mx-auto">
+            <>
               <form onSubmit={handleEmailSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="John Doe"
+                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    required
+                  />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Label htmlFor="signup-email">Email Address</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    required
+                  />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-password"
-                      type="password"
-                      placeholder="Create a password (min 8 characters)"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10"
+                      placeholder="Create a password (min 8 characters)"
+                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
                       required
                       minLength={8}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-confirm-password">
                     Confirm Password
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="signup-confirm-password"
-                      type="password"
-                      placeholder="Confirm your password"
+                      type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10"
+                      placeholder="Confirm your password"
+                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
                       required
                       minLength={8}
                     />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
+
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="agree-terms"
+                    checked={agreeToTerms}
+                    onCheckedChange={(checked) =>
+                      setAgreeToTerms(checked === true)
+                    }
+                    className="mt-0.5"
+                  />
+                  <Label
+                    htmlFor="agree-terms"
+                    className="text-xs text-muted-foreground cursor-pointer leading-4"
+                  >
+                    I agree to the{" "}
+                    <a href="#" className="text-primary hover:text-primary/80">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="#" className="text-primary hover:text-primary/80">
+                      Privacy Policy
+                    </a>
+                  </Label>
+                </div>
+
                 <Button
                   type="submit"
-                  className="w-full rounded-sm bg-primary hover:bg-gradient-primary"
                   disabled={isLoading}
+                  className="w-full rounded-sm"
                 >
-                  {isLoading ? "Creating account..." : "Sign Up"}
+                  {isLoading ? "Creating Account..." : "Sign Up"}
                 </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  By signing up, you agree to our Terms of Service and Privacy
-                  Policy
-                </p>
               </form>
-            </TabsContent>
-          </Tabs>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-secondary-foreground text-center text-sm">
+                  Already have an account?{" "}
+                  <button
+                    onClick={() => setAuthMode("signin")}
+                    className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
