@@ -35,10 +35,10 @@ export default function SignIn({
         onClick={() => setIsWalletModalOpen(true)}
         variant={variant}
         size={size}
-        className={`gap-2 ${className}`}
+        className={className}
       >
         {showIcon && <WalletIcon />}
-        <span className="text-sm font-semibold">{text}</span>
+        <span className="font-medium">{text}</span>
       </Button>
       <WalletModal
         isOpen={isWalletModalOpen}

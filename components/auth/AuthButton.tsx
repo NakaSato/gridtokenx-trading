@@ -15,10 +15,6 @@ interface AuthButtonProps {
   onSignOut?: () => void;
 }
 
-/**
- * AuthButton - A smart button that automatically switches between SignIn and SignOut
- * based on wallet connection status
- */
 export default function AuthButton({
   signInVariant = "default",
   signOutVariant = "outline",
