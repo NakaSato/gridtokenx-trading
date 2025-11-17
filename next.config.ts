@@ -3,11 +3,27 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [
-      "raw.githubusercontent.com", // for GitHub-hosted token logos
-      "tomato-rear-quokka-6.mypinata.cloud", // for your Pinata-hosted assets
-      "arweave.net", // common for Solana logos
-      "shdw.drive.genesysgo.net", // optional: for Shadow Drive if used
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tomato-rear-quokka-6.mypinata.cloud',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'arweave.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'shdw.drive.genesysgo.net',
+        pathname: '/**',
+      },
     ],
     unoptimized: true,
     formats: [],
