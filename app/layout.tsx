@@ -5,10 +5,116 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Script from "next/script";
 import Connectionprovider from "@/contexts/connectionprovider";
 import { Toaster } from "react-hot-toast";
+import { generateStructuredData } from "@/lib/metadata";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://app.gridtokenx.com";
+const siteName = "GridTokenX Trading";
+const siteDescription =
+  "Advanced P2P energy trading platform on Solana. Trade energy tokens, manage futures and options, earn yields, and participate in decentralized renewable energy markets.";
 
 export const metadata: Metadata = {
-  title: "GridTokenX",
-  description: "Options and Futures Trading App on Solana",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteName,
+    template: `%s | ${siteName}`,
+  },
+  description: siteDescription,
+  applicationName: siteName,
+  authors: [
+    { name: "GridTokenX", url: "https://gridtokenx.com" },
+    { name: "NakaSato", url: "https://github.com/NakaSato" },
+  ],
+  generator: "Next.js",
+  keywords: [
+    "GridTokenX",
+    "energy trading",
+    "P2P energy",
+    "Solana trading",
+    "DeFi",
+    "decentralized energy",
+    "renewable energy",
+    "blockchain trading",
+    "crypto trading",
+    "energy tokens",
+    "futures trading",
+    "options trading",
+    "yield farming",
+    "energy marketplace",
+    "web3",
+    "Solana DeFi",
+    "energy derivatives",
+    "green energy",
+    "sustainable trading",
+    "carbon credits",
+  ],
+  referrer: "origin-when-cross-origin",
+  creator: "GridTokenX",
+  publisher: "GridTokenX",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    siteName,
+    title: siteName,
+    description: siteDescription,
+    images: [
+      {
+        url: "/images/logo-color.png",
+        width: 1200,
+        height: 630,
+        alt: "GridTokenX Trading Platform",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@GridTokenX",
+    creator: "@GridTokenX",
+    title: siteName,
+    description: siteDescription,
+    images: ["/images/logo-color.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/images/logo-color.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/logo-color.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/images/logo-color.png",
+    apple: [
+      { url: "/images/logo-color.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/images/logo-color.png",
+      },
+    ],
+  },
+  manifest: "/manifest.json",
+  category: "finance",
+  classification: "DeFi Trading Platform",
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "format-detection": "telephone=no",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
@@ -16,8 +122,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = generateStructuredData();
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+      </head>
       <body className={`antialiased`}>
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <Connectionprovider>
