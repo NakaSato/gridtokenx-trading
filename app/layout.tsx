@@ -4,8 +4,10 @@ import NavBar from "@/components/NavBar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Script from "next/script";
 import Connectionprovider from "@/contexts/connectionprovider";
+import { AuthProvider } from "@/contexts/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import { generateStructuredData } from "@/lib/metadata";
+import AuthModalManager from "@/components/auth/AuthModalManager";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://app.gridtokenx.com";
@@ -135,10 +137,13 @@ export default function RootLayout({
       <body className={`antialiased`}>
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <Connectionprovider>
-            <div className="px-6 min-h-screen mx-auto flex flex-col">
-              <NavBar></NavBar>
-              {children}
-            </div>
+            <AuthProvider>
+              <AuthModalManager />
+              <div className="px-6 h-screen mx-auto flex flex-col">
+                <NavBar></NavBar>
+                <main className="flex-1 overflow-hidden">{children}</main>
+              </div>
+            </AuthProvider>
           </Connectionprovider>
         </ThemeProvider>
         <Toaster

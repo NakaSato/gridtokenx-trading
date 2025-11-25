@@ -97,3 +97,35 @@ export interface ResendVerificationResponse {
   expires_in_hours: number;
   status: "already_verified" | "expired_resent" | "sent";
 }
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  role: "user" | "producer" | "consumer" | "admin" | "ami";
+  wallet_address?: string;
+  first_name?: string;
+  last_name?: string;
+  blockchain_registered?: boolean;
+}
+
+export interface ProfileUpdateRequest {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  wallet_address?: string;
+}
+
+export interface ProfileResponse {
+  user: UserProfile;
+}
+
+export interface TokenBalance {
+  wallet_address: string;
+  token_balance: string;
+  token_balance_raw: number;
+  balance_sol: number;
+  decimals: number;
+  token_mint: string;
+  token_account: string;
+}

@@ -30,6 +30,7 @@ import NavBarMobile from "./NavBarMobile";
 import Notifications from "./Notifications";
 import PointsDropDown from "./PointsDropDown";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useAuth } from "@/contexts/AuthProvider";
 import {
   ArrowUpDown,
   BookOpenText,
@@ -47,6 +48,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const { theme } = useTheme();
   const { connected } = useWallet();
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const routes: Record<string, string> = {
@@ -218,7 +220,7 @@ export default function NavBar() {
                 {
                   name: "Docs",
                   icon: <BookOpenText />,
-                  link: "https://docs.olive.finance",
+                  link: "https://gridtokenx.com",
                 },
                 {
                   name: "Feedback",
@@ -241,10 +243,10 @@ export default function NavBar() {
               ))}
               <DropdownMenuSeparator />
               <div className="flex px-1 py-2 gap-3">
-                <a href="https://x.com/_olivefinance" target="_blank">
+                <a href="https://x.com/" target="_blank">
                   <Image src={x} alt="x link" />
                 </a>
-                <a href="https://t.me/olive_financee" target="_blank">
+                <a href="https://t.me/" target="_blank">
                   <Image src={telegram} alt="telegram link" />
                 </a>
                 <a href="https://medium.com" target="_blank">
@@ -253,7 +255,7 @@ export default function NavBar() {
                 <a href="https://youtube.com" target="_blank">
                   <Image src={yt} alt="x link" />
                 </a>
-                <a href="https://discord.gg/u6pq5yNj" target="_blank">
+                <a href="https://discord.gg/" target="_blank">
                   <Image src={discord} alt="discord link" />
                 </a>
               </div>
@@ -267,7 +269,7 @@ export default function NavBar() {
         <Profile />
         <Notifications />
 
-        {connected ? (
+        {connected || isAuthenticated ? (
           <WalletSideBar />
         ) : (
           <AuthButton

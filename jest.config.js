@@ -17,6 +17,9 @@ const customJestConfig = {
     '^@/contexts/(.*)$': '<rootDir>/contexts/$1',
     '^@/hooks/(.*)$': '<rootDir>/hooks/$1',
   },
+  testEnvironmentOptions: {
+    url: 'http://localhost:3000',
+  },
   collectCoverageFrom: [
     'components/**/*.{js,jsx,ts,tsx}',
     'lib/**/*.{js,jsx,ts,tsx}',

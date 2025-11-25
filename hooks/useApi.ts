@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
 /**
  * React Hooks for API Client
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import { ApiClient, ApiResponse, createApiClient } from '../lib/api-client';
+import { useState, useCallback, useEffect } from "react";
+import { ApiClient, ApiResponse, createApiClient } from "../lib/api-client";
 
 /**
  * Hook to access the API client with optional authentication
@@ -41,7 +41,7 @@ export function useApiRequest<T = any>(
 
     try {
       const response = await requestFn();
-      
+
       if (response.error) {
         setError(response.error);
         setData(null);
@@ -50,7 +50,7 @@ export function useApiRequest<T = any>(
         setError(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
       setData(null);
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export function useCreateOrder(token?: string) {
 
       try {
         const response = await client.createOrder(orderData);
-        
+
         if (response.error) {
           setError(response.error);
           return null;
@@ -131,7 +131,8 @@ export function useCreateOrder(token?: string) {
 
         return response.data;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error";
         setError(errorMessage);
         return null;
       } finally {
@@ -170,12 +171,12 @@ export function useUserProfile(token?: string) {
 /**
  * Hook for fetching user balance
  */
-export function useUserBalance(token?: string) {
+export function useUserBalance(token?: string, walletAddress?: string) {
   const client = useApiClient(token);
 
   const { data, loading, error, refetch } = useApiRequest(
-    () => client.getBalance(),
-    [token]
+    () => client.getBalance(walletAddress),
+    [token, walletAddress]
   );
 
   return {
@@ -236,7 +237,7 @@ export function useAuth() {
 
   useEffect(() => {
     // Load token from localStorage on mount
-    const storedToken = localStorage.getItem('auth_token');
+    const storedToken = localStorage.getItem("auth_token");
     if (storedToken) {
       setToken(storedToken);
     }
@@ -245,15 +246,15 @@ export function useAuth() {
   const login = useCallback(
     async (email: string, password: string) => {
       const response = await client.login(email, password);
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
 
-      const newToken = response.data?.token;
+      const newToken = response.data?.access_token;
       if (newToken) {
         setToken(newToken);
-        localStorage.setItem('auth_token', newToken);
+        localStorage.setItem("auth_token", newToken);
       }
 
       return response.data;
@@ -264,13 +265,21 @@ export function useAuth() {
   const logout = useCallback(async () => {
     await client.logout();
     setToken(null);
-    localStorage.removeItem('auth_token');
+    localStorage.removeItem("auth_token");
   }, [client]);
 
   const register = useCallback(
-    async (email: string, password: string, walletAddress?: string) => {
-      const response = await client.register(email, password, walletAddress);
-      
+    async (userData: {
+      username: string;
+      email: string;
+      password: string;
+      first_name: string;
+      last_name: string;
+      role?: string;
+      wallet_address?: string;
+    }) => {
+      const response = await client.register(userData);
+
       if (response.error) {
         throw new Error(response.error);
       }

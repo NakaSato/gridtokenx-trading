@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
-import { XIcon, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { XIcon, Eye, EyeOff } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
 import WalletList from "./WalletList";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
@@ -15,6 +21,7 @@ import { Checkbox } from "./ui/checkbox";
 import type { Wallet } from "../types/wallet";
 import { defaultApiClient } from "../lib/api-client";
 import type { LoginResponse, RegisterResponse } from "../types/auth";
+import { useAuth } from "../contexts/AuthProvider";
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -26,11 +33,13 @@ export const allWallets: Wallet[] = [
   { name: "Phantom", iconPath: "/images/phantom.png", id: "phantom" },
   { name: "Solflare", iconPath: "/images/solflare.png", id: "solflare" },
   { name: "Trust", iconPath: "/images/trust.png", id: "trust" },
+  { name: "SafePal", iconPath: "/images/safepal.png", id: "safepal" },
 ] as const;
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter();
   const { select, wallets } = useWallet();
+  const { login, register, isLoading: authLoading } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [authMode, setAuthMode] = useState<"wallet" | "signin" | "signup">(
     "wallet"
@@ -80,6 +89,8 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             window.open("https://solflare.com/", "_blank");
           } else if (walletName === "Trust") {
             window.open("https://trustwallet.com/", "_blank");
+          } else if (walletName === "SafePal") {
+            window.open("https://www.safepal.io/download", "_blank");
           }
           return;
         }
@@ -140,65 +151,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       return;
     }
 
-    setIsLoading(true);
     try {
-      const response = await defaultApiClient.login(username, password);
-
-      if (response.error || !response.data) {
-        // Handle specific error codes
-        let errorMessage = "Sign in failed";
-
-        if (response.status === 400) {
-          errorMessage = "Validation error: Please check your credentials";
-        } else if (response.status === 401) {
-          errorMessage = "Invalid credentials";
-        } else if (response.status === 403) {
-          errorMessage = "Email not verified. Please verify your email first.";
-        } else if (response.error) {
-          // Handle error object or string
-          if (typeof response.error === "object" && response.error !== null) {
-            errorMessage =
-              (response.error as any).message || JSON.stringify(response.error);
-          } else {
-            errorMessage = String(response.error);
-          }
-        }
-
-        toast.error(errorMessage);
-        return;
-      }
-
-      const loginData: LoginResponse = response.data;
-
-      // Store the access token (you can use localStorage, sessionStorage, or a state management solution)
-      if (rememberMe) {
-        localStorage.setItem("access_token", loginData.access_token);
-        localStorage.setItem(
-          "token_expires_at",
-          String(Date.now() + loginData.expires_in * 1000)
-        );
-        localStorage.setItem("user", JSON.stringify(loginData.user));
-      } else {
-        sessionStorage.setItem("access_token", loginData.access_token);
-        sessionStorage.setItem(
-          "token_expires_at",
-          String(Date.now() + loginData.expires_in * 1000)
-        );
-        sessionStorage.setItem("user", JSON.stringify(loginData.user));
-      }
-
+      const loginData = await login(username, password, rememberMe);
       toast.success(`Welcome back, ${loginData.user.username}!`);
       onClose();
-
-      // Optionally, trigger a page refresh or update global state
-      // window.location.reload();
     } catch (error: any) {
       console.error("Sign in error:", error);
       const errorMessage =
         error?.message || (typeof error === "string" ? error : "Unknown error");
       toast.error(`Sign in failed: ${errorMessage}`);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -340,15 +301,24 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full h-full flex flex-col md:h-auto md:max-w-1xl md:max-h-[90%] md:p-10 bg-accent overflow-y-auto">
+      <DialogContent className="w-fit max-w-md md:max-w-lg h-fit max-h-[90vh] flex flex-col bg-accent overflow-y-auto p-4 md:p-10">
         <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between pb-4 md:pb-2">
-          <DialogTitle className="text-2xl text-foreground font-medium">
-            {authMode === "wallet"
-              ? "Connect Wallet"
-              : authMode === "signin"
-              ? "Sign In"
-              : "Sign Up"}
-          </DialogTitle>
+          <div className="space-y-2">
+            <DialogTitle className="text-2xl text-foreground font-medium">
+              {authMode === "wallet"
+                ? "Connect Wallet"
+                : authMode === "signin"
+                ? "Sign In"
+                : "Sign Up"}
+            </DialogTitle>
+            <DialogDescription>
+              {authMode === "wallet"
+                ? "Connect your Solana wallet to start trading"
+                : authMode === "signin"
+                ? "Sign in to your account with email and password"
+                : "Create a new account to get started"}
+            </DialogDescription>
+          </div>
           <Button
             className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border-border md:hidden"
             onClick={() => onClose()}
@@ -375,7 +345,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         ) : authMode === "signin" ? (
           <div className="w-full max-w-md mx-auto">
             <>
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <form
+                onSubmit={handleEmailSignIn}
+                noValidate
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
                   <Input
@@ -451,10 +425,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
                 <Button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || authLoading}
                   className="w-full rounded-sm"
                 >
-                  {isLoading ? "Signing In..." : "Sign In"}
+                  {isLoading || authLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
 
@@ -495,7 +469,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         ) : (
           <div className="w-full max-w-md mx-auto">
             <>
-              <form onSubmit={handleEmailSignUp} className="space-y-3">
+              <form
+                onSubmit={handleEmailSignUp}
+                noValidate
+                className="space-y-3"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
                   <Input
@@ -648,10 +626,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
                 <Button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || authLoading}
                   className="w-full rounded-sm"
                 >
-                  {isLoading ? "Creating Account..." : "Sign Up"}
+                  {isLoading || authLoading ? "Creating Account..." : "Sign Up"}
                 </Button>
               </form>
 

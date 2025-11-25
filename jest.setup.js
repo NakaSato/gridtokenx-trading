@@ -52,3 +52,28 @@ global.IntersectionObserver = class IntersectionObserver {
   }
   unobserve() { }
 }
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor() { }
+  disconnect() { }
+  observe() { }
+  unobserve() { }
+}
+
+// Mock localStorage and sessionStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+global.localStorage = localStorageMock;
+
+const sessionStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+};
+global.sessionStorage = sessionStorageMock;

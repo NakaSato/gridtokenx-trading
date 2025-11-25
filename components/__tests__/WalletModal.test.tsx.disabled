@@ -8,8 +8,17 @@ import { defaultApiClient } from "../../lib/api-client";
 import toast from "react-hot-toast";
 
 // Mock dependencies
-jest.mock("../../lib/api-client");
-jest.mock("react-hot-toast");
+jest.mock("../../lib/api-client", () => ({
+  defaultApiClient: {
+    login: jest.fn(),
+    register: jest.fn(),
+  },
+}));
+
+jest.mock("react-hot-toast", () => ({
+  success: jest.fn(),
+  error: jest.fn(),
+}));
 
 // Mock Solana wallet adapter
 jest.mock("@solana/wallet-adapter-react", () => ({
@@ -55,11 +64,6 @@ describe("WalletModal", () => {
     jest.clearAllMocks();
     (toast.success as jest.Mock) = mockToastSuccess;
     (toast.error as jest.Mock) = mockToastError;
-
-    // Mock localStorage
-    Storage.prototype.setItem = jest.fn();
-    Storage.prototype.getItem = jest.fn();
-    Storage.prototype.clear = jest.fn();
   });
 
   describe("Wallet Connection Mode", () => {
@@ -86,7 +90,9 @@ describe("WalletModal", () => {
       const signInLink = screen.getByText("Or sign in with email →");
       await user.click(signInLink);
 
-      expect(screen.getByText("Sign In")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sign In" })
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Username")).toBeInTheDocument();
       expect(screen.getByLabelText("Password")).toBeInTheDocument();
     });
@@ -100,14 +106,13 @@ describe("WalletModal", () => {
     });
 
     it("renders sign in form with all fields", () => {
-      expect(screen.getByText("Sign In")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sign In" })
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Username")).toBeInTheDocument();
       expect(screen.getByLabelText("Password")).toBeInTheDocument();
       expect(screen.getByLabelText("Remember me")).toBeInTheDocument();
       expect(screen.getByText("Forgot password?")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Sign In" })
-      ).toBeInTheDocument();
     });
 
     it("shows validation error when submitting empty form", async () => {
@@ -354,7 +359,9 @@ describe("WalletModal", () => {
 
       await user.click(signUpLink);
 
-      expect(screen.getByText("Sign Up")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sign Up" })
+      ).toBeInTheDocument();
     });
   });
 
@@ -366,7 +373,9 @@ describe("WalletModal", () => {
     });
 
     it("renders sign up form with all required fields", () => {
-      expect(screen.getByText("Sign Up")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sign Up" })
+      ).toBeInTheDocument();
       expect(screen.getByLabelText("Username")).toBeInTheDocument();
       expect(screen.getByLabelText("First Name")).toBeInTheDocument();
       expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
@@ -501,6 +510,7 @@ describe("WalletModal", () => {
           password: "password123",
           first_name: "John",
           last_name: "Doe",
+          role: "user",
         });
         expect(mockToastSuccess).toHaveBeenCalledWith("Welcome, testuser!");
         expect(mockOnClose).toHaveBeenCalled();
@@ -543,7 +553,9 @@ describe("WalletModal", () => {
 
       await user.click(signInLink);
 
-      expect(screen.getByText("Sign In")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Sign In" })
+      ).toBeInTheDocument();
     });
   });
 

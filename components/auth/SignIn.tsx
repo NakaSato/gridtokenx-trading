@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { WalletIcon } from "@/public/svgs/icons";
 import WalletModal from "../WalletModal";
@@ -23,6 +23,19 @@ export default function SignIn({
 }: SignInProps) {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const { connected } = useWallet();
+
+  // Listen for custom events to open wallet modal
+  useEffect(() => {
+    const handleOpenWalletModal = () => {
+      setIsWalletModalOpen(true);
+    };
+
+    window.addEventListener("openWalletModal", handleOpenWalletModal);
+
+    return () => {
+      window.removeEventListener("openWalletModal", handleOpenWalletModal);
+    };
+  }, []);
 
   // If already connected, don't show the sign-in button
   if (connected) {

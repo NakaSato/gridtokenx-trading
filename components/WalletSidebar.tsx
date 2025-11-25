@@ -9,15 +9,25 @@ import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import WalletPortfolio from "./WalletPortfolio";
 import WalletActivity from "./WalletActivity";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useAuth } from "@/contexts/AuthProvider";
+import { useUserBalance } from "@/hooks/useApi";
 import { allWallets } from "./WalletModal";
 import { XIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function WalletSideBar() {
   const { wallet, publicKey, disconnect, connected } = useWallet();
+  const { user, isAuthenticated, logout, token } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("portfolio");
   const [isOpen, setIsOpen] = useState(false);
   const [iconPath, setIconPath] = useState<string>("");
+
+  // Get balance data using the enhanced hook
+  const walletAddress = publicKey?.toBase58();
+  const { balance, loading: balanceLoading } = useUserBalance(
+    token || undefined,
+    walletAddress || undefined
+  );
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
@@ -32,9 +42,16 @@ export default function WalletSideBar() {
       setActiveTab(state);
     }
   };
-  const handleDisconnect = () => {
-    toast.success("Wallet Disconnected");
-    disconnect();
+  const handleDisconnect = async () => {
+    if (isAuthenticated) {
+      // If user is authenticated via email/password, logout from auth system
+      await logout();
+      toast.success("Logged Out Successfully");
+    } else if (connected) {
+      // If only wallet is connected, disconnect wallet
+      disconnect();
+      toast.success("Wallet Disconnected");
+    }
   };
   useEffect(() => {
     if (wallet) {
@@ -57,7 +74,9 @@ export default function WalletSideBar() {
               className="rounded-full"
             />
           )}
-          {publicKey?.toBase58()
+          {isAuthenticated && user
+            ? user.username || user.email
+            : publicKey?.toBase58()
             ? truncateAddress(publicKey?.toBase58())
             : "Connected"}
         </button>
@@ -69,7 +88,9 @@ export default function WalletSideBar() {
               <Image src={iconPath} alt="Wallet Icon" width={20} height={20} />
             )}
             <span className="text-base text-foreground font-medium items-center pt-1">
-              {publicKey?.toBase58()
+              {isAuthenticated && user
+                ? user.username || user.email
+                : publicKey?.toBase58()
                 ? truncateAddress(publicKey?.toBase58())
                 : "Connected"}
             </span>
@@ -101,17 +122,41 @@ export default function WalletSideBar() {
             <span className="text-sm text-secondary-foreground font-medium">
               Tokens
             </span>
-            <span className="text-[28px] text-foreground font-medium">
-              $10 567
-            </span>
+            {balanceLoading ? (
+              <span className="text-[28px] text-foreground font-medium animate-pulse">
+                Loading...
+              </span>
+            ) : balance ? (
+              <span className="text-[28px] text-foreground font-medium">
+                {parseFloat(balance.token_balance).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 6,
+                })}
+              </span>
+            ) : (
+              <span className="text-[28px] text-foreground font-medium">
+                0.00
+              </span>
+            )}
           </div>
           <div className="w-full flex flex-col p-4 bg-background rounded-sm space-y-2">
             <span className="text-sm text-secondary-foreground font-medium">
               Points
             </span>
-            <span className="text-[28px] text-foreground font-medium">
-              10 900
-            </span>
+            {balanceLoading ? (
+              <span className="text-[28px] text-foreground font-medium animate-pulse">
+                Loading...
+              </span>
+            ) : (
+              <span className="text-[28px] text-foreground font-medium">
+                {balance?.balance_sol
+                  ? parseFloat(balance.balance_sol).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 6,
+                    })
+                  : "10 900"}
+              </span>
+            )}
           </div>
         </div>
         <div className="w-full flex flex-col space-y-4">

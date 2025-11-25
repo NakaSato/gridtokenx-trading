@@ -21,7 +21,7 @@ export default ({ children }: { children: React.ReactNode }) => {
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
       new TrustWalletAdapter(),
-      // new SafePalWalletAdapter(),
+      new SafePalWalletAdapter(),
       // new TorusWalletAdapter(),
     ],
     [network]

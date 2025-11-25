@@ -132,10 +132,10 @@ export default function Homepage() {
       <div
         className={cn(
           active === "trade" ? "space-y-0" : "space-y-4",
-          "flex flex-col w-full justify-evenly h-full pb-4"
+          "flex flex-col w-full h-full pb-4"
         )}
       >
-        <div className="w-full pt-4 justify-between grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="w-full pt-4 flex-1 justify-between grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden">
           {/* LEFT SIDEBAR - TRANSACTION HISTORY */}
           <div className="md:col-span-2 hidden md:flex flex-col space-y-4 h-full">
             <div className="border rounded-lg p-4 bg-secondary/50 h-full flex flex-col">
@@ -185,21 +185,23 @@ export default function Homepage() {
           <div
             className={cn(
               active === "chart" ? "w-full" : "hidden",
-              "md:col-span-7 md:flex flex-col space-y-4"
+              "md:col-span-7 md:flex flex-col space-y-4 h-full"
             )}
           >
-            <TradingViewChartContainer
-              symbol={selectedSymbol}
-              logo={selectedLogo}
-              premium={premium.premium.toString()}
-              investment={payAmount}
-              strikePrice={strikePrice}
-              currentPrice={priceData.price!}
-              positionType={positionType}
-              contractType={contractType}
-              expiry={expiry}
-            />
-            <div className="w-full">
+            <div className="flex-1 min-h-0">
+              <TradingViewChartContainer
+                symbol={selectedSymbol}
+                logo={selectedLogo}
+                premium={premium.premium.toString()}
+                investment={payAmount}
+                strikePrice={strikePrice}
+                currentPrice={priceData.price!}
+                positionType={positionType}
+                contractType={contractType}
+                expiry={expiry}
+              />
+            </div>
+            <div className="w-full flex-shrink-0">
               <ProtectedRoute fallback={<TradingPositionsFallback />}>
                 <TradingPositions />
               </ProtectedRoute>

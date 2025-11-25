@@ -209,14 +209,31 @@ export class ApiClient {
 
   // User
   async getProfile() {
-    return apiRequest("/api/user/profile", {
+    return apiRequest("/api/auth/profile", {
       method: "GET",
       token: this.token,
     });
   }
 
-  async getBalance() {
-    return apiRequest("/api/user/balance", {
+  async updateProfile(profileData: {
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    wallet_address?: string;
+  }) {
+    return apiRequest("/api/auth/profile/update", {
+      method: "POST",
+      body: profileData,
+      token: this.token,
+    });
+  }
+
+  async getBalance(walletAddress?: string) {
+    const endpoint = walletAddress
+      ? `/api/tokens/balance/${walletAddress}`
+      : "/api/tokens/balance";
+
+    return apiRequest(endpoint, {
       method: "GET",
       token: this.token,
     });

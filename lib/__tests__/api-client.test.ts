@@ -29,6 +29,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
+        text: async () => JSON.stringify(mockResponse),
         json: async () => mockResponse,
       } as Response);
 
@@ -57,6 +58,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
+        text: async () => JSON.stringify({ error: "Invalid credentials" }),
         json: async () => ({ error: "Invalid credentials" }),
       } as Response);
 
@@ -71,6 +73,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 403,
+        text: async () => JSON.stringify({ message: "Email not verified" }),
         json: async () => ({ message: "Email not verified" }),
       } as Response);
 
@@ -107,6 +110,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 201,
+        text: async () => JSON.stringify(mockResponse),
         json: async () => mockResponse,
       } as Response);
 
@@ -154,6 +158,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 201,
+        text: async () => JSON.stringify(mockResponse),
         json: async () => mockResponse,
       } as Response);
 
@@ -176,6 +181,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
+        text: async () => JSON.stringify({ error: "User already exists" }),
         json: async () => ({ error: "User already exists" }),
       } as Response);
 
@@ -199,6 +205,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
+        text: async () => JSON.stringify({ message: "Invalid email format" }),
         json: async () => ({ message: "Invalid email format" }),
       } as Response);
 
@@ -221,6 +228,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
+        text: async () => JSON.stringify({ error: "Internal server error" }),
         json: async () => ({ error: "Internal server error" }),
       } as Response);
 
@@ -262,6 +270,7 @@ describe("ApiClient", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
+        text: async () => JSON.stringify({}),
         json: async () => ({}),
       } as Response);
 

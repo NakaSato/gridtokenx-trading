@@ -25,6 +25,7 @@ import { usePyth24hChange, type PythPriceState } from "@/hooks/usePythPrice";
 import type { MarketDataState } from "@/hooks/usePythMarketData";
 import { formatPrice } from "@/utils/formatter";
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
+import { useAuth } from "@/contexts/AuthProvider";
 import WalletModal from "./WalletModal";
 import { ContractContext } from "@/contexts/contractProvider";
 import { WSOL_DECIMALS } from "@/utils/const";
@@ -65,6 +66,7 @@ export default function OptionCard({
   onCurrencyChange,
 }: OptionCardProps) {
   const { connected } = useWallet();
+  const { isAuthenticated, isLoading } = useAuth();
   const wallet = useAnchorWallet();
 
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -412,13 +414,26 @@ export default function OptionCard({
       </div>
 
       {/* Submit Button */}
-      {connected ? (
+      {isLoading ? (
+        <div className="animate-pulse">
+          <div className="w-full h-12 bg-muted rounded"></div>
+        </div>
+      ) : connected && isAuthenticated ? (
         <Button
           onClick={() => buyOptionHandler()}
           className="w-full rounded-sm bg-gradient-primary text-black"
           size="lg"
         >
           Buy Option
+        </Button>
+      ) : connected && !isAuthenticated ? (
+        <Button
+          onClick={() => setIsWalletModalOpen(true)}
+          className="w-full rounded-sm bg-gradient-primary text-black"
+          size="lg"
+        >
+          <WalletIcon />
+          <span className="text-base font-medium">Sign In</span>
         </Button>
       ) : (
         <Button
