@@ -2,7 +2,6 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "../ui/button";
-import { LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 import { LogOutIcon } from "@/public/svgs/icons";
 

@@ -3,10 +3,19 @@
  * Uses native fetch API with environment-based configuration
  */
 
-import { API_CONFIG, getApiUrl } from './config';
+import { API_CONFIG, getApiUrl } from "./config";
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  VerifyEmailResponse,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
+} from "../types/auth";
 
 export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method?: "GET" | "POST" | "PUT";
   headers?: Record<string, string>;
   body?: any;
   token?: string;
@@ -27,18 +36,13 @@ export async function apiRequest<T = any>(
   path: string,
   options: ApiRequestOptions = {}
 ): Promise<ApiResponse<T>> {
-  const {
-    method = 'GET',
-    headers = {},
-    body,
-    token,
-  } = options;
+  const { method = "GET", headers = {}, body, token } = options;
 
   const url = getApiUrl(path);
 
   // Build headers
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...headers,
   };
 
@@ -54,11 +58,26 @@ export async function apiRequest<T = any>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await response.json();
+    // Get the response text first
+    const text = await response.text();
+
+    // Try to parse JSON, but handle empty responses
+    let data: any = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        // If JSON parsing fails, return the text as error
+        return {
+          error: `Invalid JSON response: ${text}`,
+          status: response.status,
+        };
+      }
+    }
 
     if (!response.ok) {
       return {
-        error: data.message || data.error || 'Request failed',
+        error: data.message || data.error || "Request failed",
         status: response.status,
       };
     }
@@ -69,7 +88,7 @@ export async function apiRequest<T = any>(
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       status: 500,
     };
   }
@@ -94,25 +113,51 @@ export class ApiClient {
   }
 
   // Authentication
-  async login(email: string, password: string) {
-    return apiRequest('/api/auth/login', {
-      method: 'POST',
-      body: { email, password },
+  async login(
+    username: string,
+    password: string
+  ): Promise<ApiResponse<LoginResponse>> {
+    return apiRequest<LoginResponse>("/api/auth/login", {
+      method: "POST",
+      body: { username, password },
     });
   }
 
-  async register(email: string, password: string, walletAddress?: string) {
-    return apiRequest('/api/auth/register', {
-      method: 'POST',
-      body: { email, password, wallet_address: walletAddress },
+  async register(
+    userData: RegisterRequest
+  ): Promise<ApiResponse<RegisterResponse>> {
+    return apiRequest<RegisterResponse>("/api/auth/register", {
+      method: "POST",
+      body: userData,
     });
   }
 
   async logout() {
-    return apiRequest('/api/auth/logout', {
-      method: 'POST',
+    return apiRequest("/api/auth/logout", {
+      method: "POST",
       token: this.token,
     });
+  }
+
+  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
+    return apiRequest<VerifyEmailResponse>(
+      `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+      {
+        method: "GET",
+      }
+    );
+  }
+
+  async resendVerification(
+    email: string
+  ): Promise<ApiResponse<ResendVerificationResponse>> {
+    return apiRequest<ResendVerificationResponse>(
+      "/api/auth/resend-verification",
+      {
+        method: "POST",
+        body: { email },
+      }
+    );
   }
 
   // Trading
@@ -121,8 +166,8 @@ export class ApiClient {
     price_per_kwh: string;
     order_type?: string;
   }) {
-    return apiRequest('/api/orders', {
-      method: 'POST',
+    return apiRequest("/api/orders", {
+      method: "POST",
       body: orderData,
       token: this.token,
     });
@@ -135,54 +180,51 @@ export class ApiClient {
   }) {
     const params = new URLSearchParams(filters as any);
     return apiRequest(`/api/orders?${params.toString()}`, {
-      method: 'GET',
+      method: "GET",
       token: this.token,
     });
   }
 
   async getOrderBook() {
-    return apiRequest('/api/orders/book', {
-      method: 'GET',
+    return apiRequest("/api/orders/book", {
+      method: "GET",
       token: this.token,
     });
   }
 
   async getMarketData() {
-    return apiRequest('/api/market', {
-      method: 'GET',
+    return apiRequest("/api/market", {
+      method: "GET",
       token: this.token,
     });
   }
 
-  async getTrades(filters?: {
-    limit?: number;
-    offset?: number;
-  }) {
+  async getTrades(filters?: { limit?: number; offset?: number }) {
     const params = new URLSearchParams(filters as any);
     return apiRequest(`/api/trades?${params.toString()}`, {
-      method: 'GET',
+      method: "GET",
       token: this.token,
     });
   }
 
   // User
   async getProfile() {
-    return apiRequest('/api/user/profile', {
-      method: 'GET',
+    return apiRequest("/api/user/profile", {
+      method: "GET",
       token: this.token,
     });
   }
 
   async getBalance() {
-    return apiRequest('/api/user/balance', {
-      method: 'GET',
+    return apiRequest("/api/user/balance", {
+      method: "GET",
       token: this.token,
     });
   }
 
   async getPositions() {
-    return apiRequest('/api/user/positions', {
-      method: 'GET',
+    return apiRequest("/api/user/positions", {
+      method: "GET",
       token: this.token,
     });
   }
@@ -194,8 +236,8 @@ export class ApiClient {
     energy_consumed?: number;
     timestamp?: string;
   }) {
-    return apiRequest('/api/meters/submit', {
-      method: 'POST',
+    return apiRequest("/api/meters/submit", {
+      method: "POST",
       body: meterData,
       token: this.token,
     });
@@ -203,7 +245,7 @@ export class ApiClient {
 
   async getMeterData(meterId: string) {
     return apiRequest(`/api/meters/${meterId}`, {
-      method: 'GET',
+      method: "GET",
       token: this.token,
     });
   }

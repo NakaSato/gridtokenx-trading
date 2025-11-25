@@ -1,0 +1,99 @@
+export type Role = "user" | "producer" | "consumer" | "admin" | "ami";
+
+export interface RegistrationRequest {
+  username: string;
+  email: string;
+  password: string;
+  role: Role;
+  first_name: string;
+  last_name: string;
+}
+
+export interface RegistrationUser {
+  username: string;
+  email: string;
+  role: Role;
+}
+
+export interface RegistrationResponse {
+  message: string;
+  user: RegistrationUser;
+  email_verification_sent: boolean;
+  verification_required: boolean;
+}
+/**
+ * Authentication Types for GridTokenX Platform
+ */
+
+export interface LoginRequest {
+  username: string; // min: 3, max: 50 chars
+  password: string; // min: 8, max: 128 chars
+}
+
+export interface RegisterRequest {
+  username: string; // min: 3, max: 50 chars
+  email: string; // valid email format
+  password: string; // min: 8, max: 128 chars
+  first_name: string; // min: 1, max: 100 chars
+  last_name: string; // min: 1, max: 100 chars
+  role?: string; // optional, e.g., "user", "producer"
+  wallet_address?: string; // optional, 32-44 chars
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number; // seconds (86400 = 24 hours)
+  user: {
+    username: string;
+    email: string;
+    role: string;
+    blockchain_registered: boolean;
+  };
+}
+
+export interface RegisterResponse {
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number; // seconds (86400 = 24 hours)
+  user: {
+    username: string;
+    email: string;
+    role: string;
+    blockchain_registered: boolean;
+  };
+}
+
+export interface AuthError {
+  message: string;
+  code: string;
+  details?: Record<string, any>;
+}
+
+export interface ApiError {
+  status: number;
+  error: string;
+  retry_after?: number;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+  email_verified: boolean;
+  verified_at: string;
+  wallet_address?: string; // Wallet address generated during verification
+  username?: string;
+  email?: string;
+  auth?: LoginResponse; // Optional auto-login after verification
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  message: string;
+  email: string;
+  sent_at: string;
+  expires_in_hours: number;
+  status: "already_verified" | "expired_resent" | "sent";
+}

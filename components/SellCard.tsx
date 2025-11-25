@@ -71,8 +71,13 @@ export default function SellCard() {
 
   useEffect(() => {
     (async () => {
-      let provider: Provider;
-      if (wallet && connected) {
+      if (!wallet || !connected) {
+        setOptions([]);
+        return;
+      }
+
+      try {
+        let provider: Provider;
         try {
           provider = getProvider();
         } catch {
@@ -83,6 +88,7 @@ export default function SellCard() {
           idl as OptionContract,
           provider
         );
+
         const [pool] = PublicKey.findProgramAddressSync(
           [Buffer.from("pool"), Buffer.from("SOL-USDC")],
           program.programId
@@ -95,39 +101,60 @@ export default function SellCard() {
           [Buffer.from("user"), wallet.publicKey.toBuffer()],
           program.programId
         );
-        const userData = await program.account.User.fetch(userPDA).catch(
-          (e) => null
-        );
-        if (!userData) return [];
+
+        const userData = await (program.account as any).user
+          .fetch(userPDA)
+          .catch((e: any) => {
+            console.log(
+              "User account not found or not initialized:",
+              e.message
+            );
+            return null;
+          });
+
+        if (!userData) {
+          setOptions([]);
+          return;
+        }
+
         const optionDatas: Option[] = [];
         for (let i = 1; i <= userData.option_index.toNumber(); i++) {
-          const optionDetailAccount = sc.getOptionDetailAccount(
-            i,
-            pool,
-            custody
-          );
-          const optionData = await program.account.OptionDetail.fetch(
-            optionDetailAccount
-          );
-          const lockedAssetData = await program.account.Custody.fetch(
-            optionData.locked_asset
-          );
-          console.log("premium", i, optionData.premium.toNumber());
-          optionDatas.push({
-            id: optionData.index.toNumber(),
-            type: optionData.locked_asset.equals(custody) ? "Call" : "Put",
-            strikePrice: optionData.strike_price,
-            size: optionData.amount.toNumber() / 10 ** lockedAssetData.decimals,
-            status: optionData.valid ? "Active" : "Invalid",
-            expiration: new Date(optionData.expired_date.toNumber() * 1000),
-            purchaseDate: new Date(
-              (optionData.expired_date.toNumber() -
-                optionData.period * 3600 * 24) *
-                1000
-            ),
-          });
+          try {
+            const optionDetailAccount = sc.getOptionDetailAccount(
+              i,
+              pool,
+              custody
+            );
+            const optionData = await (
+              program.account as any
+            ).optionDetail.fetch(optionDetailAccount);
+            const lockedAssetData = await (
+              program.account as any
+            ).custody.fetch(optionData.locked_asset);
+            console.log("premium", i, optionData.premium.toNumber());
+            optionDatas.push({
+              id: optionData.index.toNumber(),
+              type: optionData.locked_asset.equals(custody) ? "Call" : "Put",
+              strikePrice: optionData.strike_price,
+              size:
+                optionData.amount.toNumber() / 10 ** lockedAssetData.decimals,
+              status: optionData.valid ? "Active" : "Invalid",
+              expiration: new Date(optionData.expired_date.toNumber() * 1000),
+              purchaseDate: new Date(
+                (optionData.expired_date.toNumber() -
+                  optionData.period * 3600 * 24) *
+                  1000
+              ),
+            });
+          } catch (error) {
+            console.error(`Failed to fetch option ${i}:`, error);
+            // Continue with next option
+          }
         }
         setOptions(optionDatas);
+      } catch (error) {
+        console.error("Error loading options:", error);
+        setOptions([]);
       }
     })();
   }, [connected, sc, wallet]);
