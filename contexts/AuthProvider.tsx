@@ -44,6 +44,7 @@ interface AuthContextType {
   }) => Promise<RegisterResponse>;
   getProfile: () => Promise<UserProfile | null>;
   updateProfile: (profileData: ProfileUpdateRequest) => Promise<UserProfile>;
+  updateWallet: (walletAddress: string) => Promise<UserProfile | null>;
   checkAuth: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
 }
@@ -86,7 +87,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        try {
+          if (storedUser && storedUser !== "undefined") {
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Invalid user data, clear storage
+            await logout();
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse stored user:", e);
+          await logout();
+          return;
+        }
 
         // Set token in API client
         apiClient.setToken(storedToken);
@@ -189,25 +202,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(response.error || "Registration failed");
       }
 
-      const registerData: RegisterResponse = response.data;
-
-      // Check if email verification is required
-      if ((registerData as any).verification_required) {
-        return registerData;
-      }
-
-      // Auto-login if verification not required
-      const expirationTime = Date.now() + registerData.expires_in * 1000;
-
-      localStorage.setItem("access_token", registerData.access_token);
-      localStorage.setItem("token_expires_at", String(expirationTime));
-      localStorage.setItem("user", JSON.stringify(registerData.user));
-
-      setToken(registerData.access_token);
-      setUser(registerData.user);
-      apiClient.setToken(registerData.access_token);
-
-      return registerData;
+      return response.data;
     } finally {
       setIsLoading(false);
     }
@@ -241,6 +236,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateWallet = async (
+    walletAddress: string
+  ): Promise<UserProfile | null> => {
+    try {
+      const response = await apiClient.updateWallet(walletAddress);
+      if (response.error || !response.data) {
+        throw new Error(response.error || "Wallet update failed");
+      }
+      
+      // Update local user state with new wallet address
+      if (user) {
+        const updatedUser = { ...user, wallet_address: walletAddress };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error("Update wallet failed:", error);
+      throw error;
+    }
+  };
+
   const refreshToken = async (): Promise<boolean> => {
     try {
       // This would implement token refresh logic
@@ -263,6 +282,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     register,
     getProfile,
     updateProfile,
+    updateWallet,
     checkAuth,
     refreshToken,
   };

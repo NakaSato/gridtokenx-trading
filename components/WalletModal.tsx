@@ -39,7 +39,7 @@ export const allWallets: Wallet[] = [
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter();
   const { select, wallets } = useWallet();
-  const { login, register, isLoading: authLoading } = useAuth();
+  const { login, register, isLoading: authLoading, user, updateWallet } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
   const [authMode, setAuthMode] = useState<"wallet" | "signin" | "signup">(
     "wallet"
@@ -105,6 +105,17 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         select(wallet.adapter.name);
         await wallet.adapter.connect();
 
+        // If user is logged in, update their wallet address in the backend
+        if (user && wallet.adapter.publicKey) {
+          try {
+            await updateWallet(wallet.adapter.publicKey.toString());
+            toast.success("Wallet linked to your account");
+          } catch (error) {
+            console.error("Failed to link wallet:", error);
+            toast.error("Connected, but failed to link wallet to account");
+          }
+        }
+
         toast.success(`${walletName} Wallet Connected`);
 
         onClose();
@@ -129,7 +140,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         setIsConnecting(false);
       }
     },
-    [isConnecting, wallets, select, onClose]
+    [isConnecting, wallets, select, onClose, user, updateWallet]
   );
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -208,6 +219,24 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       return;
     }
 
+    // Password strength validation
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasDigit || !hasSpecial) {
+      toast.error("Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character");
+      return;
+    }
+
+    const weakPatterns = ["password", "123456", "qwerty", "admin", "letmein", "welcome", "monkey", "dragon"];
+    const passwordLower = password.toLowerCase();
+    if (weakPatterns.some(pattern => passwordLower.includes(pattern))) {
+      toast.error("Password contains common weak patterns (e.g. 'password', 'admin', '123456')");
+      return;
+    }
+
     // Name validation
     if (
       firstName.length < 1 ||
@@ -225,7 +254,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         username,
         email,
         password,
-        role,
         first_name: firstName,
         last_name: lastName,
       });
@@ -265,30 +293,17 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
       const registerData: RegisterResponse = response.data;
 
-      // Check if email verification is required
-      if ((registerData as any).verification_required) {
+      if (registerData.email_verification_sent) {
         toast.success(
           "Registration successful! Please check your email to verify your account."
         );
         onClose();
         // Redirect to verification page with email parameter
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        return;
+      } else {
+        toast.success(registerData.message || "Registration successful!");
+        onClose();
       }
-
-      // Store the access token (only if verification not required)
-      localStorage.setItem("access_token", registerData.access_token);
-      localStorage.setItem(
-        "token_expires_at",
-        String(Date.now() + registerData.expires_in * 1000)
-      );
-      localStorage.setItem("user", JSON.stringify(registerData.user));
-
-      toast.success(`Welcome, ${registerData.user.username}!`);
-      onClose();
-
-      // Optionally, trigger a page refresh or update global state
-      // window.location.reload();
     } catch (error: any) {
       console.error("Sign up error:", error);
       const errorMessage =
@@ -308,15 +323,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
               {authMode === "wallet"
                 ? "Connect Wallet"
                 : authMode === "signin"
-                ? "Sign In"
-                : "Sign Up"}
+                  ? "Sign In"
+                  : "Sign Up"}
             </DialogTitle>
             <DialogDescription>
               {authMode === "wallet"
                 ? "Connect your Solana wallet to start trading"
                 : authMode === "signin"
-                ? "Sign in to your account with email and password"
-                : "Create a new account to get started"}
+                  ? "Sign in to your account with email and password"
+                  : "Create a new account to get started"}
             </DialogDescription>
           </div>
           <Button

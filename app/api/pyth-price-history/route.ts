@@ -12,10 +12,8 @@ export async function GET(req: NextRequest) {
   const now = Math.floor(Date.now() / 1000);
   const targetTime = now - hoursAgo * 3600;
 
-  const SECRET_TOKEN = 'af5edce9-8fd7-443a-b238-32223ae3420c'; //todo: put this in env file
-  const SUBDOMAIN = 'olivefi-pythnet-b3f5';//todo: put this in env file
-
-  const url = `https://${SUBDOMAIN}.mainnet.pythnet.rpcpool.com/${SECRET_TOKEN}/hermes/v2/updates/price/${targetTime}?ids[]=${tokenId}`;
+  // Use public Hermes API
+  const url = `https://hermes.pyth.network/v2/updates/price/${targetTime}?ids[]=${tokenId}&parsed=true&ignore_invalid_price_ids=true`;
 
   try {
     const res = await fetch(url);

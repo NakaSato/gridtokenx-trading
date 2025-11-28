@@ -23,7 +23,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
-const ROLES = ["user", "producer", "consumer", "admin", "ami"];
+// Role is assigned by backend, not selected during registration
 
 export default function RegisterForm({
   onSuccess,
@@ -34,7 +34,6 @@ export default function RegisterForm({
     username: "",
     email: "",
     password: "",
-    role: "user",
     first_name: "",
     last_name: "",
   });
@@ -68,17 +67,11 @@ export default function RegisterForm({
     ) {
       return "Password must be 8-128 characters.";
     }
-    if (!form.role || typeof form.role !== "string" || form.role.length > 20) {
-      return "Role is required.";
-    }
     if (!form.first_name || form.first_name.length > 100) {
       return "First name is required (max 100 characters).";
     }
     if (!form.last_name || form.last_name.length > 100) {
       return "Last name is required (max 100 characters).";
-    }
-    if (!ROLES.includes(form.role)) {
-      return `Role must be one of ${ROLES.join(", ")}.`;
     }
     return null;
   }
@@ -99,7 +92,7 @@ export default function RegisterForm({
       const payload = await registerApi(form);
       setSuccess(
         payload.message ||
-          "Registration successful. Please check your email to verify your account and generate your wallet."
+        "Registration successful. Please check your email to verify your account and generate your wallet."
       );
       onSuccess?.(payload);
     } catch (err: any) {
@@ -169,24 +162,7 @@ export default function RegisterForm({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="role">Role *</Label>
-            <Select
-              value={form.role}
-              onValueChange={(value) => update("role", value as any)}
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

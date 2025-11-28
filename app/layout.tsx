@@ -127,7 +127,7 @@ export default function RootLayout({
   const structuredData = generateStructuredData();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"

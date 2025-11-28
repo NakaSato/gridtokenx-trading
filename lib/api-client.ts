@@ -10,6 +10,7 @@ import type {
   RegisterRequest,
   RegisterResponse,
   VerifyEmailResponse,
+  UserProfile,
   ResendVerificationRequest,
   ResendVerificationResponse,
 } from "../types/auth";
@@ -76,8 +77,21 @@ export async function apiRequest<T = any>(
     }
 
     if (!response.ok) {
+      let errorMessage = "Request failed";
+      if (data.message) {
+        errorMessage = data.message;
+      } else if (data.error) {
+        if (typeof data.error === "string") {
+          errorMessage = data.error;
+        } else if (typeof data.error === "object" && data.error.message) {
+          errorMessage = data.error.message;
+        } else {
+          errorMessage = JSON.stringify(data.error);
+        }
+      }
+
       return {
-        error: data.message || data.error || "Request failed",
+        error: errorMessage,
         status: response.status,
       };
     }
@@ -136,6 +150,20 @@ export class ApiClient {
     return apiRequest("/api/auth/logout", {
       method: "POST",
       token: this.token,
+    });
+  }
+
+  async updateWallet(
+    walletAddress: string,
+    verifyOwnership?: boolean
+  ): Promise<ApiResponse<UserProfile>> {
+    return apiRequest<UserProfile>("/api/user/wallet", {
+      method: "POST",
+      body: {
+        wallet_address: walletAddress,
+        verify_ownership: verifyOwnership,
+      },
+      token: this.token || undefined,
     });
   }
 

@@ -4,7 +4,7 @@ export interface RegistrationRequest {
   username: string;
   email: string;
   password: string;
-  role: Role;
+  role?: Role; // Optional - assigned by backend
   first_name: string;
   last_name: string;
 }
@@ -36,8 +36,6 @@ export interface RegisterRequest {
   password: string; // min: 8, max: 128 chars
   first_name: string; // min: 1, max: 100 chars
   last_name: string; // min: 1, max: 100 chars
-  role?: string; // optional, e.g., "user", "producer"
-  wallet_address?: string; // optional, 32-44 chars
 }
 
 export interface LoginResponse {
@@ -53,15 +51,8 @@ export interface LoginResponse {
 }
 
 export interface RegisterResponse {
-  access_token: string;
-  token_type: "Bearer";
-  expires_in: number; // seconds (86400 = 24 hours)
-  user: {
-    username: string;
-    email: string;
-    role: string;
-    blockchain_registered: boolean;
-  };
+  message: string;
+  email_verification_sent: boolean;
 }
 
 export interface AuthError {

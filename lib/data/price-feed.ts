@@ -6,7 +6,8 @@ export interface priceFeed {
 export const PRICE_FEEDS: priceFeed[] = [
   {
     token: "Crypto.GRIDX/USD",
-    id: "0xgridx0000000000000000000000000000000000000000000000000000000000",
+    // Using USDC price feed as placeholder for GRIDX since it doesn't have a Pyth feed yet
+    id: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
   },
   {
     token: "Crypto.SOL/USD",
