@@ -1,0 +1,29 @@
+
+> gridtokenx-trading@0.1.2 dev
+> next dev --turbopack
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.5 (Turbopack)
+   - Local:         http://localhost:3000
+   - Network:       http://172.20.10.2:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1187ms
+ ○ Compiling / ...
+bigint: Failed to load bindings, pure JS will be used (try npm run rebuild?)
+ GET / 200 in 4.9s (compile: 4.4s, render: 477ms)
+ GET / 200 in 208ms (compile: 145ms, render: 63ms)
+ GET / 200 in 76ms (compile: 33ms, render: 43ms)
+ GET / 200 in 59ms (compile: 21ms, render: 38ms)
+ GET / 200 in 153ms (compile: 70ms, render: 83ms)
+ GET /src/pages/savings/SavingsPage.tsx 404 in 2.2s (compile: 2.1s, render: 171ms)
+ GET /src/store/index.ts 404 in 2.2s (compile: 2.1s, render: 157ms)
+ GET /src/main.tsx 404 in 2.2s (compile: 2.1s, render: 146ms)
+ GET /src/pages/members/MembersPage.tsx 404 in 2.2s (compile: 2.1s, render: 186ms)
+ GET /src/pages/profile/ProfilePage.tsx 404 in 2.2s (compile: 2.2s, render: 31ms)
+ GET /node_modules/vite/dist/client/env.mjs 404 in 2.3s (compile: 2.1s, render: 124ms)
+ GET /src/store/slices/uiSlice.ts 404 in 146ms (compile: 28ms, render: 118ms)
+ GET /src/components/Layout.tsx 404 in 142ms (compile: 87ms, render: 55ms)
+ GET /@vite/client 404 in 136ms (compile: 108ms, render: 28ms)
+ GET /src/theme/index.ts 404 in 145ms (compile: 73ms, render: 72ms)

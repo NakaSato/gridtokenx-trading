@@ -1668,7 +1668,7 @@ export function Rank2BoxLight() {
           y2="20"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0" />
+          <stop stopColor="#E2DDFE" stopOpacity="0" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
         <linearGradient
@@ -1679,7 +1679,7 @@ export function Rank2BoxLight() {
           y2="0"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0.4" />
+          <stop stopColor="#E2DDFE" stopOpacity="0.4" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
       </defs>
@@ -1707,7 +1707,7 @@ export function Rank1BoxLight() {
           y2="20"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0" />
+          <stop stopColor="#E2DDFE" stopOpacity="0" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
         <linearGradient
@@ -1718,7 +1718,7 @@ export function Rank1BoxLight() {
           y2="0"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0.4" />
+          <stop stopColor="#E2DDFE" stopOpacity="0.4" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
       </defs>
@@ -1746,7 +1746,7 @@ export function Rank3BoxLight() {
           y2="20"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0" />
+          <stop stopColor="#E2DDFE" stopOpacity="0" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
         <linearGradient
@@ -1757,7 +1757,7 @@ export function Rank3BoxLight() {
           y2="0"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#E2DDFE" stop-opacity="0.4" />
+          <stop stopColor="#E2DDFE" stopOpacity="0.4" />
           <stop offset="1" stopColor="#E2DDFE" />
         </linearGradient>
       </defs>
@@ -2491,7 +2491,7 @@ export function PurchasePriceIcon() {
       viewBox="0 0 14 14"
       fill="none"
     >
-      <g clip-path="url(#clip0_427_35355)">
+      <g clipPath="url(#clip0_427_35355)">
         <path
           d="M4.375 9.1875V1.3125L5.25 1.75L6.125 1.3125L6.99836 1.75L7.88348 1.3125L8.75 1.75L9.61926 1.3125L10.4923 1.75L11.375 1.3125L12.2503 1.75L13.125 1.3125V7.4375"
           stroke="#808693"
@@ -2561,28 +2561,28 @@ export function PurchaseDateIcon() {
       <path
         d="M4.6665 1.16699V2.91699"
         stroke="#808693"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M9.3335 1.16699V2.91699"
         stroke="#808693"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M2.0415 5.30273H11.9582"
         stroke="#808693"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M12.25 4.95866V9.91699C12.25 11.667 11.375 12.8337 9.33333 12.8337H4.66667C2.625 12.8337 1.75 11.667 1.75 9.91699V4.95866C1.75 3.20866 2.625 2.04199 4.66667 2.04199H9.33333C11.375 2.04199 12.25 3.20866 12.25 4.95866Z"
         stroke="#808693"
-        stroke-miterlimit="10"
+        strokeMiterlimit="10"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -2784,8 +2784,8 @@ export function OptionChainIcon() {
           5 3 5.44772 3 6C3 6.55228 3.44772 7 4 7H7C7.55228 7 8 6.55228 8 6C8 5.44772 7.55228 5 7 5H4ZM3 11C3 10.4477 3.44772 10 4 10H10C10.5523 10 11 10.4477 11 11C11 
           11.5523 10.5523 12 10 12H4C3.44772 12 3 11.5523 3 11ZM0 6C0 5.44772 0.447715 5 1 5C1.55228 5 2 5.44772 2 6C2 6.55228 1.55228 7 1 7C0.447715 7 0 6.55228 0 6ZM1 
           10C0.447715 10 0 10.4477 0 11C0 11.5523 0.447715 12 1 12C1.55228 12 2 11.5523 2 11C2 10.4477 1.55228 10 1 10Z"
-        clip-rule="evenodd"
-        fill-rule="evenodd"
+        clipRule="evenodd"
+        fillRule="evenodd"
       ></path>
     </svg>
   );

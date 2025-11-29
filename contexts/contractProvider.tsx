@@ -34,6 +34,8 @@ import {
   WSOL_DECIMALS,
   WSOL_MINT,
   WSOL_ORACLE,
+  clusterUrl,
+  connection,
 } from "@/utils/const";
 
 interface ContractContextType {
@@ -53,19 +55,17 @@ interface ContractContextType {
 export const ContractContext = createContext<ContractContextType>({
   program: undefined,
   pub: undefined,
-  getCustodies: () => {},
-  getDetailInfos: () => {},
-  onOpenOption: async () => {},
-  onCloseOption: () => {},
-  onClaimOption: () => {},
-  onExerciseOption: () => {},
-  onAddLiquidity: () => {},
-  onRemoveLiquidity: () => {},
-  getOptionDetailAccount: () => {},
+  getCustodies: () => { },
+  getDetailInfos: () => { },
+  onOpenOption: async () => { },
+  onCloseOption: () => { },
+  onClaimOption: () => { },
+  onExerciseOption: () => { },
+  onAddLiquidity: () => { },
+  onRemoveLiquidity: () => { },
+  getOptionDetailAccount: () => { },
 });
 
-export const clusterUrl = "https://api.devnet.solana.com";
-export const connection = new Connection(clusterUrl, "confirmed");
 export type ExpiredOption = {
   index: any;
   token: any;
@@ -123,7 +123,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
           ratios.set(
             mint.toBase58(),
             poolData.ratios[
-              poolData.custodies.findIndex((e) => e.equals(custody))
+            poolData.custodies.findIndex((e) => e.equals(custody))
             ]
           );
         }
@@ -235,9 +235,8 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
           doneInfo.push({
             transactionID: `SOL-${formatDate(
               new Date(detail.exercised * 1000)
-            )}-${detail.strike_price}-${
-              detail?.locked_asset.equals(custody) ? "C" : "P"
-            }`,
+            )}-${detail.strike_price}-${detail?.locked_asset.equals(custody) ? "C" : "P"
+              }`,
             token: coins[0],
             transactionType: detail?.locked_asset.equals(custody)
               ? "Call"

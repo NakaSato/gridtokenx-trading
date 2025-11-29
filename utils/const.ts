@@ -4,6 +4,11 @@ import { Connection, PublicKey } from "@solana/web3.js";
 export const clusterUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
 export const connection = new Connection(clusterUrl, "confirmed");
 
+// Energy Token Mint
+export const ENERGY_TOKEN_MINT = new PublicKey(
+  process.env.NEXT_PUBLIC_ENERGY_TOKEN_MINT || "12EMWFUfreZR7QkgEs3N34EoJFvQyLfx7iBB5JdbKvib"
+);
+
 // Mainnet
 // export const USDC_MINT = new PublicKey(
 //   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
@@ -29,7 +34,7 @@ export const SOL_USD_PYTH_ACCOUNT = new PublicKey(
   "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
 );
 export const Option_Program_Address = new PublicKey(
-  "Gbg6YHDbSBciSAmbxjY2toriq8vTnhXJtXKgdtdZj2GH"
+  process.env.NEXT_PUBLIC_TRADING_PROGRAM_ID || "9t3s8sCgVUG9kAgVPsozj8mDpJp9cy6SF5HwRK5nvAHb"
 );
 
 export const WSOL_ORACLE = new PublicKey(

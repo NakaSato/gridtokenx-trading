@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { defaultApiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ type VerificationState =
   | "expired"
   | "invalid";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -133,7 +133,7 @@ export default function VerifyEmailPage() {
       setState("success");
       setMessage(
         response.data.message ||
-          "Email verified successfully! You can now sign in."
+        "Email verified successfully! You can now sign in."
       );
 
       if (response.data.wallet_address) {
@@ -270,17 +270,17 @@ export default function VerifyEmailPage() {
           {(state === "error" ||
             state === "expired" ||
             state === "invalid") && (
-            <ResendForm
-              email={email}
-              isResending={isResending}
-              canResend={canResend}
-              resendCooldown={resendCooldown}
-              onEmailChange={setEmail}
-              onSubmit={handleResendVerification}
-              onGoHome={() => router.push("/")}
-              formatCooldown={formatCooldown}
-            />
-          )}
+              <ResendForm
+                email={email}
+                isResending={isResending}
+                canResend={canResend}
+                resendCooldown={resendCooldown}
+                onEmailChange={setEmail}
+                onSubmit={handleResendVerification}
+                onGoHome={() => router.push("/")}
+                formatCooldown={formatCooldown}
+              />
+            )}
         </div>
       </div>
     </div>
@@ -447,5 +447,29 @@ function ResendForm({
         </Button>
       </div>
     </>
+  );
+}
+
+// Default export with Suspense boundary
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md">
+            <div className="bg-accent border border-border rounded-lg p-8 shadow-lg">
+              <div className="flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-center text-muted-foreground">
+                  Loading verification page...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

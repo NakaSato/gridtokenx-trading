@@ -30,8 +30,7 @@ import {
   PublicKey,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { connection } from "@/contexts/contractProvider";
-import { USDC_MINT, WSOL_MINT } from "@/utils/const";
+import { connection, USDC_MINT, WSOL_MINT } from "@/utils/const";
 interface TradeDetailsProps {
   id: string;
 }
@@ -563,23 +562,21 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
             updateWholeTransactionDetail("Total Premium", {
               label: "Total Premium",
               before: `$0`,
-              after: `$${
-                payCustodyData.mint.equals(USDC_MINT)
+              after: `$${payCustodyData.mint.equals(USDC_MINT)
                   ? (transferAmount / 10 ** payCustodyData.decimals).toFixed(2)
                   : (
-                      (transferAmount / 10 ** payCustodyData.decimals) *
-                      price
-                    ).toFixed(2)
-              }`,
+                    (transferAmount / 10 ** payCustodyData.decimals) *
+                    price
+                  ).toFixed(2)
+                }`,
               change: `100%`,
-              difference: `$${
-                payCustodyData.mint.equals(USDC_MINT)
+              difference: `$${payCustodyData.mint.equals(USDC_MINT)
                   ? (transferAmount / 10 ** payCustodyData.decimals).toFixed(2)
                   : (
-                      (transferAmount / 10 ** payCustodyData.decimals) *
-                      price
-                    ).toFixed(2)
-              }`,
+                    (transferAmount / 10 ** payCustodyData.decimals) *
+                    price
+                  ).toFixed(2)
+                }`,
             });
             updateWholeTransactionDetail("Total Selling Fees", {
               label: "Total Selling Fees",
