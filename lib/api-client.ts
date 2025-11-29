@@ -297,6 +297,41 @@ export class ApiClient {
       token: this.token,
     })
   }
+
+  // Transactions
+  async getUserTransactions(filters?: {
+    transaction_type?: string
+    status?: string
+    date_from?: string
+    date_to?: string
+    limit?: number
+    offset?: number
+    min_attempts?: number
+    has_signature?: boolean
+  }) {
+    const params = new URLSearchParams()
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value))
+        }
+      })
+    }
+
+    const queryString = params.toString()
+    const endpoint = queryString 
+      ? `/api/transactions/user?${queryString}`
+      : '/api/transactions/user'
+
+    return apiRequest<import('../types/transactions').UserTransactionsResponse>(
+      endpoint,
+      {
+        method: 'GET',
+        token: this.token,
+      }
+    )
+  }
 }
 
 /**

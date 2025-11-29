@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import TradingViewChart from './TradingViewChart'
 import PnlChartContainer from './PnlChartContainer'
-import OptionPrice from './OptionPrice'
 import EnergyGridMapWrapper from './EnergyGridMapWrapper'
+import TransactionHistory from './TransactionHistory'
 
 interface TradingViewChartContainerProps {
   symbol: string
@@ -64,11 +64,11 @@ export default function TradingViewChartContainer({
                 PNL
               </TabsTrigger>
               <TabsTrigger
-                value="price"
+                value="transactions"
                 className="rounded-none border-b px-0 py-2 text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-                onClick={() => handleClick('price')}
+                onClick={() => handleClick('transactions')}
               >
-                Options Price
+                Transactions
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -88,14 +88,9 @@ export default function TradingViewChartContainer({
               positionType={positionType}
             />
           )}
-          {activeTab === 'price' && (
-            <OptionPrice
-              symbol={symbol}
-              logo={logo}
-              strikePrice={strikePrice}
-              contractType={contractType}
-              expiry={expiry}
-            />
+
+          {activeTab === 'transactions' && (
+            <TransactionHistory useMockData={false} />
           )}
         </div>
       </div>
