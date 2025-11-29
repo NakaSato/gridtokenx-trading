@@ -7,9 +7,7 @@ import TradingPositionsFallback from '@/components/TradingPositionsFallback'
 import TradingPositions from '@/components/TradingPositions'
 import PriceQuote from '@/components/PriceQuote'
 import GreekPopup from '@/components/GreekPopup'
-import TransactionHistory, {
-  Transaction,
-} from '@/components/TransactionHistory'
+import TransactionHistory from '@/components/TransactionHistory'
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
 import { Button } from '@/components/ui/button'
@@ -35,48 +33,6 @@ export default function Homepage() {
   const [strikePrice, setStrikePrice] = useState('')
   const [expiry, setExpiry] = useState<Date>(addWeeks(new Date(), 1))
   const [transaction, setTransaction] = useState('buy')
-  const [transactionHistory, setTransactionHistory] = useState<Transaction[]>([
-    {
-      id: '1',
-      type: 'BUY ENERGY',
-      amount: '500 kWh',
-      price: '150 GRIDX',
-      pnl: 450,
-      timestamp: new Date(Date.now() - 1800000),
-    },
-    {
-      id: '2',
-      type: 'SELL ENERGY',
-      amount: '300 kWh',
-      price: '95 GRIDX',
-      pnl: -85,
-      timestamp: new Date(Date.now() - 5400000),
-    },
-    {
-      id: '3',
-      type: 'TRADE ENERGY',
-      amount: '750 kWh',
-      price: '220 GRIDX',
-      pnl: 680,
-      timestamp: new Date(Date.now() - 9000000),
-    },
-    {
-      id: '4',
-      type: 'STAKE GRIDX',
-      amount: '1000 GRIDX',
-      price: 'Staking Pool',
-      pnl: 125,
-      timestamp: new Date(Date.now() - 14400000),
-    },
-    {
-      id: '5',
-      type: 'BUY ENERGY',
-      amount: '400 kWh',
-      price: '120 GRIDX',
-      pnl: 320,
-      timestamp: new Date(Date.now() - 18000000),
-    },
-  ])
 
   const handleSymbolChange = (newSymbol: string) => {
     setSelectedSymbol(newSymbol)
@@ -130,7 +86,7 @@ export default function Homepage() {
         <div className="grid w-full flex-1 grid-cols-1 justify-between gap-4 overflow-hidden pt-4 md:grid-cols-12">
           {/* LEFT SIDEBAR - TRANSACTION HISTORY */}
           <div className="hidden h-full flex-col space-y-4 md:col-span-2 md:flex">
-            <TransactionHistory transactions={transactionHistory} />
+            <TransactionHistory useMockData={true} />
           </div>
 
           {/* CENTER - CHART */}
