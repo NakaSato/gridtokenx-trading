@@ -50,7 +50,7 @@ export default function FutureCard({
   marketLoading,
 }: FutureCardProps) {
   const { connected } = useWallet()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const wallet = useAnchorWallet()
 
   const [selectedTx, setSelectedTx] = useState('long')
@@ -403,7 +403,7 @@ export default function FutureCard({
           <div className="animate-pulse">
             <div className="h-10 w-full rounded bg-muted"></div>
           </div>
-        ) : connected && isAuthenticated ? (
+        ) : isAuthenticated ? (
           <Button className="h-10 w-full rounded-sm bg-primary text-black hover:bg-gradient-primary">
             <span className="text-base font-medium">Trade</span>
           </Button>

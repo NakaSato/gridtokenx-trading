@@ -20,6 +20,7 @@ interface User {
   email: string
   role: string
   blockchain_registered: boolean
+  wallet_address?: string
 }
 
 interface AuthContextType {
@@ -240,17 +241,51 @@ export function AuthProvider({ children }: AuthProviderProps) {
     walletAddress: string
   ): Promise<UserProfile | null> => {
     try {
+      // Ensure we have a valid token
+      if (!token) {
+        throw new Error('Not authenticated. Please sign in first.')
+      }
+
+      // Validate wallet address format (basic check)
+      if (!walletAddress || walletAddress.length < 32) {
+        throw new Error('Invalid wallet address format')
+      }
+
       const response = await apiClient.updateWallet(walletAddress)
+      
       if (response.error || !response.data) {
-        throw new Error(response.error || 'Wallet update failed')
+        // Provide more specific error messages based on status code
+        let errorMessage = 'Wallet update failed'
+        
+        if (response.status === 401) {
+          errorMessage = 'Authentication expired. Please sign in again.'
+          await logout()
+        } else if (response.status === 400) {
+          errorMessage = response.error || 'Invalid wallet address'
+        } else if (response.status === 409) {
+          errorMessage = 'This wallet is already linked to another account'
+        } else if (response.error) {
+          errorMessage = response.error
+        }
+        
+        throw new Error(errorMessage)
       }
 
       // Update local user state with new wallet address
       if (user) {
         const updatedUser = { ...user, wallet_address: walletAddress }
         setUser(updatedUser)
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        sessionStorage.setItem('user', JSON.stringify(updatedUser))
+        
+        // Update in both storage locations
+        const storedInLocal = localStorage.getItem('user')
+        const storedInSession = sessionStorage.getItem('user')
+        
+        if (storedInLocal) {
+          localStorage.setItem('user', JSON.stringify(updatedUser))
+        }
+        if (storedInSession) {
+          sessionStorage.setItem('user', JSON.stringify(updatedUser))
+        }
       }
 
       return response.data

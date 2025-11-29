@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthProvider'
 export default function TradingPositionsFallback() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const { connected } = useWallet()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
 
   return (
     <div className="flex h-[300px] w-full flex-col rounded-sm border">
@@ -91,18 +91,20 @@ export default function TradingPositionsFallback() {
           <span>
             {isLoading
               ? 'Loading...'
-              : connected && !isAuthenticated
-                ? 'Please sign in to view your orders'
-                : connected && isAuthenticated
-                  ? 'No orders found'
-                  : 'To view your orders'}
+              : isAuthenticated && !connected
+                ? 'Please connect wallet to view your orders'
+                : connected && !isAuthenticated
+                  ? 'Please sign in to view your orders'
+                  : connected && isAuthenticated
+                    ? 'No orders found'
+                    : 'To view your orders'}
           </span>
 
           {isLoading ? (
             <div className="animate-pulse">
               <div className="h-9 w-32 rounded bg-muted"></div>
             </div>
-          ) : connected && isAuthenticated ? (
+          ) : isAuthenticated ? (
             <div className="text-sm text-muted-foreground">
               Your positions will appear here
             </div>

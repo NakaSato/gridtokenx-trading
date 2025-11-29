@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button'
 import { XIcon, Eye, EyeOff } from 'lucide-react'
@@ -21,7 +21,7 @@ import { Checkbox } from './ui/checkbox'
 import type { Wallet } from '../types/wallet'
 import { defaultApiClient } from '../lib/api-client'
 import type { LoginResponse, RegisterResponse } from '../types/auth'
-import { useAuth } from '../contexts/AuthProvider'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -44,6 +44,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     register,
     isLoading: authLoading,
     user,
+    isAuthenticated,
     updateWallet,
   } = useAuth()
   const [isConnecting, setIsConnecting] = useState(false)
@@ -65,11 +66,20 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [rememberMe, setRememberMe] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
 
+  // Close modal when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && isOpen) {
+      onClose()
+    }
+  }, [isAuthenticated, isOpen, onClose])
+
   const handleWalletConnect = useCallback(
     async (walletName: string, iconPath: string) => {
       if (isConnecting) return
 
       setIsConnecting(true)
+      let walletConnected = false
+
       try {
         const wallet = wallets.find(
           (value) => value.adapter.name === walletName
@@ -110,19 +120,41 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
         select(wallet.adapter.name)
         await wallet.adapter.connect()
+        walletConnected = true
 
-        // If user is logged in, update their wallet address in the backend
-        if (user && wallet.adapter.publicKey) {
-          try {
-            await updateWallet(wallet.adapter.publicKey.toString())
-            toast.success('Wallet linked to your account')
-          } catch (error) {
-            console.error('Failed to link wallet:', error)
-            toast.error('Connected, but failed to link wallet to account')
-          }
+        // Wait for publicKey to be available with retry logic
+        let publicKey = wallet.adapter.publicKey
+        let retries = 0
+        const maxRetries = 10
+
+        while (!publicKey && retries < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 100))
+          publicKey = wallet.adapter.publicKey
+          retries++
+        }
+
+        if (!publicKey) {
+          toast.error(
+            'Wallet connected but public key not available. Please try again.'
+          )
+          return
         }
 
         toast.success(`${walletName} Wallet Connected`)
+
+        // If user is logged in, update their wallet address in the backend
+        if (user) {
+          try {
+            await updateWallet(publicKey.toString())
+            toast.success('Wallet linked to your account')
+          } catch (error) {
+            console.error('Failed to link wallet:', error)
+            const errorMsg =
+              error instanceof Error ? error.message : 'Unknown error'
+            toast.error(`Failed to link wallet to account: ${errorMsg}`)
+            // Don't return here - wallet is still connected, just not linked
+          }
+        }
 
         onClose()
       } catch (error: any) {
@@ -171,7 +203,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     try {
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
-      onClose()
+
+      // Small delay to ensure auth state is updated before closing
+      setTimeout(() => {
+        onClose()
+      }, 100)
     } catch (error: any) {
       console.error('Sign in error:', error)
       const errorMessage =

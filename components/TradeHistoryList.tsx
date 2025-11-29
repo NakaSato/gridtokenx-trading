@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { defaultApiClient } from '@/lib/api-client'
 import { TradeRecord } from '@/types/trading'
-import { useAuth } from '@/contexts/auth-context'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export function TradeHistoryList() {
   const { user } = useAuth()

@@ -21,7 +21,7 @@ import { useAuth } from '@/contexts/AuthProvider'
 const Fallback = () => {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const { connected } = useWallet()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
 
   return (
     <div className="m-auto flex h-[186px] w-full items-center justify-center p-6">
@@ -29,18 +29,20 @@ const Fallback = () => {
         <span>
           {isLoading
             ? 'Loading...'
-            : connected && !isAuthenticated
-              ? 'Please sign in to view your futures'
-              : connected && isAuthenticated
-                ? 'No futures found'
-                : 'To view your futures'}
+            : isAuthenticated && !connected
+              ? 'Please connect wallet to view your futures'
+              : connected && !isAuthenticated
+                ? 'Please sign in to view your futures'
+                : connected && isAuthenticated
+                  ? 'No futures found'
+                  : 'To view your futures'}
         </span>
 
         {isLoading ? (
           <div className="animate-pulse">
             <div className="h-9 w-32 rounded bg-muted"></div>
           </div>
-        ) : connected && isAuthenticated ? (
+        ) : isAuthenticated ? (
           <div className="text-sm text-muted-foreground">
             Your futures positions will appear here
           </div>
