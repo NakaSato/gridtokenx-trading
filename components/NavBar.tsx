@@ -1,36 +1,9 @@
 'use client'
 import Link from 'next/link'
-
-import { Button, buttonVariants } from './ui/button'
-import { useState } from 'react'
-import { cn } from '@/lib/utils'
-import { AuthButton } from './auth'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import WalletSideBar from './WalletSidebar'
-import { useTheme } from 'next-themes'
-import x from '@/public/svgs/x.svg'
-import discord from '@/public/svgs/discord.svg'
-import yt from '@/public/svgs/youtube.svg'
-import medium from '@/public/images/medium.png'
-import telegram from '@/public/svgs/telegram.svg'
-import Image from 'next/image'
-import { Logo } from './Logo'
-
-import { Badge } from './ui/badge'
-import Settings from './Settings'
-import Profile from './Profile'
-import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
-import NavBarMobile from './NavBarMobile'
-import Notifications from './Notifications'
-import PointsDropDown from './PointsDropDown'
+import { useState, useMemo, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import Image, { type StaticImageData } from 'next/image'
 import {
   ArrowUpDown,
   BookOpenText,
@@ -40,231 +13,336 @@ import {
   FileChartColumn,
   MessagesSquare,
   TableColumnsSplit,
-  User,
 } from 'lucide-react'
-import { usePathname } from 'next/navigation'
+
+import { cn } from '@/lib/utils'
+import { useAuth } from '@/contexts/AuthProvider'
+import { buttonVariants } from './ui/button'
+import { Badge } from './ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+import { AuthButton } from './auth'
+import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
+import { Logo } from './Logo'
+import WalletSideBar from './WalletSidebar'
+import Settings from './Settings'
+import Profile from './Profile'
+import NavBarMobile from './NavBarMobile'
+import Notifications from './Notifications'
+import PointsDropDown from './PointsDropDown'
+
+import x from '@/public/svgs/x.svg'
+import discord from '@/public/svgs/discord.svg'
+import yt from '@/public/svgs/youtube.svg'
+import medium from '@/public/images/medium.png'
+import telegram from '@/public/svgs/telegram.svg'
+
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
+
+interface NavItem {
+  name: string
+  href: string
+  icon: ReactNode
+  badge?: {
+    text: string
+    variant: 'new' | 'beta' | 'apy'
+    value?: string
+  }
+  hideOnMobile?: boolean
+}
+
+interface DropdownItem {
+  name: string
+  icon: ReactNode
+  link: string
+  external?: boolean
+}
+
+interface SocialLink {
+  name: string
+  href: string
+  icon: StaticImageData
+  width?: number
+  height?: number
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    name: 'Trade',
+    href: '/',
+    icon: <ChartLine size={16} />,
+    badge: { text: 'NEW', variant: 'new' },
+  },
+  {
+    name: 'Futures',
+    href: '/futures',
+    icon: <ChartLine size={16} />,
+    badge: { text: 'BETA', variant: 'beta' },
+  },
+  {
+    name: 'Earn',
+    href: '/earn',
+    icon: <EarnIcon />,
+    badge: { text: '48% APY', variant: 'apy' },
+    hideOnMobile: true,
+  },
+  {
+    name: 'Portfolio',
+    href: '/portfolio',
+    icon: <WalletIcon />,
+    hideOnMobile: true,
+  },
+]
+
+const DROPDOWN_NAV_ITEMS: DropdownItem[] = [
+  {
+    name: 'Options Chain',
+    icon: <TableColumnsSplit />,
+    link: '/options-chain',
+  },
+  {
+    name: 'MoonRekt',
+    icon: <ArrowUpDown />,
+    link: '/moonrekt',
+  },
+  {
+    name: 'Borrow',
+    icon: <ConciergeBell />,
+    link: '/borrow',
+  },
+  {
+    name: 'Analytics',
+    icon: <FileChartColumn />,
+    link: '/analytics',
+  },
+]
+
+const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
+  {
+    name: 'Docs',
+    icon: <BookOpenText />,
+    link: 'https://gridtokenx.com',
+    external: true,
+  },
+  {
+    name: 'Feedback',
+    icon: <MessagesSquare />,
+    link: '/feedback',
+  },
+]
+
+const SOCIAL_LINKS: SocialLink[] = [
+  { name: 'X (Twitter)', href: 'https://x.com/', icon: x },
+  { name: 'Telegram', href: 'https://t.me/', icon: telegram },
+  { name: 'Medium', href: 'https://medium.com', icon: medium, width: 18, height: 18 },
+  { name: 'YouTube', href: 'https://youtube.com', icon: yt },
+  { name: 'Discord', href: 'https://discord.gg/', icon: discord },
+]
+
+// ============================================================================
+// Helper Components
+// ============================================================================
+
+interface NavLinkProps {
+  item: NavItem
+  isActive: boolean
+  onClick: () => void
+}
+
+function NavLink({ item, isActive, onClick }: NavLinkProps) {
+  const { name, href, icon, badge, hideOnMobile } = item
+
+  return (
+    <Link
+      href={href}
+      className={cn(
+        buttonVariants({
+          variant: isActive ? 'active' : 'inactive',
+        }),
+        'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary',
+        hideOnMobile && 'hidden lg:flex'
+      )}
+      onClick={onClick}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      {icon}
+      <h1 className="text-sm font-medium group-hover:text-primary">{name}</h1>
+      {badge && <NavBadge badge={badge} isActive={isActive} />}
+    </Link>
+  )
+}
+
+interface NavBadgeProps {
+  badge: NonNullable<NavItem['badge']>
+  isActive: boolean
+}
+
+function NavBadge({ badge, isActive }: NavBadgeProps) {
+  const { text, variant } = badge
+
+  if (variant === 'apy') {
+    return (
+      <Badge className="h-3 rounded-[2px] border-none bg-gradient-primary px-1 pt-[3px]">
+        <span className="text-[8px] font-semibold text-background">{text}</span>
+      </Badge>
+    )
+  }
+
+  return (
+    <Badge
+      className={cn(
+        isActive
+          ? 'text-gradient-primary border-primary'
+          : 'border-secondary-foreground text-secondary-foreground',
+        'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
+      )}
+    >
+      <span className="text-[8px] font-semibold">{text}</span>
+    </Badge>
+  )
+}
+
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export default function NavBar() {
   const pathname = usePathname()
-  const { theme } = useTheme()
   const { connected } = useWallet()
   const { isAuthenticated } = useAuth()
-  const [isOpen, setIsOpen] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [activeItem, setActiveItem] = useState<string>('')
 
-  const routes: Record<string, string> = {
-    '/': 'Trade',
-    '/futures': 'futures',
-    '/earn': 'Earn',
-    '/portfolio': 'Portfolio',
-    '/analytics': 'Analytics',
-    '/options-chain': 'Options Chain',
-    '/feedback': 'Feedback',
-  }
-  const currentPath = pathname?.split('/')[1] || ''
-  const [active, setActive] = useState(routes[`/${currentPath}`])
+  // Derive active state from pathname
+  const activeRoute = useMemo(() => {
+    if (!pathname) return 'Trade'
+    
+    // Check exact matches first
+    const exactMatch = NAV_ITEMS.find((item) => item.href === pathname)
+    if (exactMatch) return exactMatch.name
 
-  const handleClick = (state: string) => {
-    if (active !== state) {
-      setActive(state)
-    }
-  }
+    // Check dropdown items
+    const dropdownMatch = [...DROPDOWN_NAV_ITEMS, ...DROPDOWN_EXTERNAL_ITEMS].find(
+      (item) => item.link === pathname
+    )
+    if (dropdownMatch) return dropdownMatch.name
 
-  const open = () => {
-    setActive('More')
-    setIsOpen(!isOpen)
-  }
+    // Default to Trade for home
+    return 'Trade'
+  }, [pathname])
+
+  const isDropdownItemActive = useMemo(() => {
+    return [...DROPDOWN_NAV_ITEMS, ...DROPDOWN_EXTERNAL_ITEMS].some(
+      (item) => item.name === activeRoute
+    )
+  }, [activeRoute])
 
   return (
     <header className="flex max-w-full justify-between">
       <div className="flex justify-between gap-6 py-2">
         <div className="flex items-center justify-center gap-2 px-1">
           <Logo width={24} height={28} className="mb-1" />
-          {/* <h1 className="text-sm font-normal">GridTokenX</h1> */}
         </div>
-        <nav className="hidden items-center justify-evenly gap-8 md:flex">
-          <Link
-            href="/"
-            className={cn(
-              buttonVariants({
-                variant: active === 'Trade' ? 'active' : 'inactive',
-              }),
-              'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary'
-            )}
-            onClick={() => handleClick('Trade')}
-          >
-            <ChartLine size={16} />
-            <h1 className="text-sm font-medium group-hover:text-primary">
-              Trade
-            </h1>
-            <Badge
-              className={cn(
-                active === 'Trade'
-                  ? 'text-gradient-primary border-primary'
-                  : 'border-secondary-foreground text-secondary-foreground',
-                'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
-              )}
-            >
-              <span className="text-[8px] font-semibold">NEW</span>
-            </Badge>
-          </Link>
-          <Link
-            href="/futures"
-            className={cn(
-              buttonVariants({
-                variant: active === 'futures' ? 'active' : 'inactive',
-              }),
-              'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary'
-            )}
-            onClick={() => handleClick('futures')}
-          >
-            <ChartLine size={16} />
-            <h1 className="text-sm font-medium group-hover:text-primary">
-              Futures
-            </h1>
-            <Badge
-              className={cn(
-                active === 'futures'
-                  ? 'text-gradient-primary border-primary'
-                  : 'border-secondary-foreground text-secondary-foreground',
-                'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
-              )}
-            >
-              <span className="text-[8px] font-semibold">BETA</span>
-            </Badge>
-          </Link>
-          <Link
-            href="/earn"
-            className={cn(
-              buttonVariants({
-                variant: active === 'Earn' ? 'active' : 'inactive',
-              }),
-              'hidden h-auto w-auto justify-between gap-1 p-0 hover:text-primary lg:flex'
-            )}
-            onClick={() => handleClick('Earn')}
-          >
-            <EarnIcon />
-            <h1 className="text-sm font-medium">Earn</h1>
-            <Badge className="h-3 rounded-[2px] border-none bg-gradient-primary px-1 pt-[3px]">
-              <span className="text-[8px] font-semibold text-background">
-                48% APY
-              </span>
-            </Badge>
-          </Link>
 
-          <Link
-            href="/portfolio"
-            className={cn(
-              buttonVariants({
-                variant: active === 'Portfolio' ? 'active' : 'inactive',
-              }),
-              'hidden h-auto w-auto justify-between gap-1 p-0 hover:text-primary lg:flex'
-            )}
-            onClick={() => handleClick('Portfolio')}
-          >
-            <WalletIcon />
-            <h1 className="text-sm font-medium">Portfolio</h1>
-          </Link>
+        <nav className="hidden items-center justify-evenly gap-8 md:flex" aria-label="Main navigation">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.name}
+              item={item}
+              isActive={activeRoute === item.name}
+              onClick={() => setActiveItem(item.name)}
+            />
+          ))}
 
-          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger
-              className={`${
-                isOpen || active === 'Analytics' || active === 'Options Chain'
+              className={cn(
+                isDropdownOpen || isDropdownItemActive
                   ? 'text-primary'
-                  : 'text-secondary-foreground'
-              } hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none lg:flex`}
-              onClick={() => handleClick('More')}
+                  : 'text-secondary-foreground',
+                'hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none lg:flex'
+              )}
+              aria-label="More navigation options"
             >
               <MoreIcon />
               <h1 className="text-sm font-medium">More</h1>
               <ArrowDown />
             </DropdownMenuTrigger>
+
             <DropdownMenuContent
               align="start"
               className="w-44 rounded-sm text-secondary-foreground"
             >
-              {[
-                {
-                  name: 'Options Chain',
-                  icon: <TableColumnsSplit />,
-                  link: '/options-chain',
-                },
-                {
-                  name: 'MoonRekt',
-                  icon: <ArrowUpDown />,
-                  link: '/moonrekt',
-                },
-                {
-                  name: 'Borrow',
-                  icon: <ConciergeBell />,
-                  link: '/borrow',
-                },
-                {
-                  name: 'Analytics',
-                  icon: <FileChartColumn />,
-                  link: '/analytics',
-                },
-              ].map((item) => (
+              {DROPDOWN_NAV_ITEMS.map((item) => (
                 <Link
-                  href={`${item.link}`}
+                  href={item.link}
                   key={item.name}
                   className="w-full"
-                  onClick={() => handleClick(item.name)}
+                  onClick={() => setActiveItem(item.name)}
                 >
                   <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
                     {item.name} {item.icon}
                   </DropdownMenuItem>
                 </Link>
               ))}
+
               <DropdownMenuSeparator />
-              {[
-                {
-                  name: 'Docs',
-                  icon: <BookOpenText />,
-                  link: 'https://gridtokenx.com',
-                },
-                {
-                  name: 'Feedback',
-                  icon: <MessagesSquare />,
-                  link: '/feedback',
-                },
-              ].map((item) => (
+
+              {DROPDOWN_EXTERNAL_ITEMS.map((item) => (
                 <Link
-                  href={`${item.link}`}
-                  target={`${item.name === 'Docs' ? '_blank' : ''}`}
+                  href={item.link}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
                   key={item.name}
                   className="w-full"
-                  onClick={() => handleClick(item.name)}
+                  onClick={() => setActiveItem(item.name)}
                 >
                   <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
                     {item.name}
-                    <ExternalLink />
+                    {item.external ? <ExternalLink /> : item.icon}
                   </DropdownMenuItem>
                 </Link>
               ))}
+
               <DropdownMenuSeparator />
-              <div className="flex gap-3 px-1 py-2">
-                <a href="https://x.com/" target="_blank">
-                  <Image src={x} alt="x link" />
-                </a>
-                <a href="https://t.me/" target="_blank">
-                  <Image src={telegram} alt="telegram link" />
-                </a>
-                <a href="https://medium.com" target="_blank">
-                  <Image src={medium} width={18} height={18} alt="x link" />
-                </a>
-                <a href="https://youtube.com" target="_blank">
-                  <Image src={yt} alt="x link" />
-                </a>
-                <a href="https://discord.gg/" target="_blank">
-                  <Image src={discord} alt="discord link" />
-                </a>
+
+              <div className="flex gap-3 px-1 py-2" role="list" aria-label="Social media links">
+                {SOCIAL_LINKS.map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.name}
+                  >
+                    <Image
+                      src={social.icon}
+                      alt=""
+                      width={social.width}
+                      height={social.height}
+                      aria-hidden="true"
+                    />
+                  </a>
+                ))}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
       </div>
+
       <div className="flex items-center justify-between gap-3 py-2">
-        <PointsDropDown setActive={setActive} />
+        <PointsDropDown setActive={setActiveItem} />
         <Settings />
         <Profile />
         <Notifications />
