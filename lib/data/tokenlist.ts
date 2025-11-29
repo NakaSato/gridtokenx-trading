@@ -1,27 +1,27 @@
 export interface Token {
-  id: string;
-  name: string;
-  symbol: string;
-  iconPath: string;
-  pythSymbol: string;
+  id: string
+  name: string
+  symbol: string
+  iconPath: string
+  pythSymbol: string
   category: {
-    crypto: boolean;
-    memes: boolean;
-    forex: boolean;
-    ai: boolean;
-    metals: boolean;
-    commodities: boolean;
-    equities: boolean;
-    fixed: boolean;
-  };
+    crypto: boolean
+    memes: boolean
+    forex: boolean
+    ai: boolean
+    metals: boolean
+    commodities: boolean
+    equities: boolean
+    fixed: boolean
+  }
 }
 
 export const USDC: Token = {
-  id: "usdc",
-  name: "USDC",
-  symbol: "USDC",
-  iconPath: "/images/usdc.png",
-  pythSymbol: "Crypto.USDC/USD",
+  id: 'usdc',
+  name: 'USDC',
+  symbol: 'USDC',
+  iconPath: '/images/usdc.png',
+  pythSymbol: 'Crypto.USDC/USD',
   category: {
     crypto: true,
     memes: false,
@@ -32,14 +32,14 @@ export const USDC: Token = {
     equities: false,
     fixed: false,
   },
-};
+}
 
 export const GRIDX: Token = {
-  id: "gridx",
-  name: "GridTokenX",
-  symbol: "GRIDX",
-  iconPath: "/svgs/gridx.svg",
-  pythSymbol: "Crypto.GRIDX/USD",
+  id: 'gridx',
+  name: 'GridTokenX',
+  symbol: 'GRIDX',
+  iconPath: '/svgs/gridx.svg',
+  pythSymbol: 'Crypto.GRIDX/USD',
   category: {
     crypto: true,
     memes: false,
@@ -50,15 +50,15 @@ export const GRIDX: Token = {
     equities: false,
     fixed: false,
   },
-};
+}
 
 export const tokenList: Token[] = [
   {
-    id: "gridx",
-    name: "GridTokenX",
-    symbol: "GRIDX",
-    iconPath: "/svgs/gridx.svg",
-    pythSymbol: "Crypto.GRIDX/USD",
+    id: 'gridx',
+    name: 'GridTokenX',
+    symbol: 'GRIDX',
+    iconPath: '/svgs/gridx.svg',
+    pythSymbol: 'Crypto.GRIDX/USD',
     category: {
       crypto: true,
       memes: false,
@@ -71,11 +71,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "solana",
-    name: "Solana",
-    symbol: "SOL",
-    iconPath: "/images/solana.png",
-    pythSymbol: "Crypto.SOL/USD",
+    id: 'solana',
+    name: 'Solana',
+    symbol: 'SOL',
+    iconPath: '/images/solana.png',
+    pythSymbol: 'Crypto.SOL/USD',
     category: {
       crypto: true,
       memes: false,
@@ -88,11 +88,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "bitcoin",
-    name: "Bitcoin",
-    symbol: "BTC",
-    iconPath: "/images/bitcoin.png",
-    pythSymbol: "Crypto.BTC/USD",
+    id: 'bitcoin',
+    name: 'Bitcoin',
+    symbol: 'BTC',
+    iconPath: '/images/bitcoin.png',
+    pythSymbol: 'Crypto.BTC/USD',
     category: {
       crypto: true,
       memes: false,
@@ -105,11 +105,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "ethereum",
-    name: "Ethereum",
-    symbol: "ETH",
-    iconPath: "/images/ethereum.png",
-    pythSymbol: "Crypto.ETH/USD",
+    id: 'ethereum',
+    name: 'Ethereum',
+    symbol: 'ETH',
+    iconPath: '/images/ethereum.png',
+    pythSymbol: 'Crypto.ETH/USD',
     category: {
       crypto: true,
       memes: false,
@@ -122,11 +122,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "chainlink",
-    name: "Chainlink",
-    symbol: "LINK",
-    iconPath: "/images/chainlink.png",
-    pythSymbol: "Crypto.LINK/USD",
+    id: 'chainlink',
+    name: 'Chainlink',
+    symbol: 'LINK',
+    iconPath: '/images/chainlink.png',
+    pythSymbol: 'Crypto.LINK/USD',
     category: {
       crypto: true,
       memes: false,
@@ -139,11 +139,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "render",
-    name: "Render",
-    symbol: "RENDER",
-    iconPath: "/images/render.png",
-    pythSymbol: "Crypto.RENDER/USD",
+    id: 'render',
+    name: 'Render',
+    symbol: 'RENDER',
+    iconPath: '/images/render.png',
+    pythSymbol: 'Crypto.RENDER/USD',
     category: {
       crypto: true,
       memes: false,
@@ -156,11 +156,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "dogwifhat",
-    name: "DogWifHat",
-    symbol: "WIF",
-    iconPath: "/images/wif.png",
-    pythSymbol: "Crypto.WIF/USD",
+    id: 'dogwifhat',
+    name: 'DogWifHat',
+    symbol: 'WIF',
+    iconPath: '/images/wif.png',
+    pythSymbol: 'Crypto.WIF/USD',
     category: {
       crypto: true,
       memes: true,
@@ -173,11 +173,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "bonk",
-    name: "Bonk",
-    symbol: "BONK",
-    iconPath: "/images/bonk.png",
-    pythSymbol: "Crypto.BONK/USD",
+    id: 'bonk',
+    name: 'Bonk',
+    symbol: 'BONK',
+    iconPath: '/images/bonk.png',
+    pythSymbol: 'Crypto.BONK/USD',
     category: {
       crypto: true,
       memes: true,
@@ -190,11 +190,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "thegraph",
-    name: "The Graph",
-    symbol: "GRT",
-    iconPath: "/images/grt.png",
-    pythSymbol: "Crypto.GRT/USD",
+    id: 'thegraph',
+    name: 'The Graph',
+    symbol: 'GRT',
+    iconPath: '/images/grt.png',
+    pythSymbol: 'Crypto.GRT/USD',
     category: {
       crypto: true,
       memes: false,
@@ -207,11 +207,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "pyth",
-    name: "Pyth Network",
-    symbol: "PYTH",
-    iconPath: "/images/pyth.png",
-    pythSymbol: "Crypto.PYTH/USD",
+    id: 'pyth',
+    name: 'Pyth Network',
+    symbol: 'PYTH',
+    iconPath: '/images/pyth.png',
+    pythSymbol: 'Crypto.PYTH/USD',
     category: {
       crypto: true,
       memes: false,
@@ -224,11 +224,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "ray",
-    name: "Raydium",
-    symbol: "RAY",
-    iconPath: "/images/ray.png",
-    pythSymbol: "Crypto.RAY/USD",
+    id: 'ray',
+    name: 'Raydium',
+    symbol: 'RAY',
+    iconPath: '/images/ray.png',
+    pythSymbol: 'Crypto.RAY/USD',
     category: {
       crypto: true,
       memes: false,
@@ -241,11 +241,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "pengu",
-    name: "Pudgy Penguins",
-    symbol: "PENGU",
-    iconPath: "/images/pengu.jpeg",
-    pythSymbol: "Crypto.PENGU/USD",
+    id: 'pengu',
+    name: 'Pudgy Penguins',
+    symbol: 'PENGU',
+    iconPath: '/images/pengu.jpeg',
+    pythSymbol: 'Crypto.PENGU/USD',
     category: {
       crypto: true,
       memes: true,
@@ -258,11 +258,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "hnt",
-    name: "Helium",
-    symbol: "HNT",
-    iconPath: "/images/hnt.png",
-    pythSymbol: "Crypto.HNT/USD",
+    id: 'hnt',
+    name: 'Helium',
+    symbol: 'HNT',
+    iconPath: '/images/hnt.png',
+    pythSymbol: 'Crypto.HNT/USD',
     category: {
       crypto: true,
       memes: false,
@@ -275,11 +275,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "jup",
-    name: "Jupiter",
-    symbol: "JUP",
-    iconPath: "/images/jup.jpg",
-    pythSymbol: "Crypto.JUP/USD",
+    id: 'jup',
+    name: 'Jupiter',
+    symbol: 'JUP',
+    iconPath: '/images/jup.jpg',
+    pythSymbol: 'Crypto.JUP/USD',
     category: {
       crypto: true,
       memes: false,
@@ -292,11 +292,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "ar",
-    name: "Arweave",
-    symbol: "AR",
-    iconPath: "/images/ar.png",
-    pythSymbol: "Crypto.AR/USD",
+    id: 'ar',
+    name: 'Arweave',
+    symbol: 'AR',
+    iconPath: '/images/ar.png',
+    pythSymbol: 'Crypto.AR/USD',
     category: {
       crypto: true,
       memes: false,
@@ -309,11 +309,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "fartcoin",
-    name: "Fartcoin",
-    symbol: "FARTCOIN",
-    iconPath: "/images/fartcoin.png",
-    pythSymbol: "Crypto.FARTCOIN/USD",
+    id: 'fartcoin',
+    name: 'Fartcoin',
+    symbol: 'FARTCOIN',
+    iconPath: '/images/fartcoin.png',
+    pythSymbol: 'Crypto.FARTCOIN/USD',
     category: {
       crypto: true,
       memes: true,
@@ -326,11 +326,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "jto",
-    name: "Jito",
-    symbol: "JITO",
-    iconPath: "/images/jito.png",
-    pythSymbol: "Crypto.JTO/USD",
+    id: 'jto',
+    name: 'Jito',
+    symbol: 'JITO',
+    iconPath: '/images/jito.png',
+    pythSymbol: 'Crypto.JTO/USD',
     category: {
       crypto: true,
       memes: false,
@@ -343,11 +343,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "w",
-    name: "Wormhole",
-    symbol: "WORMHOLE",
-    iconPath: "/images/wormhole.png",
-    pythSymbol: "Crypto.W/USD",
+    id: 'w',
+    name: 'Wormhole',
+    symbol: 'WORMHOLE',
+    iconPath: '/images/wormhole.png',
+    pythSymbol: 'Crypto.W/USD',
     category: {
       crypto: true,
       memes: false,
@@ -360,11 +360,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "popcat",
-    name: "Popcat (SOL)",
-    symbol: "POPCAT",
-    iconPath: "/images/popcat.png",
-    pythSymbol: "Crypto.POPCAT/USD",
+    id: 'popcat',
+    name: 'Popcat (SOL)',
+    symbol: 'POPCAT',
+    iconPath: '/images/popcat.png',
+    pythSymbol: 'Crypto.POPCAT/USD',
     category: {
       crypto: true,
       memes: true,
@@ -377,11 +377,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "pnut",
-    name: "Peanut the Squirrel",
-    symbol: "PNUT",
-    iconPath: "/images/pnut.png",
-    pythSymbol: "Crypto.PNUT/USD",
+    id: 'pnut',
+    name: 'Peanut the Squirrel',
+    symbol: 'PNUT',
+    iconPath: '/images/pnut.png',
+    pythSymbol: 'Crypto.PNUT/USD',
     category: {
       crypto: true,
       memes: true,
@@ -394,11 +394,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "paxg",
-    name: "PAX Gold",
-    symbol: "PAXG",
-    iconPath: "/images/paxg.png",
-    pythSymbol: "Crypto.PAXG/USD",
+    id: 'paxg',
+    name: 'PAX Gold',
+    symbol: 'PAXG',
+    iconPath: '/images/paxg.png',
+    pythSymbol: 'Crypto.PAXG/USD',
     category: {
       crypto: true,
       memes: false,
@@ -411,11 +411,11 @@ export const tokenList: Token[] = [
     },
   },
   {
-    id: "eurc",
-    name: "EURC",
-    symbol: "EURC",
-    iconPath: "/images/eurc.png",
-    pythSymbol: "Crypto.EURC/USD",
+    id: 'eurc',
+    name: 'EURC',
+    symbol: 'EURC',
+    iconPath: '/images/eurc.png',
+    pythSymbol: 'Crypto.EURC/USD',
     category: {
       crypto: true,
       memes: false,
@@ -427,4 +427,4 @@ export const tokenList: Token[] = [
       fixed: false,
     },
   },
-];
+]

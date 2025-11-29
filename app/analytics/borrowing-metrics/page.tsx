@@ -1,5 +1,3 @@
-export default function BorrowingMetrics(){
-    return (
-        <h1>Coming Soon</h1>
-    )
+export default function BorrowingMetrics() {
+  return <h1>Coming Soon</h1>
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Chart as ChartJS,
@@ -10,8 +10,8 @@ import {
   Tooltip,
   Filler,
   Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
 
 ChartJS.register(
   CategoryScale,
@@ -22,14 +22,14 @@ ChartJS.register(
   Tooltip,
   Filler,
   Legend
-);
+)
 
-interface TokenInterestRateProps{
-    token: string
+interface TokenInterestRateProps {
+  token: string
 }
 
-const UtilizationChart = ({token} : TokenInterestRateProps) => {
-    const options = {
+const UtilizationChart = ({ token }: TokenInterestRateProps) => {
+  const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -48,11 +48,11 @@ const UtilizationChart = ({token} : TokenInterestRateProps) => {
         padding: 10,
         displayColors: false,
         callbacks: {
-          label: function(context: any) {
-            return `${context.parsed.y.toFixed(2)}%`;
-          }
-        }
-      }
+          label: function (context: any) {
+            return `${context.parsed.y.toFixed(2)}%`
+          },
+        },
+      },
     },
     interaction: {
       mode: 'index' as const,
@@ -71,7 +71,7 @@ const UtilizationChart = ({token} : TokenInterestRateProps) => {
           font: {
             size: 12,
           },
-        }
+        },
       },
       y: {
         position: 'left' as const,
@@ -87,17 +87,26 @@ const UtilizationChart = ({token} : TokenInterestRateProps) => {
           font: {
             size: 12,
           },
-          callback: function(value: any) {
-            return `${value}%`;
-          }
-        }
+          callback: function (value: any) {
+            return `${value}%`
+          },
+        },
       },
     },
-  };
+  }
 
-  
   const data = {
-    labels: ['Apr 13', 'Apr 20', 'Apr 27', 'May 4', 'May 11', 'May 18', 'May 25', 'Jun 1', 'Jun 8'],
+    labels: [
+      'Apr 13',
+      'Apr 20',
+      'Apr 27',
+      'May 4',
+      'May 11',
+      'May 18',
+      'May 25',
+      'Jun 1',
+      'Jun 8',
+    ],
     datasets: [
       {
         fill: true,
@@ -109,19 +118,20 @@ const UtilizationChart = ({token} : TokenInterestRateProps) => {
         borderWidth: 2,
       },
     ],
-  };
+  }
 
   return (
-    <div className="w-full h-full flex flex-col bg-inherit">
-        <div className="flex-none">
-            <h2 className="text-xl font-semibold text-white mb-2">{token} Utilization</h2>
-        </div>
-       <div className="relative flex-grow">
-            <Line options={options} data={data} />
-        </div>
+    <div className="flex h-full w-full flex-col bg-inherit">
+      <div className="flex-none">
+        <h2 className="mb-2 text-xl font-semibold text-white">
+          {token} Utilization
+        </h2>
+      </div>
+      <div className="relative flex-grow">
+        <Line options={options} data={data} />
+      </div>
     </div>
-    
-  );
+  )
 }
 
-export default UtilizationChart;
+export default UtilizationChart

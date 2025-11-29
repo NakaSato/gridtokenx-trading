@@ -1,91 +1,91 @@
-"use client";
-import { DialogTitle } from "@radix-ui/react-dialog";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
-import { Separator } from "./ui/separator";
-import { Label } from "./ui/label";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { useState, useRef } from "react";
-import { User, Upload, Copy, Check } from "lucide-react";
-import Image from "next/image";
-import { useWallet } from "@solana/wallet-adapter-react";
+'use client'
+import { DialogTitle } from '@radix-ui/react-dialog'
+import { Dialog, DialogContent, DialogTrigger } from './ui/dialog'
+import { Separator } from './ui/separator'
+import { Label } from './ui/label'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { useState, useRef } from 'react'
+import { User, Upload, Copy, Check } from 'lucide-react'
+import Image from 'next/image'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 export default function Profile() {
-  const { publicKey, connected } = useWallet();
-  const [username, setUsername] = useState<string>("GridTrader");
-  const [email, setEmail] = useState<string>("trader@gridtokenx.com");
-  const [isEditing, setIsEditing] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { publicKey, connected } = useWallet()
+  const [username, setUsername] = useState<string>('GridTrader')
+  const [email, setEmail] = useState<string>('trader@gridtokenx.com')
+  const [isEditing, setIsEditing] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
+    fileInputRef.current?.click()
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0]
     if (file) {
       // Check if file is an image
-      if (!file.type.startsWith("image/")) {
-        alert("Please select an image file");
-        return;
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file')
+        return
       }
 
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
-        return;
+        alert('File size must be less than 5MB')
+        return
       }
 
       // Create a preview URL
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+        setAvatarUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     }
-  };
+  }
 
   const handleSave = () => {
     // Save profile logic here
-    setIsEditing(false);
-  };
+    setIsEditing(false)
+  }
 
   const handleCancel = () => {
     // Reset to original values
-    setIsEditing(false);
-  };
+    setIsEditing(false)
+  }
 
   const handleCopyAddress = async () => {
     if (publicKey) {
-      await navigator.clipboard.writeText(publicKey.toBase58());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(publicKey.toBase58())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
-  };
+  }
 
   const shortenAddress = (address: string) => {
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  };
+    return `${address.slice(0, 4)}...${address.slice(-4)}`
+  }
 
   return (
     <Dialog>
       <DialogTrigger className="hidden sm:flex">
-        <div className="bg-secondary rounded-sm p-[9px] text-foreground hover:text-primary">
+        <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
           <User className="h-4 w-4" />
         </div>
       </DialogTrigger>
-      <DialogContent className="w-[520px] p-5 border-none bg-accent flex flex-col sm:rounded-sm">
+      <DialogContent className="flex w-[520px] flex-col border-none bg-accent p-5 sm:rounded-sm">
         <DialogTitle className="text-base font-medium text-foreground">
           Profile
         </DialogTitle>
         <Separator className="bg-secondary" />
-        <div className="w-full flex flex-col space-y-5">
+        <div className="flex w-full flex-col space-y-5">
           {/* Profile Picture */}
-          <div className="w-full flex flex-col space-y-3 items-center">
+          <div className="flex w-full flex-col items-center space-y-3">
             <div
-              className="w-20 h-20 rounded-full bg-gradient-primary flex items-center justify-center overflow-hidden relative group cursor-pointer"
+              className="group relative flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gradient-primary"
               onClick={handleAvatarClick}
             >
               {avatarUrl ? (
@@ -98,7 +98,7 @@ export default function Profile() {
               ) : (
                 <User className="h-10 w-10 text-background" />
               )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                 <Upload className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -120,12 +120,12 @@ export default function Profile() {
 
           {/* Wallet Address */}
           {connected && publicKey && (
-            <div className="w-full flex flex-col space-y-[14px]">
+            <div className="flex w-full flex-col space-y-[14px]">
               <Label className="text-xs font-medium text-foreground">
                 Wallet Address
               </Label>
-              <div className="bg-secondary border rounded-sm py-2 px-3 flex items-center justify-between">
-                <span className="text-xs font-mono text-foreground">
+              <div className="flex items-center justify-between rounded-sm border bg-secondary px-3 py-2">
+                <span className="font-mono text-xs text-foreground">
                   {shortenAddress(publicKey.toBase58())}
                 </span>
                 <Button
@@ -145,7 +145,7 @@ export default function Profile() {
           )}
 
           {/* Username */}
-          <div className="w-full flex flex-col space-y-[14px]">
+          <div className="flex w-full flex-col space-y-[14px]">
             <Label className="text-xs font-medium text-foreground">
               Username
             </Label>
@@ -153,30 +153,30 @@ export default function Profile() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="bg-secondary border rounded-sm py-2 px-3 text-xs focus:border-primary"
+              className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
               disabled={!isEditing}
             />
           </div>
 
           {/* Email */}
-          <div className="w-full flex flex-col space-y-[14px]">
+          <div className="flex w-full flex-col space-y-[14px]">
             <Label className="text-xs font-medium text-foreground">Email</Label>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-secondary border rounded-sm py-2 px-3 text-xs focus:border-primary"
+              className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
               disabled={!isEditing}
             />
           </div>
 
           {/* Stats */}
-          <div className="w-full flex flex-col space-y-3">
+          <div className="flex w-full flex-col space-y-3">
             <Label className="text-xs font-medium text-foreground">
               Trading Stats
             </Label>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary rounded-sm p-3 flex flex-col">
+              <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
                   Total Trades
                 </span>
@@ -184,7 +184,7 @@ export default function Profile() {
                   156
                 </span>
               </div>
-              <div className="bg-secondary rounded-sm p-3 flex flex-col">
+              <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
                   Total Volume
                 </span>
@@ -192,7 +192,7 @@ export default function Profile() {
                   12,450 GRIDX
                 </span>
               </div>
-              <div className="bg-secondary rounded-sm p-3 flex flex-col">
+              <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
                   Win Rate
                 </span>
@@ -200,7 +200,7 @@ export default function Profile() {
                   68.5%
                 </span>
               </div>
-              <div className="bg-secondary rounded-sm p-3 flex flex-col">
+              <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
                   Total PnL
                 </span>
@@ -218,13 +218,13 @@ export default function Profile() {
                 <Button
                   onClick={handleCancel}
                   variant="outline"
-                  className="flex-1 text-xs border-secondary hover:border-primary"
+                  className="flex-1 border-secondary text-xs hover:border-primary"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSave}
-                  className="flex-1 text-xs bg-primary hover:bg-gradient-primary text-background"
+                  className="flex-1 bg-primary text-xs text-background hover:bg-gradient-primary"
                 >
                   Save Changes
                 </Button>
@@ -232,7 +232,7 @@ export default function Profile() {
             ) : (
               <Button
                 onClick={() => setIsEditing(true)}
-                className="w-full text-xs bg-primary hover:bg-gradient-primary text-background"
+                className="w-full bg-primary text-xs text-background hover:bg-gradient-primary"
               >
                 Edit Profile
               </Button>
@@ -241,5 +241,5 @@ export default function Profile() {
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

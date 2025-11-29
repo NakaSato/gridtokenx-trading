@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Chart as ChartJS,
@@ -10,8 +10,8 @@ import {
   Tooltip,
   Filler,
   Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
 
 ChartJS.register(
   CategoryScale,
@@ -22,7 +22,7 @@ ChartJS.register(
   Tooltip,
   Filler,
   Legend
-);
+)
 
 export function ChartStrategy() {
   const options = {
@@ -44,11 +44,11 @@ export function ChartStrategy() {
         padding: 10,
         displayColors: false,
         callbacks: {
-          label: function(context: any) {
-            return `$${context.parsed.y.toFixed(2)}`;
-          }
-        }
-      }
+          label: function (context: any) {
+            return `$${context.parsed.y.toFixed(2)}`
+          },
+        },
+      },
     },
     interaction: {
       mode: 'index' as const,
@@ -67,7 +67,7 @@ export function ChartStrategy() {
           font: {
             size: 12,
           },
-        }
+        },
       },
       y: {
         position: 'left' as const,
@@ -83,15 +83,22 @@ export function ChartStrategy() {
           font: {
             size: 12,
           },
-          callback: function(value: any) {
-            return `$${value}`;
-          }
-        }
+          callback: function (value: any) {
+            return `$${value}`
+          },
+        },
       },
     },
-  };
+  }
 
-  const labels = ['Jan \'25', 'Feb \'25', 'Mar \'25', 'Apr \'25', 'May \'25', 'Jun \'25'];
+  const labels = [
+    "Jan '25",
+    "Feb '25",
+    "Mar '25",
+    "Apr '25",
+    "May '25",
+    "Jun '25",
+  ]
   const data = {
     labels,
     datasets: [
@@ -105,11 +112,11 @@ export function ChartStrategy() {
         borderWidth: 2,
       },
     ],
-  };
+  }
 
   return (
-    <div className="w-full h-fit">
+    <div className="h-fit w-full">
       <Line options={options} data={data} />
     </div>
-  );
+  )
 }

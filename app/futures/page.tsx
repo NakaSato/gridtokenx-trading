@@ -1,38 +1,36 @@
-"use client";
+'use client'
 
-import CryptoNav from "@/components/CryptoNav";
-import FutureCardContainer from "@/components/FutureCardContainer";
-import FuturesPositions from "@/components/FuturesPositions";
-import FuturesQuote from "@/components/FuturesQuote";
-import TradingViewChart from "@/components/TradingViewChart";
-import { Button } from "@/components/ui/button";
-import { usePythMarketData } from "@/hooks/usePythMarketData";
-import { usePythPrice } from "@/hooks/usePythPrice";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import CryptoNav from '@/components/CryptoNav'
+import FutureCardContainer from '@/components/FutureCardContainer'
+import FuturesPositions from '@/components/FuturesPositions'
+import FuturesQuote from '@/components/FuturesQuote'
+import TradingViewChart from '@/components/TradingViewChart'
+import { Button } from '@/components/ui/button'
+import { usePythMarketData } from '@/hooks/usePythMarketData'
+import { usePythPrice } from '@/hooks/usePythPrice'
+import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 export default function Futures() {
-  const [active, setActive] = useState("chart");
-  const [tokenIdx, setTokenIdx] = useState(0);
-  const [selectedSymbol, setSelectedSymbol] =
-    useState<string>("Crypto.SOL/USD");
-  const [selectedLogo, setSelectedLogo] =
-    useState<string>("/images/solana.png");
-  const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol);
+  const [active, setActive] = useState('chart')
+  const [tokenIdx, setTokenIdx] = useState(0)
+  const [selectedSymbol, setSelectedSymbol] = useState<string>('Crypto.SOL/USD')
+  const [selectedLogo, setSelectedLogo] = useState<string>('/images/solana.png')
+  const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol)
   const { marketData, loading: marketLoading } =
-    usePythMarketData(selectedSymbol);
+    usePythMarketData(selectedSymbol)
   const handleSymbolChange = (newSymbol: string) => {
-    setSelectedSymbol(newSymbol);
-  };
+    setSelectedSymbol(newSymbol)
+  }
 
   const handleIconChange = (newIcon: string) => {
-    setSelectedLogo(newIcon);
-  };
+    setSelectedLogo(newIcon)
+  }
   const handleIndexChange = (newIdx: number) => {
-    setTokenIdx(newIdx);
-  };
+    setTokenIdx(newIdx)
+  }
   return (
-    <main className="space-y-4 flex flex-col">
+    <main className="flex flex-col space-y-4">
       <div className="w-full">
         <CryptoNav
           onSymbolChange={handleSymbolChange}
@@ -47,25 +45,25 @@ export default function Futures() {
           type="futures"
         />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div
           className={`${
-            active === "chart"
-              ? "lg:col-span-8 flex"
-              : "hidden lg:col-span-8 lg:flex"
+            active === 'chart'
+              ? 'flex lg:col-span-8'
+              : 'hidden lg:col-span-8 lg:flex'
           } flex-col gap-4`}
         >
-          <div className="h-[538px] border-t rounded-sm">
+          <div className="h-[538px] rounded-sm border-t">
             <TradingViewChart symbol={selectedSymbol} logo={selectedLogo} />
           </div>
           <FuturesPositions />
         </div>
         <div
           className={`${
-            active === "trade"
-              ? "lg:col-span-4 flex"
-              : "hidden lg:col-span-4 lg:flex"
-          }  h-fit flex-col gap-4`}
+            active === 'trade'
+              ? 'flex lg:col-span-4'
+              : 'hidden lg:col-span-4 lg:flex'
+          } h-fit flex-col gap-4`}
         >
           <FutureCardContainer
             active={tokenIdx}
@@ -80,32 +78,32 @@ export default function Futures() {
           <FuturesQuote />
         </div>
       </div>
-      <div className="w-full p-3 pb-10 bottom-0 sticky border-t bg-background z-10 lg:hidden">
+      <div className="sticky bottom-0 z-10 w-full border-t bg-background p-3 pb-10 lg:hidden">
         <div className="grid grid-cols-2 space-x-2">
           <Button
             className={cn(
-              active === "chart"
-                ? "border-primary text-primary"
-                : "text-secondary-foreground",
-              "border rounded-sm px-5 py-[6px] bg-inherit w-full"
+              active === 'chart'
+                ? 'border-primary text-primary'
+                : 'text-secondary-foreground',
+              'w-full rounded-sm border bg-inherit px-5 py-[6px]'
             )}
-            onClick={() => setActive("chart")}
+            onClick={() => setActive('chart')}
           >
             Chart
           </Button>
           <Button
             className={cn(
-              active === "trade"
-                ? "border-primary text-primary"
-                : "text-secondary-foreground",
-              "border rounded-sm px-5 py-[6px] bg-inherit w-full"
+              active === 'trade'
+                ? 'border-primary text-primary'
+                : 'text-secondary-foreground',
+              'w-full rounded-sm border bg-inherit px-5 py-[6px]'
             )}
-            onClick={() => setActive("trade")}
+            onClick={() => setActive('trade')}
           >
             Trade
           </Button>
         </div>
       </div>
     </main>
-  );
+  )
 }

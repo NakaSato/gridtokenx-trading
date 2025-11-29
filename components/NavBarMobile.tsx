@@ -7,69 +7,69 @@ import {
   MessagesSquare,
   TableColumnsSplit,
   XIcon,
-} from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./ui/dialog";
-import Image from "next/image";
-import { Button, buttonVariants } from "./ui/button";
-import { AuthButton } from "./auth";
-import { useState } from "react";
-import { EarnIcon, MoreIcon } from "@/public/svgs/icons";
-import { Badge } from "./ui/badge";
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { Separator } from "./ui/separator";
-import SettingsMobile from "./SettingsMobile";
-import WalletSideBar from "./WalletSidebar";
-import { useWallet } from "@solana/wallet-adapter-react";
-import x from "@/public/svgs/x.svg";
-import discord from "@/public/svgs/discord.svg";
-import telegram from "@/public/svgs/telegram.svg";
-import { Logo } from "./Logo";
+} from 'lucide-react'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
+import Image from 'next/image'
+import { Button, buttonVariants } from './ui/button'
+import { AuthButton } from './auth'
+import { useState } from 'react'
+import { EarnIcon, MoreIcon } from '@/public/svgs/icons'
+import { Badge } from './ui/badge'
+import { cn } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
+import { Separator } from './ui/separator'
+import SettingsMobile from './SettingsMobile'
+import WalletSideBar from './WalletSidebar'
+import { useWallet } from '@solana/wallet-adapter-react'
+import x from '@/public/svgs/x.svg'
+import discord from '@/public/svgs/discord.svg'
+import telegram from '@/public/svgs/telegram.svg'
+import { Logo } from './Logo'
 
 export default function NavBarMobile() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [active, setActive] = useState<string>("Trade");
-  const [isDropped, setIsDropped] = useState(false);
-  const { connected } = useWallet();
-  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false)
+  const [active, setActive] = useState<string>('Trade')
+  const [isDropped, setIsDropped] = useState(false)
+  const { connected } = useWallet()
+  const router = useRouter()
   const handleClick = (state: string) => {
     if (active !== state) {
-      setActive(state);
+      setActive(state)
     }
-  };
+  }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger className="focus:outline-none lg:hidden">
-        <div className="bg-secondary rounded-sm p-[9px] text-foreground hover:text-primary">
+        <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
           <MenuIcon size={18} />
         </div>
       </DialogTrigger>
-      <DialogContent className="w-full h-full md:h-fit bg-background flex flex-col p-0 justify-between">
+      <DialogContent className="flex h-full w-full flex-col justify-between bg-background p-0 md:h-fit">
         <DialogTitle className="hidden">Navigation Menu</DialogTitle>
-        <div className="w-full flex flex-col p-0 space-y-4">
-          <div className="px-3 py-2 w-full flex justify-between items-center">
-            <div className="w-[78px] h-[28px] flex items-center px-[6px] py-1">
+        <div className="flex w-full flex-col space-y-4 p-0">
+          <div className="flex w-full items-center justify-between px-3 py-2">
+            <div className="flex h-[28px] w-[78px] items-center px-[6px] py-1">
               <Logo width={65} height={21} />
             </div>
             <Button
-              className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-sm"
+              className="rounded-sm bg-secondary p-[9px] shadow-none [&_svg]:size-[18px]"
               onClick={() => setIsOpen(false)}
             >
               <XIcon size={18} className="text-secondary-foreground" />
             </Button>
           </div>
-          <div className="flex flex-col w-full px-3 space-y-3">
+          <div className="flex w-full flex-col space-y-3 px-3">
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === "Trade" ? "active" : "inactive",
+                  variant: active === 'Trade' ? 'active' : 'inactive',
                 }),
-                "bg-accent justify-start px-5 py-3 md:hidden lg:flex rounded-sm"
+                'justify-start rounded-sm bg-accent px-5 py-3 md:hidden lg:flex'
               )}
               onClick={() => {
-                handleClick("Trade");
-                router.push("/");
-                setIsOpen(false);
+                handleClick('Trade')
+                router.push('/')
+                setIsOpen(false)
               }}
             >
               <ChartLine size={16} />
@@ -78,10 +78,10 @@ export default function NavBarMobile() {
               </h1>
               <Badge
                 className={cn(
-                  active === "Trade"
-                    ? "border-primary text-gradient-primary"
-                    : "border-secondary-foreground text-secondary-foreground",
-                  "border text-[8px] px-1 py-[3px] rounded-[3px] h-4 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"
+                  active === 'Trade'
+                    ? 'text-gradient-primary border-primary'
+                    : 'border-secondary-foreground text-secondary-foreground',
+                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
                 )}
               >
                 NEW
@@ -90,14 +90,14 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === "Futures" ? "active" : "inactive",
+                  variant: active === 'Futures' ? 'active' : 'inactive',
                 }),
-                "bg-accent justify-start px-5 py-3 md:hidden lg:flex rounded-sm"
+                'justify-start rounded-sm bg-accent px-5 py-3 md:hidden lg:flex'
               )}
               onClick={() => {
-                handleClick("Futures");
-                router.push("/futures");
-                setIsOpen(false);
+                handleClick('Futures')
+                router.push('/futures')
+                setIsOpen(false)
               }}
             >
               <ChartLine size={16} />
@@ -106,10 +106,10 @@ export default function NavBarMobile() {
               </h1>
               <Badge
                 className={cn(
-                  active === "Futures"
-                    ? "border-primary text-gradient-primary"
-                    : "border-secondary-foreground text-secondary-foreground",
-                  "border text-[8px] px-1 py-[3px] rounded-[3px] h-4 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"
+                  active === 'Futures'
+                    ? 'text-gradient-primary border-primary'
+                    : 'border-secondary-foreground text-secondary-foreground',
+                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
                 )}
               >
                 BETA
@@ -118,28 +118,28 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === "Earn" ? "active" : "inactive",
+                  variant: active === 'Earn' ? 'active' : 'inactive',
                 }),
-                "bg-accent justify-start px-5 py-3 flex rounded-sm"
+                'flex justify-start rounded-sm bg-accent px-5 py-3'
               )}
               onClick={() => {
-                handleClick("Earn");
-                router.push("/earn");
-                setIsOpen(false);
+                handleClick('Earn')
+                router.push('/earn')
+                setIsOpen(false)
               }}
             >
               <EarnIcon />
               <h1 className="text-sm font-medium">Earn</h1>
-              <Badge className="rounded-sm bg-gradient-primary px-1 py-[3px] text-background h-4 text-[8px] border-none">
+              <Badge className="h-4 rounded-sm border-none bg-gradient-primary px-1 py-[3px] text-[8px] text-background">
                 48% APY
               </Badge>
             </Button>
-            <div className="w-full bg-accent rounded-sm p-0">
+            <div className="w-full rounded-sm bg-accent p-0">
               <Button
-                className="w-full bg-accent px-5 py-3 flex justify-between text-secondary-foreground rounded-sm shadow-none"
+                className="flex w-full justify-between rounded-sm bg-accent px-5 py-3 text-secondary-foreground shadow-none"
                 onClick={() => setIsDropped(!isDropped)}
               >
-                <div className="flex space-x-2 items-center">
+                <div className="flex items-center space-x-2">
                   <MoreIcon />
                   <h1 className="text-sm font-medium">More</h1>
                 </div>
@@ -149,57 +149,57 @@ export default function NavBarMobile() {
                 <>
                   {[
                     {
-                      name: "Options Chain",
+                      name: 'Options Chain',
                       icon: <TableColumnsSplit />,
-                      link: "/options-chain",
+                      link: '/options-chain',
                     },
                     {
-                      name: "Analytics",
+                      name: 'Analytics',
                       icon: <FileChartColumn />,
-                      link: "/analytics",
+                      link: '/analytics',
                     },
                     {
-                      name: "Docs",
+                      name: 'Docs',
                       icon: <BookOpenText />,
-                      link: "https://docs.olive.finance",
+                      link: 'https://docs.olive.finance',
                     },
                     {
-                      name: "Feedback",
+                      name: 'Feedback',
                       icon: <MessagesSquare />,
-                      link: "/feedback",
+                      link: '/feedback',
                     },
                     {
-                      name: "Medium",
+                      name: 'Medium',
                       icon: <TableColumnsSplit />,
-                      link: "https://medium.com",
+                      link: 'https://medium.com',
                     },
                     {
-                      name: "X",
+                      name: 'X',
                       icon: <Image src={x} alt="x link" />,
-                      link: "https://x.com/_olivefinance",
+                      link: 'https://x.com/_olivefinance',
                     },
                     {
-                      name: "Telegram",
+                      name: 'Telegram',
                       icon: <Image src={telegram} alt="telegram link" />,
-                      link: "https://t.me/olive_financee",
+                      link: 'https://t.me/olive_financee',
                     },
                     {
-                      name: "Discord",
+                      name: 'Discord',
                       icon: <Image src={discord} alt="discord link" />,
-                      link: "https://discord.gg/u6pq5yNj",
+                      link: 'https://discord.gg/u6pq5yNj',
                     },
                   ].map((item, idx) => (
                     <div
-                      className="w-full px-5 py-3 pt-0 text-sm text-secondary-foreground flex flex-col"
+                      className="flex w-full flex-col px-5 py-3 pt-0 text-sm text-secondary-foreground"
                       key={idx}
                     >
                       <Separator className="mb-3" />
                       <Button
-                        variant={"ghost"}
-                        className="p-0 justify-start w-fit h-fit gap-2"
+                        variant={'ghost'}
+                        className="h-fit w-fit justify-start gap-2 p-0"
                         onClick={() => {
-                          router.push(item.link);
-                          setIsOpen(false);
+                          router.push(item.link)
+                          setIsOpen(false)
                         }}
                       >
                         {item.icon}
@@ -213,18 +213,18 @@ export default function NavBarMobile() {
             <SettingsMobile />
           </div>
         </div>
-        <div className="w-full pb-10 px-3">
+        <div className="w-full px-3 pb-10">
           {connected ? (
             <WalletSideBar></WalletSideBar>
           ) : (
             <AuthButton
               signInVariant="default"
-              className="w-full h-fit border border-transparent py-[7px] px-4 rounded-sm text-background bg-primary hover:bg-gradient-primary"
+              className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-background hover:bg-gradient-primary"
               signInText="Connect Wallet"
             />
           )}
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

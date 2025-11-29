@@ -1,3 +1,3 @@
 export default function imageLoader({ src, width, quality }) {
-  return src;
+  return src
 }

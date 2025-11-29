@@ -1,40 +1,40 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { MoreHorizontal, TrendingUp, TrendingDown, Info } from "lucide-react";
-import { Button } from "./ui/button";
-import Slider from "rc-slider";
-import "rc-slider/assets/index.css";
-import Image from "next/image";
-import { Input } from "./ui/input";
-import { ExpirationDialog } from "./ExpirationDialog";
-import { addWeeks, format } from "date-fns";
+import { useState } from 'react'
+import { MoreHorizontal, TrendingUp, TrendingDown, Info } from 'lucide-react'
+import { Button } from './ui/button'
+import Slider from 'rc-slider'
+import 'rc-slider/assets/index.css'
+import Image from 'next/image'
+import { Input } from './ui/input'
+import { ExpirationDialog } from './ExpirationDialog'
+import { addWeeks, format } from 'date-fns'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
-import { WalletIcon } from "@/public/svgs/icons";
-import CardTokenList from "./CardTokenList";
-import type { PythPriceState } from "@/hooks/usePythPrice";
-import type { MarketDataState } from "@/hooks/usePythMarketData";
-import { formatPrice } from "@/utils/formatter";
-import { useAuth } from "@/contexts/AuthProvider";
-import WalletModal from "./WalletModal";
-import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
+} from './ui/tooltip'
+import { WalletIcon } from '@/public/svgs/icons'
+import CardTokenList from './CardTokenList'
+import type { PythPriceState } from '@/hooks/usePythPrice'
+import type { MarketDataState } from '@/hooks/usePythMarketData'
+import { formatPrice } from '@/utils/formatter'
+import { useAuth } from '@/contexts/AuthProvider'
+import WalletModal from './WalletModal'
+import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 
 interface FutureCardProps {
-  type: "perps" | "dated";
-  orderType: "market" | "limit";
-  selectedSymbol: string;
-  onSymbolChange: (symbol: string) => void;
-  onIdxChange: (idx: number) => void;
-  active: number;
-  priceData: PythPriceState;
-  marketData: MarketDataState;
-  priceLoading: boolean;
-  marketLoading: boolean;
+  type: 'perps' | 'dated'
+  orderType: 'market' | 'limit'
+  selectedSymbol: string
+  onSymbolChange: (symbol: string) => void
+  onIdxChange: (idx: number) => void
+  active: number
+  priceData: PythPriceState
+  marketData: MarketDataState
+  priceLoading: boolean
+  marketLoading: boolean
 }
 
 export default function FutureCard({
@@ -49,62 +49,60 @@ export default function FutureCard({
   priceLoading,
   marketLoading,
 }: FutureCardProps) {
-  const { connected } = useWallet();
-  const { isAuthenticated, isLoading } = useAuth();
-  const wallet = useAnchorWallet();
+  const { connected } = useWallet()
+  const { isAuthenticated, isLoading } = useAuth()
+  const wallet = useAnchorWallet()
 
-  const [selectedTx, setSelectedTx] = useState("long");
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [leverage, setLeverage] = useState("1");
-  const [amount, setAmount] = useState("");
-  const [payCurrency, setPayCurrency] = useState(selectedSymbol);
-  const [limitPrice, setLimitPrice] = useState("");
-  const [showExpirationModal, setShowExpirationModal] = useState(false);
-  const [expiration, setExpiration] = useState<Date>(addWeeks(new Date(), 1));
+  const [selectedTx, setSelectedTx] = useState('long')
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
+  const [leverage, setLeverage] = useState('1')
+  const [amount, setAmount] = useState('')
+  const [payCurrency, setPayCurrency] = useState(selectedSymbol)
+  const [limitPrice, setLimitPrice] = useState('')
+  const [showExpirationModal, setShowExpirationModal] = useState(false)
+  const [expiration, setExpiration] = useState<Date>(addWeeks(new Date(), 1))
 
   const leverageMarks = {
-    1: "1x",
-    20: "20x",
-    40: "40x",
-    60: "60x",
-    80: "80x",
-    100: "100x",
-  };
+    1: '1x',
+    20: '20x',
+    40: '40x',
+    60: '60x',
+    80: '80x',
+    100: '100x',
+  }
 
-  const entryPrice = 107.29;
-  const priceChange = 2.5;
-  const isPositive = marketData.change24h !== null && marketData.change24h > 0;
+  const entryPrice = 107.29
+  const priceChange = 2.5
+  const isPositive = marketData.change24h !== null && marketData.change24h > 0
 
   const defaultExpirations = [
-    { label: "1 week", value: addWeeks(new Date(), 1) },
-    { label: "2 weeks", value: addWeeks(new Date(), 2) },
-    { label: "3 weeks", value: addWeeks(new Date(), 3) },
-  ];
+    { label: '1 week', value: addWeeks(new Date(), 1) },
+    { label: '2 weeks', value: addWeeks(new Date(), 2) },
+    { label: '3 weeks', value: addWeeks(new Date(), 3) },
+  ]
 
   const isDefaultExpiration = defaultExpirations.some(
     (exp) =>
-      format(exp.value, "yyyy-MM-dd") === format(expiration, "yyyy-MM-dd")
-  );
+      format(exp.value, 'yyyy-MM-dd') === format(expiration, 'yyyy-MM-dd')
+  )
 
   const getExpirationLabel = (date: Date): string => {
     const matchingDefault = defaultExpirations.find(
-      (exp) => format(exp.value, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-    );
-    return matchingDefault
-      ? matchingDefault.label
-      : format(date, "dd MMM yyyy");
-  };
+      (exp) => format(exp.value, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    )
+    return matchingDefault ? matchingDefault.label : format(date, 'dd MMM yyyy')
+  }
 
   const formatChange = (change: number | null) => {
-    if (change === null) return "0.00";
-    return Math.abs(change).toFixed(2);
-  };
+    if (change === null) return '0.00'
+    return Math.abs(change).toFixed(2)
+  }
 
   return (
-    <div className="border rounded-sm rounded-t-none flex flex-col h-fit py-0.5">
-      <div className={`flex-1 p-6 space-y-4`}>
+    <div className="flex h-fit flex-col rounded-sm rounded-t-none border py-0.5">
+      <div className={`flex-1 space-y-4 p-6`}>
         {/* Asset Selection & Price */}
-        <div className="flex justify-between gap-3 items-start">
+        <div className="flex items-start justify-between gap-3">
           <CardTokenList
             onSymbolChange={onSymbolChange}
             onPaymentTokenChange={setPayCurrency}
@@ -112,17 +110,17 @@ export default function FutureCard({
             active={active}
             type="chart"
           />
-          {orderType === "market" ? (
-            <div className="text-right h-12">
+          {orderType === 'market' ? (
+            <div className="h-12 text-right">
               <div className="text-2xl font-semibold tracking-tight">
                 ${priceData.price ? formatPrice(priceData.price) : priceLoading}
               </div>
               <div
                 className={`text-sm font-medium ${
-                  isPositive ? "text-green-500" : "text-red-500"
+                  isPositive ? 'text-green-500' : 'text-red-500'
                 }`}
               >
-                {isPositive ? "+" : "-"}
+                {isPositive ? '+' : '-'}
                 {marketData.change24h
                   ? formatChange(marketData.change24h)
                   : marketLoading}
@@ -131,7 +129,7 @@ export default function FutureCard({
             </div>
           ) : (
             <div className="space-y-1">
-              <div className="w-32 rounded-sm p-2 h-12 flex flex-col border items-start justify-center focus-within:border-primary">
+              <div className="flex h-12 w-32 flex-col items-start justify-center rounded-sm border p-2 focus-within:border-primary">
                 <span className="text-xs text-secondary-foreground">
                   Limit Price:
                 </span>
@@ -139,7 +137,7 @@ export default function FutureCard({
                   type="text"
                   value={limitPrice}
                   onChange={(e) => setLimitPrice(e.target.value)}
-                  className="w-32 text-left h-fit border-none"
+                  className="h-fit w-32 border-none text-left"
                   placeholder="0.00"
                 />
               </div>
@@ -151,36 +149,36 @@ export default function FutureCard({
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            className={`flex items-center justify-center space-x-2 py-3 px-4 rounded-sm transition-all group border ${
-              selectedTx === "long"
-                ? "bg-green-500/10 text-green-500 border-green-500 hover:bg-green-500/20"
-                : "hover:border-green-500 hover:text-green-500 border-border/40 hover:bg-green-500/20"
+            className={`group flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${
+              selectedTx === 'long'
+                ? 'border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20'
+                : 'border-border/40 hover:border-green-500 hover:bg-green-500/20 hover:text-green-500'
             }`}
-            onClick={() => setSelectedTx("long")}
+            onClick={() => setSelectedTx('long')}
           >
             <TrendingUp
-              className={`w-4 h-4 mr-2 ${
-                selectedTx === "long"
-                  ? "text-green-500"
-                  : "text-muted-foreground group-hover:text-green-500"
+              className={`mr-2 h-4 w-4 ${
+                selectedTx === 'long'
+                  ? 'text-green-500'
+                  : 'text-muted-foreground group-hover:text-green-500'
               }`}
             />
             <span className="text-base font-medium">Long</span>
           </Button>
           <Button
             variant="outline"
-            className={`flex items-center justify-center space-x-2 py-3 px-4 rounded-sm transition-all group border ${
-              selectedTx === "short"
-                ? "bg-red-500/10 text-red-500 border-red-500 hover:bg-red-500/20"
-                : "hover:border-red-500 hover:text-red-500 border-border/40 hover:bg-red-500/20"
+            className={`group flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${
+              selectedTx === 'short'
+                ? 'border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                : 'border-border/40 hover:border-red-500 hover:bg-red-500/20 hover:text-red-500'
             }`}
-            onClick={() => setSelectedTx("short")}
+            onClick={() => setSelectedTx('short')}
           >
             <TrendingDown
-              className={`w-4 h-4 mr-2 ${
-                selectedTx === "short"
-                  ? "text-red-500"
-                  : "text-muted-foreground group-hover:text-red-500"
+              className={`mr-2 h-4 w-4 ${
+                selectedTx === 'short'
+                  ? 'text-red-500'
+                  : 'text-muted-foreground group-hover:text-red-500'
               }`}
             />
             <span className="text-base font-medium">Short</span>
@@ -188,9 +186,9 @@ export default function FutureCard({
         </div>
 
         {/* Expiration Selection */}
-        {type === "dated" && (
+        {type === 'dated' && (
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium text-secondary-foreground">
                   Expiration Date
@@ -198,7 +196,7 @@ export default function FutureCard({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-secondary-foreground" />
+                      <Info className="h-4 w-4 text-secondary-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Select when your futures contract will expire</p>
@@ -214,33 +212,33 @@ export default function FutureCard({
                     <Button
                       key={exp.label}
                       onClick={() => setExpiration(exp.value)}
-                      className={`flex-1 py-2 px-4 rounded-sm ${
-                        format(expiration, "yyyy-MM-dd") ===
-                        format(exp.value, "yyyy-MM-dd")
-                          ? "bg-primary hover:bg-gradient-primary text-backgroundSecondary"
-                          : "bg-backgroundSecondary text-foreground hover:bg-secondary"
+                      className={`flex-1 rounded-sm px-4 py-2 ${
+                        format(expiration, 'yyyy-MM-dd') ===
+                        format(exp.value, 'yyyy-MM-dd')
+                          ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
+                          : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
                       }`}
                     >
                       {exp.label}
                     </Button>
                   ))}
                   <Button
-                    className="py-2 px-4 rounded-sm bg-backgroundSecondary text-foreground hover:bg-secondary"
+                    className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
                     onClick={() => setShowExpirationModal(true)}
                   >
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button className="col-span-3 bg-gradient-primary text-backgroundSecondary rounded-sm py-2 px-4">
+                  <Button className="col-span-3 rounded-sm bg-gradient-primary px-4 py-2 text-backgroundSecondary">
                     {getExpirationLabel(expiration)}
                   </Button>
                   <Button
-                    className="py-2 px-4 rounded-sm bg-backgroundSecondary text-foreground hover:bg-secondary"
+                    className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
                     onClick={() => setShowExpirationModal(true)}
                   >
-                    <MoreHorizontal className="w-4 h-4" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </>
               )}
@@ -250,15 +248,15 @@ export default function FutureCard({
 
         {/* Amount Input */}
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-secondary-foreground font-medium">
+              <span className="text-sm font-medium text-secondary-foreground">
                 Pay Amount
               </span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-secondary-foreground" />
+                    <Info className="h-4 w-4 text-secondary-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Enter the amount you want to invest</p>
@@ -285,7 +283,7 @@ export default function FutureCard({
               value={amount}
               placeholder="0.00"
               onChange={(e) => setAmount(e.target.value)}
-              className="pr-2 h-11 text-right text-base font-medium border-border rounded-sm placeholder:text-secondary-foreground focus:border-primary"
+              className="h-11 rounded-sm border-border pr-2 text-right text-base font-medium placeholder:text-secondary-foreground focus:border-primary"
               step="0.1"
               min="0.1"
             />
@@ -296,13 +294,13 @@ export default function FutureCard({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-secondary-foreground font-medium">
+              <span className="text-sm font-medium text-secondary-foreground">
                 Leverage
               </span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-secondary-foreground" />
+                    <Info className="h-4 w-4 text-secondary-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Adjust your position leverage</p>
@@ -311,40 +309,40 @@ export default function FutureCard({
               </TooltipProvider>
             </div>
             <div className="text-sm text-secondary-foreground">
-              Max position:{" "}
-              {amount === ""
+              Max position:{' '}
+              {amount === ''
                 ? 0
-                : (parseFloat(amount) * parseFloat(leverage)).toFixed(2)}{" "}
+                : (parseFloat(amount) * parseFloat(leverage)).toFixed(2)}{' '}
               SOL
             </div>
           </div>
-          <div className="w-full flex gap-2">
+          <div className="flex w-full gap-2">
             <Input
               type="number"
               value={leverage}
               placeholder="1"
               onChange={(e) => {
-                const rawValue = e.target.value;
-                const num = Number(rawValue);
+                const rawValue = e.target.value
+                const num = Number(rawValue)
 
-                if (rawValue === "") {
-                  setLeverage("");
-                  return;
+                if (rawValue === '') {
+                  setLeverage('')
+                  return
                 }
 
-                if (isNaN(num)) return;
+                if (isNaN(num)) return
 
-                const clamped = Math.min(Math.max(num, 1), 100);
+                const clamped = Math.min(Math.max(num, 1), 100)
                 if (clamped !== parseFloat(leverage)) {
-                  setLeverage(clamped.toString());
+                  setLeverage(clamped.toString())
                 }
               }}
-              className="w-16 h-12 text-2xl text-center font-medium border-border rounded-sm placeholder:text-secondary-foreground focus:border-primary"
+              className="h-12 w-16 rounded-sm border-border text-center text-2xl font-medium placeholder:text-secondary-foreground focus:border-primary"
               step="0.1"
               min="1"
               max="100"
             />
-            <div className="h-12 w-full px-4 pt-2 border rounded-sm">
+            <div className="h-12 w-full rounded-sm border px-4 pt-2">
               <Slider
                 min={1}
                 max={100}
@@ -360,38 +358,38 @@ export default function FutureCard({
                 styles={{
                   rail: {
                     height: 4,
-                    backgroundColor: "var(--secondary-foreground)",
+                    backgroundColor: 'var(--secondary-foreground)',
                     borderRadius: 0,
                   },
                   track: {
                     height: 4,
                     backgroundImage:
-                      "linear-gradient(to right, var(--gradient-start), var(--gradient-middle), var(--gradient-end))",
+                      'linear-gradient(to right, var(--gradient-start), var(--gradient-middle), var(--gradient-end))',
                     borderRadius: 0,
                   },
                   handle: {
                     height: 15,
                     width: 15,
-                    backgroundColor: "var(--primary-foreground)",
+                    backgroundColor: 'var(--primary-foreground)',
                     borderWidth: 2,
-                    borderColor: "rgb(var(--primary))",
+                    borderColor: 'rgb(var(--primary))',
                     marginTop: -5,
-                    transition: "none",
-                    opacity: "1",
+                    transition: 'none',
+                    opacity: '1',
                   },
                 }}
                 dotStyle={{
                   width: 4,
                   height: 14,
                   top: -4,
-                  backgroundColor: "var(--secondary-foreground)",
+                  backgroundColor: 'var(--secondary-foreground)',
                   borderRadius: 20,
                   border: 0,
                   marginLeft: -1,
-                  transition: "none",
+                  transition: 'none',
                 }}
                 activeDotStyle={{
-                  backgroundColor: "rgb(var(--primary))",
+                  backgroundColor: 'rgb(var(--primary))',
                 }}
               />
             </div>
@@ -403,15 +401,15 @@ export default function FutureCard({
       <div className="p-6 pt-0">
         {isLoading ? (
           <div className="animate-pulse">
-            <div className="w-full h-10 bg-muted rounded"></div>
+            <div className="h-10 w-full rounded bg-muted"></div>
           </div>
         ) : connected && isAuthenticated ? (
-          <Button className="w-full h-10 rounded-sm bg-primary hover:bg-gradient-primary text-black">
+          <Button className="h-10 w-full rounded-sm bg-primary text-black hover:bg-gradient-primary">
             <span className="text-base font-medium">Trade</span>
           </Button>
         ) : connected && !isAuthenticated ? (
           <Button
-            className="w-full h-10 rounded-sm bg-primary hover:bg-gradient-primary text-black"
+            className="h-10 w-full rounded-sm bg-primary text-black hover:bg-gradient-primary"
             onClick={() => setIsWalletModalOpen(true)}
           >
             <WalletIcon />
@@ -419,7 +417,7 @@ export default function FutureCard({
           </Button>
         ) : (
           <Button
-            className="w-full h-10 rounded-sm bg-primary hover:bg-gradient-primary text-black"
+            className="h-10 w-full rounded-sm bg-primary text-black hover:bg-gradient-primary"
             onClick={() => setIsWalletModalOpen(true)}
           >
             <WalletIcon />
@@ -440,5 +438,5 @@ export default function FutureCard({
         currentExpiration={expiration}
       />
     </div>
-  );
+  )
 }

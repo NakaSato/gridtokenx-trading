@@ -1,52 +1,52 @@
-import { Ban, EllipsisVertical, RotateCw } from "lucide-react";
-import { Button } from "./ui/button";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import { useState } from "react";
-import WalletModal from "./WalletModal";
+import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
+import { Button } from './ui/button'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { useState } from 'react'
+import WalletModal from './WalletModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { WalletIcon } from "@/public/svgs/icons";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useAuth } from "@/contexts/AuthProvider";
+} from './ui/dropdown-menu'
+import { WalletIcon } from '@/public/svgs/icons'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export default function TradingPositionsFallback() {
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { connected } = useWallet();
-  const { isAuthenticated, isLoading } = useAuth();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
+  const { connected } = useWallet()
+  const { isAuthenticated, isLoading } = useAuth()
 
   return (
-    <div className="w-full h-[300px] border rounded-sm flex flex-col">
-      <div className="w-full flex justify-between px-3 py-1 md:px-6 md:py-3 border-b">
+    <div className="flex h-[300px] w-full flex-col rounded-sm border">
+      <div className="flex w-full justify-between border-b px-3 py-1 md:px-6 md:py-3">
         <Tabs
           defaultValue="Positions"
-          className="p-0 whitespace-nowrap overflow-hidden"
+          className="overflow-hidden whitespace-nowrap p-0"
         >
-          <TabsList className="w-full flex bg-inherit text-secondary-foreground p-0 gap-2 md:gap-3 lg:gap-6">
+          <TabsList className="flex w-full gap-2 bg-inherit p-0 text-secondary-foreground md:gap-3 lg:gap-6">
             <TabsTrigger
               value="Positions"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
             >
               Positions
             </TabsTrigger>
             <TabsTrigger
               value="OpenOrders"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
             >
               Orders
             </TabsTrigger>
             <TabsTrigger
               value="Expired"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
             >
               Expired
             </TabsTrigger>
             <TabsTrigger
               value="History"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
             >
               History
             </TabsTrigger>
@@ -67,40 +67,40 @@ export default function TradingPositionsFallback() {
                 </div> */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="bg-inherit p-[6px] w-fit h-auto rounded-[10px] md:hidden shadow-none">
+            <Button className="h-auto w-fit rounded-[10px] bg-inherit p-[6px] shadow-none md:hidden">
               <EllipsisVertical className="text-secondary-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="p-1 min-w-fit rounded-[12px]"
+            className="min-w-fit rounded-[12px] p-1"
           >
-            <DropdownMenuItem className="space-x-[6px] gap-0 w-fit">
+            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
               <RotateCw className="w-fit text-secondary-foreground" />
               <span>Reload</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="w-fit space-x-[6px] gap-0">
+            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
               <Ban className="text-secondary-foreground" />
               <span>Cancel All</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="w-full m-auto p-6 flex justify-center">
-        <div className="flex flex-col gap-3 items-center">
+      <div className="m-auto flex w-full justify-center p-6">
+        <div className="flex flex-col items-center gap-3">
           <span>
             {isLoading
-              ? "Loading..."
+              ? 'Loading...'
               : connected && !isAuthenticated
-              ? "Please sign in to view your orders"
-              : connected && isAuthenticated
-              ? "No orders found"
-              : "To view your orders"}
+                ? 'Please sign in to view your orders'
+                : connected && isAuthenticated
+                  ? 'No orders found'
+                  : 'To view your orders'}
           </span>
 
           {isLoading ? (
             <div className="animate-pulse">
-              <div className="h-9 w-32 bg-muted rounded"></div>
+              <div className="h-9 w-32 rounded bg-muted"></div>
             </div>
           ) : connected && isAuthenticated ? (
             <div className="text-sm text-muted-foreground">
@@ -109,7 +109,7 @@ export default function TradingPositionsFallback() {
           ) : connected && !isAuthenticated ? (
             <Button
               onClick={() => setIsWalletModalOpen(true)}
-              className="text-background rounded-sm bg-primary hover:bg-gradient-primary"
+              className="rounded-sm bg-primary text-background hover:bg-gradient-primary"
             >
               <WalletIcon />
               <span className="text-sm font-semibold">Sign In</span>
@@ -117,7 +117,7 @@ export default function TradingPositionsFallback() {
           ) : (
             <Button
               onClick={() => setIsWalletModalOpen(true)}
-              className="text-background rounded-sm bg-primary hover:bg-gradient-primary"
+              className="rounded-sm bg-primary text-background hover:bg-gradient-primary"
             >
               <WalletIcon />
               <span className="text-sm font-semibold">Connect Wallet</span>
@@ -131,5 +131,5 @@ export default function TradingPositionsFallback() {
         </div>
       </div>
     </div>
-  );
+  )
 }

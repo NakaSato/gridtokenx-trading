@@ -1,45 +1,45 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
-import { WalletIcon } from "@/public/svgs/icons";
-import WalletModal from "../WalletModal";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useState, useEffect } from 'react'
+import { Button } from '../ui/button'
+import { WalletIcon } from '@/public/svgs/icons'
+import WalletModal from '../WalletModal'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 interface SignInProps {
-  variant?: "default" | "outline" | "ghost";
-  size?: "default" | "sm" | "lg" | "icon";
-  className?: string;
-  showIcon?: boolean;
-  text?: string;
+  variant?: 'default' | 'outline' | 'ghost'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  className?: string
+  showIcon?: boolean
+  text?: string
 }
 
 export default function SignIn({
-  variant = "default",
-  size = "default",
-  className = "",
+  variant = 'default',
+  size = 'default',
+  className = '',
   showIcon = true,
-  text = "Connect Wallet",
+  text = 'Connect Wallet',
 }: SignInProps) {
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { connected } = useWallet();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
+  const { connected } = useWallet()
 
   // Listen for custom events to open wallet modal
   useEffect(() => {
     const handleOpenWalletModal = () => {
-      setIsWalletModalOpen(true);
-    };
+      setIsWalletModalOpen(true)
+    }
 
-    window.addEventListener("openWalletModal", handleOpenWalletModal);
+    window.addEventListener('openWalletModal', handleOpenWalletModal)
 
     return () => {
-      window.removeEventListener("openWalletModal", handleOpenWalletModal);
-    };
-  }, []);
+      window.removeEventListener('openWalletModal', handleOpenWalletModal)
+    }
+  }, [])
 
   // If already connected, don't show the sign-in button
   if (connected) {
-    return null;
+    return null
   }
 
   return (
@@ -58,5 +58,5 @@ export default function SignIn({
         onClose={() => setIsWalletModalOpen(false)}
       />
     </>
-  );
+  )
 }

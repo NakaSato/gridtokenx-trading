@@ -1,49 +1,54 @@
 'use client'
 
-import { ChevronDown, Search } from "lucide-react";
-import CreateStrategyCard from "./CreateStrategyCard";
-import { Input } from "./ui/input";
-import { Select, SelectItem, SelectTrigger,SelectContent, SelectValue } from "./ui/select";
+import { ChevronDown, Search } from 'lucide-react'
+import CreateStrategyCard from './CreateStrategyCard'
+import { Input } from './ui/input'
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectContent,
+  SelectValue,
+} from './ui/select'
 
-
-interface EarnNavProps{
-    sortBy: string
-    setSortBy: (value:string) => void
+interface EarnNavProps {
+  sortBy: string
+  setSortBy: (value: string) => void
 }
 
-export default function EarnNav({sortBy, setSortBy} : EarnNavProps){
-    return (
-        <div className="w-full h-8 flex justify-between gap-2">
-            <div className="flex gap-2 justify-start items-center">
-                <div className="flex h-full lg:w-[200px] w-fit space-x-2 items-center px-[10px] py-[6px] border rounded-sm text-secondary-foreground focus-within:border-primary">
-                    <Search size={20} className="w-5 h-5"/>
-                    <Input 
-                        type="text"
-                        placeholder="Search"
-                        className="h-full border-none p-0 shadow-none rounded-none placeholder:text-secondary-foreground"
-                    />
-                </div>
-                <CreateStrategyCard />
-            </div>
-            <div className="flex gap-3 justify-between items-center">
-                <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="lg:w-[200px] w-fit h-full rounded-sm px-[10px] py-[6px] items-center text-foreground whitespace-nowrap overflow-hidden border border-transparent hover:border-primary">
-                        <SelectValue placeholder='Featured Strategies' className=""/>
-                        <ChevronDown size={16}/>
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                        <SelectItem value="featured">Featured Strategies</SelectItem>
-                        <SelectItem value="tvl" >Popularity (TVL)</SelectItem>
-                        <SelectItem value="apy" >APY</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select>
-                    <SelectTrigger className="lg:w-[200px] lg:flex w-fit h-full rounded-sm px-[10px] py-[6px] items-center text-foreground hidden border border-transparent hover:border-primary">
-                        <SelectValue placeholder='All Assets'/>
-                        <ChevronDown size={16}/>
-                    </SelectTrigger>
-                </Select>
-            </div>
+export default function EarnNav({ sortBy, setSortBy }: EarnNavProps) {
+  return (
+    <div className="flex h-8 w-full justify-between gap-2">
+      <div className="flex items-center justify-start gap-2">
+        <div className="flex h-full w-fit items-center space-x-2 rounded-sm border px-[10px] py-[6px] text-secondary-foreground focus-within:border-primary lg:w-[200px]">
+          <Search size={20} className="h-5 w-5" />
+          <Input
+            type="text"
+            placeholder="Search"
+            className="h-full rounded-none border-none p-0 shadow-none placeholder:text-secondary-foreground"
+          />
         </div>
-    )
+        <CreateStrategyCard />
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="h-full w-fit items-center overflow-hidden whitespace-nowrap rounded-sm border border-transparent px-[10px] py-[6px] text-foreground hover:border-primary lg:w-[200px]">
+            <SelectValue placeholder="Featured Strategies" className="" />
+            <ChevronDown size={16} />
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="featured">Featured Strategies</SelectItem>
+            <SelectItem value="tvl">Popularity (TVL)</SelectItem>
+            <SelectItem value="apy">APY</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select>
+          <SelectTrigger className="hidden h-full w-fit items-center rounded-sm border border-transparent px-[10px] py-[6px] text-foreground hover:border-primary lg:flex lg:w-[200px]">
+            <SelectValue placeholder="All Assets" />
+            <ChevronDown size={16} />
+          </SelectTrigger>
+        </Select>
+      </div>
+    </div>
+  )
 }

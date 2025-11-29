@@ -1,113 +1,113 @@
-import { Ban, EllipsisVertical, RotateCw } from "lucide-react";
-import { Button } from "./ui/button";
-import { useContext, useEffect, useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
-import OpenPositions from "./OpenPositions";
-import OrderHistory from "./OrderHistory";
-import { orders, Position, positions } from "@/lib/data/Positions";
-import ExpiredOptions from "./ExpiredOptions";
+import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
+import { Button } from './ui/button'
+import { useContext, useEffect, useState } from 'react'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import OpenPositions from './OpenPositions'
+import OrderHistory from './OrderHistory'
+import { orders, Position, positions } from '@/lib/data/Positions'
+import ExpiredOptions from './ExpiredOptions'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { ContractContext, ExpiredOption } from "@/contexts/contractProvider";
-import { Transaction } from "@/lib/data/WalletActivity";
-import { BN } from "@coral-xyz/anchor";
-import Pagination from "./Pagination";
-import OpenOptionOrders from "./OpenOptionOrders";
+} from './ui/dropdown-menu'
+import { ContractContext, ExpiredOption } from '@/contexts/contractProvider'
+import { Transaction } from '@/lib/data/WalletActivity'
+import { BN } from '@coral-xyz/anchor'
+import Pagination from './Pagination'
+import OpenOptionOrders from './OpenOptionOrders'
 
 export default function TradingPositions() {
-  const [activeTab, setActiveTab] = useState<string>("Positions");
-  const [optioninfos, setOptionInfos] = useState<Position[]>([]);
-  const [expiredInfos, setExpiredInfos] = useState<ExpiredOption[]>([]);
-  const [doneInfo, setDoneInfo] = useState<Transaction[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('Positions')
+  const [optioninfos, setOptionInfos] = useState<Position[]>([])
+  const [expiredInfos, setExpiredInfos] = useState<ExpiredOption[]>([])
+  const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
   const { program, getDetailInfos, pub, onClaimOption, onExerciseOption } =
-    useContext(ContractContext);
+    useContext(ContractContext)
 
   const handleClickTab = (state: string) => {
     if (activeTab !== state) {
-      setActiveTab(state);
+      setActiveTab(state)
     }
-  };
+  }
   const onClaim = (optionindex: number, solPrice: number) => {
-    onClaimOption(optionindex, solPrice);
-  };
+    onClaimOption(optionindex, solPrice)
+  }
   const onExercise = (index: number) => {
-    onExerciseOption(index);
-  };
+    onExerciseOption(index)
+  }
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       if (program && pub) {
         const [pinfo, expiredpinfo, doneinfo] = await getDetailInfos(
           program,
           pub
-        );
-        setOptionInfos(pinfo);
-        setExpiredInfos(expiredpinfo);
-        setDoneInfo(doneinfo);
+        )
+        setOptionInfos(pinfo)
+        setExpiredInfos(expiredpinfo)
+        setDoneInfo(doneinfo)
       }
-    })();
-  }, [program, pub, getDetailInfos]);
+    })()
+  }, [program, pub, getDetailInfos])
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const dummyPositions = positions;
-  const dummyOrders = orders;
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const dummyPositions = positions
+  const dummyOrders = orders
 
   const actionTextMap: Record<string, string> = {
-    Positions: "Close all",
-    OpenOrders: "Cancel all",
-    Expired: "Claim all",
-  };
+    Positions: 'Close all',
+    OpenOrders: 'Cancel all',
+    Expired: 'Claim all',
+  }
 
   return (
-    <div className="w-full h-fit border rounded-sm flex flex-col">
-      <div className="w-full flex justify-between px-3 py-1 md:px-6 md:py-3 border-b">
+    <div className="flex h-fit w-full flex-col rounded-sm border">
+      <div className="flex w-full justify-between border-b px-3 py-1 md:px-6 md:py-3">
         <Tabs defaultValue={activeTab} className="p-0">
-          <TabsList className="w-full flex bg-inherit text-secondary-foreground p-0 gap-2 md:gap-3 lg:gap-6">
+          <TabsList className="flex w-full gap-2 bg-inherit p-0 text-secondary-foreground md:gap-3 lg:gap-6">
             <TabsTrigger
               value="Positions"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
-              onClick={() => handleClickTab("Positions")}
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
+              onClick={() => handleClickTab('Positions')}
             >
               Positions
             </TabsTrigger>
             <TabsTrigger
               value="OpenOrders"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
-              onClick={() => handleClickTab("OpenOrders")}
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
+              onClick={() => handleClickTab('OpenOrders')}
             >
               Orders
             </TabsTrigger>
             <TabsTrigger
               value="Expired"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
-              onClick={() => handleClickTab("Expired")}
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
+              onClick={() => handleClickTab('Expired')}
             >
               Expired
             </TabsTrigger>
             <TabsTrigger
               value="History"
-              className="text-[11px] md:text-sm px-2 py-[2px] border-b rounded-none border-transparent data-[state=active]:border-primary"
-              onClick={() => handleClickTab("History")}
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
+              onClick={() => handleClickTab('History')}
             >
               History
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="hidden md:flex gap-3 items-center">
-          <Button className="bg-secondary p-2 w-full h-auto rounded-sm">
+        <div className="hidden items-center gap-3 md:flex">
+          <Button className="h-auto w-full rounded-sm bg-secondary p-2">
             <RotateCw className="text-secondary-foreground" />
           </Button>
-          {activeTab !== "History" && (
-            <Button className="bg-secondary w-full h-auto py-[6px] px-[10px] rounded-sm">
-              <Ban className="text-secondary-foreground p-0" />
+          {activeTab !== 'History' && (
+            <Button className="h-auto w-full rounded-sm bg-secondary px-[10px] py-[6px]">
+              <Ban className="p-0 text-secondary-foreground" />
               {actionTextMap[activeTab] && (
-                <span className="text-sm font-normal text-secondary-foreground p-0">
+                <span className="p-0 text-sm font-normal text-secondary-foreground">
                   {actionTextMap[activeTab]}
                 </span>
               )}
@@ -116,22 +116,22 @@ export default function TradingPositions() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="bg-inherit p-[6px] w-fit h-auto rounded-sm md:hidden shadow-none">
+            <Button className="h-auto w-fit rounded-sm bg-inherit p-[6px] shadow-none md:hidden">
               <EllipsisVertical className="text-secondary-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="p-1 min-w-fit rounded-[12px]"
+            className="min-w-fit rounded-[12px] p-1"
           >
-            <DropdownMenuItem className="space-x-[6px] gap-0 w-fit">
+            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
               <RotateCw className="w-fit text-secondary-foreground" />
               <span>Reload</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="w-fit space-x-[6px] gap-0">
+            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
               <Ban className="text-secondary-foreground" />
               {actionTextMap[activeTab] && (
-                <span className="text-sm font-normal text-secondary-foreground p-0">
+                <span className="p-0 text-sm font-normal text-secondary-foreground">
                   {actionTextMap[activeTab]}
                 </span>
               )}
@@ -139,8 +139,8 @@ export default function TradingPositions() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {activeTab === "Positions" && (
-        <div className="px-3 md:px-6 py-4 pb-[10px] space-y-[10px] min-h-[300px] flex flex-col justify-between">
+      {activeTab === 'Positions' && (
+        <div className="flex min-h-[300px] flex-col justify-between space-y-[10px] px-3 py-4 pb-[10px] md:px-6">
           {optioninfos && optioninfos.length > 0 ? (
             <>
               {optioninfos.map((position, index) => (
@@ -159,7 +159,7 @@ export default function TradingPositions() {
                   onExercise={() => onExercise(position.index)}
                 />
               ))}
-              <div className="pb-4 w-full">
+              <div className="w-full pb-4">
                 <Pagination
                   currentPage={currentPage}
                   totalItems={optioninfos.length}
@@ -169,7 +169,7 @@ export default function TradingPositions() {
               </div>
             </>
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+            <div className="flex flex-grow items-center justify-center text-center text-sm text-muted-foreground">
               No Positions Open <br /> Start Trading Now
             </div>
           )}
@@ -200,19 +200,19 @@ export default function TradingPositions() {
           </div> */}
         </div>
       )}
-      {activeTab === "Expired" && (
-        <div className="md:pb-[44px] min-h-[300px] flex">
+      {activeTab === 'Expired' && (
+        <div className="flex min-h-[300px] md:pb-[44px]">
           {expiredInfos.length > 0 ? (
             <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+            <div className="flex flex-grow items-center justify-center text-center text-sm text-muted-foreground">
               No Expired Positions <br /> Start Trading Now
             </div>
           )}
         </div>
       )}
-      {activeTab === "OpenOrders" && (
-        <div className="px-3 md:px-6 py-4 pb-[10px] space-y-[10px] min-h-[300px] flex flex-col justify-between">
+      {activeTab === 'OpenOrders' && (
+        <div className="flex min-h-[300px] flex-col justify-between space-y-[10px] px-3 py-4 pb-[10px] md:px-6">
           {dummyOrders.length > 0 ? (
             <>
               <div className="flex flex-col space-y-[10px]">
@@ -234,7 +234,7 @@ export default function TradingPositions() {
                     />
                   ))}
               </div>
-              <div className="pb-4 w-full">
+              <div className="w-full pb-4">
                 <Pagination
                   currentPage={currentPage}
                   totalItems={dummyOrders.length}
@@ -244,18 +244,18 @@ export default function TradingPositions() {
               </div>
             </>
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+            <div className="flex flex-grow items-center justify-center text-center text-sm text-muted-foreground">
               No Orders Open <br /> Start Trading Now
             </div>
           )}
         </div>
       )}
-      {activeTab === "History" && (
-        <div className="px-3 md:px-6 py-4 pb-[20px] md:pb-[10px] space-y-[10px] min-h-[300px] flex flex-col justify-between">
+      {activeTab === 'History' && (
+        <div className="flex min-h-[300px] flex-col justify-between space-y-[10px] px-3 py-4 pb-[20px] md:px-6 md:pb-[10px]">
           {doneInfo.length > 0 ? (
             <OrderHistory doneOptioninfos={doneInfo} />
           ) : (
-            <div className="text-sm text-muted-foreground text-center flex  flex-grow justify-center items-center">
+            <div className="flex flex-grow items-center justify-center text-center text-sm text-muted-foreground">
               No History Available
               <br /> Start Trading Now
             </div>
@@ -263,5 +263,5 @@ export default function TradingPositions() {
         </div>
       )}
     </div>
-  );
+  )
 }

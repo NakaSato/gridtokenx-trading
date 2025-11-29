@@ -1,14 +1,14 @@
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from '../ui/card'
 
-export function VolumeCard(){
-    return (
-        <Card className="rounded-sm w-full">
-            <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                    <h1>14 Day Volume</h1>
-                </div>
-                <div className="text-3xl font-bold mb-2">$0</div>
-            </CardContent>
-        </Card>
-    )
+export function VolumeCard() {
+  return (
+    <Card className="w-full rounded-sm">
+      <CardContent className="p-6">
+        <div className="mb-4 flex items-start justify-between">
+          <h1>14 Day Volume</h1>
+        </div>
+        <div className="mb-2 text-3xl font-bold">$0</div>
+      </CardContent>
+    </Card>
+  )
 }

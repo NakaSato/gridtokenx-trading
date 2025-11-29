@@ -1,6 +1,7 @@
 # Frontend Email Verification Flow
 
 ## Overview
+
 This document explains how the frontend handles email verification and automatic wallet generation in the GridTokenX platform.
 
 ## Complete User Registration Flow
@@ -37,6 +38,7 @@ This document explains how the frontend handles email verification and automatic
 ### 1. Registration Page (No Wallet Required!)
 
 **Frontend Form:**
+
 ```typescript
 // src/pages/Register.tsx
 import { useState } from 'react';
@@ -85,12 +87,12 @@ export function RegisterPage() {
       }
 
       const data = await response.json();
-      
+
       // Show success message and redirect
-      navigate('/registration-success', { 
-        state: { email: formData.email } 
+      navigate('/registration-success', {
+        state: { email: formData.email }
       });
-      
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -102,7 +104,7 @@ export function RegisterPage() {
     <div className="register-page">
       <h1>Create Your Account</h1>
       <p>Join GridTokenX - No wallet needed yet!</p>
-      
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -111,7 +113,7 @@ export function RegisterPage() {
           onChange={(e) => setFormData({...formData, username: e.target.value})}
           required
         />
-        
+
         <input
           type="email"
           placeholder="Email"
@@ -119,7 +121,7 @@ export function RegisterPage() {
           onChange={(e) => setFormData({...formData, email: e.target.value})}
           required
         />
-        
+
         <input
           type="password"
           placeholder="Password (min 8 characters)"
@@ -128,7 +130,7 @@ export function RegisterPage() {
           required
           minLength={8}
         />
-        
+
         <input
           type="text"
           placeholder="First Name"
@@ -136,7 +138,7 @@ export function RegisterPage() {
           onChange={(e) => setFormData({...formData, first_name: e.target.value})}
           required
         />
-        
+
         <input
           type="text"
           placeholder="Last Name"
@@ -144,9 +146,9 @@ export function RegisterPage() {
           onChange={(e) => setFormData({...formData, last_name: e.target.value})}
           required
         />
-        
+
         {error && <div className="error">{error}</div>}
-        
+
         <button type="submit" disabled={loading}>
           {loading ? 'Creating Account...' : 'Register'}
         </button>
@@ -183,7 +185,7 @@ export function RegistrationSuccessPage() {
         </ol>
       </div>
       <p className="note">
-        💡 <strong>Note:</strong> You don't need to create a wallet manually - 
+        💡 <strong>Note:</strong> You don't need to create a wallet manually -
         we'll generate a secure Solana wallet for you when you verify your email!
       </p>
     </div>
@@ -219,7 +221,7 @@ export function VerifyEmailPage() {
     const verifyEmail = async () => {
       // Extract token from URL query parameter
       const token = searchParams.get('token');
-      
+
       if (!token) {
         setStatus('error');
         setError('Invalid verification link. No token provided.');
@@ -241,8 +243,8 @@ export function VerifyEmailPage() {
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(
-            errorData.error?.message || 
-            errorData.message || 
+            errorData.error?.message ||
+            errorData.message ||
             'Verification failed'
           );
         }
@@ -253,11 +255,11 @@ export function VerifyEmailPage() {
 
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          navigate('/login', { 
-            state: { 
+          navigate('/login', {
+            state: {
               message: 'Email verified! Please login to continue.',
-              walletCreated: true 
-            } 
+              walletCreated: true
+            }
           });
         }, 3000);
 
@@ -285,14 +287,14 @@ export function VerifyEmailPage() {
       <div className="verify-page success">
         <div className="success-icon">🎉</div>
         <h1>Email Verified Successfully!</h1>
-        
+
         <div className="wallet-created">
           <h2>🔐 Your Solana Wallet is Ready!</h2>
           <p>We've automatically created a secure Solana wallet for you:</p>
           <div className="wallet-address">
             <code>{result.wallet_address}</code>
           </div>
-          <button 
+          <button
             onClick={() => navigator.clipboard.writeText(result.wallet_address)}
             className="copy-button"
           >
@@ -313,7 +315,7 @@ export function VerifyEmailPage() {
         <p className="redirect-notice">
           Redirecting to login page in 3 seconds...
         </p>
-        
+
         <button onClick={() => navigate('/login')}>
           Login Now →
         </button>
@@ -376,10 +378,10 @@ Subject: Verify Your Email - GridTokenX Platform
 
 Hello john_doe,
 
-Thank you for registering with GridTokenX Platform. We're excited to 
+Thank you for registering with GridTokenX Platform. We're excited to
 have you join our peer-to-peer energy trading network!
 
-To complete your registration and start trading energy tokens, please 
+To complete your registration and start trading energy tokens, please
 verify your email address by clicking the button below:
 
 ┌──────────────────────────┐
@@ -389,7 +391,7 @@ verify your email address by clicking the button below:
 If the button doesn't work, copy and paste this link:
 http://localhost:3000/verify-email?token=U41xd8iA0XhbaCzS3DzUiQTBjB0IjaQ
 
-🔐 Security Note: Your Solana wallet will be automatically created when 
+🔐 Security Note: Your Solana wallet will be automatically created when
 you verify your email. You don't need to do anything else!
 
 This link expires in 24 hours.
@@ -398,6 +400,7 @@ This link expires in 24 hours.
 ## API Endpoints Used
 
 ### 1. Registration API
+
 ```http
 POST /api/auth/register
 Content-Type: application/json
@@ -425,6 +428,7 @@ Response (HTTP 201):
 ```
 
 ### 2. Email Verification API (Auto-generates Wallet!)
+
 ```http
 GET /api/auth/verify-email?token=U41xd8iA0XhbaCzS3DzUiQTBjB0IjaQ
 
@@ -437,6 +441,7 @@ Response (HTTP 200):
 ```
 
 ### 3. Login API (After Verification)
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -464,6 +469,7 @@ Response (HTTP 200):
 ## Important Notes
 
 ### ✅ What Frontend Should Do:
+
 1. **DO NOT** include `wallet_address` field in registration form
 2. **DO** extract `token` from URL query params in verify-email page
 3. **DO** call `GET /api/auth/verify-email?token=xxx` to trigger wallet creation
@@ -471,6 +477,7 @@ Response (HTTP 200):
 5. **DO** redirect to login after successful verification
 
 ### ❌ What Frontend Should NOT Do:
+
 1. **DO NOT** create wallets on the frontend
 2. **DO NOT** ask users for wallet addresses during registration
 3. **DO NOT** try to verify email without the token from email link
@@ -494,6 +501,7 @@ cd api-gateway/scripts
 ```
 
 This validates:
+
 - Registration without wallet_address (✓)
 - Registration rejects wallet_address field (✓)
 - Email verification generates wallet (✓)
@@ -503,6 +511,7 @@ This validates:
 ## Environment Configuration
 
 **Backend (.env):**
+
 ```bash
 # Email service configuration
 EMAIL_VERIFICATION_BASE_URL=http://localhost:3000  # Frontend URL
@@ -517,6 +526,7 @@ EMAIL_VERIFICATION_EXPIRY_HOURS=24
 ```
 
 **Frontend (.env):**
+
 ```bash
 # API base URL
 VITE_API_BASE_URL=http://localhost:8080
@@ -525,26 +535,30 @@ VITE_API_BASE_URL=http://localhost:8080
 ## Troubleshooting
 
 ### "Invalid or expired verification token"
+
 - Token has been used already
 - Token expired (>24 hours old)
 - Token was malformed in URL
 
 **Solution:** Use resend verification endpoint:
+
 ```typescript
 fetch('http://localhost:8080/api/auth/resend-verification', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email: 'user@example.com' })
-});
+  body: JSON.stringify({ email: 'user@example.com' }),
+})
 ```
 
 ### "Email already verified"
+
 - User clicked the link twice
 - Email was already verified previously
 
 **Solution:** Just redirect to login - user can login now!
 
 ### "Wallet address format is invalid"
+
 - This shouldn't happen if using backend-generated wallets
 - Backend creates proper Base58-encoded Solana public keys
 

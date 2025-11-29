@@ -1,181 +1,187 @@
-"use client";
+'use client'
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "./ui/button";
-import { XIcon, Eye, EyeOff } from "lucide-react";
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from './ui/button'
+import { XIcon, Eye, EyeOff } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "./ui/dialog";
-import WalletList from "./WalletList";
-import { useWallet } from "@solana/wallet-adapter-react";
-import toast from "react-hot-toast";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Separator } from "./ui/separator";
-import { Checkbox } from "./ui/checkbox";
-import type { Wallet } from "../types/wallet";
-import { defaultApiClient } from "../lib/api-client";
-import type { LoginResponse, RegisterResponse } from "../types/auth";
-import { useAuth } from "../contexts/AuthProvider";
+} from './ui/dialog'
+import WalletList from './WalletList'
+import { useWallet } from '@solana/wallet-adapter-react'
+import toast from 'react-hot-toast'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Separator } from './ui/separator'
+import { Checkbox } from './ui/checkbox'
+import type { Wallet } from '../types/wallet'
+import { defaultApiClient } from '../lib/api-client'
+import type { LoginResponse, RegisterResponse } from '../types/auth'
+import { useAuth } from '../contexts/AuthProvider'
 
 interface WalletModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
 // Memoized wallet configuration to prevent recreation on every render
 export const allWallets: Wallet[] = [
-  { name: "Phantom", iconPath: "/images/phantom.png", id: "phantom" },
-  { name: "Solflare", iconPath: "/images/solflare.png", id: "solflare" },
-  { name: "Trust", iconPath: "/images/trust.png", id: "trust" },
-  { name: "SafePal", iconPath: "/images/safepal.png", id: "safepal" },
-] as const;
+  { name: 'Phantom', iconPath: '/images/phantom.png', id: 'phantom' },
+  { name: 'Solflare', iconPath: '/images/solflare.png', id: 'solflare' },
+  { name: 'Trust', iconPath: '/images/trust.png', id: 'trust' },
+  { name: 'SafePal', iconPath: '/images/safepal.png', id: 'safepal' },
+] as const
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
-  const router = useRouter();
-  const { select, wallets } = useWallet();
-  const { login, register, isLoading: authLoading, user, updateWallet } = useAuth();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [authMode, setAuthMode] = useState<"wallet" | "signin" | "signup">(
-    "wallet"
-  );
+  const router = useRouter()
+  const { select, wallets } = useWallet()
+  const {
+    login,
+    register,
+    isLoading: authLoading,
+    user,
+    updateWallet,
+  } = useAuth()
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [authMode, setAuthMode] = useState<'wallet' | 'signin' | 'signup'>(
+    'wallet'
+  )
 
   // Email/Password form states
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [role, setRole] = useState("user");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [role, setRole] = useState('user')
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [agreeToTerms, setAgreeToTerms] = useState(false)
 
   const handleWalletConnect = useCallback(
     async (walletName: string, iconPath: string) => {
-      if (isConnecting) return;
+      if (isConnecting) return
 
-      setIsConnecting(true);
+      setIsConnecting(true)
       try {
         const wallet = wallets.find(
           (value) => value.adapter.name === walletName
-        );
+        )
 
         if (!wallet) {
-          toast.error(`Wallet "${walletName}" not found`);
-          return;
+          toast.error(`Wallet "${walletName}" not found`)
+          return
         }
 
         // Check if wallet is ready
         if (
           !wallet.adapter.readyState ||
-          wallet.adapter.readyState === "Unsupported"
+          wallet.adapter.readyState === 'Unsupported'
         ) {
           toast.error(
             `${walletName} wallet is not installed. Please install it first.`
-          );
+          )
           // Open wallet installation page
-          if (walletName === "Phantom") {
-            window.open("https://phantom.app/", "_blank");
-          } else if (walletName === "Solflare") {
-            window.open("https://solflare.com/", "_blank");
-          } else if (walletName === "Trust") {
-            window.open("https://trustwallet.com/", "_blank");
-          } else if (walletName === "SafePal") {
-            window.open("https://www.safepal.io/download", "_blank");
+          if (walletName === 'Phantom') {
+            window.open('https://phantom.app/', '_blank')
+          } else if (walletName === 'Solflare') {
+            window.open('https://solflare.com/', '_blank')
+          } else if (walletName === 'Trust') {
+            window.open('https://trustwallet.com/', '_blank')
+          } else if (walletName === 'SafePal') {
+            window.open('https://www.safepal.io/download', '_blank')
           }
-          return;
+          return
         }
 
-        if (wallet.adapter.readyState === "NotDetected") {
+        if (wallet.adapter.readyState === 'NotDetected') {
           toast.error(
             `${walletName} wallet not detected. Please install the extension.`
-          );
-          return;
+          )
+          return
         }
 
-        select(wallet.adapter.name);
-        await wallet.adapter.connect();
+        select(wallet.adapter.name)
+        await wallet.adapter.connect()
 
         // If user is logged in, update their wallet address in the backend
         if (user && wallet.adapter.publicKey) {
           try {
-            await updateWallet(wallet.adapter.publicKey.toString());
-            toast.success("Wallet linked to your account");
+            await updateWallet(wallet.adapter.publicKey.toString())
+            toast.success('Wallet linked to your account')
           } catch (error) {
-            console.error("Failed to link wallet:", error);
-            toast.error("Connected, but failed to link wallet to account");
+            console.error('Failed to link wallet:', error)
+            toast.error('Connected, but failed to link wallet to account')
           }
         }
 
-        toast.success(`${walletName} Wallet Connected`);
+        toast.success(`${walletName} Wallet Connected`)
 
-        onClose();
+        onClose()
       } catch (error: any) {
-        console.error("Wallet connection error:", error);
+        console.error('Wallet connection error:', error)
 
         // Handle specific wallet errors
-        let errorMessage = "Failed to connect";
+        let errorMessage = 'Failed to connect'
 
-        if (error?.name === "WalletNotReadyError") {
-          errorMessage = `${walletName} wallet is not ready. Please make sure it's installed and unlocked.`;
-        } else if (error?.name === "WalletConnectionError") {
-          errorMessage = "Connection failed. Please try again.";
-        } else if (error?.name === "WalletDisconnectedError") {
-          errorMessage = "Wallet was disconnected. Please try again.";
+        if (error?.name === 'WalletNotReadyError') {
+          errorMessage = `${walletName} wallet is not ready. Please make sure it's installed and unlocked.`
+        } else if (error?.name === 'WalletConnectionError') {
+          errorMessage = 'Connection failed. Please try again.'
+        } else if (error?.name === 'WalletDisconnectedError') {
+          errorMessage = 'Wallet was disconnected. Please try again.'
         } else if (error?.message) {
-          errorMessage = error.message;
+          errorMessage = error.message
         }
 
-        toast.error(errorMessage);
+        toast.error(errorMessage)
       } finally {
-        setIsConnecting(false);
+        setIsConnecting(false)
       }
     },
     [isConnecting, wallets, select, onClose, user, updateWallet]
-  );
+  )
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Validation
     if (!username || !password) {
-      toast.error("Please fill in all fields");
-      return;
+      toast.error('Please fill in all fields')
+      return
     }
 
     if (username.length < 3 || username.length > 50) {
-      toast.error("Username must be between 3 and 50 characters");
-      return;
+      toast.error('Username must be between 3 and 50 characters')
+      return
     }
 
     if (password.length < 8 || password.length > 128) {
-      toast.error("Password must be between 8 and 128 characters");
-      return;
+      toast.error('Password must be between 8 and 128 characters')
+      return
     }
 
     try {
-      const loginData = await login(username, password, rememberMe);
-      toast.success(`Welcome back, ${loginData.user.username}!`);
-      onClose();
+      const loginData = await login(username, password, rememberMe)
+      toast.success(`Welcome back, ${loginData.user.username}!`)
+      onClose()
     } catch (error: any) {
-      console.error("Sign in error:", error);
+      console.error('Sign in error:', error)
       const errorMessage =
-        error?.message || (typeof error === "string" ? error : "Unknown error");
-      toast.error(`Sign in failed: ${errorMessage}`);
+        error?.message || (typeof error === 'string' ? error : 'Unknown error')
+      toast.error(`Sign in failed: ${errorMessage}`)
     }
-  };
+  }
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // Validation
     if (
@@ -186,55 +192,68 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       !firstName ||
       !lastName
     ) {
-      toast.error("Please fill in all required fields");
-      return;
+      toast.error('Please fill in all required fields')
+      return
     }
 
     if (!agreeToTerms) {
-      toast.error("Please agree to the terms and conditions");
-      return;
+      toast.error('Please agree to the terms and conditions')
+      return
     }
 
     // Username validation
     if (username.length < 3 || username.length > 50) {
-      toast.error("Username must be between 3 and 50 characters");
-      return;
+      toast.error('Username must be between 3 and 50 characters')
+      return
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
+      toast.error('Please enter a valid email address')
+      return
     }
 
     // Password validation
     if (password.length < 8 || password.length > 128) {
-      toast.error("Password must be between 8 and 128 characters");
-      return;
+      toast.error('Password must be between 8 and 128 characters')
+      return
     }
 
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
+      toast.error('Passwords do not match')
+      return
     }
 
     // Password strength validation
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasDigit = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password);
+    const hasLowercase = /[a-z]/.test(password)
+    const hasUppercase = /[A-Z]/.test(password)
+    const hasDigit = /\d/.test(password)
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)
 
     if (!hasLowercase || !hasUppercase || !hasDigit || !hasSpecial) {
-      toast.error("Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character");
-      return;
+      toast.error(
+        'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character'
+      )
+      return
     }
 
-    const weakPatterns = ["password", "123456", "qwerty", "admin", "letmein", "welcome", "monkey", "dragon"];
-    const passwordLower = password.toLowerCase();
-    if (weakPatterns.some(pattern => passwordLower.includes(pattern))) {
-      toast.error("Password contains common weak patterns (e.g. 'password', 'admin', '123456')");
-      return;
+    const weakPatterns = [
+      'password',
+      '123456',
+      'qwerty',
+      'admin',
+      'letmein',
+      'welcome',
+      'monkey',
+      'dragon',
+    ]
+    const passwordLower = password.toLowerCase()
+    if (weakPatterns.some((pattern) => passwordLower.includes(pattern))) {
+      toast.error(
+        "Password contains common weak patterns (e.g. 'password', 'admin', '123456')"
+      )
+      return
     }
 
     // Name validation
@@ -244,11 +263,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       lastName.length < 1 ||
       lastName.length > 100
     ) {
-      toast.error("Names must be between 1 and 100 characters");
-      return;
+      toast.error('Names must be between 1 and 100 characters')
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       const response = await defaultApiClient.register({
         username,
@@ -256,109 +275,109 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         password,
         first_name: firstName,
         last_name: lastName,
-      });
+      })
 
       if (response.error || !response.data) {
         // Handle specific error codes
-        let errorMessage = "Registration failed";
+        let errorMessage = 'Registration failed'
 
         if (response.status === 400) {
           if (response.error) {
             // Handle error object or string
-            if (typeof response.error === "object" && response.error !== null) {
+            if (typeof response.error === 'object' && response.error !== null) {
               errorMessage =
                 (response.error as any).message ||
-                "Validation error or user already exists";
+                'Validation error or user already exists'
             } else {
-              errorMessage = String(response.error);
+              errorMessage = String(response.error)
             }
           } else {
-            errorMessage = "Validation error or user already exists";
+            errorMessage = 'Validation error or user already exists'
           }
         } else if (response.status === 500) {
-          errorMessage = "Server error. Please try again later.";
+          errorMessage = 'Server error. Please try again later.'
         } else if (response.error) {
           // Handle error object or string
-          if (typeof response.error === "object" && response.error !== null) {
+          if (typeof response.error === 'object' && response.error !== null) {
             errorMessage =
-              (response.error as any).message || JSON.stringify(response.error);
+              (response.error as any).message || JSON.stringify(response.error)
           } else {
-            errorMessage = String(response.error);
+            errorMessage = String(response.error)
           }
         }
 
-        toast.error(errorMessage);
-        return;
+        toast.error(errorMessage)
+        return
       }
 
-      const registerData: RegisterResponse = response.data;
+      const registerData: RegisterResponse = response.data
 
       if (registerData.email_verification_sent) {
         toast.success(
-          "Registration successful! Please check your email to verify your account."
-        );
-        onClose();
+          'Registration successful! Please check your email to verify your account.'
+        )
+        onClose()
         // Redirect to verification page with email parameter
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
       } else {
-        toast.success(registerData.message || "Registration successful!");
-        onClose();
+        toast.success(registerData.message || 'Registration successful!')
+        onClose()
       }
     } catch (error: any) {
-      console.error("Sign up error:", error);
+      console.error('Sign up error:', error)
       const errorMessage =
-        error?.message || (typeof error === "string" ? error : "Unknown error");
-      toast.error(`Sign up failed: ${errorMessage}`);
+        error?.message || (typeof error === 'string' ? error : 'Unknown error')
+      toast.error(`Sign up failed: ${errorMessage}`)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-fit max-w-md md:max-w-lg h-fit max-h-[90vh] flex flex-col bg-accent overflow-y-auto p-4 md:p-10">
-        <DialogHeader className="space-y-0 h-fit md:h-auto flex flex-row items-center justify-between pb-4 md:pb-2">
+      <DialogContent className="flex h-fit max-h-[90vh] w-fit max-w-md flex-col overflow-y-auto bg-accent p-4 md:max-w-lg md:p-10">
+        <DialogHeader className="flex h-fit flex-row items-center justify-between space-y-0 pb-4 md:h-auto md:pb-2">
           <div className="space-y-2">
-            <DialogTitle className="text-2xl text-foreground font-medium">
-              {authMode === "wallet"
-                ? "Connect Wallet"
-                : authMode === "signin"
-                  ? "Sign In"
-                  : "Sign Up"}
+            <DialogTitle className="text-2xl font-medium text-foreground">
+              {authMode === 'wallet'
+                ? 'Connect Wallet'
+                : authMode === 'signin'
+                  ? 'Sign In'
+                  : 'Sign Up'}
             </DialogTitle>
             <DialogDescription>
-              {authMode === "wallet"
-                ? "Connect your Solana wallet to start trading"
-                : authMode === "signin"
-                  ? "Sign in to your account with email and password"
-                  : "Create a new account to get started"}
+              {authMode === 'wallet'
+                ? 'Connect your Solana wallet to start trading'
+                : authMode === 'signin'
+                  ? 'Sign in to your account with email and password'
+                  : 'Create a new account to get started'}
             </DialogDescription>
           </div>
           <Button
-            className="bg-secondary p-[9px] shadow-none [&_svg]:size-[18px] rounded-[12px] border-border md:hidden"
+            className="rounded-[12px] border-border bg-secondary p-[9px] shadow-none md:hidden [&_svg]:size-[18px]"
             onClick={() => onClose()}
           >
             <XIcon size={18} className="text-secondary-foreground" />
           </Button>
         </DialogHeader>
 
-        {authMode === "wallet" ? (
-          <div className="w-full flex flex-col justify-between space-y-5">
+        {authMode === 'wallet' ? (
+          <div className="flex w-full flex-col justify-between space-y-5">
             <WalletList
               wallets={allWallets}
               onWalletConnect={handleWalletConnect}
             />
             <div className="text-center">
               <button
-                onClick={() => setAuthMode("signin")}
-                className="text-secondary-foreground hover:text-primary text-sm font-medium transition-colors"
+                onClick={() => setAuthMode('signin')}
+                className="text-sm font-medium text-secondary-foreground transition-colors hover:text-primary"
               >
                 Or sign in with email →
               </button>
             </div>
           </div>
-        ) : authMode === "signin" ? (
-          <div className="w-full max-w-md mx-auto">
+        ) : authMode === 'signin' ? (
+          <div className="mx-auto w-full max-w-md">
             <>
               <form
                 onSubmit={handleEmailSignIn}
@@ -373,7 +392,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter your username"
-                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    className="h-9 rounded-sm border border-border px-3 py-2"
                     minLength={3}
                     maxLength={50}
                     required
@@ -385,11 +404,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   <div className="relative">
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
-                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
+                      className="h-9 rounded-sm border border-border px-3 py-2 pr-10"
                       minLength={8}
                       maxLength={128}
                       required
@@ -397,15 +416,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                       aria-label={
-                        showPassword ? "Hide password" : "Show password"
+                        showPassword ? 'Hide password' : 'Show password'
                       }
                     >
                       {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -422,7 +441,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     />
                     <Label
                       htmlFor="remember-me"
-                      className="text-sm text-secondary-foreground cursor-pointer"
+                      className="cursor-pointer text-sm text-secondary-foreground"
                     >
                       Remember me
                     </Label>
@@ -430,9 +449,9 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   <button
                     type="button"
                     onClick={() =>
-                      toast("Password reset coming soon", { icon: "ℹ️" })
+                      toast('Password reset coming soon', { icon: 'ℹ️' })
                     }
-                    className="text-primary hover:text-primary/80 transition-colors text-sm"
+                    className="text-sm text-primary transition-colors hover:text-primary/80"
                   >
                     Forgot password?
                   </button>
@@ -443,7 +462,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   disabled={isLoading || authLoading}
                   className="w-full rounded-sm"
                 >
-                  {isLoading || authLoading ? "Signing In..." : "Sign In"}
+                  {isLoading || authLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
 
@@ -453,7 +472,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     <Separator />
                   </div>
                   <div className="relative flex justify-center text-xs">
-                    <span className="px-2 bg-accent text-muted-foreground">
+                    <span className="bg-accent px-2 text-muted-foreground">
                       Or continue with
                     </span>
                   </div>
@@ -468,12 +487,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 />
               </div>
 
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-secondary-foreground text-center text-sm">
-                  Don't have an account?{" "}
+              <div className="mt-6 border-t border-border pt-6">
+                <p className="text-center text-sm text-secondary-foreground">
+                  Don't have an account?{' '}
                   <button
-                    onClick={() => setAuthMode("signup")}
-                    className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                    onClick={() => setAuthMode('signup')}
+                    className="font-semibold text-primary transition-colors hover:text-primary/80"
                   >
                     Sign up
                   </button>
@@ -482,7 +501,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </>
           </div>
         ) : (
-          <div className="w-full max-w-md mx-auto">
+          <div className="mx-auto w-full max-w-md">
             <>
               <form
                 onSubmit={handleEmailSignUp}
@@ -497,7 +516,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Choose a username"
-                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    className="h-9 rounded-sm border border-border px-3 py-2"
                     minLength={3}
                     maxLength={50}
                     required
@@ -513,7 +532,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="John"
-                      className="h-9 px-3 py-2 rounded-sm border border-border"
+                      className="h-9 rounded-sm border border-border px-3 py-2"
                       minLength={1}
                       maxLength={100}
                       required
@@ -528,7 +547,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Doe"
-                      className="h-9 px-3 py-2 rounded-sm border border-border"
+                      className="h-9 rounded-sm border border-border px-3 py-2"
                       minLength={1}
                       maxLength={100}
                       required
@@ -544,7 +563,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="h-9 px-3 py-2 rounded-sm border border-border"
+                    className="h-9 rounded-sm border border-border px-3 py-2"
                     required
                   />
                 </div>
@@ -554,11 +573,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   <div className="relative">
                     <Input
                       id="signup-password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Create a password (min 8 characters)"
-                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
+                      className="h-9 rounded-sm border border-border px-3 py-2 pr-10"
                       required
                       minLength={8}
                       maxLength={128}
@@ -566,15 +585,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                       aria-label={
-                        showPassword ? "Hide password" : "Show password"
+                        showPassword ? 'Hide password' : 'Show password'
                       }
                     >
                       {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -587,11 +606,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   <div className="relative">
                     <Input
                       id="signup-confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm your password"
-                      className="h-9 px-3 py-2 rounded-sm pr-10 border border-border"
+                      className="h-9 rounded-sm border border-border px-3 py-2 pr-10"
                       required
                       minLength={8}
                       maxLength={128}
@@ -601,15 +620,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                       aria-label={
-                        showConfirmPassword ? "Hide password" : "Show password"
+                        showConfirmPassword ? 'Hide password' : 'Show password'
                       }
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -626,13 +645,13 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   />
                   <Label
                     htmlFor="agree-terms"
-                    className="text-xs text-muted-foreground cursor-pointer leading-4"
+                    className="cursor-pointer text-xs leading-4 text-muted-foreground"
                   >
-                    I agree to the{" "}
+                    I agree to the{' '}
                     <a href="#" className="text-primary hover:text-primary/80">
                       Terms of Service
-                    </a>{" "}
-                    and{" "}
+                    </a>{' '}
+                    and{' '}
                     <a href="#" className="text-primary hover:text-primary/80">
                       Privacy Policy
                     </a>
@@ -644,16 +663,16 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   disabled={isLoading || authLoading}
                   className="w-full rounded-sm"
                 >
-                  {isLoading || authLoading ? "Creating Account..." : "Sign Up"}
+                  {isLoading || authLoading ? 'Creating Account...' : 'Sign Up'}
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-secondary-foreground text-center text-sm">
-                  Already have an account?{" "}
+              <div className="mt-6 border-t border-border pt-6">
+                <p className="text-center text-sm text-secondary-foreground">
+                  Already have an account?{' '}
                   <button
-                    onClick={() => setAuthMode("signin")}
-                    className="text-primary hover:text-primary/80 font-semibold transition-colors"
+                    onClick={() => setAuthMode('signin')}
+                    className="font-semibold text-primary transition-colors hover:text-primary/80"
                   >
                     Sign in
                   </button>
@@ -664,5 +683,5 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

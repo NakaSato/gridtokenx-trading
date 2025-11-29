@@ -1,8 +1,8 @@
-"use client";
-import { useContext, useEffect, useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { SheetContent, SheetHeader, SheetTitle } from "./ui/sheet";
+'use client'
+import { useContext, useEffect, useState } from 'react'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { SheetContent, SheetHeader, SheetTitle } from './ui/sheet'
 import {
   Table,
   TableBody,
@@ -10,17 +10,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
-import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+} from './ui/table'
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 
-import usdc from "@/public/images/usdc.png";
-import Image from "next/image";
+import usdc from '@/public/images/usdc.png'
+import Image from 'next/image'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip";
+} from './ui/tooltip'
 import {
   connection,
   LP_DECIMALS,
@@ -28,32 +28,32 @@ import {
   USDC_MINT,
   WSOL_DECIMALS,
   WSOL_MINT,
-} from "@/utils/const";
-import { ContractContext } from "@/contexts/contractProvider";
+} from '@/utils/const'
+import { ContractContext } from '@/contexts/contractProvider'
 import {
   AnchorProvider,
   getProvider,
   Program,
   Provider,
-} from "@coral-xyz/anchor";
-import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
-import { OptionContract } from "@/lib/idl/option_contract";
-import * as idl from "../lib/idl/option_contract.json";
-import { getPythPrice, usePythPrice } from "@/hooks/usePythPrice";
-import { ChartStrategy } from "./ChartStrategy";
-import { PublicKey } from "@solana/web3.js";
-import CardTokenList from "./CardTokenList";
-import PoolDropdown from "./PoolDropDown";
-import { ExternalLink } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { TooltipIcon } from "@/public/svgs/icons";
+} from '@coral-xyz/anchor'
+import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
+import { OptionContract } from '@/lib/idl/option_contract'
+import * as idl from '../lib/idl/option_contract.json'
+import { getPythPrice, usePythPrice } from '@/hooks/usePythPrice'
+import { ChartStrategy } from './ChartStrategy'
+import { PublicKey } from '@solana/web3.js'
+import CardTokenList from './CardTokenList'
+import PoolDropdown from './PoolDropDown'
+import { ExternalLink } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { TooltipIcon } from '@/public/svgs/icons'
 
 interface EarnSidebarProps {
-  name: string;
-  symbol: string;
-  logo: string;
-  apy: number;
-  apr: number;
+  name: string
+  symbol: string
+  logo: string
+  apy: number
+  apr: number
 }
 
 export default function EarnSidebar({
@@ -68,13 +68,13 @@ export default function EarnSidebar({
     ratioData: Map<string, any>,
     price: number
   ) => {
-    const solCustodyData = pooldata.get(WSOL_MINT.toBase58());
-    const usdcCustodyData = pooldata.get(USDC_MINT.toBase58());
+    const solCustodyData = pooldata.get(WSOL_MINT.toBase58())
+    const usdcCustodyData = pooldata.get(USDC_MINT.toBase58())
     const solPoolsize =
-      solCustodyData.tokenOwned.toNumber() / 10 ** WSOL_DECIMALS;
+      solCustodyData.tokenOwned.toNumber() / 10 ** WSOL_DECIMALS
     const usdcPoolsize =
-      usdcCustodyData.tokenOwned.toNumber() / 10 ** USDC_DECIMALS;
-    const total = solPoolsize * price + usdcPoolsize;
+      usdcCustodyData.tokenOwned.toNumber() / 10 ** USDC_DECIMALS
+    const total = solPoolsize * price + usdcPoolsize
     return [
       {
         img: logo,
@@ -97,8 +97,8 @@ export default function EarnSidebar({
       },
       {
         img: usdc,
-        symbol: "USDC",
-        name: "USD Coin",
+        symbol: 'USDC',
+        name: 'USD Coin',
         poolSize: `${usdcPoolsize} USDC`,
         current_weightage: `${
           100 - Math.round(((solPoolsize * price) / total) * 100)
@@ -113,112 +113,112 @@ export default function EarnSidebar({
           ) ?? 0
         }%`,
       },
-    ];
-  };
-  const sc = useContext(ContractContext);
-  const [activeTab, setActiveTab] = useState<string>("mint");
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<number>(0);
-  const [isApr, setIsApr] = useState<boolean>(false);
-  const [poolDatas, setPoolDatas] = useState<any>();
-  const [tokenAmount, setTokenAmount] = useState<number>(0);
-  const { connected, publicKey } = useWallet();
-  const wallet = useAnchorWallet();
-  const [program, setProgram] = useState<Program<OptionContract>>();
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+    ]
+  }
+  const sc = useContext(ContractContext)
+  const [activeTab, setActiveTab] = useState<string>('mint')
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedToken, setSelectedToken] = useState<number>(0)
+  const [isApr, setIsApr] = useState<boolean>(false)
+  const [poolDatas, setPoolDatas] = useState<any>()
+  const [tokenAmount, setTokenAmount] = useState<number>(0)
+  const { connected, publicKey } = useWallet()
+  const wallet = useAnchorWallet()
+  const [program, setProgram] = useState<Program<OptionContract>>()
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-  };
+    setIsOpen(open)
+  }
 
   const handleClickToken = (value: number) => {
     if (selectedToken !== value) {
-      setSelectedToken(value);
+      setSelectedToken(value)
     }
-    setIsOpen(false);
-  };
+    setIsOpen(false)
+  }
   useEffect(() => {
-    (async () => {
-      let provider: Provider;
+    ;(async () => {
+      let provider: Provider
       if (wallet && connected) {
         try {
-          provider = getProvider();
+          provider = getProvider()
         } catch {
-          provider = new AnchorProvider(connection, wallet, {});
+          provider = new AnchorProvider(connection, wallet, {})
         }
 
         const program = new Program<OptionContract>(
           idl as OptionContract,
           provider
-        );
-        setProgram(program);
-        const price = await getPythPrice("Crypto.SOL/USD", Date.now());
-        const [data, ratios] = await sc?.getCustodies(program);
-        setPoolDatas(poolData(data, ratios, price));
+        )
+        setProgram(program)
+        const price = await getPythPrice('Crypto.SOL/USD', Date.now())
+        const [data, ratios] = await sc?.getCustodies(program)
+        setPoolDatas(poolData(data, ratios, price))
       }
-    })();
-  }, [connected, poolData, sc, wallet]);
+    })()
+  }, [connected, poolData, sc, wallet])
 
   const onSubmit = () => {
     if (connected) {
-      if (activeTab == "mint") {
+      if (activeTab == 'mint') {
         if (selectedToken == 0) {
           sc.onAddLiquidity(
             tokenAmount * 10 ** WSOL_DECIMALS,
             program,
             WSOL_MINT
-          );
+          )
         } else {
           sc.onAddLiquidity(
             tokenAmount * 10 ** USDC_DECIMALS,
             program,
             USDC_MINT
-          );
+          )
         }
-      } else if (activeTab == "redeem") {
+      } else if (activeTab == 'redeem') {
         if (selectedToken == 0) {
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
             program,
             WSOL_MINT
-          );
+          )
         } else {
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
             program,
             USDC_MINT
-          );
+          )
         }
       }
     }
-  };
+  }
 
   const handleTokenAmount = (value: string) => {
-    setTokenAmount(parseFloat(value));
-    setLoading(true);
+    setTokenAmount(parseFloat(value))
+    setLoading(true)
     setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  };
+      setLoading(false)
+    }, 500)
+  }
 
   setTimeout(() => {
-    setLoading(!loading);
-  }, 2000);
+    setLoading(!loading)
+  }, 2000)
 
   return (
-    <SheetContent className="space-y-6 w-full md:w-[720px] rounded-sm bg-accent overflow-y-auto">
+    <SheetContent className="w-full space-y-6 overflow-y-auto rounded-sm bg-accent md:w-[720px]">
       <SheetHeader>
-        <SheetTitle className="text-2xl flex justify-between">
+        <SheetTitle className="flex justify-between text-2xl">
           {name} Liquidity Pool
         </SheetTitle>
       </SheetHeader>
-      <div className="space-y-5  flex flex-col w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-5 items-center sm:space-x-3 space-y-3 sm:space-y-0">
-          <div className="border rounded-sm p-3 sm:col-span-2 h-full">
+      <div className="flex w-full flex-col space-y-5">
+        <div className="grid grid-cols-1 items-center space-y-3 sm:grid-cols-5 sm:space-x-3 sm:space-y-0">
+          <div className="h-full rounded-sm border p-3 sm:col-span-2">
             <div className="flex flex-col justify-between">
-              <div className="flex space-x-1 text-sm font-medium ">
-                <div className="flex gap-2 items-center">
+              <div className="flex space-x-1 text-sm font-medium">
+                <div className="flex items-center gap-2">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild className="cursor-pointer">
@@ -230,7 +230,7 @@ export default function EarnSidebar({
                     </Tooltip>
                   </TooltipProvider>
                   <span className="text-secondary-foreground">
-                    {isApr ? "APR" : "APY"}:
+                    {isApr ? 'APR' : 'APY'}:
                   </span>
                 </div>
                 <TooltipProvider>
@@ -240,27 +240,27 @@ export default function EarnSidebar({
                       onClick={() => setIsApr(!isApr)}
                       className="cursor-pointer"
                     >
-                      <span className="text-foreground text-right">
+                      <span className="text-right text-foreground">
                         {isApr ? `${apr}` : `${apy}`}%
                       </span>
                     </TooltipTrigger>
                     <TooltipContent className="">
-                      <span className="text-background text-right">
+                      <span className="text-right text-background">
                         Click to toggle between APR / APY
                       </span>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <div className="flex gap-2 text-xs font-normal text-secondary-foreground items-center">
+              <div className="flex items-center gap-2 text-xs font-normal text-secondary-foreground">
                 <span>Last updated at:</span>
                 <span>11.12.2024</span>
               </div>
             </div>
-            <div className="w-full h-[1px] border-b my-2" />
+            <div className="my-2 h-[1px] w-full border-b" />
             <div className="flex flex-col gap-2">
               <div className="flex gap-2 text-base font-medium">
-                <div className="rounded-full bg-inherit w-6 h-6 flex items-center justify-center ring-2 ring-border">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-inherit ring-2 ring-border">
                   <Image
                     src={logo}
                     alt={name}
@@ -271,20 +271,20 @@ export default function EarnSidebar({
                 </div>
                 <span className="whitespace-nowrap">{name} Pool</span>
               </div>
-              <div className="w-full flex">
-                <p className="text-sm tracking-tight text-justify">
+              <div className="flex w-full">
+                <p className="text-justify text-sm tracking-tight">
                   The {name} Liquidity Pool ({symbol}-LP) is a liquidity pool
                   that sells covered calls and cash secured puts.
                 </p>
               </div>
             </div>
           </div>
-          <div className="sm:col-span-3 h-fit border rounded-sm p-2">
-            <div className="w-full flex justify-center items-center space-x-2">
+          <div className="h-fit rounded-sm border p-2 sm:col-span-3">
+            <div className="flex w-full items-center justify-center space-x-2">
               <span className="text-sm">Liquidity Pool Price Chart</span>
               <button
                 className="hover:text-primary"
-                onClick={() => router.push("/analytics/pool-metrics")}
+                onClick={() => router.push('/analytics/pool-metrics')}
               >
                 <ExternalLink size={14} />
               </button>
@@ -297,10 +297,10 @@ export default function EarnSidebar({
             Total Value Locked
           </span>
           <div className="flex flex-col gap-1">
-            <span className="text-foreground text-2xl font-medium">
+            <span className="text-2xl font-medium text-foreground">
               {/* TVL goes here */}
             </span>
-            <div className="flex gap-2 items-center text-xs text-foreground font-normal">
+            <div className="flex items-center gap-2 text-xs font-normal text-foreground">
               <span>AUM limit: N/A</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -319,23 +319,23 @@ export default function EarnSidebar({
         </div>
         <div className="flex flex-col space-y-3">
           <span className="text-base font-medium">Liquidity Allocation</span>
-          <div className="p-3 pt-0 border rounded-sm w-full space-y-3">
+          <div className="w-full space-y-3 rounded-sm border p-3 pt-0">
             <Table>
               <TableHeader>
                 <TableRow className="w-full">
-                  <TableHead className="px-3 py-4 text-secondary-foreground font-medium">
+                  <TableHead className="px-3 py-4 font-medium text-secondary-foreground">
                     Token
                   </TableHead>
-                  <TableHead className="px-3 py-4 text-secondary-foreground font-medium whitespace-nowrap">
+                  <TableHead className="whitespace-nowrap px-3 py-4 font-medium text-secondary-foreground">
                     Pool Size
                   </TableHead>
-                  <TableHead className="px-3 py-4 text-secondary-foreground font-medium whitespace-nowrap">
+                  <TableHead className="whitespace-nowrap px-3 py-4 font-medium text-secondary-foreground">
                     Current Weightage
                   </TableHead>
-                  <TableHead className="px-3 py-4 text-secondary-foreground font-medium whitespace-nowrap">
+                  <TableHead className="whitespace-nowrap px-3 py-4 font-medium text-secondary-foreground">
                     Target Weightage
                   </TableHead>
-                  <TableHead className="px-3 py-4 text-secondary-foreground font-medium">
+                  <TableHead className="px-3 py-4 font-medium text-secondary-foreground">
                     Utilization
                   </TableHead>
                 </TableRow>
@@ -344,8 +344,8 @@ export default function EarnSidebar({
                 {poolDatas &&
                   poolDatas.map((row: any) => (
                     <TableRow key={row.symbol} className="border-none">
-                      <TableCell className="flex gap-2 items-center">
-                        <div className="rounded-full bg-inherit w-6 h-6 flex items-center justify-center ring-2 ring-border">
+                      <TableCell className="flex items-center gap-2">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-inherit ring-2 ring-border">
                           <Image
                             src={row.img}
                             alt={name}
@@ -355,34 +355,34 @@ export default function EarnSidebar({
                           />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-xs text-foreground font-normal">
+                          <span className="text-xs font-normal text-foreground">
                             {row.symbol}
                           </span>
-                          <span className="text-xs text-secondary-foreground font-normal whitespace-nowrap">
+                          <span className="whitespace-nowrap text-xs font-normal text-secondary-foreground">
                             {row.name}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-foreground text-xs font-normal">
+                          <span className="text-xs font-normal text-foreground">
                             {row.poolSize}
                           </span>
-                          <span className="text-secondary-foreground text-xs font-normal">
+                          <span className="text-xs font-normal text-secondary-foreground">
                             Rank
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs text-foreground text-center">
+                      <TableCell className="text-center text-xs text-foreground">
                         {row.current_weightage}
                       </TableCell>
-                      <TableCell className="text-xs text-foreground text-center">
+                      <TableCell className="text-center text-xs text-foreground">
                         {row.target_weightage}
                       </TableCell>
-                      <TableCell className="text-xs text-foreground text-center">
+                      <TableCell className="text-center text-xs text-foreground">
                         XXX %
                       </TableCell>
-                      <TableCell className="text-xs text-foreground text-center">
+                      <TableCell className="text-center text-xs text-foreground">
                         {row.utilization}
                       </TableCell>
                     </TableRow>
@@ -392,18 +392,18 @@ export default function EarnSidebar({
             <div className="border-t pt-3">
               <div className="flex flex-col">
                 <div className="flex justify-between">
-                  <span className="text-xs text-secondary-foreground font-normal">
+                  <span className="text-xs font-normal text-secondary-foreground">
                     {symbol}LP Price
                   </span>
-                  <span className="text-xs text-foreground font-medium">
+                  <span className="text-xs font-medium text-foreground">
                     $4,228
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-secondary-foreground font-normal">
+                  <span className="text-xs font-normal text-secondary-foreground">
                     Total Supply
                   </span>
-                  <span className="text-xs text-foreground font-medium">
+                  <span className="text-xs font-medium text-foreground">
                     375 157 373,224 {symbol}LP
                   </span>
                 </div>
@@ -411,41 +411,41 @@ export default function EarnSidebar({
             </div>
           </div>
         </div>
-        <div className="flex flex-col w-full space-y-3">
+        <div className="flex w-full flex-col space-y-3">
           <Tabs value={activeTab}>
-            <TabsList className="w-full h-auto p-2 flex justify-between rounded-sm bg-accent-foreground">
+            <TabsList className="flex h-auto w-full justify-between rounded-sm bg-accent-foreground p-2">
               <TabsTrigger
                 value="mint"
-                className="rounded-sm px-5 py-[6px] border border-transparent w-full data-[state=active]:border-primary hover:text-primary"
+                className="w-full rounded-sm border border-transparent px-5 py-[6px] hover:text-primary data-[state=active]:border-primary"
                 onClick={() => {
-                  setActiveTab("mint");
-                  handleTokenAmount("0");
+                  setActiveTab('mint')
+                  handleTokenAmount('0')
                 }}
               >
                 Buy
               </TabsTrigger>
               <TabsTrigger
                 value="redeem"
-                className="rounded-sm border px-5 py-[6px] border-transparent w-full data-[state=active]:border-primary hover:text-primary"
+                className="w-full rounded-sm border border-transparent px-5 py-[6px] hover:text-primary data-[state=active]:border-primary"
                 onClick={() => {
-                  setActiveTab("redeem");
-                  handleTokenAmount("0");
+                  setActiveTab('redeem')
+                  handleTokenAmount('0')
                 }}
               >
                 Sell
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex justify-between items-start gap-2">
-            <div className="w-full flex flex-col space-y-2">
-              {activeTab === "mint" ? (
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex w-full flex-col space-y-2">
+              {activeTab === 'mint' ? (
                 <div className="grid grid-cols-12 gap-2">
                   <div className="col-span-8 flex flex-col space-y-1">
-                    <span className="text-sm text-secondary-foreground font-medium">
+                    <span className="text-sm font-medium text-secondary-foreground">
                       Pay
                     </span>
                     <div className="relative w-full">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                      <div className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center space-x-2">
                         <PoolDropdown
                           isOpen={isOpen}
                           handleClickToken={handleClickToken}
@@ -458,46 +458,46 @@ export default function EarnSidebar({
                       <Input
                         type="number"
                         onChange={(e) => handleTokenAmount(e.target.value)}
-                        placeholder={"0.00"}
-                        className="pl-12 py-2 rounded-sm h-auto w-full bg-secondary border-none shadow-none"
+                        placeholder={'0.00'}
+                        className="h-auto w-full rounded-sm border-none bg-secondary py-2 pl-12 shadow-none"
                         step="0.1"
                         min="0.1"
                       />
                     </div>
                   </div>
                   <Button
-                    className="h-fit rounded-sm px-4 py-[10px] col-span-4 mt-6 text-black bg-primary hover:bg-gradient-primary"
+                    className="col-span-4 mt-6 h-fit rounded-sm bg-primary px-4 py-[10px] text-black hover:bg-gradient-primary"
                     onClick={onSubmit}
                   >
-                    {activeTab === "mint" ? "Buy" : "Sell"}
+                    {activeTab === 'mint' ? 'Buy' : 'Sell'}
                   </Button>
                 </div>
               ) : (
-                <div className="gap-2 grid gird-cols-12">
-                  <div className="flex flex-col space-y-1 col-span-12 w-full">
-                    <span className="text-sm text-secondary-foreground font-medium">
+                <div className="gird-cols-12 grid gap-2">
+                  <div className="col-span-12 flex w-full flex-col space-y-1">
+                    <span className="text-sm font-medium text-secondary-foreground">
                       Pay
                     </span>
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                      <div className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center space-x-2">
                         {symbol}-LP
                       </div>
                       <Input
                         type="number"
                         placeholder="0.00"
                         onChange={(e) => handleTokenAmount(e.target.value)}
-                        className="text-right pr-3 py-2 rounded-sm h-auto w-full bg-secondary border-none shadow-none"
+                        className="h-auto w-full rounded-sm border-none bg-secondary py-2 pr-3 text-right shadow-none"
                         step="0.1"
                         min="0.1"
                       />
                     </div>
                   </div>
-                  <div className="flex flex-col space-y-1 col-span-8">
-                    <span className="text-sm text-secondary-foreground font-medium">
+                  <div className="col-span-8 flex flex-col space-y-1">
+                    <span className="text-sm font-medium text-secondary-foreground">
                       Sell Into
                     </span>
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                      <div className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center space-x-2">
                         <PoolDropdown
                           isOpen={isOpen}
                           handleClickToken={handleClickToken}
@@ -510,46 +510,48 @@ export default function EarnSidebar({
                       <Input
                         type="number"
                         placeholder="0.00"
-                        className="text-right pr-3 py-2 rounded-sm h-auto w-full bg-secondary border-none shadow-none"
+                        className="h-auto w-full rounded-sm border-none bg-secondary py-2 pr-3 text-right shadow-none"
                         step="0.1"
                         min="0.1"
                       />
                     </div>
                   </div>
                   <Button
-                    className="h-fit rounded-sm px-4 py-[10px] col-span-4 mt-6 text-black bg-primary hover:bg-gradient-primary"
+                    className="col-span-4 mt-6 h-fit rounded-sm bg-primary px-4 py-[10px] text-black hover:bg-gradient-primary"
                     onClick={onSubmit}
                   >
-                    {activeTab === "mint" ? "Buy" : "Sell"}
+                    {activeTab === 'mint' ? 'Buy' : 'Sell'}
                   </Button>
                 </div>
               )}
               {tokenAmount > 0 && (
-                <div className="w-full flex flex-col border p-5 rounded-sm">
-                  <section className="flex flex-col space-y-1 text-sm text-secondary-foreground font-medium">
+                <div className="flex w-full flex-col rounded-sm border p-5">
+                  <section className="flex flex-col space-y-1 text-sm font-medium text-secondary-foreground">
                     <div>
                       <span className="text-foreground">
-                        {activeTab === "mint"
+                        {activeTab === 'mint'
                           ? `${tokenAmount > 0 ? tokenAmount : 0} ${symbol} `
                           : `${
                               tokenAmount > 0 ? tokenAmount : 0
                             } ${symbol}-LP `}
                       </span>
                       <span>
-                        will be{" "}
-                        {activeTab === "mint" ? "bought into" : "sold from"} the
-                        pool at <span className="text-foreground">0.1%</span>{" "}
+                        will be{' '}
+                        {activeTab === 'mint' ? 'bought into' : 'sold from'} the
+                        pool at <span className="text-foreground">0.1%</span>{' '}
                         fees. <br />
-                        You&apos;ll Receive XXX{" "}
+                        You&apos;ll Receive XXX{' '}
                         <span className="text-foreground">
-                          {activeTab === "mint" ? `${symbol}-LP` : `${symbol} `}{" "}
+                          {activeTab === 'mint'
+                            ? `${symbol}-LP`
+                            : `${symbol} `}{' '}
                         </span>
                       </span>
                     </div>
-                    <div className="text-xs flex gap-2">
+                    <div className="flex gap-2 text-xs">
                       <svg
                         className={`${
-                          loading ? "animate-spin" : ""
+                          loading ? 'animate-spin' : ''
                         } h-4 w-4 text-primary`}
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -569,14 +571,14 @@ export default function EarnSidebar({
                           d="M4 12a8 8 0 018-8v8z"
                         ></path>
                       </svg>
-                      {activeTab === "mint" ? (
+                      {activeTab === 'mint' ? (
                         <span>
-                          {tokenAmount > 0 ? tokenAmount : 0} {symbol} = XXX{" "}
+                          {tokenAmount > 0 ? tokenAmount : 0} {symbol} = XXX{' '}
                           {symbol}-LP
                         </span>
                       ) : (
                         <span>
-                          {tokenAmount > 0 ? tokenAmount : 0} {symbol}-LP = XXX{" "}
+                          {tokenAmount > 0 ? tokenAmount : 0} {symbol}-LP = XXX{' '}
                           {symbol}
                         </span>
                       )}
@@ -589,5 +591,5 @@ export default function EarnSidebar({
         </div>
       </div>
     </SheetContent>
-  );
+  )
 }

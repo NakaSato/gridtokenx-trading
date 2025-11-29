@@ -1,4 +1,4 @@
-import CreateOptionsPool from "@/components/CreateOptionsPool"
+import CreateOptionsPool from '@/components/CreateOptionsPool'
 
 export default function createOptioPage() {
   return (
@@ -7,4 +7,3 @@ export default function createOptioPage() {
     </div>
   )
 }
-

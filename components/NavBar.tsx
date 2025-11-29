@@ -1,36 +1,36 @@
-"use client";
-import Link from "next/link";
+'use client'
+import Link from 'next/link'
 
-import { Button, buttonVariants } from "./ui/button";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { AuthButton } from "./auth";
+import { Button, buttonVariants } from './ui/button'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import { AuthButton } from './auth'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import WalletSideBar from "./WalletSidebar";
-import { useTheme } from "next-themes";
-import x from "@/public/svgs/x.svg";
-import discord from "@/public/svgs/discord.svg";
-import yt from "@/public/svgs/youtube.svg";
-import medium from "@/public/images/medium.png";
-import telegram from "@/public/svgs/telegram.svg";
-import Image from "next/image";
-import { Logo } from "./Logo";
+} from './ui/dropdown-menu'
+import WalletSideBar from './WalletSidebar'
+import { useTheme } from 'next-themes'
+import x from '@/public/svgs/x.svg'
+import discord from '@/public/svgs/discord.svg'
+import yt from '@/public/svgs/youtube.svg'
+import medium from '@/public/images/medium.png'
+import telegram from '@/public/svgs/telegram.svg'
+import Image from 'next/image'
+import { Logo } from './Logo'
 
-import { Badge } from "./ui/badge";
-import Settings from "./Settings";
-import Profile from "./Profile";
-import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from "@/public/svgs/icons";
-import NavBarMobile from "./NavBarMobile";
-import Notifications from "./Notifications";
-import PointsDropDown from "./PointsDropDown";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useAuth } from "@/contexts/AuthProvider";
+import { Badge } from './ui/badge'
+import Settings from './Settings'
+import Profile from './Profile'
+import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
+import NavBarMobile from './NavBarMobile'
+import Notifications from './Notifications'
+import PointsDropDown from './PointsDropDown'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { useAuth } from '@/contexts/AuthProvider'
 import {
   ArrowUpDown,
   BookOpenText,
@@ -41,56 +41,56 @@ import {
   MessagesSquare,
   TableColumnsSplit,
   User,
-} from "lucide-react";
-import { usePathname } from "next/navigation";
+} from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
 export default function NavBar() {
-  const pathname = usePathname();
-  const { theme } = useTheme();
-  const { connected } = useWallet();
-  const { isAuthenticated } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname()
+  const { theme } = useTheme()
+  const { connected } = useWallet()
+  const { isAuthenticated } = useAuth()
+  const [isOpen, setIsOpen] = useState(false)
 
   const routes: Record<string, string> = {
-    "/": "Trade",
-    "/futures": "futures",
-    "/earn": "Earn",
-    "/portfolio": "Portfolio",
-    "/analytics": "Analytics",
-    "/options-chain": "Options Chain",
-    "/feedback": "Feedback",
-  };
-  const currentPath = pathname?.split("/")[1] || "";
-  const [active, setActive] = useState(routes[`/${currentPath}`]);
+    '/': 'Trade',
+    '/futures': 'futures',
+    '/earn': 'Earn',
+    '/portfolio': 'Portfolio',
+    '/analytics': 'Analytics',
+    '/options-chain': 'Options Chain',
+    '/feedback': 'Feedback',
+  }
+  const currentPath = pathname?.split('/')[1] || ''
+  const [active, setActive] = useState(routes[`/${currentPath}`])
 
   const handleClick = (state: string) => {
     if (active !== state) {
-      setActive(state);
+      setActive(state)
     }
-  };
+  }
 
   const open = () => {
-    setActive("More");
-    setIsOpen(!isOpen);
-  };
+    setActive('More')
+    setIsOpen(!isOpen)
+  }
 
   return (
-    <header className="flex justify-between max-w-full">
-      <div className="flex justify-between py-2 gap-6">
+    <header className="flex max-w-full justify-between">
+      <div className="flex justify-between gap-6 py-2">
         <div className="flex items-center justify-center gap-2 px-1">
           <Logo width={24} height={28} className="mb-1" />
           {/* <h1 className="text-sm font-normal">GridTokenX</h1> */}
         </div>
-        <nav className="hidden md:flex justify-evenly items-center gap-8">
+        <nav className="hidden items-center justify-evenly gap-8 md:flex">
           <Link
             href="/"
             className={cn(
               buttonVariants({
-                variant: active === "Trade" ? "active" : "inactive",
+                variant: active === 'Trade' ? 'active' : 'inactive',
               }),
-              "p-0 w-auto h-auto flex justify-between gap-1 hover:text-primary group"
+              'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary'
             )}
-            onClick={() => handleClick("Trade")}
+            onClick={() => handleClick('Trade')}
           >
             <ChartLine size={16} />
             <h1 className="text-sm font-medium group-hover:text-primary">
@@ -98,10 +98,10 @@ export default function NavBar() {
             </h1>
             <Badge
               className={cn(
-                active === "Trade"
-                  ? "border-primary text-gradient-primary"
-                  : "border-secondary-foreground text-secondary-foreground",
-                "border px-1 pt-[3px] rounded-[2px] h-3 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"
+                active === 'Trade'
+                  ? 'text-gradient-primary border-primary'
+                  : 'border-secondary-foreground text-secondary-foreground',
+                'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
               )}
             >
               <span className="text-[8px] font-semibold">NEW</span>
@@ -111,11 +111,11 @@ export default function NavBar() {
             href="/futures"
             className={cn(
               buttonVariants({
-                variant: active === "futures" ? "active" : "inactive",
+                variant: active === 'futures' ? 'active' : 'inactive',
               }),
-              "p-0 w-auto h-auto flex justify-between gap-1 hover:text-primary group"
+              'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary'
             )}
-            onClick={() => handleClick("futures")}
+            onClick={() => handleClick('futures')}
           >
             <ChartLine size={16} />
             <h1 className="text-sm font-medium group-hover:text-primary">
@@ -123,10 +123,10 @@ export default function NavBar() {
             </h1>
             <Badge
               className={cn(
-                active === "futures"
-                  ? "border-primary text-gradient-primary"
-                  : "border-secondary-foreground text-secondary-foreground",
-                "border px-1 pt-[3px] rounded-[2px] h-3 bg-transparent text-center flex group-hover:border-primary group-hover:text-primary"
+                active === 'futures'
+                  ? 'text-gradient-primary border-primary'
+                  : 'border-secondary-foreground text-secondary-foreground',
+                'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
               )}
             >
               <span className="text-[8px] font-semibold">BETA</span>
@@ -136,16 +136,16 @@ export default function NavBar() {
             href="/earn"
             className={cn(
               buttonVariants({
-                variant: active === "Earn" ? "active" : "inactive",
+                variant: active === 'Earn' ? 'active' : 'inactive',
               }),
-              "hidden p-0 w-auto h-auto lg:flex justify-between gap-1 hover:text-primary"
+              'hidden h-auto w-auto justify-between gap-1 p-0 hover:text-primary lg:flex'
             )}
-            onClick={() => handleClick("Earn")}
+            onClick={() => handleClick('Earn')}
           >
             <EarnIcon />
             <h1 className="text-sm font-medium">Earn</h1>
-            <Badge className="rounded-[2px] bg-gradient-primary px-1 pt-[3px] h-3 border-none">
-              <span className="text-background text-[8px] font-semibold">
+            <Badge className="h-3 rounded-[2px] border-none bg-gradient-primary px-1 pt-[3px]">
+              <span className="text-[8px] font-semibold text-background">
                 48% APY
               </span>
             </Badge>
@@ -155,11 +155,11 @@ export default function NavBar() {
             href="/portfolio"
             className={cn(
               buttonVariants({
-                variant: active === "Portfolio" ? "active" : "inactive",
+                variant: active === 'Portfolio' ? 'active' : 'inactive',
               }),
-              "hidden p-0 w-auto h-auto lg:flex justify-between gap-1 hover:text-primary"
+              'hidden h-auto w-auto justify-between gap-1 p-0 hover:text-primary lg:flex'
             )}
-            onClick={() => handleClick("Portfolio")}
+            onClick={() => handleClick('Portfolio')}
           >
             <WalletIcon />
             <h1 className="text-sm font-medium">Portfolio</h1>
@@ -168,11 +168,11 @@ export default function NavBar() {
           <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger
               className={`${
-                isOpen || active === "Analytics" || active === "Options Chain"
-                  ? "text-primary"
-                  : "text-secondary-foreground"
-              } p-0 w-auto h-auto hidden lg:flex items-center gap-1 justify-between focus:bg-transparent focus:outline-none hover:text-primary`}
-              onClick={() => handleClick("More")}
+                isOpen || active === 'Analytics' || active === 'Options Chain'
+                  ? 'text-primary'
+                  : 'text-secondary-foreground'
+              } hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none lg:flex`}
+              onClick={() => handleClick('More')}
             >
               <MoreIcon />
               <h1 className="text-sm font-medium">More</h1>
@@ -180,28 +180,28 @@ export default function NavBar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-44 text-secondary-foreground rounded-sm"
+              className="w-44 rounded-sm text-secondary-foreground"
             >
               {[
                 {
-                  name: "Options Chain",
+                  name: 'Options Chain',
                   icon: <TableColumnsSplit />,
-                  link: "/options-chain",
+                  link: '/options-chain',
                 },
                 {
-                  name: "MoonRekt",
+                  name: 'MoonRekt',
                   icon: <ArrowUpDown />,
-                  link: "/moonrekt",
+                  link: '/moonrekt',
                 },
                 {
-                  name: "Borrow",
+                  name: 'Borrow',
                   icon: <ConciergeBell />,
-                  link: "/borrow",
+                  link: '/borrow',
                 },
                 {
-                  name: "Analytics",
+                  name: 'Analytics',
                   icon: <FileChartColumn />,
-                  link: "/analytics",
+                  link: '/analytics',
                 },
               ].map((item) => (
                 <Link
@@ -210,7 +210,7 @@ export default function NavBar() {
                   className="w-full"
                   onClick={() => handleClick(item.name)}
                 >
-                  <DropdownMenuItem className="focus:text-primary px-1 py-2 cursor-pointer justify-between [&>svg]:size-4">
+                  <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
                     {item.name} {item.icon}
                   </DropdownMenuItem>
                 </Link>
@@ -218,31 +218,31 @@ export default function NavBar() {
               <DropdownMenuSeparator />
               {[
                 {
-                  name: "Docs",
+                  name: 'Docs',
                   icon: <BookOpenText />,
-                  link: "https://gridtokenx.com",
+                  link: 'https://gridtokenx.com',
                 },
                 {
-                  name: "Feedback",
+                  name: 'Feedback',
                   icon: <MessagesSquare />,
-                  link: "/feedback",
+                  link: '/feedback',
                 },
               ].map((item) => (
                 <Link
                   href={`${item.link}`}
-                  target={`${item.name === "Docs" ? "_blank" : ""}`}
+                  target={`${item.name === 'Docs' ? '_blank' : ''}`}
                   key={item.name}
                   className="w-full"
                   onClick={() => handleClick(item.name)}
                 >
-                  <DropdownMenuItem className="focus:text-primary px-1 py-2 cursor-pointer justify-between [&>svg]:size-4">
+                  <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
                     {item.name}
                     <ExternalLink />
                   </DropdownMenuItem>
                 </Link>
               ))}
               <DropdownMenuSeparator />
-              <div className="flex px-1 py-2 gap-3">
+              <div className="flex gap-3 px-1 py-2">
                 <a href="https://x.com/" target="_blank">
                   <Image src={x} alt="x link" />
                 </a>
@@ -263,7 +263,7 @@ export default function NavBar() {
           </DropdownMenu>
         </nav>
       </div>
-      <div className="flex justify-between py-2 gap-3 items-center">
+      <div className="flex items-center justify-between gap-3 py-2">
         <PointsDropDown setActive={setActive} />
         <Settings />
         <Profile />
@@ -274,12 +274,12 @@ export default function NavBar() {
         ) : (
           <AuthButton
             signInVariant="default"
-            className="w-full h-fit border border-transparent py-[7px] px-4 rounded-sm text-background bg-primary hover:bg-gradient-primary"
+            className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-background hover:bg-gradient-primary"
             signInText="Connect"
           />
         )}
         <NavBarMobile />
       </div>
     </header>
-  );
+  )
 }

@@ -1,43 +1,43 @@
-"use client";
+'use client'
 
-import { useWallet } from "@solana/wallet-adapter-react";
-import { Button } from "../ui/button";
-import toast from "react-hot-toast";
-import { LogOutIcon } from "@/public/svgs/icons";
+import { useWallet } from '@solana/wallet-adapter-react'
+import { Button } from '../ui/button'
+import toast from 'react-hot-toast'
+import { LogOutIcon } from '@/public/svgs/icons'
 
 interface SignOutProps {
-  variant?: "default" | "outline" | "ghost" | "destructive";
-  size?: "default" | "sm" | "lg" | "icon";
-  className?: string;
-  showIcon?: boolean;
-  text?: string;
-  onSignOut?: () => void;
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  className?: string
+  showIcon?: boolean
+  text?: string
+  onSignOut?: () => void
 }
 
 export default function SignOut({
-  variant = "outline",
-  size = "default",
-  className = "",
+  variant = 'outline',
+  size = 'default',
+  className = '',
   showIcon = true,
-  text = "Sign Out",
+  text = 'Sign Out',
   onSignOut,
 }: SignOutProps) {
-  const { disconnect, connected, publicKey } = useWallet();
+  const { disconnect, connected, publicKey } = useWallet()
 
   // If not connected, don't show the sign-out button
   if (!connected) {
-    return null;
+    return null
   }
 
   const handleSignOut = () => {
-    disconnect();
-    toast.success("Wallet Disconnected");
+    disconnect()
+    toast.success('Wallet Disconnected')
 
     // Call custom callback if provided
     if (onSignOut) {
-      onSignOut();
+      onSignOut()
     }
-  };
+  }
 
   return (
     <Button
@@ -49,5 +49,5 @@ export default function SignOut({
       {showIcon && <LogOutIcon />}
       <span className="font-medium">{text}</span>
     </Button>
-  );
+  )
 }

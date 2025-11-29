@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import {
   Chart as ChartJS,
@@ -10,8 +10,8 @@ import {
   Tooltip,
   Filler,
   Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
 
 ChartJS.register(
   CategoryScale,
@@ -22,7 +22,7 @@ ChartJS.register(
   Tooltip,
   Filler,
   Legend
-);
+)
 
 export function OptionChainChart() {
   const options = {
@@ -44,11 +44,11 @@ export function OptionChainChart() {
         padding: 10,
         displayColors: false,
         callbacks: {
-          label: function(context: any) {
-            return `$${context.parsed.y.toFixed(2)}`;
-          }
-        }
-      }
+          label: function (context: any) {
+            return `$${context.parsed.y.toFixed(2)}`
+          },
+        },
+      },
     },
     interaction: {
       mode: 'index' as const,
@@ -67,7 +67,7 @@ export function OptionChainChart() {
           font: {
             size: 12,
           },
-        }
+        },
       },
       y: {
         position: 'left' as const,
@@ -83,15 +83,15 @@ export function OptionChainChart() {
           font: {
             size: 12,
           },
-          callback: function(value: any) {
-            return `$${value}`;
-          }
-        }
+          callback: function (value: any) {
+            return `$${value}`
+          },
+        },
       },
     },
-  };
+  }
 
-  const labels = ['$0', '$20', '$40', '$60', '$80', '$100'];
+  const labels = ['$0', '$20', '$40', '$60', '$80', '$100']
   const data = {
     labels,
     datasets: [
@@ -105,11 +105,11 @@ export function OptionChainChart() {
         borderWidth: 2,
       },
     ],
-  };
+  }
 
   return (
-    <div className="w-full h-full rounded-sm p-2">
+    <div className="h-full w-full rounded-sm p-2">
       <Line options={options} data={data} />
     </div>
-  );
+  )
 }

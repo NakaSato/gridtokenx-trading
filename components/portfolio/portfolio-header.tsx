@@ -1,14 +1,14 @@
 'use client'
 
-import { Download, Send, Upload } from "lucide-react"
-import { Button } from "../ui/button"
+import { Download, Send, Upload } from 'lucide-react'
+import { Button } from '../ui/button'
 
-export function PortfolioHeader(){
-    return (
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
-            <h1 className="text-3xl font-medium mb-4 lg:mb-0">Portfolio</h1>
-            <div className="flex flex-wrap gap-2">
-                {/* <Button variant="outline">
+export function PortfolioHeader() {
+  return (
+    <div className="mb-8 flex flex-col items-start justify-between lg:flex-row lg:items-center">
+      <h1 className="mb-4 text-3xl font-medium lg:mb-0">Portfolio</h1>
+      <div className="flex flex-wrap gap-2">
+        {/* <Button variant="outline">
                     <Send className="w-4 h-4 mr-2" />
                     Send
                 </Button>
@@ -20,7 +20,7 @@ export function PortfolioHeader(){
                     <Upload className="w-4 h-4 mr-2" />
                     Deposit
                 </Button> */}
-            </div>
-        </div>
-    )
+      </div>
+    </div>
+  )
 }

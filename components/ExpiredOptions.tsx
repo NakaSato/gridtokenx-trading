@@ -1,5 +1,5 @@
-import Image from "next/image";
-import { Button } from "./ui/button";
+import Image from 'next/image'
+import { Button } from './ui/button'
 import {
   Table,
   TableBody,
@@ -7,100 +7,100 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table";
-import { CallIconDark, PutIconDark } from "@/public/svgs/icons";
-import { Separator } from "./ui/separator";
-import { ExpiredOption } from "@/contexts/contractProvider";
+} from './ui/table'
+import { CallIconDark, PutIconDark } from '@/public/svgs/icons'
+import { Separator } from './ui/separator'
+import { ExpiredOption } from '@/contexts/contractProvider'
 
 const expiredPositions = [
   {
-    token: "bitcoin",
-    transaction: "Put",
+    token: 'bitcoin',
+    transaction: 'Put',
     strikePrice: 60000,
     qty: 50,
     expiryPrice: 70000,
     tokenAmount: 60000,
     dollarAmount: 800,
-    iconPath: "/images/bitcoin.png",
+    iconPath: '/images/bitcoin.png',
   },
   {
-    token: "ethereum",
-    transaction: "Call",
+    token: 'ethereum',
+    transaction: 'Call',
     strikePrice: 2500,
     qty: 30,
     expiryPrice: 2600,
     tokenAmount: 2500,
     dollarAmount: 750,
-    iconPath: "/images/ethereum.png",
+    iconPath: '/images/ethereum.png',
   },
   {
-    token: "solana",
-    transaction: "Put",
+    token: 'solana',
+    transaction: 'Put',
     strikePrice: 150,
     qty: 100,
     expiryPrice: 160,
     tokenAmount: 150,
     dollarAmount: 1200,
-    iconPath: "/images/solana.png",
+    iconPath: '/images/solana.png',
   },
   {
-    token: "chainlink",
-    transaction: "Call",
+    token: 'chainlink',
+    transaction: 'Call',
     strikePrice: 50000,
     qty: 40,
     expiryPrice: 52000,
     tokenAmount: 50000,
     dollarAmount: 1000,
-    iconPath: "/images/chainlink.png",
+    iconPath: '/images/chainlink.png',
   },
   {
-    token: "dogwifhat",
-    transaction: "Put",
+    token: 'dogwifhat',
+    transaction: 'Put',
     strikePrice: 0.3,
     qty: 500,
     expiryPrice: 0.35,
     tokenAmount: 0.3,
     dollarAmount: 200,
-    iconPath: "/images/wif.png",
+    iconPath: '/images/wif.png',
   },
   {
-    token: "render",
-    transaction: "Call",
+    token: 'render',
+    transaction: 'Call',
     strikePrice: 2,
     qty: 200,
     expiryPrice: 2.1,
     tokenAmount: 2,
     dollarAmount: 400,
-    iconPath: "/images/render.png",
+    iconPath: '/images/render.png',
   },
   {
-    token: "bonk",
-    transaction: "Put",
+    token: 'bonk',
+    transaction: 'Put',
     strikePrice: 40,
     qty: 50,
     expiryPrice: 45,
     tokenAmount: 40,
     dollarAmount: 1000,
-    iconPath: "/images/bonk.png",
+    iconPath: '/images/bonk.png',
   },
   {
-    token: "the graph",
-    transaction: "Call",
+    token: 'the graph',
+    transaction: 'Call',
     strikePrice: 300,
     qty: 10,
     expiryPrice: 320,
     tokenAmount: 300,
     dollarAmount: 1500,
-    iconPath: "/images/grt.png",
+    iconPath: '/images/grt.png',
   },
-];
+]
 
 export default function ExpiredOptions({
   infos,
   onClaim,
 }: {
-  infos: ExpiredOption[];
-  onClaim: (optionindex: number, solPrice: number) => void;
+  infos: ExpiredOption[]
+  onClaim: (optionindex: number, solPrice: number) => void
 }) {
   return (
     <>
@@ -124,14 +124,14 @@ export default function ExpiredOptions({
                   <TableCell className="flex space-x-[10px] pl-5">
                     <div className="flex -space-x-1">
                       <Image
-                        src={"/images/solana.png"}
+                        src={'/images/solana.png'}
                         alt={pos.token}
                         width={20}
                         height={20}
-                        className="rounded-full w-5 h-5 ring ring-background"
+                        className="h-5 w-5 rounded-full ring ring-background"
                       />
-                      <span className="rounded-full w-fit h-fit ring ring-background">
-                        {pos.transaction === "Call" ? (
+                      <span className="h-fit w-fit rounded-full ring ring-background">
+                        {pos.transaction === 'Call' ? (
                           <CallIconDark width="20" height="20" />
                         ) : (
                           <PutIconDark width="20" height="20" />
@@ -139,7 +139,7 @@ export default function ExpiredOptions({
                       </span>
                     </div>
                     <span>
-                      {pos.token[0].toUpperCase() + pos.token.slice(1)}{" "}
+                      {pos.token[0].toUpperCase() + pos.token.slice(1)}{' '}
                       {pos.transaction}
                     </span>
                   </TableCell>
@@ -150,7 +150,7 @@ export default function ExpiredOptions({
                   <TableCell>{pos.dollarAmount}</TableCell>
                   <TableCell>
                     <Button
-                      className="bg-inherit border border-primary-foreground px-[10px] py-1 w-fit h-fit shadow-none rounded-[8px] text-primary text-xs font-medium"
+                      className="h-fit w-fit rounded-[8px] border border-primary-foreground bg-inherit px-[10px] py-1 text-xs font-medium text-primary shadow-none"
                       onClick={() => onClaim(pos.index, pos.expiryPrice)}
                     >
                       Claim
@@ -161,10 +161,10 @@ export default function ExpiredOptions({
           </TableBody>
         </Table>
       </div>
-      <div className="w-full md:hidden flex flex-col p-3">
+      <div className="flex w-full flex-col p-3 md:hidden">
         {infos.map((pos, index) => (
-          <div key={index} className="w-full flex flex-col">
-            <div className="w-full flex flex-col space-y-[10px]">
+          <div key={index} className="flex w-full flex-col">
+            <div className="flex w-full flex-col space-y-[10px]">
               <div className="flex space-x-[10px]">
                 <div className="flex -space-x-1">
                   <Image
@@ -172,10 +172,10 @@ export default function ExpiredOptions({
                     alt={pos.token}
                     width={24}
                     height={24}
-                    className="rounded-full w-6 h-6 ring ring-background"
+                    className="h-6 w-6 rounded-full ring ring-background"
                   />
-                  <span className="rounded-full w-fit h-fit ring ring-background">
-                    {pos.transaction === "Call" ? (
+                  <span className="h-fit w-fit rounded-full ring ring-background">
+                    {pos.transaction === 'Call' ? (
                       <CallIconDark width="24" height="24" />
                     ) : (
                       <PutIconDark width="24" height="24" />
@@ -183,18 +183,18 @@ export default function ExpiredOptions({
                   </span>
                 </div>
                 <span>
-                  {pos.token[0].toUpperCase() + pos.token.slice(1)}{" "}
+                  {pos.token[0].toUpperCase() + pos.token.slice(1)}{' '}
                   {pos.transaction}
                 </span>
               </div>
               <div className="flex space-x-[14px]">
-                <div className="w-full flex flex-col space-y-1">
+                <div className="flex w-full flex-col space-y-1">
                   <span className="text-xs font-medium text-secondary-foreground">
                     Strike Price
                   </span>
                   <span className="text-sm font-normal">{pos.strikePrice}</span>
                 </div>
-                <div className="w-full flex flex-col space-y-1">
+                <div className="flex w-full flex-col space-y-1">
                   <span className="text-xs font-medium text-secondary-foreground">
                     Quantity
                   </span>
@@ -202,13 +202,13 @@ export default function ExpiredOptions({
                 </div>
               </div>
               <div className="flex space-x-[14px]">
-                <div className="w-full flex flex-col space-y-1">
+                <div className="flex w-full flex-col space-y-1">
                   <span className="text-xs font-medium text-secondary-foreground">
                     Token Price at Expiry
                   </span>
                   <span className="text-sm font-normal">{pos.expiryPrice}</span>
                 </div>
-                <div className="w-full flex flex-col space-y-1">
+                <div className="flex w-full flex-col space-y-1">
                   <span className="text-xs font-medium text-secondary-foreground">
                     Amount in Tokens
                   </span>
@@ -216,7 +216,7 @@ export default function ExpiredOptions({
                 </div>
               </div>
               <div className="flex space-x-[14px]">
-                <div className="w-full flex flex-col space-y-1">
+                <div className="flex w-full flex-col space-y-1">
                   <span className="text-xs font-medium text-secondary-foreground">
                     Amount in Dollars
                   </span>
@@ -225,7 +225,7 @@ export default function ExpiredOptions({
                   </span>
                 </div>
               </div>
-              <Button className="bg-inherit border border-primary-foreground px-4 py-2 w-full h-fit shadow-none rounded-[12px] text-primary text-xs font-medium">
+              <Button className="h-fit w-full rounded-[12px] border border-primary-foreground bg-inherit px-4 py-2 text-xs font-medium text-primary shadow-none">
                 Claim
               </Button>
             </div>
@@ -234,5 +234,5 @@ export default function ExpiredOptions({
         ))}
       </div>
     </>
-  );
+  )
 }

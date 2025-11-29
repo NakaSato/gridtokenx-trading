@@ -1,7 +1,5 @@
-import RecentTrades from "@/components/RecentTrades";
+import RecentTrades from '@/components/RecentTrades'
 
-export default function OptionTrades(){
-    return (
-        <RecentTrades />
-    )
+export default function OptionTrades() {
+  return <RecentTrades />
 }

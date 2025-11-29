@@ -1,15 +1,15 @@
-import React from "react";
+import React from 'react'
 
 interface GridxIconProps {
-  width?: number | string;
-  height?: number | string;
-  className?: string;
+  width?: number | string
+  height?: number | string
+  className?: string
 }
 
 export const GridxIcon: React.FC<GridxIconProps> = ({
   width = 24,
   height = 24,
-  className = "",
+  className = '',
 }) => {
   return (
     <svg
@@ -29,5 +29,5 @@ export const GridxIcon: React.FC<GridxIconProps> = ({
         <path d="M50 82.1c-7.3 0-14.1-2.4-19.8-6.9l-5.3 6.7c7.2 5.7 15.9 8.7 25.1 8.7 15.2 0 29-8.4 36-21.8l-7.5-3.9C72.9 75.5 62 82.1 50 82.1zM46.4 18.1c1.2-.1 2.4-.2 3.6-.2 17.7 0 32.1 14.4 32.1 32.1h8.5C90.6 27.6 72.4 9.4 50 9.4c-1.5 0-3 .1-4.5.2C24.9 11.9 9.4 29.3 9.4 50c0 4.4.7 8.7 2.1 12.8l8.1-2.7c-1.1-3.3-1.6-6.7-1.6-10.2-.1-16.3 12.2-30 28.4-31.8z" />
       </g>
     </svg>
-  );
-};
+  )
+}

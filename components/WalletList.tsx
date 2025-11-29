@@ -1,20 +1,20 @@
-"use client";
+'use client'
 
-import { memo } from "react";
-import WalletButton from "./WalletButton";
-import type { Wallet } from "../types/wallet";
+import { memo } from 'react'
+import WalletButton from './WalletButton'
+import type { Wallet } from '../types/wallet'
 
 interface WalletListProps {
-  wallets: Wallet[];
-  onWalletConnect: (walletName: string, iconPath: string) => void;
-  className?: string;
+  wallets: Wallet[]
+  onWalletConnect: (walletName: string, iconPath: string) => void
+  className?: string
 }
 
 // Memoized wallet list component to prevent unnecessary re-renders
 const WalletList = memo(function WalletList({
   wallets,
   onWalletConnect,
-  className = "grid grid-cols-1 md:grid-cols-3 gap-5",
+  className = 'grid grid-cols-1 md:grid-cols-3 gap-5',
 }: WalletListProps) {
   return (
     <div className={className}>
@@ -28,7 +28,7 @@ const WalletList = memo(function WalletList({
         />
       ))}
     </div>
-  );
-});
+  )
+})
 
-export default WalletList;
+export default WalletList

@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import Image from "next/image";
-import { Button } from "./ui/button";
-import { memo } from "react";
-import type { Wallet } from "../types/wallet";
+import Image from 'next/image'
+import { Button } from './ui/button'
+import { memo } from 'react'
+import type { Wallet } from '../types/wallet'
 
 interface WalletButtonProps {
-  name: string;
-  iconPath: string;
-  id: string;
-  onClick: () => void;
+  name: string
+  iconPath: string
+  id: string
+  onClick: () => void
 }
 
 // Memoized component to prevent unnecessary re-renders
@@ -21,7 +21,7 @@ const WalletButton = memo(function WalletButton({
   return (
     <Button
       variant="outline"
-      className="flex items-center justify-start w-full h-[40px] px-[16px] py-[8px] bg-inherit border-border hover:bg-secondary"
+      className="flex h-[40px] w-full items-center justify-start border-border bg-inherit px-[16px] py-[8px] hover:bg-secondary"
       onClick={onClick}
       type="button"
     >
@@ -35,9 +35,9 @@ const WalletButton = memo(function WalletButton({
         sizes="24px"
         priority={false}
       />
-      <span className="text-sm font-normal text-center">{name}</span>
+      <span className="text-center text-sm font-normal">{name}</span>
     </Button>
-  );
-});
+  )
+})
 
-export default WalletButton;
+export default WalletButton
