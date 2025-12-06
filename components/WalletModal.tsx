@@ -204,9 +204,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
-      // Small delay to ensure auth state is updated before closing
+      // Small delay to ensure auth state is updated before closing and redirecting
       setTimeout(() => {
         onClose()
+        // Redirect to home page after successful login
+        router.push('/')
       }, 100)
     } catch (error: any) {
       console.error('Sign in error:', error)
@@ -358,6 +360,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       } else {
         toast.success(registerData.message || 'Registration successful!')
         onClose()
+        // Redirect to home page after successful registration
+        setTimeout(() => {
+          router.push('/')
+        }, 100)
       }
     } catch (error: any) {
       console.error('Sign up error:', error)

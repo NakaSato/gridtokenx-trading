@@ -44,6 +44,17 @@ function VerifyEmailContent() {
 
   // Auto-verify on mount
   useEffect(() => {
+    // Check if user is already authenticated (already verified)
+    const storedToken = localStorage.getItem('access_token')
+    const storedUser = localStorage.getItem('user')
+
+    if (storedToken && storedUser) {
+      // User is already authenticated, redirect to home
+      toast.success('Already verified! Redirecting to home...')
+      router.push('/')
+      return
+    }
+
     if (!token) {
       setState('invalid')
       setMessage(
@@ -52,12 +63,15 @@ function VerifyEmailContent() {
       return
     }
     verifyEmailToken(token)
-  }, [token])
+  }, [token, router])
 
   // Auto-redirect countdown
   useEffect(() => {
     if (state !== 'success' || countdown === 0) {
-      if (state === 'success' && countdown === 0) router.push('/')
+      if (state === 'success' && countdown === 0) {
+        toast.success('Welcome to GridTokenX! Redirecting to home...')
+        router.push('/')
+      }
       return
     }
     const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
