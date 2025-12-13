@@ -49,10 +49,10 @@ export const API_ENDPOINTS = {
   },
   // Trading
   trading: {
-    orders: `${API_CONFIG.baseUrl}/api/orders`,
-    orderBook: `${API_CONFIG.baseUrl}/api/orders/book`,
-    marketData: `${API_CONFIG.baseUrl}/api/market`,
-    trades: `${API_CONFIG.baseUrl}/api/trades`,
+    orders: `${API_CONFIG.baseUrl}/api/trading/orders`,
+    orderBook: `${API_CONFIG.baseUrl}/api/market/orderbook`,
+    marketData: `${API_CONFIG.baseUrl}/api/market/stats`,
+    trades: `${API_CONFIG.baseUrl}/api/market-data/trades/my-history`,
   },
   // User
   user: {

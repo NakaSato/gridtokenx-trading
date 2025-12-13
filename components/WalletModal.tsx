@@ -22,6 +22,7 @@ import type { Wallet } from '../types/wallet'
 import { defaultApiClient } from '../lib/api-client'
 import type { LoginResponse, RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
+import bs58 from 'bs58'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -41,6 +42,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const { select, wallets } = useWallet()
   const {
     login,
+    loginWithWallet,
     register,
     isLoading: authLoading,
     user,
@@ -153,6 +155,53 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
               error instanceof Error ? error.message : 'Unknown error'
             toast.error(`Failed to link wallet to account: ${errorMsg}`)
             // Don't return here - wallet is still connected, just not linked
+          }
+        } else if (!isAuthenticated) {
+          // If not logged in, try to sign in with wallet
+          try {
+            const adapter = wallet.adapter as any
+            if (!adapter.signMessage) {
+              toast.error(
+                'Wallet does not support message signing. Cannot sign in.'
+              )
+              return
+            }
+
+            const timestamp = Date.now()
+            const messageStr = `Sign in to GridTokenX. Timestamp: ${timestamp}`
+            const message = new TextEncoder().encode(messageStr)
+
+            toast.loading('Please sign the message to log in...', {
+              id: 'signing-message',
+            })
+
+            const signature = await adapter.signMessage(message)
+            toast.dismiss('signing-message')
+
+            const signatureStr = bs58.encode(signature)
+
+            await loginWithWallet({
+              wallet_address: publicKey.toString(),
+              signature: signatureStr,
+              message: messageStr,
+              timestamp,
+            })
+
+            toast.success('Signed in successfully')
+            // Add a small delay for state update
+            await new Promise(resolve => setTimeout(resolve, 500))
+            router.refresh()
+          } catch (error: any) {
+            toast.dismiss('signing-message')
+            console.error('Wallet login failed:', error)
+
+            // If user rejected signature, we should probably disconnect to reset state 
+            // or just let them be "connected" but not "signed in"
+            if (error?.message?.includes('User rejected')) {
+              toast.error('Login cancelled: Signature rejected')
+            } else {
+              toast.error(`Wallet login failed: ${error?.message || 'Unknown error'}`)
+            }
           }
         }
 

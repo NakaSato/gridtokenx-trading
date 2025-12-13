@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import Image, { type StaticImageData } from 'next/image'
 import {
+  Activity,
   ArrowUpDown,
   BookOpenText,
   ChartLine,
@@ -83,6 +84,17 @@ const NAV_ITEMS: NavItem[] = [
     href: '/',
     icon: <ChartLine size={16} />,
     badge: { text: 'NEW', variant: 'new' },
+  },
+  {
+    name: 'P2P Energy',
+    href: '/p2p',
+    icon: <ArrowUpDown size={16} />,
+    badge: { text: 'BETA', variant: 'new' },
+  },
+  {
+    name: 'Smart Meter',
+    href: '/meter',
+    icon: <Activity size={16} />,
   },
   {
     name: 'Futures',
@@ -227,7 +239,7 @@ export default function NavBar() {
   // Derive active state from pathname
   const activeRoute = useMemo(() => {
     if (!pathname) return 'Trade'
-    
+
     // Check exact matches first
     const exactMatch = NAV_ITEMS.find((item) => item.href === pathname)
     if (exactMatch) return exactMatch.name

@@ -6,6 +6,7 @@ import Script from 'next/script'
 import Connectionprovider from '@/contexts/connectionprovider'
 import { AuthProvider } from '@/contexts/AuthProvider'
 import { Toaster } from 'react-hot-toast'
+import { SocketProvider } from '@/contexts/SocketContext'
 import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 
@@ -137,11 +138,13 @@ export default function RootLayout({
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <Connectionprovider>
             <AuthProvider>
-              <AuthModalManager />
-              <div className="mx-auto flex h-screen flex-col px-6">
-                <NavBar></NavBar>
-                <main className="flex-1 overflow-hidden">{children}</main>
-              </div>
+              <SocketProvider>
+                <AuthModalManager />
+                <div className="mx-auto flex h-screen flex-col px-6">
+                  <NavBar></NavBar>
+                  <main className="flex-1 overflow-hidden">{children}</main>
+                </div>
+              </SocketProvider>
             </AuthProvider>
           </Connectionprovider>
         </ThemeProvider>

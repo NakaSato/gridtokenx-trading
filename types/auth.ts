@@ -38,6 +38,13 @@ export interface RegisterRequest {
   last_name: string; // min: 1, max: 100 chars
 }
 
+export interface VerifyWalletRequest {
+  wallet_address: string;
+  signature: string;
+  message: string;
+  timestamp: number;
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: "Bearer";

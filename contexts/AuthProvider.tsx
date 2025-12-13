@@ -43,6 +43,12 @@ interface AuthContextType {
     role?: string
     wallet_address?: string
   }) => Promise<RegisterResponse>
+  loginWithWallet: (data: {
+    wallet_address: string
+    signature: string
+    message: string
+    timestamp: number
+  }) => Promise<LoginResponse>
   getProfile: () => Promise<UserProfile | null>
   updateProfile: (profileData: ProfileUpdateRequest) => Promise<UserProfile>
   updateWallet: (walletAddress: string) => Promise<UserProfile | null>
@@ -209,6 +215,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const loginWithWallet = async (data: {
+    wallet_address: string
+    signature: string
+    message: string
+    timestamp: number
+  }): Promise<LoginResponse> => {
+    setIsLoading(true)
+    try {
+      const response = await apiClient.verifyWalletSignature(data)
+
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'Wallet login failed')
+      }
+
+      const loginData: LoginResponse = response.data
+      const expirationTime = Date.now() + loginData.expires_in * 1000
+
+      // Store token and user data (always in session for safety, or local based on preference)
+      // For wallet, we default to localStorage for convenience like standard dApps
+      localStorage.setItem('access_token', loginData.access_token)
+      localStorage.setItem('token_expires_at', String(expirationTime))
+      localStorage.setItem('user', JSON.stringify(loginData.user))
+
+      setToken(loginData.access_token)
+      setUser(loginData.user)
+      apiClient.setToken(loginData.access_token)
+
+      return loginData
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const getProfile = async (): Promise<UserProfile | null> => {
     try {
       const response = await apiClient.getProfile()
@@ -252,11 +291,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const response = await apiClient.updateWallet(walletAddress)
-      
+
       if (response.error || !response.data) {
         // Provide more specific error messages based on status code
         let errorMessage = 'Wallet update failed'
-        
+
         if (response.status === 401) {
           errorMessage = 'Authentication expired. Please sign in again.'
           await logout()
@@ -267,7 +306,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else if (response.error) {
           errorMessage = response.error
         }
-        
+
         throw new Error(errorMessage)
       }
 
@@ -275,11 +314,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (user) {
         const updatedUser = { ...user, wallet_address: walletAddress }
         setUser(updatedUser)
-        
+
         // Update in both storage locations
         const storedInLocal = localStorage.getItem('user')
         const storedInSession = sessionStorage.getItem('user')
-        
+
         if (storedInLocal) {
           localStorage.setItem('user', JSON.stringify(updatedUser))
         }
@@ -315,6 +354,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     register,
+    loginWithWallet,
     getProfile,
     updateProfile,
     updateWallet,

@@ -16,7 +16,7 @@ import type {
 } from '../types/auth'
 
 export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   headers?: Record<string, string>
   body?: any
   token?: string
@@ -146,6 +146,18 @@ export class ApiClient {
     })
   }
 
+  async verifyWalletSignature(data: {
+    wallet_address: string
+    signature: string
+    message: string
+    timestamp: number
+  }): Promise<ApiResponse<LoginResponse>> {
+    return apiRequest<LoginResponse>('/api/auth/wallet/verify', {
+      method: 'POST',
+      body: data,
+    })
+  }
+
   async logout() {
     return apiRequest('/api/auth/logout', {
       method: 'POST',
@@ -194,7 +206,7 @@ export class ApiClient {
     price_per_kwh: string
     order_type?: string
   }) {
-    return apiRequest('/api/orders', {
+    return apiRequest('/api/trading/orders', {
       method: 'POST',
       body: orderData,
       token: this.token,
@@ -213,8 +225,9 @@ export class ApiClient {
     })
   }
 
-  async getOrderBook() {
-    return apiRequest('/api/orders/book', {
+  async getOrderBook(filters?: { status?: string }) {
+    const params = new URLSearchParams(filters as any)
+    return apiRequest(`/api/trading/orderbook?${params.toString()}`, {
       method: 'GET',
       token: this.token,
     })
@@ -236,6 +249,40 @@ export class ApiClient {
         token: this.token,
       }
     )
+  }
+
+  async cancelOrder(orderId: string) {
+    return apiRequest(`/api/trading/orders/${orderId}`, {
+      method: 'DELETE',
+      token: this.token,
+    })
+  }
+
+  // P2P Trading
+  async createP2POrder(orderData: {
+    side: 'Buy' | 'Sell'
+    amount: string
+    price_per_kwh: string
+  }) {
+    return apiRequest<{ id: string }>('/api/p2p/orders', {
+      method: 'POST',
+      body: orderData,
+      token: this.token,
+    })
+  }
+
+  async getP2POrderBook() {
+    return apiRequest<{ asks: any[]; bids: any[] }>('/api/p2p/orderbook', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getMyP2POrders() {
+    return apiRequest<any[]>('/api/p2p/orders/my', {
+      method: 'GET',
+      token: this.token,
+    })
   }
 
   // User
@@ -278,24 +325,82 @@ export class ApiClient {
   }
 
   // Meters
-  async submitMeterData(meterData: {
-    meter_id: string
-    energy_produced?: number
-    energy_consumed?: number
-    timestamp?: string
-  }) {
-    return apiRequest('/api/meters/submit', {
+  async submitMeterData(data: import('../types/meter').SubmitReadingRequest) {
+    return apiRequest<import('../types/meter').MeterReading>('/api/meters/submit-reading', {
       method: 'POST',
-      body: meterData,
+      body: data,
       token: this.token,
     })
   }
 
-  async getMeterData(meterId: string) {
-    return apiRequest(`/api/meters/${meterId}`, {
+  // Futures
+  async getFuturesProducts() {
+    return apiRequest<import('../types/futures').FuturesProduct[]>('/api/futures/products', {
       method: 'GET',
       token: this.token,
     })
+  }
+
+  async createFuturesOrder(data: import('../types/futures').CreateFuturesOrderRequest) {
+    return apiRequest<{ order_id: string }>('/api/futures/orders', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  async getFuturesPositions() {
+    return apiRequest<import('../types/futures').FuturesPosition[]>('/api/futures/positions', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getFuturesCandles(productId: string, interval: string = '1m') {
+    const params = new URLSearchParams({ product_id: productId, interval })
+    return apiRequest<import('../types/futures').Candle[]>(`/api/futures/candles?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getFuturesOrderBook(productId: string) {
+    const params = new URLSearchParams({ product_id: productId })
+    return apiRequest<import('../types/futures').OrderBook>(`/api/futures/orderbook?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getFuturesOrders() {
+    return apiRequest<import('../types/futures').FuturesOrder[]>('/api/futures/orders/my', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async closeFuturesPosition(positionId: string) {
+    return apiRequest<{ order_id: string }>(`/api/futures/positions/${positionId}/close`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
+
+  async getMeterStats() {
+    return apiRequest<import('../types/meter').MeterStats>('/api/meters/stats', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getMyReadings(limit = 10, offset = 0) {
+    return apiRequest<import('../types/meter').MeterReading[]>(
+      `/api/meters/my-readings?limit=${limit}&offset=${offset}`,
+      {
+        method: 'GET',
+        token: this.token,
+      }
+    )
   }
 
   // Transactions
@@ -310,7 +415,7 @@ export class ApiClient {
     has_signature?: boolean
   }) {
     const params = new URLSearchParams()
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -320,7 +425,7 @@ export class ApiClient {
     }
 
     const queryString = params.toString()
-    const endpoint = queryString 
+    const endpoint = queryString
       ? `/api/transactions/user?${queryString}`
       : '/api/transactions/user'
 
@@ -344,4 +449,4 @@ export function createApiClient(token?: string): ApiClient {
 /**
  * Default API client instance (can be used for unauthenticated requests)
  */
-export const defaultApiClient = createApiClient()
+export const defaultApiClient = new ApiClient()
