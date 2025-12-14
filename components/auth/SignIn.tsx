@@ -37,10 +37,6 @@ export default function SignIn({
     }
   }, [])
 
-  // If already connected, don't show the sign-in button
-  if (connected) {
-    return null
-  }
 
   return (
     <>

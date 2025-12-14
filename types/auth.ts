@@ -34,6 +34,7 @@ export interface RegisterRequest {
   username: string; // min: 3, max: 50 chars
   email: string; // valid email format
   password: string; // min: 8, max: 128 chars
+  role?: Role;
   first_name: string; // min: 1, max: 100 chars
   last_name: string; // min: 1, max: 100 chars
 }

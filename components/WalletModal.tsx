@@ -599,6 +599,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 noValidate
                 className="space-y-3"
               >
+
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
                   <Input

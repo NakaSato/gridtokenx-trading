@@ -29,6 +29,21 @@ const nextConfig: NextConfig = {
     unoptimized: true,
     formats: [],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:4000/api/:path*',
+      },
+      {
+        source: '/health',
+        destination: 'http://localhost:4000/health',
+      },
+    ]
+  },
+  experimental: {
+  },
+  allowedDevOrigins: ['10.1.1.204:3000', 'localhost:3000'],
 }
 
 export default nextConfig

@@ -34,7 +34,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         if (!token) return;
 
-        const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://localhost:4000';
+        const wsUrl = `${wsBaseUrl}/ws`;
         const urlWithToken = `${wsUrl}?token=${token}`;
 
         console.log('Connecting to WebSocket:', urlWithToken);
