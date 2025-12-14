@@ -2,13 +2,15 @@
 
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'
-import React from 'react'
+import { useRouter } from 'next/navigation'
+import React, { useEffect } from 'react'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   fallback?: React.ReactNode
   requireWallet?: boolean
   requireAuth?: boolean
+  redirectTo?: string // Custom redirect URL
 }
 
 export default function ProtectedRoute({
@@ -16,9 +18,22 @@ export default function ProtectedRoute({
   fallback,
   requireWallet = true,
   requireAuth = true,
+  redirectTo = '/', // Default redirect to index page
 }: ProtectedRouteProps) {
   const { connected } = useWallet()
   const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const router = useRouter()
+
+  // Check authentication requirements
+  const needsAuth = requireAuth && !isAuthenticated
+  const needsWallet = requireWallet && !connected && !isAuthenticated
+
+  // Redirect to index if not authenticated (after loading completes)
+  useEffect(() => {
+    if (!authLoading && (needsAuth || needsWallet)) {
+      router.push(redirectTo)
+    }
+  }, [authLoading, needsAuth, needsWallet, router, redirectTo])
 
   // Show loading state while checking authentication
   if (authLoading) {
@@ -29,59 +44,21 @@ export default function ProtectedRoute({
     )
   }
 
-  // Check authentication requirements
-  // Prioritize authentication session over wallet connection
-  const needsAuth = requireAuth && !isAuthenticated
-  const needsWallet = requireWallet && !connected && !isAuthenticated
-
-  // If authentication is required but user is not authenticated, show fallback
+  // If not authenticated, show loading while redirecting
   if (needsAuth || needsWallet) {
     if (fallback) {
       return <>{fallback}</>
     }
 
-    // Determine what actions are needed
-    const showWalletButton = needsWallet || (!connected && !isAuthenticated)
-    const showAuthButton = connected && !isAuthenticated
-
+    // Show redirecting message while navigating to index
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="mb-4 animate-pulse">
-          <div className="h-8 w-32 rounded bg-muted"></div>
+        <div className="mb-4 animate-spin">
+          <div className="h-8 w-8 rounded-full border-b-2 border-primary"></div>
         </div>
-
-        <p className="mb-4 text-muted-foreground">
-          {authLoading
-            ? 'Checking authentication...'
-            : connected && !isAuthenticated
-              ? 'Please sign in to continue'
-              : 'Connect your wallet to continue'}
+        <p className="text-muted-foreground">
+          Redirecting to login...
         </p>
-
-        <div className="flex gap-2">
-          {showWalletButton && (
-            <button
-              onClick={() => {
-                const event = new CustomEvent('openWalletModal')
-                window.dispatchEvent(event)
-              }}
-              className="rounded-sm bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Connect Wallet
-            </button>
-          )}
-          {showAuthButton && (
-            <button
-              onClick={() => {
-                const event = new CustomEvent('openAuthModal')
-                window.dispatchEvent(event)
-              }}
-              className="hover:bg-secondary/90 rounded-sm bg-secondary px-4 py-2 text-secondary-foreground transition-colors"
-            >
-              Sign In
-            </button>
-          )}
-        </div>
       </div>
     )
   }

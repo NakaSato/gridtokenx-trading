@@ -127,11 +127,12 @@ export class ApiClient {
   }
 
   // Authentication
+  // V1 RESTful API endpoints
   async login(
     username: string,
     password: string
   ): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/auth/login', {
+    return apiRequest<LoginResponse>('/api/v1/auth/token', {
       method: 'POST',
       body: { username, password },
     })
@@ -140,7 +141,7 @@ export class ApiClient {
   async register(
     userData: RegisterRequest
   ): Promise<ApiResponse<RegisterResponse>> {
-    return apiRequest<RegisterResponse>('/api/auth/register', {
+    return apiRequest<RegisterResponse>('/api/v1/users', {
       method: 'POST',
       body: userData,
     })
@@ -181,7 +182,7 @@ export class ApiClient {
 
   async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
     return apiRequest<VerifyEmailResponse>(
-      `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+      `/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
       {
         method: 'GET',
       }
@@ -287,7 +288,7 @@ export class ApiClient {
 
   // User
   async getProfile() {
-    return apiRequest('/api/auth/profile', {
+    return apiRequest('/api/v1/users/me', {
       method: 'GET',
       token: this.token,
     })
@@ -308,8 +309,8 @@ export class ApiClient {
 
   async getBalance(walletAddress?: string) {
     const endpoint = walletAddress
-      ? `/api/tokens/balance/${walletAddress}`
-      : '/api/tokens/balance'
+      ? `/api/v1/wallets/${walletAddress}/balance`
+      : '/api/v1/wallets/unknown/balance'
 
     return apiRequest(endpoint, {
       method: 'GET',
@@ -326,9 +327,11 @@ export class ApiClient {
 
   // Meters
   async submitMeterData(data: import('../types/meter').SubmitReadingRequest) {
-    return apiRequest<import('../types/meter').MeterReading>('/api/meters/submit-reading', {
+    // For v1, use serial in path: POST /api/v1/meters/{serial}/readings
+    const serial = data.meter_serial || 'unknown'
+    return apiRequest<import('../types/meter').MeterReading>(`/api/v1/meters/${serial}/readings`, {
       method: 'POST',
-      body: data,
+      body: { kwh: data.kwh_amount, wallet_address: data.wallet_address, timestamp: data.reading_timestamp },
       token: this.token,
     })
   }

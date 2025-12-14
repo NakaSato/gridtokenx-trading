@@ -1,0 +1,277 @@
+'use client'
+
+import { useAuth } from '@/contexts/AuthProvider'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { Card, CardContent } from '../ui/card'
+import { Wallet, User, Zap, TrendingUp, Coins, RefreshCw } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useApiClient } from '@/hooks/useApi'
+import { TokenBalance } from '@/types/auth'
+import { Button } from '../ui/button'
+import { Skeleton } from '../ui/skeleton'
+
+interface PortfolioData {
+    tokenBalance: TokenBalance | null
+    loading: boolean
+    error: string | null
+}
+
+export function PortfolioSummary() {
+    const { user, isAuthenticated, token, getProfile } = useAuth()
+    const { publicKey, connected } = useWallet()
+    const apiClient = useApiClient()
+    const [portfolioData, setPortfolioData] = useState<PortfolioData>({
+        tokenBalance: null,
+        loading: false,
+        error: null,
+    })
+    const [profileData, setProfileData] = useState<any>(null)
+
+    // Fetch profile from API Gateway
+    const fetchProfile = useCallback(async () => {
+        if (!isAuthenticated || !token) return
+
+        try {
+            const profile = await getProfile()
+            if (profile) {
+                setProfileData(profile)
+            }
+        } catch (error) {
+            console.error('Failed to fetch profile:', error)
+        }
+    }, [isAuthenticated, token, getProfile])
+
+    // Fetch balance from API Gateway
+    const fetchPortfolioData = useCallback(async () => {
+        const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
+
+        if (!walletAddress) {
+            setPortfolioData(prev => ({ ...prev, loading: false }))
+            return
+        }
+
+        setPortfolioData(prev => ({ ...prev, loading: true, error: null }))
+
+        try {
+            // Call API Gateway: GET /api/tokens/balance/{wallet_address}
+            const response = await apiClient.getBalance(walletAddress)
+
+            if (response.data) {
+                setPortfolioData({
+                    tokenBalance: response.data,
+                    loading: false,
+                    error: null,
+                })
+            } else {
+                // If no data from API, set default mock values for demo
+                setPortfolioData({
+                    tokenBalance: {
+                        wallet_address: walletAddress,
+                        token_balance: '0',
+                        token_balance_raw: 0,
+                        balance_sol: 0,
+                        decimals: 9,
+                        token_mint: '',
+                        token_account: '',
+                    },
+                    loading: false,
+                    error: response.error || null,
+                })
+            }
+        } catch (error) {
+            console.error('Failed to fetch balance:', error)
+            setPortfolioData({
+                tokenBalance: null,
+                loading: false,
+                error: 'Failed to fetch portfolio data',
+            })
+        }
+    }, [apiClient, profileData?.wallet_address, user?.wallet_address, publicKey])
+
+    // Initial data fetch
+    useEffect(() => {
+        fetchProfile()
+    }, [fetchProfile])
+
+    useEffect(() => {
+        fetchPortfolioData()
+    }, [fetchPortfolioData])
+
+    const handleRefresh = async () => {
+        await fetchProfile()
+        await fetchPortfolioData()
+    }
+
+    const formatBalance = (value: string | number | undefined, decimals: number = 2): string => {
+        if (value === undefined || value === null) return '0.00'
+        const num = typeof value === 'string' ? parseFloat(value) : value
+        if (isNaN(num)) return '0.00'
+        return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    }
+
+    const truncateAddress = (address: string | undefined): string => {
+        if (!address) return 'Not Connected'
+        return `${address.slice(0, 4)}...${address.slice(-4)}`
+    }
+
+    // Use profile data if available, fallback to user context
+    const displayUser = profileData || user
+    const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
+    const { tokenBalance, loading } = portfolioData
+
+    // Calculate estimated USD value (mock price: 1 GEC = $0.05, 1 SOL = $175)
+    const gecPrice = 0.05
+    const solPrice = 175
+    const gecValue = (tokenBalance?.token_balance_raw || 0) * gecPrice
+    const solValue = (tokenBalance?.balance_sol || 0) * solPrice
+    const totalWealth = gecValue + solValue
+
+    return (
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* User Info Card - from /api/auth/profile */}
+            <Card className="rounded-sm bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <User className="h-4 w-4" />
+                                <span>Account</span>
+                            </div>
+                            {isAuthenticated && displayUser ? (
+                                <>
+                                    <h3 className="text-lg font-semibold text-foreground truncate max-w-[180px]">
+                                        {displayUser.username || 'User'}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground truncate max-w-[180px]">
+                                        {displayUser.email}
+                                    </p>
+                                    <div className="mt-2 flex items-center gap-1">
+                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary capitalize">
+                                            {displayUser.role || 'User'}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-semibold text-foreground">Not Logged In</h3>
+                                    <p className="text-sm text-muted-foreground">Sign in to view portfolio</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Wallet Balance Card - from /api/tokens/balance/{wallet} */}
+            <Card className="rounded-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+                <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <Wallet className="h-4 w-4" />
+                                <span>Wallet</span>
+                            </div>
+                            {loading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-6 w-32" />
+                                    <Skeleton className="h-4 w-24" />
+                                </div>
+                            ) : walletAddress ? (
+                                <>
+                                    <h3 className="text-lg font-semibold text-foreground">
+                                        {formatBalance(tokenBalance?.balance_sol, 4)} SOL
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground font-mono">
+                                        {truncateAddress(walletAddress)}
+                                    </p>
+                                    <p className="text-xs text-green-500 mt-1">
+                                        ≈ ${formatBalance(solValue, 2)} USD
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-semibold text-foreground">No Wallet</h3>
+                                    <p className="text-sm text-muted-foreground">Connect wallet to view balance</p>
+                                </>
+                            )}
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={handleRefresh}
+                            disabled={loading}
+                        >
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Energy Token Balance Card - from /api/tokens/balance/{wallet} */}
+            <Card className="rounded-sm bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+                <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <Zap className="h-4 w-4" />
+                                <span>Energy Tokens</span>
+                            </div>
+                            {loading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-6 w-28" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-lg font-semibold text-foreground">
+                                        <Coins className="inline h-5 w-5 mr-1 text-green-500" />
+                                        {formatBalance(tokenBalance?.token_balance || '0', 2)} GEC
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        ≈ ${formatBalance(gecValue, 2)} USD
+                                    </p>
+                                    {tokenBalance?.token_mint && (
+                                        <p className="text-xs text-muted-foreground/60 mt-1 font-mono">
+                                            Mint: {truncateAddress(tokenBalance.token_mint)}
+                                        </p>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Total Wealth Card - Combined */}
+            <Card className="rounded-sm bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
+                <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <TrendingUp className="h-4 w-4" />
+                                <span>Total Wealth</span>
+                            </div>
+                            {loading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-8 w-32" />
+                                    <Skeleton className="h-4 w-24" />
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-2xl font-bold text-foreground">
+                                        ${formatBalance(totalWealth, 2)}
+                                    </h3>
+                                    <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                                        <p>SOL: ${formatBalance(solValue, 2)}</p>
+                                        <p>GEC: ${formatBalance(gecValue, 2)}</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
