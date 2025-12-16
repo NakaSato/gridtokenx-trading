@@ -265,22 +265,27 @@ export class ApiClient {
     amount: string
     price_per_kwh: string
   }) {
-    return apiRequest<{ id: string }>('/api/p2p/orders', {
+    return apiRequest<{ id: string }>('/api/v1/trading/orders', {
       method: 'POST',
-      body: orderData,
+      body: {
+        side: orderData.side.toLowerCase(),
+        energy_amount: parseFloat(orderData.amount),
+        price_per_kwh: parseFloat(orderData.price_per_kwh),
+        order_type: 'market' // Defaulting to market for now, or add to UI
+      },
       token: this.token,
     })
   }
 
   async getP2POrderBook() {
-    return apiRequest<{ asks: any[]; bids: any[] }>('/api/p2p/orderbook', {
+    return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/trading/orderbook', {
       method: 'GET',
       token: this.token,
     })
   }
 
   async getMyP2POrders() {
-    return apiRequest<any[]>('/api/p2p/orders/my', {
+    return apiRequest<any[]>('/api/v1/trading/orders', {
       method: 'GET',
       token: this.token,
     })
@@ -397,13 +402,29 @@ export class ApiClient {
   }
 
   async getMyReadings(limit = 10, offset = 0) {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
     return apiRequest<import('../types/meter').MeterReading[]>(
-      `/api/meters/my-readings?limit=${limit}&offset=${offset}`,
+      `/api/v1/meters/readings?${params.toString()}`,
       {
         method: 'GET',
         token: this.token,
       }
     )
+  }
+
+  async getMyMeters() {
+    return apiRequest<import('../types/meter').MeterResponse[]>('/api/v1/users/me/meters', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async registerMeter(data: { serial_number: string; meter_type: string; location: string }) {
+    return apiRequest<import('../types/meter').MeterResponse>('/api/v1/meters', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
   }
 
   // Transactions

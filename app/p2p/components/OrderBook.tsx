@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
+import { useSocket } from '@/contexts/SocketContext'
 
 interface Order {
     id: string
@@ -29,20 +30,34 @@ export default function OrderBook() {
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(false)
 
+    const { socket } = useSocket()
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+
     const fetchOrderBook = async () => {
         setLoading(true)
         try {
-            const { data } = await defaultApiClient.getP2POrderBook()
-            if (data) {
-                // Transform backend data to match frontend interface
-                const transform = (items: any[]) => items.map(i => ({
-                    ...i,
-                    order_type: i.side === 'buy' ? 'Buy' : 'Sell',
-                    seller: i.user_email || i.user_id, // Fallback
-                    buyer: i.user_email || i.user_id
-                }))
+            const response = await defaultApiClient.getP2POrderBook() as any
+            const data = response.data
 
-                setOrders([...transform(data.asks), ...transform(data.bids)])
+            if (data && data.data) {
+                // Backend returns { data: [Order...], pagination: ... }
+                const items = data.data
+
+                const transform = (item: any) => ({
+                    ...item,
+                    id: item.id,
+                    order_type: item.side === 'buy' ? 'Buy' : 'Sell', // Map 'side' to UI 'order_type'
+                    seller: item.side === 'sell' ? (item.user_email || item.user_id) : 'Market',
+                    buyer: item.side === 'buy' ? (item.user_email || item.user_id) : 'Market',
+                    amount: parseFloat(item.energy_amount),
+                    filled_amount: parseFloat(item.filled_amount || 0),
+                    price_per_kwh: parseFloat(item.price_per_kwh),
+                    status: item.status
+                })
+
+                const allOrders = items.map(transform)
+                setOrders(allOrders)
+                setLastUpdated(new Date())
             }
         } catch (error) {
             console.error('Failed to fetch order book:', error)
@@ -53,9 +68,43 @@ export default function OrderBook() {
 
     useEffect(() => {
         fetchOrderBook()
-        const interval = setInterval(fetchOrderBook, 5000) // Refresh every 5s
+
+        // Poll every 30s as fallback
+        const interval = setInterval(fetchOrderBook, 30000)
+
+        // Real-time updates via WebSocket
+        if (socket) {
+            const handleMessage = (event: MessageEvent) => {
+                try {
+                    const message = JSON.parse(event.data)
+                    // Refresh on relevant market events
+                    const updateEvents = [
+                        'order_created',
+                        'order_matched',
+                        'offer_created',
+                        'offer_updated',
+                        'order_book_buy_update',
+                        'order_book_sell_update'
+                    ]
+
+                    if (updateEvents.includes(message.type)) {
+                        console.log('⚡ Received real-time update:', message.type)
+                        fetchOrderBook()
+                    }
+                } catch (e) {
+                    console.error('Error parsing WS message:', e)
+                }
+            }
+
+            socket.addEventListener('message', handleMessage)
+            return () => {
+                socket.removeEventListener('message', handleMessage)
+                clearInterval(interval)
+            }
+        }
+
         return () => clearInterval(interval)
-    }, [])
+    }, [socket])
 
     const sellOrders = orders.filter((o) => o.order_type === 'Sell')
     const buyOrders = orders.filter((o) => o.order_type === 'Buy')

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
+import { useSocket } from '@/contexts/SocketContext'
 
 interface Trade {
     id: string
@@ -20,26 +21,50 @@ export default function TradeHistory() {
     const [trades, setTrades] = useState<Trade[]>([])
     const [loading, setLoading] = useState(true)
 
+    const { socket } = useSocket()
+
+    const fetchTrades = async () => {
+        try {
+            // Fetch recent 20 trades
+            const response = await defaultApiClient.getTrades({ limit: 20 })
+            if (response.data) {
+                setTrades(response.data.trades)
+            }
+        } catch (error) {
+            console.error('Failed to fetch trades:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     useEffect(() => {
-        const fetchTrades = async () => {
-            try {
-                // Fetch recent 20 trades
-                const response = await defaultApiClient.getTrades({ limit: 20 })
-                if (response.data) {
-                    setTrades(response.data.trades)
+        fetchTrades()
+        // Poll every 10 seconds as fallback
+        const interval = setInterval(fetchTrades, 10000)
+
+        // Real-time updates
+        if (socket) {
+            const handleMessage = (event: MessageEvent) => {
+                try {
+                    const message = JSON.parse(event.data)
+                    // Update on trade execution
+                    if (message.type === 'trade_executed') {
+                        console.log('⚡ Trade executed, refreshing history')
+                        fetchTrades()
+                    }
+                } catch (e) {
+                    // Ignore parse errors
                 }
-            } catch (error) {
-                console.error('Failed to fetch trades:', error)
-            } finally {
-                setLoading(false)
+            }
+            socket.addEventListener('message', handleMessage)
+            return () => {
+                socket.removeEventListener('message', handleMessage)
+                clearInterval(interval)
             }
         }
 
-        fetchTrades()
-        // Poll every 10 seconds
-        const interval = setInterval(fetchTrades, 10000)
         return () => clearInterval(interval)
-    }, [])
+    }, [socket])
 
     if (loading) {
         return (

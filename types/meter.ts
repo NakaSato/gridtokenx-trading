@@ -1,15 +1,21 @@
 export interface MeterReading {
     id: string
-    user_id: string
-    wallet_address: string
-    kwh_amount: string
-    reading_timestamp: string
+    meter_serial: string
+    kwh: number
+    timestamp: string
     submitted_at: string
     minted: boolean
-    mint_tx_signature?: string
-    meter_id?: string
-    meter_serial?: string
-    verification_status?: string
+    tx_signature?: string
+    message?: string
+}
+
+export interface MeterResponse {
+    id: string
+    serial_number: string
+    meter_type: string
+    location: string
+    is_verified: boolean
+    wallet_address: string
 }
 
 export interface SubmitReadingRequest {

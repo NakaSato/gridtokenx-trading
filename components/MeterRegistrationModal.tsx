@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import toast from 'react-hot-toast';
+import { createApiClient } from '@/lib/api-client';
+import { useAuth } from '@/contexts/AuthProvider';
 
 interface MeterRegistrationModalProps {
     isOpen: boolean;
@@ -21,47 +29,35 @@ interface MeterRegistrationModalProps {
 }
 
 export function MeterRegistrationModal({ isOpen, onClose, onSuccess }: MeterRegistrationModalProps) {
-    const { publicKey } = useWallet();
+    const { token } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         meterSerial: '',
         location: '',
-        capacity: ''
+        meterType: 'Solar_Prosumer'
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!publicKey) {
-            toast.error('Please connect your wallet first');
+        if (!token) {
+            toast.error('Please login first');
             return;
         }
 
         setLoading(true);
         try {
-            // Simulate API call or local storage logic
-            // In a real app, this would be an API call
-            // For now, we use local storage as previously established for the wallet-only flow or user-auth flow
+            const client = createApiClient(token);
+            const response = await client.registerMeter({
+                serial_number: formData.meterSerial,
+                meter_type: formData.meterType,
+                location: formData.location
+            });
 
-            // Checking for user auth if enabled, but falling back to wallet-based for simplified flow
-            // Since we are currently in simplified wallet-only flow (based on previous turns), 
-            // we'll associate with wallet address.
-
-            const meter = {
-                serial: formData.meterSerial,
-                location: formData.location,
-                capacity: parseFloat(formData.capacity),
-                walletAddress: publicKey.toString(),
-                createdAt: new Date().toISOString()
-            };
-
-            // Store in local storage to simulate backend persistence
-            const storageKey = `meters_${publicKey.toString()}`;
-            const existingMeters = localStorage.getItem(storageKey);
-            const meters = existingMeters ? JSON.parse(existingMeters) : [];
-            meters.push(meter);
-
-            localStorage.setItem(storageKey, JSON.stringify(meters));
+            if (response.error) {
+                toast.error(response.error);
+                return;
+            }
 
             toast.success('Smart meter registered successfully!');
             onSuccess();
@@ -71,10 +67,11 @@ export function MeterRegistrationModal({ isOpen, onClose, onSuccess }: MeterRegi
             setFormData({
                 meterSerial: '',
                 location: '',
-                capacity: ''
+                meterType: 'Solar_Prosumer'
             });
 
         } catch (error) {
+            console.error(error);
             toast.error('Registration failed. Please try again.');
         } finally {
             setLoading(false);
@@ -87,7 +84,7 @@ export function MeterRegistrationModal({ isOpen, onClose, onSuccess }: MeterRegi
                 <DialogHeader>
                     <DialogTitle>Register Smart Meter</DialogTitle>
                     <DialogDescription>
-                        Add your smart meter to start earning energy tokens
+                        Link your physical smart meter ID to the GridTokenX network.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -95,39 +92,47 @@ export function MeterRegistrationModal({ isOpen, onClose, onSuccess }: MeterRegi
                         <Label htmlFor="meterSerial">Meter Serial Number</Label>
                         <Input
                             id="meterSerial"
-                            placeholder="e.g., METER-001-2024"
+                            placeholder="e.g., bb6052e6-..."
                             value={formData.meterSerial}
                             onChange={(e) => setFormData({ ...formData, meterSerial: e.target.value })}
                             required
                         />
+                        <p className="text-xs text-muted-foreground">Found on your Smart Meter device dashboard.</p>
                     </div>
+
                     <div className="grid gap-2">
-                        <Label htmlFor="location">Location</Label>
+                        <Label htmlFor="meterType">Meter Type</Label>
+                        <Select
+                            value={formData.meterType}
+                            onValueChange={(value) => setFormData({ ...formData, meterType: value })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select meter type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Solar_Prosumer">Solar Prosumer (Generate & Consume)</SelectItem>
+                                <SelectItem value="Wind_Prosumer">Wind Prosumer (Generate & Consume)</SelectItem>
+                                <SelectItem value="Consumer_Only">Consumer Only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor="location">Location / Building</Label>
                         <Input
                             id="location"
-                            placeholder="e.g., Home Solar Panel"
+                            placeholder="e.g., Home Roof A"
                             value={formData.location}
                             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                             required
                         />
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="capacity">Capacity (kW)</Label>
-                        <Input
-                            id="capacity"
-                            type="number"
-                            step="0.1"
-                            placeholder="e.g., 5.0"
-                            value={formData.capacity}
-                            onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                            required
-                        />
-                    </div>
+
                     <div className="flex justify-end gap-3 pt-4">
                         <Button variant="outline" type="button" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={loading || !publicKey}>
+                        <Button type="submit" disabled={loading || !token}>
                             {loading ? 'Registering...' : 'Register Meter'}
                         </Button>
                     </div>
