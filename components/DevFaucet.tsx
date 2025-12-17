@@ -2,14 +2,17 @@
 
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export default function DevFaucet() {
     const { user } = useAuth();
+    const { publicKey, connected } = useWallet();
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState(false);
 
-    const walletAddress = user?.wallet_address;
+    // Use connected wallet's publicKey first, fallback to user's stored wallet_address
+    const walletAddress = connected && publicKey ? publicKey.toBase58() : user?.wallet_address;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
     const requestFunds = useCallback(async (amountSol: number, amountTokens: number) => {
