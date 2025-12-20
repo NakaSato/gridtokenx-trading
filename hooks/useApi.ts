@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { ApiClient, ApiResponse, createApiClient } from '../lib/api-client'
+import type { Role } from '@/types/auth'
 
 /**
  * Hook to access the API client with optional authentication
@@ -275,7 +276,7 @@ export function useAuth() {
       password: string
       first_name: string
       last_name: string
-      role?: string
+      role?: Role
       wallet_address?: string
     }) => {
       const response = await client.register(userData)

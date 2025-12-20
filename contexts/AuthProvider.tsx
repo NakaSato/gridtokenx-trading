@@ -13,6 +13,7 @@ import type {
   RegisterResponse,
   UserProfile,
   ProfileUpdateRequest,
+  Role,
 } from '@/types/auth'
 
 interface User {
@@ -41,7 +42,7 @@ interface AuthContextType {
     password: string
     first_name: string
     last_name: string
-    role?: string
+    role?: Role
     wallet_address?: string
   }) => Promise<RegisterResponse>
   loginWithWallet: (data: {
@@ -199,7 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     password: string
     first_name: string
     last_name: string
-    role?: string
+    role?: Role
     wallet_address?: string
   }): Promise<RegisterResponse> => {
     setIsLoading(true)
