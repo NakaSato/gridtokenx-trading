@@ -22,6 +22,8 @@ import {
 import { format } from 'date-fns'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
 
+import { SubmitReadingModal } from '@/components/SubmitReadingModal'
+
 export default function SmartMeterPage() {
     const { token, user } = useAuth()
     const [meters, setMeters] = useState<MeterResponse[]>([])
@@ -30,6 +32,10 @@ export default function SmartMeterPage() {
     const [refreshing, setRefreshing] = useState(false)
     const [activeTab, setActiveTab] = useState("readings")
     const [isRegisterOpen, setIsRegisterOpen] = useState(false)
+
+    // State for submit reading modal
+    const [isSubmitOpen, setIsSubmitOpen] = useState(false)
+    const [selectedMeterSerial, setSelectedMeterSerial] = useState<string>('')
 
     const fetchData = async () => {
         if (!token) return
@@ -69,6 +75,11 @@ export default function SmartMeterPage() {
 
     const lastUpdate = readings.length > 0 ? new Date(readings[0].timestamp) : null
 
+    const handleOpenSubmit = (serial: string) => {
+        setSelectedMeterSerial(serial)
+        setIsSubmitOpen(true)
+    }
+
     return (
         <ProtectedRoute requireWallet={false} requireAuth={true}>
             <main className="flex h-full flex-1 flex-col gap-6 p-6">
@@ -94,6 +105,14 @@ export default function SmartMeterPage() {
                 <MeterRegistrationModal
                     isOpen={isRegisterOpen}
                     onClose={() => setIsRegisterOpen(false)}
+                    onSuccess={fetchData}
+                />
+
+                {/* Submit Reading Modal */}
+                <SubmitReadingModal
+                    isOpen={isSubmitOpen}
+                    onClose={() => setIsSubmitOpen(false)}
+                    meterSerial={selectedMeterSerial}
                     onSuccess={fetchData}
                 />
 
@@ -250,7 +269,7 @@ export default function SmartMeterPage() {
                                                         <AlertCircle className="h-5 w-5 text-yellow-500" />
                                                     )}
                                                 </CardTitle>
-                                                <CardDescription>{meter.serial_number}</CardDescription>
+                                                <CardDescription className="font-mono text-xs">{meter.serial_number}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="grid gap-2 text-sm">
@@ -258,9 +277,28 @@ export default function SmartMeterPage() {
                                                         <span className="text-muted-foreground">Location:</span>
                                                         <span>{meter.location}</span>
                                                     </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Wallet:</span>
-                                                        <span className="font-mono text-xs" title={meter.wallet_address}>{meter.wallet_address ? meter.wallet_address.slice(0, 8) + '...' : 'None'}</span>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-muted-foreground">Status:</span>
+                                                        <span className={meter.is_verified ? "text-green-600 font-medium" : "text-yellow-600 font-medium"}>
+                                                            {meter.is_verified ? "Active" : "Unverified"}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="pt-4">
+                                                        <Button
+                                                            className="w-full"
+                                                            variant="outline"
+                                                            onClick={() => handleOpenSubmit(meter.serial_number)}
+                                                            disabled={!meter.is_verified}
+                                                        >
+                                                            <Upload className="mr-2 h-4 w-4" />
+                                                            Submit Reading
+                                                        </Button>
+                                                        {!meter.is_verified && (
+                                                            <p className="text-[10px] text-muted-foreground text-center mt-1">
+                                                                Meter must be verified to submit data
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -281,3 +319,7 @@ export default function SmartMeterPage() {
         </ProtectedRoute>
     )
 }
+
+// Add Upload icon import
+import { Upload } from 'lucide-react'
+

@@ -5,19 +5,90 @@ import { Separator } from './ui/separator'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { useState, useRef } from 'react'
-import { User, Upload, Copy, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { User, Upload, Copy, Check, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useAuth } from '@/contexts/AuthProvider'
+import { defaultApiClient } from '@/lib/api-client'
+import type { UserProfile } from '@/types/auth'
+import toast from 'react-hot-toast'
+
+interface TradingStats {
+  totalTrades: number
+  totalVolume: string
+  winRate: string
+  totalPnl: string
+}
 
 export default function Profile() {
   const { publicKey, connected } = useWallet()
-  const [username, setUsername] = useState<string>('GridTrader')
-  const [email, setEmail] = useState<string>('trader@gridtokenx.com')
+  const { user: authUser, isAuthenticated } = useAuth()
+
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [stats, setStats] = useState<TradingStats>({
+    totalTrades: 0,
+    totalVolume: '0 GRIDX',
+    winRate: '0%',
+    totalPnl: '+0 GRIDX'
+  })
+  const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+
+  // Local form state for editing
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProfileData()
+    }
+  }, [isAuthenticated])
+
+  const fetchProfileData = async () => {
+    setIsLoading(true)
+    try {
+      // 1. Fetch real user profile
+      const profileResponse = await defaultApiClient.getProfile()
+      if (profileResponse.data) {
+        const userData = profileResponse.data as UserProfile
+        setProfile(userData)
+        setUsername(userData.username || '')
+        setEmail(userData.email || '')
+        setFirstName(userData.first_name || '')
+        setLastName(userData.last_name || '')
+      }
+
+      // 2. Fetch trading analytics (7d by default)
+      const statsResponse = await defaultApiClient.getUserAnalytics({ timeframe: '7d' })
+      if (statsResponse.data) {
+        const s = statsResponse.data
+        const totalCreated = (s.as_seller.offers_created || 0) + (s.as_buyer.orders_created || 0)
+        const totalFulfilled = (s.as_seller.offers_fulfilled || 0) + (s.as_buyer.orders_fulfilled || 0)
+        const winRate = totalCreated > 0
+          ? ((totalFulfilled / totalCreated) * 100).toFixed(1)
+          : '0.0'
+
+        setStats({
+          totalTrades: s.overall.total_transactions || 0,
+          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} GRIDX`,
+          winRate: `${winRate}%`,
+          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} GRIDX`
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile data:', error)
+      toast.error('Failed to load profile data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -26,19 +97,14 @@ export default function Profile() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Check if file is an image
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file')
+        toast.error('Please select an image file')
         return
       }
-
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
+        toast.error('File size must be less than 5MB')
         return
       }
-
-      // Create a preview URL
       const reader = new FileReader()
       reader.onloadend = () => {
         setAvatarUrl(reader.result as string)
@@ -47,19 +113,39 @@ export default function Profile() {
     }
   }
 
-  const handleSave = () => {
-    // Save profile logic here
-    setIsEditing(false)
+  const handleSave = async () => {
+    try {
+      const response = await defaultApiClient.updateProfile({
+        email,
+        first_name: firstName,
+        last_name: lastName
+      })
+      if (response.status === 200) {
+        toast.success('Profile updated successfully')
+        setIsEditing(false)
+        fetchProfileData()
+      } else {
+        toast.error(response.error || 'Failed to update profile')
+      }
+    } catch (error) {
+      toast.error('Error updating profile')
+    }
   }
 
   const handleCancel = () => {
-    // Reset to original values
+    if (profile) {
+      setUsername(profile.username || '')
+      setEmail(profile.email || '')
+      setFirstName(profile.first_name || '')
+      setLastName(profile.last_name || '')
+    }
     setIsEditing(false)
   }
 
   const handleCopyAddress = async () => {
-    if (publicKey) {
-      await navigator.clipboard.writeText(publicKey.toBase58())
+    const address = profile?.wallet_address || publicKey?.toBase58()
+    if (address) {
+      await navigator.clipboard.writeText(address)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
@@ -78,7 +164,7 @@ export default function Profile() {
       </DialogTrigger>
       <DialogContent className="flex w-[520px] flex-col border-none bg-accent p-5 sm:rounded-sm">
         <DialogTitle className="text-base font-medium text-foreground">
-          Profile
+          Profile {isLoading && <Loader2 className="inline ml-2 h-4 w-4 animate-spin" />}
         </DialogTitle>
         <Separator className="bg-secondary" />
         <div className="flex w-full flex-col space-y-5">
@@ -119,14 +205,14 @@ export default function Profile() {
           </div>
 
           {/* Wallet Address */}
-          {connected && publicKey && (
+          {(profile?.wallet_address || (connected && publicKey)) && (
             <div className="flex w-full flex-col space-y-[14px]">
               <Label className="text-xs font-medium text-foreground">
                 Wallet Address
               </Label>
               <div className="flex items-center justify-between rounded-sm border bg-secondary px-3 py-2">
                 <span className="font-mono text-xs text-foreground">
-                  {shortenAddress(publicKey.toBase58())}
+                  {shortenAddress(profile?.wallet_address || publicKey!.toBase58())}
                 </span>
                 <Button
                   variant="ghost"
@@ -154,8 +240,32 @@ export default function Profile() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
-              disabled={!isEditing}
+              disabled={true} // Username usually immutable
             />
+          </div>
+
+          {/* Display Name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex w-full flex-col space-y-[14px]">
+              <Label className="text-xs font-medium text-foreground">First Name</Label>
+              <Input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="flex w-full flex-col space-y-[14px]">
+              <Label className="text-xs font-medium text-foreground">Last Name</Label>
+              <Input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
+                disabled={!isEditing}
+              />
+            </div>
           </div>
 
           {/* Email */}
@@ -173,7 +283,7 @@ export default function Profile() {
           {/* Stats */}
           <div className="flex w-full flex-col space-y-3">
             <Label className="text-xs font-medium text-foreground">
-              Trading Stats
+              Trading Stats (Last 7 Days)
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col rounded-sm bg-secondary p-3">
@@ -181,7 +291,7 @@ export default function Profile() {
                   Total Trades
                 </span>
                 <span className="text-base font-semibold text-foreground">
-                  156
+                  {stats.totalTrades}
                 </span>
               </div>
               <div className="flex flex-col rounded-sm bg-secondary p-3">
@@ -189,23 +299,23 @@ export default function Profile() {
                   Total Volume
                 </span>
                 <span className="text-base font-semibold text-foreground">
-                  12,450 GRIDX
+                  {stats.totalVolume}
                 </span>
               </div>
               <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
-                  Win Rate
+                  Trade Fulfillment
                 </span>
                 <span className="text-base font-semibold text-green-500">
-                  68.5%
+                  {stats.winRate}
                 </span>
               </div>
               <div className="flex flex-col rounded-sm bg-secondary p-3">
                 <span className="text-xs text-secondary-foreground">
-                  Total PnL
+                  Net Revenue
                 </span>
-                <span className="text-base font-semibold text-green-500">
-                  +2,340 GRIDX
+                <span className={`text-base font-semibold ${stats.totalPnl.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+                  {stats.totalPnl}
                 </span>
               </div>
             </div>

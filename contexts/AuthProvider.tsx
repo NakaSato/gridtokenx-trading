@@ -20,6 +20,7 @@ interface User {
   email: string
   role: string
   blockchain_registered: boolean
+  email_verified?: boolean
   wallet_address?: string
 }
 

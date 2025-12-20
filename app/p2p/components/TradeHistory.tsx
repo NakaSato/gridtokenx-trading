@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { useSocket } from '@/contexts/SocketContext'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface Trade {
     id: string
@@ -18,17 +19,26 @@ interface Trade {
 }
 
 export default function TradeHistory() {
+    const { token } = useAuth()
     const [trades, setTrades] = useState<Trade[]>([])
     const [loading, setLoading] = useState(true)
 
     const { socket } = useSocket()
 
     const fetchTrades = async () => {
+        if (!token) {
+            setLoading(false)
+            return
+        }
+
         try {
+            // Set auth token before making the request
+            defaultApiClient.setToken(token)
+
             // Fetch recent 20 trades
             const response = await defaultApiClient.getTrades({ limit: 20 })
             if (response.data) {
-                setTrades(response.data.trades)
+                setTrades(response.data.trades || [])
             }
         } catch (error) {
             console.error('Failed to fetch trades:', error)
@@ -64,7 +74,7 @@ export default function TradeHistory() {
         }
 
         return () => clearInterval(interval)
-    }, [socket])
+    }, [socket, token])
 
     if (loading) {
         return (

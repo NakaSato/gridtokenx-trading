@@ -90,6 +90,7 @@ export interface ResendVerificationRequest {
 }
 
 export interface ResendVerificationResponse {
+  success: boolean;
   message: string;
   email: string;
   sent_at: string;

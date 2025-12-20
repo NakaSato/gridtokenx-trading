@@ -21,23 +21,10 @@ export function VolumeCard() {
       }
 
       try {
-        // Try to get user's trading volume from trades API
-        const response = await defaultApiClient.getTrades({ limit: 100 })
-        if (response.data?.trades) {
-          // Calculate 14-day volume
-          const fourteenDaysAgo = new Date()
-          fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
-          const recentTrades = response.data.trades.filter((trade: any) => {
-            const tradeDate = new Date(trade.created_at || trade.timestamp)
-            return tradeDate >= fourteenDaysAgo
-          })
-
-          const totalVolume = recentTrades.reduce((sum: number, trade: any) => {
-            return sum + parseFloat(trade.total_value || trade.price || '0')
-          }, 0)
-
-          setVolume(totalVolume)
+        // Try to get user's trading volume from analytics API
+        const response = await defaultApiClient.getUserAnalytics({ timeframe: '7d' })
+        if (response.data && response.data.overall) {
+          setVolume(response.data.overall.total_volume_kwh)
         }
       } catch (error) {
         console.error('Failed to fetch volume:', error)
@@ -65,13 +52,13 @@ export function VolumeCard() {
         <div className="mb-4 flex items-start justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-sm font-medium text-muted-foreground">14 Day Volume</h1>
+            <h1 className="text-sm font-medium text-muted-foreground">7 Day Volume</h1>
           </div>
         </div>
         {loading ? (
           <Skeleton className="h-9 w-24" />
         ) : (
-          <div className="text-3xl font-bold text-foreground">{formatValue(volume)}</div>
+          <div className="text-3xl font-bold text-foreground">{formatValue(volume)} kWh</div>
         )}
       </CardContent>
     </Card>

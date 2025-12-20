@@ -10,6 +10,7 @@ import { SocketProvider } from '@/contexts/SocketContext'
 import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 import DevFaucet from '@/components/DevFaucet'
+import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -142,6 +143,7 @@ export default function RootLayout({
               <SocketProvider>
                 <AuthModalManager />
                 <DevFaucet />
+                <EmailVerificationBanner />
                 <div className="mx-auto flex h-screen flex-col px-6">
                   <NavBar></NavBar>
                   <main className="flex-1 overflow-hidden">{children}</main>

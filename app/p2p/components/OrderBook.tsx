@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { useSocket } from '@/contexts/SocketContext'
+import { useAuth } from '@/contexts/AuthProvider'
 
 interface Order {
     id: string
@@ -27,6 +28,7 @@ interface Order {
 }
 
 export default function OrderBook() {
+    const { token } = useAuth()
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(false)
 
@@ -34,8 +36,16 @@ export default function OrderBook() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
     const fetchOrderBook = async () => {
+        if (!token) {
+            return
+        }
+
         setLoading(true)
         try {
+            // Set auth token before making the request
+            defaultApiClient.setToken(token)
+
+            // Use getP2POrderBook() which returns all market orders (now fixed to include pending)
             const response = await defaultApiClient.getP2POrderBook() as any
             const data = response.data
 
@@ -46,9 +56,9 @@ export default function OrderBook() {
                 const transform = (item: any) => ({
                     ...item,
                     id: item.id,
-                    order_type: item.side === 'buy' ? 'Buy' : 'Sell', // Map 'side' to UI 'order_type'
-                    seller: item.side === 'sell' ? (item.user_email || item.user_id) : 'Market',
-                    buyer: item.side === 'buy' ? (item.user_email || item.user_id) : 'Market',
+                    order_type: item.side === 'Buy' ? 'Buy' : 'Sell',
+                    seller: item.side === 'Sell' ? (item.user_email || item.user_id) : 'Market',
+                    buyer: item.side === 'Buy' ? (item.user_email || item.user_id) : 'Market',
                     amount: parseFloat(item.energy_amount),
                     filled_amount: parseFloat(item.filled_amount || 0),
                     price_per_kwh: parseFloat(item.price_per_kwh),
@@ -104,7 +114,7 @@ export default function OrderBook() {
         }
 
         return () => clearInterval(interval)
-    }, [socket])
+    }, [socket, token])
 
     const sellOrders = orders.filter((o) => o.order_type === 'Sell')
     const buyOrders = orders.filter((o) => o.order_type === 'Buy')

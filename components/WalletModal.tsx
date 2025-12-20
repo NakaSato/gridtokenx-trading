@@ -539,9 +539,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   </div>
                   <button
                     type="button"
-                    onClick={() =>
-                      toast('Password reset coming soon', { icon: 'ℹ️' })
-                    }
+                    onClick={() => {
+                      onClose()
+                      router.push('/forgot-password')
+                    }}
                     className="text-sm text-primary transition-colors hover:text-primary/80"
                   >
                     Forgot password?

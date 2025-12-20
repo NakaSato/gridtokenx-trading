@@ -14,6 +14,7 @@ import {
   FileChartColumn,
   MessagesSquare,
   TableColumnsSplit,
+  ShieldCheck,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -232,7 +233,7 @@ function NavBadge({ badge, isActive }: NavBadgeProps) {
 export default function NavBar() {
   const pathname = usePathname()
   const { connected } = useWallet()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [activeItem, setActiveItem] = useState<string>('')
 
@@ -276,6 +277,18 @@ export default function NavBar() {
               onClick={() => setActiveItem(item.name)}
             />
           ))}
+
+          {user?.role === 'admin' && (
+            <NavLink
+              item={{
+                name: 'Admin',
+                href: '/admin',
+                icon: <ShieldCheck size={16} />,
+              }}
+              isActive={activeRoute === 'Admin'}
+              onClick={() => setActiveItem('Admin')}
+            />
+          )}
 
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger

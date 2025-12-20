@@ -193,10 +193,35 @@ export class ApiClient {
     email: string
   ): Promise<ApiResponse<ResendVerificationResponse>> {
     return apiRequest<ResendVerificationResponse>(
-      '/api/auth/resend-verification',
+      '/api/v1/auth/resend-verification',
       {
         method: 'POST',
         body: { email },
+      }
+    )
+  }
+
+  async forgotPassword(
+    email: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiRequest<{ success: boolean; message: string }>(
+      '/api/v1/auth/forgot-password',
+      {
+        method: 'POST',
+        body: { email },
+      }
+    )
+  }
+
+  async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiRequest<{ success: boolean; message: string }>(
+      '/api/v1/auth/reset-password',
+      {
+        method: 'POST',
+        body: { token, new_password: newPassword },
       }
     )
   }
@@ -244,7 +269,7 @@ export class ApiClient {
   async getTrades(filters?: { limit?: number; offset?: number }) {
     const params = new URLSearchParams(filters as any)
     return apiRequest<import('../types/trading').TradeHistory>(
-      `/api/market-data/trades/my-history?${params.toString()}`,
+      `/api/v1/trading/trades?${params.toString()}`,
       {
         method: 'GET',
         token: this.token,
@@ -253,7 +278,7 @@ export class ApiClient {
   }
 
   async cancelOrder(orderId: string) {
-    return apiRequest(`/api/trading/orders/${orderId}`, {
+    return apiRequest(`/api/v1/trading/orders/${orderId}`, {
       method: 'DELETE',
       token: this.token,
     })
@@ -268,10 +293,10 @@ export class ApiClient {
     return apiRequest<{ id: string }>('/api/v1/trading/orders', {
       method: 'POST',
       body: {
-        side: orderData.side.toLowerCase(),
-        energy_amount: parseFloat(orderData.amount),
-        price_per_kwh: parseFloat(orderData.price_per_kwh),
-        order_type: 'market' // Defaulting to market for now, or add to UI
+        side: orderData.side, // Keep capitalized as backend expects "Buy" or "Sell"
+        energy_amount: orderData.amount,
+        price_per_kwh: orderData.price_per_kwh,
+        order_type: 'Limit' // Use Limit order type (capitalized)
       },
       token: this.token,
     })
@@ -343,14 +368,14 @@ export class ApiClient {
 
   // Futures
   async getFuturesProducts() {
-    return apiRequest<import('../types/futures').FuturesProduct[]>('/api/futures/products', {
+    return apiRequest<import('../types/futures').FuturesProduct[]>('/api/v1/futures/products', {
       method: 'GET',
       token: this.token,
     })
   }
 
   async createFuturesOrder(data: import('../types/futures').CreateFuturesOrderRequest) {
-    return apiRequest<{ order_id: string }>('/api/futures/orders', {
+    return apiRequest<{ order_id: string }>('/api/v1/futures/orders', {
       method: 'POST',
       body: data,
       token: this.token,
@@ -358,7 +383,7 @@ export class ApiClient {
   }
 
   async getFuturesPositions() {
-    return apiRequest<import('../types/futures').FuturesPosition[]>('/api/futures/positions', {
+    return apiRequest<import('../types/futures').FuturesPosition[]>('/api/v1/futures/positions', {
       method: 'GET',
       token: this.token,
     })
@@ -366,7 +391,7 @@ export class ApiClient {
 
   async getFuturesCandles(productId: string, interval: string = '1m') {
     const params = new URLSearchParams({ product_id: productId, interval })
-    return apiRequest<import('../types/futures').Candle[]>(`/api/futures/candles?${params.toString()}`, {
+    return apiRequest<import('../types/futures').Candle[]>(`/api/v1/futures/candles?${params.toString()}`, {
       method: 'GET',
       token: this.token,
     })
@@ -374,22 +399,44 @@ export class ApiClient {
 
   async getFuturesOrderBook(productId: string) {
     const params = new URLSearchParams({ product_id: productId })
-    return apiRequest<import('../types/futures').OrderBook>(`/api/futures/orderbook?${params.toString()}`, {
+    return apiRequest<import('../types/futures').OrderBook>(`/api/v1/futures/orderbook?${params.toString()}`, {
       method: 'GET',
       token: this.token,
     })
   }
 
   async getFuturesOrders() {
-    return apiRequest<import('../types/futures').FuturesOrder[]>('/api/futures/orders/my', {
+    return apiRequest<import('../types/futures').FuturesOrder[]>('/api/v1/futures/orders/my', {
       method: 'GET',
       token: this.token,
     })
   }
 
   async closeFuturesPosition(positionId: string) {
-    return apiRequest<{ order_id: string }>(`/api/futures/positions/${positionId}/close`, {
+    return apiRequest<{ order_id: string }>(`/api/v1/futures/positions/${positionId}/close`, {
       method: 'POST',
+      token: this.token,
+    })
+  }
+
+  // Analytics
+  async getMarketAnalytics(params: { timeframe: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/v1/analytics/market?timeframe=${params.timeframe}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getUserAnalytics(params: { timeframe: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/v1/analytics/my-stats?timeframe=${params.timeframe}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getUserHistory(params: { timeframe: string }): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/api/v1/analytics/my-history?timeframe=${params.timeframe}`, {
+      method: 'GET',
       token: this.token,
     })
   }
