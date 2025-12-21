@@ -51,7 +51,7 @@ function VerifyEmailContent() {
     if (storedToken && storedUser) {
       // User is already authenticated, redirect to home
       toast.success('Already verified! Redirecting to home...')
-      router.push('/')
+      window.location.href = '/'
       return
     }
 
@@ -70,7 +70,7 @@ function VerifyEmailContent() {
     if (state !== 'success' || countdown === 0) {
       if (state === 'success' && countdown === 0) {
         toast.success('Welcome to GridTokenX! Redirecting to home...')
-        router.push('/')
+        window.location.href = '/'
       }
       return
     }
@@ -142,7 +142,7 @@ function VerifyEmailContent() {
       setState('success')
       setMessage(
         response.data.message ||
-          'Email verified successfully! You can now sign in.'
+        'Email verified successfully! You can now sign in.'
       )
 
       if (response.data.wallet_address) {
@@ -271,7 +271,7 @@ function VerifyEmailContent() {
               copied={copied}
               countdown={countdown}
               onCopyWallet={handleCopyWallet}
-              onGoHome={() => router.push('/')}
+              onGoHome={() => (window.location.href = '/')}
             />
           )}
 
@@ -279,17 +279,17 @@ function VerifyEmailContent() {
           {(state === 'error' ||
             state === 'expired' ||
             state === 'invalid') && (
-            <ResendForm
-              email={email}
-              isResending={isResending}
-              canResend={canResend}
-              resendCooldown={resendCooldown}
-              onEmailChange={setEmail}
-              onSubmit={handleResendVerification}
-              onGoHome={() => router.push('/')}
-              formatCooldown={formatCooldown}
-            />
-          )}
+              <ResendForm
+                email={email}
+                isResending={isResending}
+                canResend={canResend}
+                resendCooldown={resendCooldown}
+                onEmailChange={setEmail}
+                onSubmit={handleResendVerification}
+                onGoHome={() => (window.location.href = '/')}
+                formatCooldown={formatCooldown}
+              />
+            )}
         </div>
       </div>
     </div>

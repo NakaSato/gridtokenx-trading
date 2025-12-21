@@ -1,10 +1,14 @@
-
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { defaultApiClient } from '@/lib/api-client'
+import { useAuth } from '@/contexts/AuthProvider'
+import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
     Select,
     SelectContent,
@@ -12,14 +16,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { defaultApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
-import { Loader2, CheckCircle2, AlertCircle, Zap, Wallet } from 'lucide-react'
 
-export default function OrderForm() {
+interface OrderFormProps {
+    onOrderPlaced?: () => void
+}
+
+export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
     const { token } = useAuth()
-    const [orderType, setOrderType] = useState('Buy')
+    const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy')
+    const [priceType, setPriceType] = useState<'market' | 'limit'>('limit')
     const [amount, setAmount] = useState('')
     const [price, setPrice] = useState('')
     const [loading, setLoading] = useState(false)
@@ -28,15 +33,12 @@ export default function OrderForm() {
     const [balance, setBalance] = useState<number | null>(null)
     const [balanceLoading, setBalanceLoading] = useState(false)
 
-    // Fetch token balance
     const fetchBalance = useCallback(async () => {
         if (!token) return
         setBalanceLoading(true)
         try {
             const response = await fetch('http://localhost:4000/api/v1/trading/balance', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             })
             if (response.ok) {
                 const data = await response.json()
@@ -49,12 +51,10 @@ export default function OrderForm() {
         }
     }, [token])
 
-    // Fetch balance on mount and when token changes
     useEffect(() => {
         fetchBalance()
     }, [fetchBalance])
 
-    // Auto-clear success message after 5 seconds
     useEffect(() => {
         if (isSuccess) {
             const timer = setTimeout(() => {
@@ -65,6 +65,11 @@ export default function OrderForm() {
         }
     }, [isSuccess])
 
+    const handleQuickAmount = (percent: number) => {
+        if (balance && balance > 0) {
+            setAmount((balance * percent / 100).toFixed(2))
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -92,9 +97,8 @@ export default function OrderForm() {
 
         try {
             defaultApiClient.setToken(token)
-
             const response = await defaultApiClient.createP2POrder({
-                side: orderType as 'Buy' | 'Sell',
+                side: orderType === 'buy' ? 'Buy' : 'Sell',
                 amount: amount,
                 price_per_kwh: price,
             })
@@ -102,12 +106,12 @@ export default function OrderForm() {
             if (response.error) {
                 setMessage(response.error)
             } else {
-                setMessage(`${orderType} order placed successfully!`)
+                setMessage(`Order placed successfully!`)
                 setIsSuccess(true)
                 setAmount('')
                 setPrice('')
-                // Refresh balance after order
                 fetchBalance()
+                onOrderPlaced?.()
             }
         } catch (error: any) {
             setMessage(error.message || 'Failed to place order')
@@ -119,79 +123,141 @@ export default function OrderForm() {
     const totalValue = amount && price ? (parseFloat(amount) * parseFloat(price)).toFixed(2) : '0.00'
 
     return (
-        <Card className="overflow-hidden">
-            <CardHeader className={`${orderType === 'Buy' ? 'bg-green-50 border-b border-green-100' : 'bg-red-50 border-b border-red-100'}`}>
-                <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                        <Zap className={`h-5 w-5 ${orderType === 'Buy' ? 'text-green-600' : 'text-red-600'}`} />
-                        Place Order
-                    </CardTitle>
-                    {token && (
-                        <div className="flex items-center gap-1.5 text-sm bg-white/80 px-3 py-1 rounded-full border">
-                            <Wallet className="h-4 w-4 text-blue-500" />
-                            <span className="text-muted-foreground">Balance:</span>
-                            <span className="font-semibold">
-                                {balanceLoading ? '...' : (balance !== null ? balance.toFixed(2) : '-')}
-                            </span>
-                            <span className="text-muted-foreground">GRID</span>
-                        </div>
-                    )}
+        <div className="flex h-full w-full flex-col space-y-0">
+            {/* Header - Buy/Sell Tabs */}
+            <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1">
+                <div className="flex gap-4">
+                    <Button
+                        className={cn(
+                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary',
+                            orderType === 'buy'
+                                ? 'border-green-500 text-green-500'
+                                : 'border-transparent text-secondary-foreground'
+                        )}
+                        onClick={() => setOrderType('buy')}
+                    >
+                        Buy
+                    </Button>
+                    <Button
+                        className={cn(
+                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary',
+                            orderType === 'sell'
+                                ? 'border-red-500 text-red-500'
+                                : 'border-transparent text-secondary-foreground'
+                        )}
+                        onClick={() => setOrderType('sell')}
+                    >
+                        Sell
+                    </Button>
                 </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Order Type</Label>
-                        <Select value={orderType} onValueChange={setOrderType}>
-                            <SelectTrigger className={orderType === 'Buy' ? 'border-green-300' : 'border-red-300'}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Buy">🟢 Buy Energy</SelectItem>
-                                <SelectItem value="Sell">🔴 Sell Energy</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <Select
+                    defaultValue="limit"
+                    onValueChange={(value) => {
+                        if (value === 'market' || value === 'limit') {
+                            setPriceType(value)
+                        }
+                    }}
+                >
+                    <SelectTrigger className="h-[42px] w-fit gap-3 bg-inherit px-3 text-secondary-foreground focus:border-primary">
+                        <SelectValue />
+                        <ChevronDown size={12} />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                        <SelectItem value="market">Market</SelectItem>
+                        <SelectItem value="limit">Limit</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
 
-                    <div className="space-y-2">
-                        <Label>Amount (kWh)</Label>
-                        <Input
-                            type="number"
-                            placeholder="e.g. 100"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                            required
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Price per kWh (Tokens)</Label>
-                        <Input
-                            type="number"
-                            placeholder="e.g. 5.00"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                            required
-                        />
-                    </div>
-
-                    {/* Total Value Display */}
-                    {amount && price && (
-                        <div className={`p-3 rounded-lg ${orderType === 'Buy' ? 'bg-green-50' : 'bg-red-50'}`}>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Total {orderType === 'Buy' ? 'Cost' : 'Value'}:</span>
-                                <span className="font-semibold">{totalValue} Tokens</span>
-                            </div>
+            {/* Form Content */}
+            <div className="flex flex-col rounded-sm rounded-t-none border border-t-0 p-4">
+                {/* Balance Display */}
+                {token && (
+                    <div className="flex items-center justify-between pb-4">
+                        <span className="text-xs text-secondary-foreground">Available Balance</span>
+                        <div className="flex items-center gap-1">
+                            <Wallet className="h-3 w-3 text-secondary-foreground" />
+                            <span className="font-mono text-sm font-medium">
+                                {balanceLoading ? '...' : (balance?.toFixed(2) || '0.00')} GRX
+                            </span>
                         </div>
-                    )}
+                    </div>
+                )}
 
+                <Separator className="mb-4" />
+
+                <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+                    {/* Amount Input */}
+                    <div className="flex flex-col space-y-2">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-xs text-secondary-foreground">Amount (kWh)</Label>
+                        </div>
+                        <div className="flex h-fit w-full items-center space-x-2 rounded-sm bg-secondary px-3 py-2">
+                            <Input
+                                type="number"
+                                placeholder="0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                min="0.01"
+                                step="0.01"
+                                className="h-fit border-none bg-transparent p-0 font-mono text-foreground shadow-none placeholder:text-secondary-foreground focus-visible:ring-0"
+                            />
+                            <span className="text-xs text-secondary-foreground">kWh</span>
+                        </div>
+                        {/* Quick Amount Buttons */}
+                        <div className="flex gap-1">
+                            {[25, 50, 75, 100].map((percent) => (
+                                <Button
+                                    key={percent}
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleQuickAmount(percent)}
+                                    className="h-6 flex-1 text-xs text-secondary-foreground hover:text-primary"
+                                >
+                                    {percent}%
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Price Input */}
+                    <div className="flex flex-col space-y-2">
+                        <Label className="text-xs text-secondary-foreground">Price per kWh</Label>
+                        <div className="flex h-fit w-full items-center space-x-2 rounded-sm bg-secondary px-3 py-2">
+                            <Input
+                                type="number"
+                                placeholder="0.00"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                min="0.01"
+                                step="0.01"
+                                disabled={priceType === 'market'}
+                                className="h-fit border-none bg-transparent p-0 font-mono text-foreground shadow-none placeholder:text-secondary-foreground focus-visible:ring-0"
+                            />
+                            <span className="text-xs text-secondary-foreground">GRX</span>
+                        </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Total Display */}
+                    <div className="flex items-center justify-between py-2">
+                        <span className="text-xs text-secondary-foreground">Total</span>
+                        <span className="font-mono text-lg font-medium text-foreground">
+                            {totalValue} <span className="text-xs text-secondary-foreground">GRX</span>
+                        </span>
+                    </div>
+
+                    {/* Submit Button */}
                     <Button
                         type="submit"
-                        className={`w-full ${orderType === 'Buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                        className={cn(
+                            'h-[42px] w-full rounded-sm font-medium',
+                            orderType === 'buy'
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-red-500 text-white hover:bg-red-600'
+                        )}
                         disabled={loading || !token}
                     >
                         {loading ? (
@@ -200,21 +266,24 @@ export default function OrderForm() {
                                 Processing...
                             </>
                         ) : (
-                            `${orderType} ${amount || '0'} kWh`
+                            `${orderType === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} kWh`
                         )}
                     </Button>
 
                     {!token && (
-                        <p className="text-sm text-muted-foreground text-center">
-                            Please connect to place orders
-                        </p>
+                        <div className="rounded-sm bg-secondary p-3 text-center text-xs text-secondary-foreground">
+                            Connect wallet to place orders
+                        </div>
                     )}
 
+                    {/* Feedback Message */}
                     {message && (
-                        <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${isSuccess
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : 'bg-red-50 text-red-700 border border-red-200'
-                            }`}>
+                        <div className={cn(
+                            'flex items-center gap-2 rounded-sm p-3 text-xs',
+                            isSuccess
+                                ? 'bg-green-500/10 text-green-500'
+                                : 'bg-red-500/10 text-red-500'
+                        )}>
                             {isSuccess ? (
                                 <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
                             ) : (
@@ -224,7 +293,7 @@ export default function OrderForm() {
                         </div>
                     )}
                 </form>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     )
 }

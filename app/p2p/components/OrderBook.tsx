@@ -1,20 +1,13 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
+import { useEffect, useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
+import { ArrowUpDown, Activity } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface Order {
     id: string
@@ -31,28 +24,21 @@ export default function OrderBook() {
     const { token } = useAuth()
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(false)
+    const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
     const { socket } = useSocket()
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
     const fetchOrderBook = async () => {
-        if (!token) {
-            return
-        }
+        if (!token) return
 
         setLoading(true)
         try {
-            // Set auth token before making the request
             defaultApiClient.setToken(token)
-
-            // Use getP2POrderBook() which returns all market orders (now fixed to include pending)
             const response = await defaultApiClient.getP2POrderBook() as any
             const data = response.data
 
             if (data && data.data) {
-                // Backend returns { data: [Order...], pagination: ... }
                 const items = data.data
-
                 const transform = (item: any) => ({
                     ...item,
                     id: item.id,
@@ -65,9 +51,8 @@ export default function OrderBook() {
                     status: item.status
                 })
 
-                const allOrders = items.map(transform)
-                setOrders(allOrders)
-                setLastUpdated(new Date())
+                setOrders(items.map(transform))
+                setLastUpdate(new Date())
             }
         } catch (error) {
             console.error('Failed to fetch order book:', error)
@@ -78,32 +63,17 @@ export default function OrderBook() {
 
     useEffect(() => {
         fetchOrderBook()
-
-        // Poll every 30s as fallback
         const interval = setInterval(fetchOrderBook, 30000)
 
-        // Real-time updates via WebSocket
         if (socket) {
             const handleMessage = (event: MessageEvent) => {
                 try {
                     const message = JSON.parse(event.data)
-                    // Refresh on relevant market events
-                    const updateEvents = [
-                        'order_created',
-                        'order_matched',
-                        'offer_created',
-                        'offer_updated',
-                        'order_book_buy_update',
-                        'order_book_sell_update'
-                    ]
-
+                    const updateEvents = ['order_created', 'order_matched', 'offer_created', 'offer_updated']
                     if (updateEvents.includes(message.type)) {
-                        console.log('⚡ Received real-time update:', message.type)
                         fetchOrderBook()
                     }
-                } catch (e) {
-                    console.error('Error parsing WS message:', e)
-                }
+                } catch (e) { }
             }
 
             socket.addEventListener('message', handleMessage)
@@ -116,82 +86,157 @@ export default function OrderBook() {
         return () => clearInterval(interval)
     }, [socket, token])
 
-    const sellOrders = orders.filter((o) => o.order_type === 'Sell')
-    const buyOrders = orders.filter((o) => o.order_type === 'Buy')
+    // Process orders into aggregated price levels
+    const { askLevels, bidLevels, spread, maxVolume } = useMemo(() => {
+        const sellOrders = orders.filter((o) => o.order_type === 'Sell')
+        const buyOrders = orders.filter((o) => o.order_type === 'Buy')
+
+        const aggregateLevels = (orderList: Order[], type: 'ask' | 'bid') => {
+            const levels = new Map<number, { price: number; volume: number; count: number }>()
+
+            orderList.forEach(order => {
+                const remaining = order.amount - order.filled_amount
+                if (remaining > 0) {
+                    const existing = levels.get(order.price_per_kwh)
+                    if (existing) {
+                        existing.volume += remaining
+                        existing.count += 1
+                    } else {
+                        levels.set(order.price_per_kwh, {
+                            price: order.price_per_kwh,
+                            volume: remaining,
+                            count: 1
+                        })
+                    }
+                }
+            })
+
+            return Array.from(levels.values())
+                .sort((a, b) => type === 'ask' ? a.price - b.price : b.price - a.price)
+                .slice(0, 8)
+        }
+
+        const asks = aggregateLevels(sellOrders, 'ask')
+        const bids = aggregateLevels(buyOrders, 'bid')
+
+        const maxVol = Math.max(...asks.map(l => l.volume), ...bids.map(l => l.volume), 1)
+
+        const lowestAsk = asks.length > 0 ? asks[0].price : 0
+        const highestBid = bids.length > 0 ? bids[0].price : 0
+        const spreadVal = lowestAsk > 0 && highestBid > 0 ? lowestAsk - highestBid : 0
+
+        return {
+            askLevels: asks,
+            bidLevels: bids,
+            spread: { value: spreadVal, ask: lowestAsk, bid: highestBid },
+            maxVolume: maxVol
+        }
+    }, [orders])
+
+    const PriceRow = ({ price, volume, count, type, depth }: {
+        price: number; volume: number; count: number; type: 'ask' | 'bid'; depth: number
+    }) => (
+        <div className="relative group hover:bg-accent transition-colors">
+            <div
+                className={cn(
+                    "absolute inset-y-0 transition-all",
+                    type === 'ask' ? "right-0 bg-destructive/10" : "left-0 bg-chart-2/20"
+                )}
+                style={{ width: `${depth}%` }}
+            />
+            <div className="relative grid grid-cols-3 gap-2 py-1.5 px-3 text-sm">
+                <span className={cn(
+                    "font-mono font-medium",
+                    type === 'ask' ? "text-destructive" : "text-chart-2"
+                )}>
+                    {price.toFixed(2)}
+                </span>
+                <span className="font-mono text-right text-foreground/80">
+                    {volume.toFixed(1)}
+                </span>
+                <span className="font-mono text-right text-muted-foreground text-xs">
+                    ({count})
+                </span>
+            </div>
+        </div>
+    )
 
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            {/* Sell Orders */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-red-500">Asks (Sell Orders)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Price (Tokens)</TableHead>
-                                <TableHead>Amount (kWh)</TableHead>
-                                <TableHead>Seller</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sellOrders.map((order) => (
-                                <TableRow key={order.id}>
-                                    <TableCell>{order.price_per_kwh}</TableCell>
-                                    <TableCell>{order.amount - order.filled_amount}</TableCell>
-                                    <TableCell className="font-mono text-xs">
-                                        {order.seller.slice(0, 8)}...
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {sellOrders.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center">
-                                        No active sell orders
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+        <Card className="h-full">
+            <CardHeader className="pb-2">
+                <CardTitle className="flex items-center justify-between text-lg">
+                    <span className="flex items-center gap-2">
+                        <Activity className="h-5 w-5" />
+                        Order Book
+                    </span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                        {lastUpdate.toLocaleTimeString()}
+                    </span>
+                </CardTitle>
+            </CardHeader>
 
-            {/* Buy Orders */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-green-500">Bids (Buy Orders)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Price (Tokens)</TableHead>
-                                <TableHead>Amount (kWh)</TableHead>
-                                <TableHead>Buyer</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {buyOrders.map((order) => (
-                                <TableRow key={order.id}>
-                                    <TableCell>{order.price_per_kwh}</TableCell>
-                                    <TableCell>{order.amount - order.filled_amount}</TableCell>
-                                    <TableCell className="font-mono text-xs">
-                                        {order.buyer.slice(0, 8)}...
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {buyOrders.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center">
-                                        No active buy orders
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
+            <CardContent className="p-0">
+                {/* Headers */}
+                <div className="grid grid-cols-3 gap-2 px-3 py-2 text-xs font-medium text-muted-foreground border-b bg-secondary/30">
+                    <span>Price</span>
+                    <span className="text-right">Amount</span>
+                    <span className="text-right">Orders</span>
+                </div>
+
+                {/* Asks */}
+                <div className="border-b max-h-[150px] overflow-y-auto">
+                    {askLevels.length > 0 ? (
+                        [...askLevels].reverse().map((level, i) => (
+                            <PriceRow
+                                key={`ask-${level.price}`}
+                                price={level.price}
+                                volume={level.volume}
+                                count={level.count}
+                                type="ask"
+                                depth={(level.volume / maxVolume) * 100}
+                            />
+                        ))
+                    ) : (
+                        <div className="py-4 text-center text-sm text-muted-foreground">
+                            No sell orders
+                        </div>
+                    )}
+                </div>
+
+                {/* Spread */}
+                <div className="flex items-center justify-between px-3 py-2 bg-secondary/50 border-y">
+                    <span className="font-mono text-sm font-semibold text-chart-2">
+                        {spread.bid > 0 ? spread.bid.toFixed(2) : '—'}
+                    </span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <ArrowUpDown className="h-3 w-3" />
+                        Spread: {spread.value.toFixed(2)}
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-destructive">
+                        {spread.ask > 0 ? spread.ask.toFixed(2) : '—'}
+                    </span>
+                </div>
+
+                {/* Bids */}
+                <div className="max-h-[150px] overflow-y-auto">
+                    {bidLevels.length > 0 ? (
+                        bidLevels.map((level, i) => (
+                            <PriceRow
+                                key={`bid-${level.price}`}
+                                price={level.price}
+                                volume={level.volume}
+                                count={level.count}
+                                type="bid"
+                                depth={(level.volume / maxVolume) * 100}
+                            />
+                        ))
+                    ) : (
+                        <div className="py-4 text-center text-sm text-muted-foreground">
+                            No buy orders
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     )
 }
