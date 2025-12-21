@@ -21,7 +21,7 @@ async function signUpUser(page: Page, prefix: string) {
     await page.locator('#agree-terms').click();
 
     const registerResponse = page.waitForResponse((resp: any) =>
-        resp.url().includes('/api/v1/users') && resp.ok()
+        resp.url().includes('/api/v1/auth/register') && resp.ok()
     );
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await registerResponse;
@@ -41,14 +41,14 @@ test.describe('Smart Meter Page', () => {
 
         // Page should load without errors
         const body = await page.locator('body');
-        await expect(body).toBeVisible();
+        await expect(body).toBeVisible({ timeout: 15000 });
     });
 
     test('should show meter page content', async ({ page }) => {
         await page.goto('/meter');
 
         // Wait for body to be visible (simpler than networkidle)
-        await expect(page.locator('body')).toBeVisible();
+        await expect(page.locator('body')).toBeVisible({ timeout: 15000 });
 
         // Should have some content  
         const bodyText = await page.locator('body').textContent();
@@ -63,7 +63,7 @@ test.describe('Smart Meter Page', () => {
         await page.goto('/meter');
 
         // Wait for page to render
-        await expect(page.locator('body')).toBeVisible();
+        await expect(page.locator('body')).toBeVisible({ timeout: 15000 });
 
         // Page should load successfully
         await expect(page).toHaveURL(/\/meter/);

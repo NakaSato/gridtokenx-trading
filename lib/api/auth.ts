@@ -8,7 +8,7 @@ import type {
 export async function register(
   data: RegistrationRequest
 ): Promise<RegistrationResponse> {
-  const res = await fetch('/api/auth/register', {
+  const res = await fetch('/api/v1/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -39,7 +39,7 @@ export async function register(
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const res = await fetch('/api/auth/login', {
+  const res = await fetch('/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),

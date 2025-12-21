@@ -16,7 +16,7 @@ import type {
 } from '../types/auth'
 
 export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   headers?: Record<string, string>
   body?: any
   token?: string
@@ -132,7 +132,7 @@ export class ApiClient {
     username: string,
     password: string
   ): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/token', {
+    return apiRequest<LoginResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: { username, password },
     })
@@ -141,7 +141,7 @@ export class ApiClient {
   async register(
     userData: RegisterRequest
   ): Promise<ApiResponse<RegisterResponse>> {
-    return apiRequest<RegisterResponse>('/api/v1/users', {
+    return apiRequest<RegisterResponse>('/api/v1/auth/register', {
       method: 'POST',
       body: userData,
     })
@@ -153,14 +153,14 @@ export class ApiClient {
     message: string
     timestamp: number
   }): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/auth/wallet/verify', {
+    return apiRequest<LoginResponse>('/api/v1/auth/wallet/verify', {
       method: 'POST',
       body: data,
     })
   }
 
   async logout() {
-    return apiRequest('/api/auth/logout', {
+    return apiRequest('/api/v1/auth/logout', {
       method: 'POST',
       token: this.token,
     })
@@ -170,7 +170,7 @@ export class ApiClient {
     walletAddress: string,
     verifyOwnership?: boolean
   ): Promise<ApiResponse<UserProfile>> {
-    return apiRequest<UserProfile>('/api/user/wallet', {
+    return apiRequest<UserProfile>('/api/v1/user/wallet', {
       method: 'POST',
       body: {
         wallet_address: walletAddress,
@@ -232,7 +232,7 @@ export class ApiClient {
     price_per_kwh: string
     order_type?: string
   }) {
-    return apiRequest('/api/trading/orders', {
+    return apiRequest('/api/v1/trading/orders', {
       method: 'POST',
       body: orderData,
       token: this.token,
@@ -245,7 +245,7 @@ export class ApiClient {
     offset?: number
   }) {
     const params = new URLSearchParams(filters as any)
-    return apiRequest(`/api/orders?${params.toString()}`, {
+    return apiRequest(`/api/v1/trading/orders?${params.toString()}`, {
       method: 'GET',
       token: this.token,
     })
@@ -253,14 +253,14 @@ export class ApiClient {
 
   async getOrderBook(filters?: { status?: string }) {
     const params = new URLSearchParams(filters as any)
-    return apiRequest(`/api/trading/orderbook?${params.toString()}`, {
+    return apiRequest(`/api/v1/trading/orderbook?${params.toString()}`, {
       method: 'GET',
       token: this.token,
     })
   }
 
   async getMarketData() {
-    return apiRequest('/api/market', {
+    return apiRequest('/api/v1/analytics/market', {
       method: 'GET',
       token: this.token,
     })
@@ -330,8 +330,8 @@ export class ApiClient {
     last_name?: string
     wallet_address?: string
   }) {
-    return apiRequest('/api/auth/profile/update', {
-      method: 'POST',
+    return apiRequest('/api/v1/users/me', {
+      method: 'PATCH',
       body: profileData,
       token: this.token,
     })
@@ -349,7 +349,7 @@ export class ApiClient {
   }
 
   async getPositions() {
-    return apiRequest('/api/user/positions', {
+    return apiRequest('/api/v1/futures/positions', {
       method: 'GET',
       token: this.token,
     })
@@ -442,7 +442,7 @@ export class ApiClient {
   }
 
   async getMeterStats() {
-    return apiRequest<import('../types/meter').MeterStats>('/api/meters/stats', {
+    return apiRequest<import('../types/meter').MeterStats>('/api/v1/meters/stats', {
       method: 'GET',
       token: this.token,
     })
@@ -497,8 +497,8 @@ export class ApiClient {
 
     const queryString = params.toString()
     const endpoint = queryString
-      ? `/api/transactions/user?${queryString}`
-      : '/api/transactions/user'
+      ? `/api/v1/analytics/transactions?${queryString}`
+      : '/api/v1/analytics/transactions'
 
     return apiRequest<import('../types/transactions').UserTransactionsResponse>(
       endpoint,

@@ -33,7 +33,7 @@ test.describe('Authentication Flow', () => {
         await page.locator('#agree-terms').click();
 
         // 6. Submit Sign Up
-        const registerResponse = page.waitForResponse(resp => resp.url().includes('/api/v1/users') && resp.ok());
+        const registerResponse = page.waitForResponse(resp => resp.url().includes('/api/v1/auth/register') && resp.ok());
         await page.getByRole('button', { name: 'Sign Up' }).click();
         await registerResponse;
 

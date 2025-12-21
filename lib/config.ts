@@ -42,28 +42,28 @@ export const FEATURE_FLAGS = {
 export const API_ENDPOINTS = {
   // Authentication
   auth: {
-    login: `${API_CONFIG.baseUrl}/api/auth/login`,
-    register: `${API_CONFIG.baseUrl}/api/auth/register`,
-    logout: `${API_CONFIG.baseUrl}/api/auth/logout`,
-    refresh: `${API_CONFIG.baseUrl}/api/auth/refresh`,
+    login: `${API_CONFIG.baseUrl}/api/v1/auth/login`,
+    register: `${API_CONFIG.baseUrl}/api/v1/auth/register`,
+    logout: `${API_CONFIG.baseUrl}/api/v1/auth/logout`,
+    refresh: `${API_CONFIG.baseUrl}/api/v1/auth/refresh`,
   },
   // Trading
   trading: {
-    orders: `${API_CONFIG.baseUrl}/api/trading/orders`,
-    orderBook: `${API_CONFIG.baseUrl}/api/market/orderbook`,
-    marketData: `${API_CONFIG.baseUrl}/api/market/stats`,
-    trades: `${API_CONFIG.baseUrl}/api/market-data/trades/my-history`,
+    orders: `${API_CONFIG.baseUrl}/api/v1/trading/orders`,
+    orderBook: `${API_CONFIG.baseUrl}/api/v1/trading/orderbook`,
+    marketData: `${API_CONFIG.baseUrl}/api/v1/analytics/market`,
+    trades: `${API_CONFIG.baseUrl}/api/v1/analytics/my-history`,
   },
   // User
   user: {
-    profile: `${API_CONFIG.baseUrl}/api/user/profile`,
-    balance: `${API_CONFIG.baseUrl}/api/user/balance`,
-    positions: `${API_CONFIG.baseUrl}/api/user/positions`,
+    profile: `${API_CONFIG.baseUrl}/api/v1/users/me`,
+    balance: `${API_CONFIG.baseUrl}/api/v1/wallets`, // Base for balance, append address in usage
+    positions: `${API_CONFIG.baseUrl}/api/v1/futures/positions`,
   },
   // Meters
   meters: {
-    data: `${API_CONFIG.baseUrl}/api/meters`,
-    submit: `${API_CONFIG.baseUrl}/api/meters/submit`,
+    data: `${API_CONFIG.baseUrl}/api/v1/meters`,
+    submit: `${API_CONFIG.baseUrl}/api/v1/meters`, // Base for submit, append {serial}/readings in usage
   },
   // WebSocket
   ws: {

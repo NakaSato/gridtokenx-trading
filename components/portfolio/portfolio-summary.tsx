@@ -162,7 +162,7 @@ export function PortfolioSummary() {
                 </CardContent>
             </Card>
 
-            {/* Wallet Balance Card - from /api/tokens/balance/{wallet} */}
+            {/* Wallet Balance Card - from /api/v1/wallets/{address}/balance */}
             <Card className="rounded-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">
@@ -208,7 +208,7 @@ export function PortfolioSummary() {
                 </CardContent>
             </Card>
 
-            {/* Energy Token Balance Card - from /api/tokens/balance/{wallet} */}
+            {/* Energy Token Balance Card - from /api/v1/wallets/{address}/balance */}
             <Card className="rounded-sm bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">

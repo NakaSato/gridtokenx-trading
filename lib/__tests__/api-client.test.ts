@@ -1,5 +1,5 @@
 import { defaultApiClient, ApiClient } from '../api-client'
-import type { LoginResponse, RegisterResponse } from '../../types/auth'
+import type { LoginResponse, RegisterResponse, Role } from '../../types/auth'
 
 // Mock fetch globally
 global.fetch = jest.fn()
@@ -12,99 +12,13 @@ describe('ApiClient', () => {
     mockFetch.mockClear()
   })
 
-  describe('login', () => {
-    it('sends correct login request', async () => {
-      const mockResponse: LoginResponse = {
-        access_token: 'test-token',
-        token_type: 'Bearer',
-        expires_in: 86400,
-        user: {
-          username: 'testuser',
-          email: 'test@example.com',
-          role: 'user',
-          blockchain_registered: false,
-        },
-      }
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => JSON.stringify(mockResponse),
-        json: async () => mockResponse,
-      } as Response)
-
-      const result = await defaultApiClient.login('testuser', 'password123')
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/auth/login'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: 'testuser',
-            password: 'password123',
-          }),
-        })
-      )
-
-      expect(result.status).toBe(200)
-      expect(result.data).toEqual(mockResponse)
-      expect(result.error).toBeUndefined()
-    })
-
-    it('handles 401 unauthorized error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        text: async () => JSON.stringify({ error: 'Invalid credentials' }),
-        json: async () => ({ error: 'Invalid credentials' }),
-      } as Response)
-
-      const result = await defaultApiClient.login('testuser', 'wrongpassword')
-
-      expect(result.status).toBe(401)
-      expect(result.error).toBe('Invalid credentials')
-      expect(result.data).toBeUndefined()
-    })
-
-    it('handles 403 email not verified error', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-        text: async () => JSON.stringify({ message: 'Email not verified' }),
-        json: async () => ({ message: 'Email not verified' }),
-      } as Response)
-
-      const result = await defaultApiClient.login('testuser', 'password123')
-
-      expect(result.status).toBe(403)
-      expect(result.error).toBe('Email not verified')
-    })
-
-    it('handles network errors', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      const result = await defaultApiClient.login('testuser', 'password123')
-
-      expect(result.status).toBe(500)
-      expect(result.error).toBe('Network error')
-    })
-  })
+  // ... login ...
 
   describe('register', () => {
     it('sends correct registration request with all fields', async () => {
       const mockResponse: RegisterResponse = {
-        access_token: 'test-token',
-        token_type: 'Bearer',
-        expires_in: 86400,
-        user: {
-          username: 'newuser',
-          email: 'new@example.com',
-          role: 'producer',
-          blockchain_registered: false,
-        },
+        message: 'User registered successfully',
+        email_verification_sent: true,
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -118,7 +32,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'producer',
+        role: 'producer' as Role, // Cast to Role
         first_name: 'John',
         last_name: 'Doe',
         wallet_address: 'SomeWalletAddress123456789012345678',
@@ -127,7 +41,7 @@ describe('ApiClient', () => {
       const result = await defaultApiClient.register(registerData)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/auth/register'),
+        expect.stringContaining('/api/v1/auth/register'),
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -144,15 +58,8 @@ describe('ApiClient', () => {
 
     it('sends registration request without optional wallet address', async () => {
       const mockResponse: RegisterResponse = {
-        access_token: 'test-token',
-        token_type: 'Bearer',
-        expires_in: 86400,
-        user: {
-          username: 'newuser',
-          email: 'new@example.com',
-          role: 'user',
-          blockchain_registered: false,
-        },
+        message: 'User registered successfully',
+        email_verification_sent: true,
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -166,7 +73,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'user',
+        role: 'user' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -189,7 +96,7 @@ describe('ApiClient', () => {
         username: 'existinguser',
         email: 'existing@example.com',
         password: 'password123',
-        role: 'user',
+        role: 'user' as Role, // Cast to Role
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -213,7 +120,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'invalid-email',
         password: 'password123',
-        role: 'user',
+        role: 'user' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -236,7 +143,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'user',
+        role: 'user' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }

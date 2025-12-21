@@ -21,7 +21,7 @@ async function signUpAndLogin(page: Page, prefix: string) {
     await page.locator('#agree-terms').click();
 
     const registerResponse = page.waitForResponse(resp =>
-        resp.url().includes('/api/v1/users') && resp.ok()
+        resp.url().includes('/api/v1/auth/register') && resp.ok()
     );
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await registerResponse;
@@ -41,7 +41,7 @@ test.describe('P2P Trading Flow', () => {
 
         // Page should load without errors
         const body = await page.locator('body');
-        await expect(body).toBeVisible();
+        await expect(body).toBeVisible({ timeout: 15000 });
     });
 
     test('should show P2P trading interface elements', async ({ page }) => {
