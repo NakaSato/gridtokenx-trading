@@ -132,7 +132,7 @@ export class ApiClient {
     username: string,
     password: string
   ): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/login', {
+    return apiRequest<LoginResponse>('/api/v1/auth/token', {
       method: 'POST',
       body: { username, password },
     })
@@ -141,7 +141,7 @@ export class ApiClient {
   async register(
     userData: RegisterRequest
   ): Promise<ApiResponse<RegisterResponse>> {
-    return apiRequest<RegisterResponse>('/api/v1/auth/register', {
+    return apiRequest<RegisterResponse>('/api/v1/users', {
       method: 'POST',
       body: userData,
     })
