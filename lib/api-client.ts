@@ -474,6 +474,21 @@ export class ApiClient {
     })
   }
 
+  // Minting - Mint tokens from user's unminted readings
+  async mintReading(readingId: string): Promise<ApiResponse<{
+    message: string
+    transaction_signature: string
+    kwh_amount: string
+    wallet_address: string
+  }>> {
+    return apiRequest(`/api/v1/meters/readings/${readingId}/mint`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
+
+
+
   // Transactions
   async getUserTransactions(filters?: {
     transaction_type?: string

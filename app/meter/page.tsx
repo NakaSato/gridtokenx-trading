@@ -17,12 +17,15 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    Coins,
+    Loader2,
+    Upload
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
-
 import { SubmitReadingModal } from '@/components/SubmitReadingModal'
+import toast from 'react-hot-toast'
 
 export default function SmartMeterPage() {
     const { token, user } = useAuth()
@@ -37,6 +40,36 @@ export default function SmartMeterPage() {
     const [isSubmitOpen, setIsSubmitOpen] = useState(false)
     const [selectedMeterSerial, setSelectedMeterSerial] = useState<string>('')
 
+    // State for minting
+    const [mintingReadingId, setMintingReadingId] = useState<string | null>(null)
+
+    // Handle minting tokens from a reading
+    const handleMintTokens = async (readingId: string) => {
+        if (!token) return
+
+        setMintingReadingId(readingId)
+        try {
+            const client = createApiClient(token)
+            const result = await client.mintReading(readingId)
+
+            if (result.data) {
+                toast.success(
+                    `Successfully minted ${result.data.kwh_amount} GRX tokens!`,
+                    { duration: 5000 }
+                )
+                // Refresh data to update the UI
+                await fetchData()
+            } else if (result.error) {
+                toast.error(result.error || 'Failed to mint tokens')
+            }
+        } catch (error) {
+            console.error('Minting error:', error)
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred while minting'
+            toast.error(errorMessage)
+        } finally {
+            setMintingReadingId(null)
+        }
+    }
     const fetchData = async () => {
         if (!token) return
 
@@ -72,6 +105,12 @@ export default function SmartMeterPage() {
     const totalGenerated = readings.reduce((acc, r) => r.kwh > 0 ? acc + r.kwh : acc, 0)
     const totalConsumed = readings.reduce((acc, r) => r.kwh < 0 ? acc + Math.abs(r.kwh) : acc, 0)
     const netEnergy = totalGenerated - totalConsumed
+
+    // Minting stats
+    const mintedReadings = readings.filter(r => r.minted)
+    const pendingReadings = readings.filter(r => !r.minted && r.kwh > 0)
+    const totalMinted = mintedReadings.reduce((acc, r) => acc + r.kwh, 0)
+    const pendingToMint = pendingReadings.reduce((acc, r) => acc + r.kwh, 0)
 
     const lastUpdate = readings.length > 0 ? new Date(readings[0].timestamp) : null
 
@@ -117,7 +156,8 @@ export default function SmartMeterPage() {
                 />
 
                 {/* Stats Overview */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    {/* Total Generation */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Generation</CardTitle>
@@ -131,34 +171,53 @@ export default function SmartMeterPage() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    {/* Minted Tokens */}
+                    <Card className="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-800/50">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Consumption</CardTitle>
-                            <BatteryCharging className="h-4 w-4 text-orange-500" />
+                            <CardTitle className="text-sm font-medium">Minted Tokens</CardTitle>
+                            <Coins className="h-4 w-4 text-green-400" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{totalConsumed.toFixed(2)} kWh</div>
+                            <div className="text-2xl font-bold text-green-400">{totalMinted.toFixed(2)} GRX</div>
                             <p className="text-xs text-muted-foreground">
-                                Lifetime usage
+                                {mintedReadings.length} readings minted
                             </p>
                         </CardContent>
                     </Card>
 
+                    {/* Pending Mints */}
+                    <Card className={pendingReadings.length > 0 ? "bg-gradient-to-br from-yellow-900/20 to-amber-900/20 border-yellow-800/50" : ""}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Pending Mints</CardTitle>
+                            <Activity className="h-4 w-4 text-yellow-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className={`text-2xl font-bold ${pendingReadings.length > 0 ? 'text-yellow-400' : ''}`}>
+                                {pendingToMint.toFixed(2)} kWh
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {pendingReadings.length} readings ready to mint
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Net Energy */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Net Energy</CardTitle>
-                            <Activity className="h-4 w-4 text-blue-500" />
+                            <BatteryCharging className="h-4 w-4 text-blue-500" />
                         </CardHeader>
                         <CardContent>
                             <div className={`text-2xl font-bold ${netEnergy >= 0 ? 'text-green-500' : 'text-orange-500'}`}>
                                 {netEnergy > 0 ? '+' : ''}{netEnergy.toFixed(2)} kWh
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                Current Balance
+                                Generation - Consumption
                             </p>
                         </CardContent>
                     </Card>
 
+                    {/* Active Meters */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
@@ -167,7 +226,7 @@ export default function SmartMeterPage() {
                         <CardContent>
                             <div className="text-2xl font-bold">{meters.length}</div>
                             <p className="text-xs text-muted-foreground">
-                                {lastUpdate ? `Last update: ${format(lastUpdate, 'HH:mm:ss')}` : 'No data'}
+                                {lastUpdate ? `Updated: ${format(lastUpdate, 'HH:mm')}` : 'No readings yet'}
                             </p>
                         </CardContent>
                     </Card>
@@ -209,16 +268,17 @@ export default function SmartMeterPage() {
                                         <div className="flex h-40 items-center justify-center text-muted-foreground">No readings found. Generate some data!</div>
                                     ) : (
                                         <div className="rounded-md border">
-                                            <div className="grid grid-cols-5 gap-4 border-b bg-muted/50 p-4 text-sm font-medium">
+                                            <div className="grid grid-cols-6 gap-4 border-b bg-muted/50 p-4 text-sm font-medium">
                                                 <div>Time</div>
                                                 <div>Type</div>
                                                 <div>Amount</div>
                                                 <div>Status</div>
-                                                <div className="text-right">Tx Signature</div>
+                                                <div>Tx Signature</div>
+                                                <div className="text-right">Action</div>
                                             </div>
                                             <div className="max-h-[400px] overflow-y-auto">
                                                 {readings.map((reading) => (
-                                                    <div key={reading.id} className="grid grid-cols-5 gap-4 border-b p-4 text-sm last:border-0 hover:bg-muted/50">
+                                                    <div key={reading.id} className="grid grid-cols-6 gap-4 border-b p-4 text-sm last:border-0 hover:bg-muted/50">
                                                         <div className="flex items-center">{format(new Date(reading.timestamp), 'MMM dd, HH:mm')}</div>
                                                         <div className="flex items-center">
                                                             {reading.kwh > 0 ? (
@@ -233,7 +293,7 @@ export default function SmartMeterPage() {
                                                         <div className="flex items-center">
                                                             {reading.minted ? (
                                                                 <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
-                                                                    Settled
+                                                                    Minted
                                                                 </span>
                                                             ) : (
                                                                 <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
@@ -241,8 +301,38 @@ export default function SmartMeterPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center justify-end font-mono text-xs text-muted-foreground truncate">
-                                                            {reading.tx_signature ? reading.tx_signature.slice(0, 16) + '...' : '-'}
+                                                        <div className="flex items-center font-mono text-xs text-muted-foreground truncate">
+                                                            {reading.tx_signature ? reading.tx_signature.slice(0, 12) + '...' : '-'}
+                                                        </div>
+                                                        <div className="flex items-center justify-end">
+                                                            {reading.minted ? (
+                                                                <span className="text-xs text-muted-foreground flex items-center">
+                                                                    <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
+                                                                    Done
+                                                                </span>
+                                                            ) : reading.kwh > 0 ? (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="default"
+                                                                    onClick={() => handleMintTokens(reading.id)}
+                                                                    disabled={mintingReadingId === reading.id}
+                                                                    className="h-7 px-3 text-xs bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                                                                >
+                                                                    {mintingReadingId === reading.id ? (
+                                                                        <>
+                                                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                                                            Minting...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Coins className="h-3 w-3 mr-1" />
+                                                                            Mint
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            ) : (
+                                                                <span className="text-xs text-muted-foreground">N/A</span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -319,7 +409,3 @@ export default function SmartMeterPage() {
         </ProtectedRoute>
     )
 }
-
-// Add Upload icon import
-import { Upload } from 'lucide-react'
-
