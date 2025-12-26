@@ -358,8 +358,9 @@ export class ApiClient {
   // Meters
   async submitMeterData(data: import('../types/meter').SubmitReadingRequest) {
     // For v1, use serial in path: POST /api/v1/meters/{serial}/readings
+    // Explicitly enable auto_mint for automatic token minting
     const serial = data.meter_serial || 'unknown'
-    return apiRequest<import('../types/meter').MeterReading>(`/api/v1/meters/${serial}/readings`, {
+    return apiRequest<import('../types/meter').MeterReading>(`/api/v1/meters/${serial}/readings?auto_mint=true`, {
       method: 'POST',
       body: { kwh: data.kwh_amount, wallet_address: data.wallet_address, timestamp: data.reading_timestamp },
       token: this.token,
@@ -467,7 +468,7 @@ export class ApiClient {
   }
 
   async registerMeter(data: { serial_number: string; meter_type: string; location: string }) {
-    return apiRequest<import('../types/meter').MeterResponse>('/api/v1/meters', {
+    return apiRequest<import('../types/meter').RegisterMeterResponse>('/api/v1/meters', {
       method: 'POST',
       body: data,
       token: this.token,

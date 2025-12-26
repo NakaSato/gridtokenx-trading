@@ -198,11 +198,12 @@ function formatTimeAgo(dateStr: string) {
         const date = new Date(dateStr)
         const now = new Date()
         const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
+        if (isNaN(diff)) return 'Recently'
         if (diff < 10) return 'Just now'
         if (diff < 60) return `${diff}s ago`
         if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
         if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-        return date.toLocaleDateString()
+        return date.toLocaleDateString(undefined, { timeZone: 'UTC' }) + ' (UTC)'
     } catch (e) {
         return 'Recently'
     }

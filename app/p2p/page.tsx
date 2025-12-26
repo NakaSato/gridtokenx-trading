@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { defaultApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -14,6 +15,12 @@ import UserOrders from './components/UserOrders'
 import P2PNav from './components/P2PNav'
 
 export default function P2PPage() {
+    const router = useRouter()
+
+    useEffect(() => {
+        router.push('/')
+    }, [router])
+
     const { token } = useAuth()
     const [active, setActive] = useState<'book' | 'trade'>('book')
     const [matching, setMatching] = useState(false)

@@ -127,32 +127,6 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === 'P2P' ? 'active' : 'inactive',
-                }),
-                'flex justify-start rounded-sm bg-accent px-5 py-3'
-              )}
-              onClick={() => {
-                handleClick('P2P')
-                router.push('/p2p')
-                setIsOpen(false)
-              }}
-            >
-              <ArrowUpDown size={16} />
-              <h1 className="text-sm font-medium">P2P Energy</h1>
-              <Badge
-                className={cn(
-                  active === 'P2P'
-                    ? 'text-gradient-primary border-primary'
-                    : 'border-secondary-foreground text-secondary-foreground',
-                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
-                )}
-              >
-                BETA
-              </Badge>
-            </Button>
-            <Button
-              className={cn(
-                buttonVariants({
                   variant: active === 'Meter' ? 'active' : 'inactive',
                 }),
                 'flex justify-start rounded-sm bg-accent px-5 py-3'
@@ -164,7 +138,17 @@ export default function NavBarMobile() {
               }}
             >
               <Activity size={16} />
-              <h1 className="text-sm font-medium">Smart Meter</h1>
+              <h1 className="text-sm font-medium text-nowrap">Smart Meter</h1>
+              <Badge
+                className={cn(
+                  active === 'Meter'
+                    ? 'text-gradient-primary border-primary'
+                    : 'border-secondary-foreground text-secondary-foreground',
+                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
+                )}
+              >
+                BETA
+              </Badge>
             </Button>
             <Button
               className={cn(

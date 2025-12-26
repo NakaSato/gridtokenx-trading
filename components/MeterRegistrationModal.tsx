@@ -54,8 +54,8 @@ export function MeterRegistrationModal({ isOpen, onClose, onSuccess }: MeterRegi
                 location: formData.location
             });
 
-            if (response.error) {
-                toast.error(response.error);
+            if (response.error || (response.data && !response.data.success)) {
+                toast.error(response.error || response.data?.message || 'Registration failed');
                 return;
             }
 

@@ -44,16 +44,9 @@ function VerifyEmailContent() {
 
   // Auto-verify on mount
   useEffect(() => {
-    // Check if user is already authenticated (already verified)
-    const storedToken = localStorage.getItem('access_token')
-    const storedUser = localStorage.getItem('user')
+    // Check if user is already authenticated but allow verification to proceed if token is present
+    // We do NOT redirect here because the user might be verifying to get their wallet address generate
 
-    if (storedToken && storedUser) {
-      // User is already authenticated, redirect to home
-      toast.success('Already verified! Redirecting to home...')
-      window.location.href = '/'
-      return
-    }
 
     if (!token) {
       setState('invalid')

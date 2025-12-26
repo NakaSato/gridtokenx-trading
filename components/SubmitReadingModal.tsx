@@ -59,7 +59,20 @@ export function SubmitReadingModal({ isOpen, onClose, onSuccess, meterSerial }: 
                 return;
             }
 
-            toast.success(`Reading submitted! Tokens ${kwh > 0 ? 'minted' : 'burned'}.`);
+            // Check if minting succeeded
+            if (response.data?.minted) {
+                toast.success(
+                    `Reading submitted and ${kwh > 0 ? 'minted' : 'burned'} successfully!`,
+                    { duration: 5000 }
+                );
+            } else {
+                const message = response.data?.message || 'is pending';
+                toast.error(
+                    `Reading submitted, but minting ${message}. You can retry from the dashboard.`,
+                    { duration: 6000 }
+                );
+            }
+
             onSuccess();
             onClose();
 

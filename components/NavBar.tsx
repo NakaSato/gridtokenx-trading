@@ -89,15 +89,10 @@ const NAV_ITEMS: NavItem[] = [
     badge: { text: 'NEW', variant: 'new' },
   },
   {
-    name: 'P2P Energy',
-    href: '/p2p',
-    icon: <ArrowUpDown size={16} />,
-    badge: { text: 'BETA', variant: 'new' },
-  },
-  {
     name: 'Smart Meter',
     href: '/meter',
     icon: <Activity size={16} />,
+    badge: { text: 'BETA', variant: 'beta' },
     requiresAuth: true,
   },
   {

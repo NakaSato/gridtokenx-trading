@@ -32,3 +32,10 @@ export interface MeterStats {
     total_minted: number
     pending_mint: number
 }
+
+export interface RegisterMeterResponse {
+    success: boolean
+    message: string
+    meter?: MeterResponse
+}
+
