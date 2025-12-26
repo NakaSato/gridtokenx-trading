@@ -26,7 +26,7 @@ export default function MarketDetails({
   const [isOpen, setIsOpen] = useState(false)
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger className="text-xs font-medium text-primary">
+      <DialogTrigger className="mr-2 text-xs font-medium text-primary sm:mr-0">
         Market Details
       </DialogTrigger>
       <DialogContent className="flex h-full w-full flex-col space-y-3 bg-accent p-0 sm:h-auto sm:max-w-md md:max-w-2xl">

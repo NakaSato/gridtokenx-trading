@@ -541,9 +541,8 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       <div
         id="tv_chart_container"
         ref={containerRef}
-        className={`tradingview-chart ${
-          chartTheme === 'Dark' ? 'theme-dark' : ''
-        } h-full w-full py-2`}
+        className={`tradingview-chart ${chartTheme === 'Dark' ? 'theme-dark' : ''
+          } h-full w-full py-2`}
         style={{
           backgroundColor: chartTheme === 'Dark' ? '#141519' : '#FFFFFF',
         }}
@@ -551,13 +550,13 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       <div className="flex justify-end gap-2 border-t p-2">
         <Button
           variant={'outline'}
-          className="h-fit rounded-sm p-1 text-xs text-secondary-foreground"
+          className="min-h-[32px] rounded-sm px-2 py-1.5 text-xs text-secondary-foreground sm:min-h-0 sm:p-1"
         >
           Liquidation
         </Button>
         <Button
           variant={'outline'}
-          className="h-fit rounded-sm p-1 text-xs text-secondary-foreground"
+          className="min-h-[32px] rounded-sm px-2 py-1.5 text-xs text-secondary-foreground sm:min-h-0 sm:p-1"
         >
           TP/SL
         </Button>

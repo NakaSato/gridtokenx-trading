@@ -79,11 +79,11 @@ export default function Homepage() {
       />
       <div
         className={cn(
-          active === 'trade' ? 'space-y-0' : 'space-y-4',
-          'flex h-full w-full flex-col pb-4'
+          active === 'trade' ? 'space-y-0' : 'space-y-2 md:space-y-4',
+          'flex h-full w-full flex-col overflow-y-auto pb-4'
         )}
       >
-        <div className="grid w-full flex-1 grid-cols-1 justify-between gap-4 overflow-y-auto pt-4 md:grid-cols-12">
+        <div className="grid w-full grid-cols-1 gap-4 pt-4 md:grid-cols-12">
           {/* LEFT SIDEBAR - TRADING HISTORY */}
           <div className="hidden h-full flex-col space-y-4 overflow-y-auto md:col-span-2 md:flex">
             <TradeHistory />
@@ -92,11 +92,11 @@ export default function Homepage() {
           {/* CENTER - CHART */}
           <div
             className={cn(
-              active === 'chart' ? 'w-full' : 'hidden',
-              'h-full flex-col space-y-4 overflow-y-auto md:col-span-7 md:flex'
+              active === 'chart' ? 'flex w-full' : 'hidden',
+              'flex-col space-y-2 md:col-span-7 md:space-y-4'
             )}
           >
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0">
               <TradingViewChartContainer
                 symbol={selectedSymbol}
                 logo={selectedLogo}

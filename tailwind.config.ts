@@ -67,6 +67,7 @@ export default {
         tiktok: ['"TikTok Sans"', "system-ui", "sans-serif"],
       },
       screens: {
+        xs: "375px",
         desktop: "1800px",
       },
     },

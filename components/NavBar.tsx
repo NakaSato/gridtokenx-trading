@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { EXTERNAL_LINKS } from '@/lib/links'
 import { useAuth } from '@/contexts/AuthProvider'
 import { buttonVariants } from './ui/button'
 import { Badge } from './ui/badge'
@@ -148,7 +149,7 @@ const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
   {
     name: 'Docs',
     icon: <BookOpenText />,
-    link: 'https://gridtokenx.com',
+    link: EXTERNAL_LINKS.docs,
     external: true,
   },
   {
@@ -159,11 +160,11 @@ const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
 ]
 
 const SOCIAL_LINKS: SocialLink[] = [
-  { name: 'X (Twitter)', href: 'https://x.com/', icon: x },
-  { name: 'Telegram', href: 'https://t.me/', icon: telegram },
-  { name: 'Medium', href: 'https://medium.com', icon: medium, width: 18, height: 18 },
-  { name: 'YouTube', href: 'https://youtube.com', icon: yt },
-  { name: 'Discord', href: 'https://discord.gg/', icon: discord },
+  { name: 'X (Twitter)', href: EXTERNAL_LINKS.twitter, icon: x },
+  { name: 'Telegram', href: EXTERNAL_LINKS.telegram, icon: telegram },
+  { name: 'Medium', href: EXTERNAL_LINKS.medium, icon: medium, width: 18, height: 18 },
+  { name: 'YouTube', href: EXTERNAL_LINKS.youtube, icon: yt },
+  { name: 'Discord', href: EXTERNAL_LINKS.discord, icon: discord },
 ]
 
 // ============================================================================
@@ -265,13 +266,13 @@ export default function NavBar() {
   }, [activeRoute])
 
   return (
-    <header className="flex max-w-full justify-between">
-      <div className="flex justify-between gap-6 py-2">
+    <header className="flex max-w-full items-center justify-between">
+      <div className="flex items-center justify-between gap-2 py-2 sm:gap-4 lg:gap-6">
         <div className="flex items-center justify-center gap-2 px-1">
           <Logo width={24} height={28} className="mb-1" />
         </div>
 
-        <nav className="hidden items-center justify-evenly gap-8 md:flex" aria-label="Main navigation">
+        <nav className="hidden items-center justify-evenly gap-3 md:flex md:gap-4 lg:gap-8" aria-label="Main navigation">
           {NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated).map((item) => (
             <NavLink
               key={item.name}
@@ -299,13 +300,13 @@ export default function NavBar() {
                 isDropdownOpen || isDropdownItemActive
                   ? 'text-primary'
                   : 'text-secondary-foreground',
-                'hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none lg:flex'
+                'hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none md:flex'
               )}
               aria-label="More navigation options"
             >
               <MoreIcon />
-              <h1 className="text-sm font-medium">More</h1>
-              <ArrowDown />
+              <h1 className="hidden text-sm font-medium lg:inline">More</h1>
+              <span className="hidden lg:block"><ArrowDown /></span>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
@@ -369,10 +370,20 @@ export default function NavBar() {
         </nav>
       </div>
 
-      <div className="flex items-center justify-between gap-3 py-2">
-        {isAuthenticated && <PointsDropDown setActive={setActiveItem} />}
-        <Settings />
-        {isAuthenticated && <Profile />}
+      <div className="flex items-center justify-between gap-1 py-2 sm:gap-2 md:gap-3">
+        {isAuthenticated && (
+          <div className="hidden xs:block">
+            <PointsDropDown setActive={setActiveItem} />
+          </div>
+        )}
+        <div className="hidden sm:block">
+          <Settings />
+        </div>
+        {isAuthenticated && (
+          <div className="hidden sm:block">
+            <Profile />
+          </div>
+        )}
         {isAuthenticated && <Notifications />}
 
         {connected || isAuthenticated ? (
@@ -380,7 +391,7 @@ export default function NavBar() {
         ) : (
           <AuthButton
             signInVariant="default"
-            className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-background hover:bg-gradient-primary"
+            className="h-fit w-full whitespace-nowrap rounded-sm border border-transparent bg-primary px-1.5 py-1 text-xs text-background hover:bg-gradient-primary xs:px-2 xs:py-[7px] xs:text-sm sm:px-4"
             signInText="Connect"
           />
         )}

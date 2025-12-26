@@ -37,20 +37,20 @@ export default function TradingViewChartContainer({
   }
   return (
     <>
-      <div className="flex h-full min-h-[400px] w-full flex-col">
+      <div className="flex h-full min-h-[500px] w-full flex-col sm:min-h-[400px]">
         <div className="rounded-t-sm border border-b bg-inherit p-0">
           <Tabs defaultValue={activeTab}>
-            <TabsList className="grid h-10 w-full grid-cols-4 rounded-full bg-inherit px-4 py-1">
+            <TabsList className="flex h-10 w-full overflow-x-auto rounded-full bg-inherit px-2 py-1 sm:grid sm:grid-cols-4 sm:px-4">
               <TabsTrigger
                 value="map"
-                className="rounded-none border-b px-0 py-2 text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
+                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
                 onClick={() => handleClick('map')}
               >
                 Map
               </TabsTrigger>
               <TabsTrigger
                 value="chart"
-                className="rounded-none border-b px-0 py-2 text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
+                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
                 onClick={() => handleClick('chart')}
               >
                 Chart
@@ -58,17 +58,18 @@ export default function TradingViewChartContainer({
 
               <TabsTrigger
                 value="pnl"
-                className="rounded-none border-b px-0 py-2 text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
+                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
                 onClick={() => handleClick('pnl')}
               >
-                PNL
+                P&L
               </TabsTrigger>
               <TabsTrigger
                 value="transactions"
-                className="rounded-none border-b px-0 py-2 text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
+                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
                 onClick={() => handleClick('transactions')}
               >
-                Transactions
+                <span className="hidden sm:inline">Transactions</span>
+                <span className="sm:hidden">Txns</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>

@@ -33,9 +33,17 @@ export default function OrderHistory({
                     height={20}
                     className="rounded-full"
                   />
-                  <div className="rounded-full ring ring-background">
+                  <div className="rounded-full ring ring-background bg-accent p-[2px]">
                     {tx.transactionType === 'Put' ? (
                       <PutIconDark width="20" height="20" />
+                    ) : tx.transactionType === 'Sell' ? (
+                      <div className="text-red-500">
+                        <PutIconDark width="20" height="20" />
+                      </div>
+                    ) : tx.transactionType === 'Buy' ? (
+                      <div className="text-green-500">
+                        <CallIconDark width="20" height="20" />
+                      </div>
                     ) : (
                       <CallIconDark width="20" height="20" />
                     )}
@@ -46,8 +54,8 @@ export default function OrderHistory({
                     {tx.transactionID}
                   </span>
                   <span className="flex items-center text-xs font-normal text-secondary-foreground">
-                    {tx.token.name} • {tx.transactionType} Option •
-                    <span className="px-1">Vanilla</span>
+                    {tx.token.name} • {tx.transactionType} {tx.optionType === 'Spot' ? 'Trade' : 'Option'} •
+                    <span className="px-1">{tx.optionType}</span>
                   </span>
                 </div>
               </div>
@@ -80,9 +88,17 @@ export default function OrderHistory({
                       height={20}
                       className="rounded-full"
                     />
-                    <div className="rounded-full ring ring-background">
+                    <div className="rounded-full ring ring-background bg-accent p-[2px]">
                       {tx.transactionType === 'Put' ? (
                         <PutIconDark width="20" height="20" />
+                      ) : tx.transactionType === 'Sell' ? (
+                        <div className="text-red-500">
+                          <PutIconDark width="20" height="20" />
+                        </div>
+                      ) : tx.transactionType === 'Buy' ? (
+                        <div className="text-green-500">
+                          <CallIconDark width="20" height="20" />
+                        </div>
                       ) : (
                         <CallIconDark width="20" height="20" />
                       )}
@@ -93,8 +109,8 @@ export default function OrderHistory({
                       {tx.transactionID}
                     </span>
                     <span className="flex items-center text-xs font-normal text-secondary-foreground">
-                      {tx.token.name} • {tx.transactionType} Option •
-                      <span className="px-1">Vanilla</span>
+                      {tx.token.name} • {tx.transactionType} {tx.optionType === 'Spot' ? 'Trade' : 'Option'} •
+                      <span className="px-1">{tx.optionType}</span>
                     </span>
                   </div>
                 </div>

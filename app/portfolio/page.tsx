@@ -9,7 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 export default function Portfolio() {
   return (
     <ProtectedRoute requireWallet={false} requireAuth={true}>
-      <main className="flex h-full flex-1 flex-col rounded-sm py-4">
+      <main className="flex h-full flex-1 flex-col overflow-y-auto rounded-sm py-4">
         {/* Portfolio Summary - User Info, Balance, Wealth */}
         <PortfolioSummary />
 

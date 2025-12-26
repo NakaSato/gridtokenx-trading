@@ -1,11 +1,16 @@
 import {
+  Activity,
+  ArrowUpDown,
   BookOpenText,
   ChartLine,
   ChevronDown,
+  ChevronUp,
   FileChartColumn,
   MenuIcon,
   MessagesSquare,
   TableColumnsSplit,
+  User,
+  Wallet,
   XIcon,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
@@ -16,10 +21,12 @@ import { useState } from 'react'
 import { EarnIcon, MoreIcon } from '@/public/svgs/icons'
 import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
+import { EXTERNAL_LINKS } from '@/lib/links'
 import { useRouter } from 'next/navigation'
 import { Separator } from './ui/separator'
 import SettingsMobile from './SettingsMobile'
 import WalletSideBar from './WalletSidebar'
+import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'
@@ -31,6 +38,7 @@ export default function NavBarMobile() {
   const [active, setActive] = useState<string>('Trade')
   const [isDropped, setIsDropped] = useState(false)
   const { connected } = useWallet()
+  const { isAuthenticated, user } = useAuth()
   const router = useRouter()
   const handleClick = (state: string) => {
     if (active !== state) {
@@ -39,12 +47,12 @@ export default function NavBarMobile() {
   }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger className="focus:outline-none lg:hidden">
+      <DialogTrigger className="focus:outline-none md:hidden">
         <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
           <MenuIcon size={18} />
         </div>
       </DialogTrigger>
-      <DialogContent className="flex h-full w-full flex-col justify-between bg-background p-0 md:h-fit">
+      <DialogContent className="flex h-full w-full flex-col justify-between bg-background p-0">
         <DialogTitle className="hidden">Navigation Menu</DialogTitle>
         <div className="flex w-full flex-col space-y-4 p-0">
           <div className="flex w-full items-center justify-between px-3 py-2">
@@ -58,6 +66,7 @@ export default function NavBarMobile() {
               <XIcon size={18} className="text-secondary-foreground" />
             </Button>
           </div>
+
           <div className="flex w-full flex-col space-y-3 px-3">
             <Button
               className={cn(
@@ -118,6 +127,48 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
+                  variant: active === 'P2P' ? 'active' : 'inactive',
+                }),
+                'flex justify-start rounded-sm bg-accent px-5 py-3'
+              )}
+              onClick={() => {
+                handleClick('P2P')
+                router.push('/p2p')
+                setIsOpen(false)
+              }}
+            >
+              <ArrowUpDown size={16} />
+              <h1 className="text-sm font-medium">P2P Energy</h1>
+              <Badge
+                className={cn(
+                  active === 'P2P'
+                    ? 'text-gradient-primary border-primary'
+                    : 'border-secondary-foreground text-secondary-foreground',
+                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
+                )}
+              >
+                BETA
+              </Badge>
+            </Button>
+            <Button
+              className={cn(
+                buttonVariants({
+                  variant: active === 'Meter' ? 'active' : 'inactive',
+                }),
+                'flex justify-start rounded-sm bg-accent px-5 py-3'
+              )}
+              onClick={() => {
+                handleClick('Meter')
+                router.push('/meter')
+                setIsOpen(false)
+              }}
+            >
+              <Activity size={16} />
+              <h1 className="text-sm font-medium">Smart Meter</h1>
+            </Button>
+            <Button
+              className={cn(
+                buttonVariants({
                   variant: active === 'Earn' ? 'active' : 'inactive',
                 }),
                 'flex justify-start rounded-sm bg-accent px-5 py-3'
@@ -134,6 +185,22 @@ export default function NavBarMobile() {
                 48% APY
               </Badge>
             </Button>
+            <Button
+              className={cn(
+                buttonVariants({
+                  variant: active === 'Portfolio' ? 'active' : 'inactive',
+                }),
+                'flex justify-start rounded-sm bg-accent px-5 py-3'
+              )}
+              onClick={() => {
+                handleClick('Portfolio')
+                router.push('/portfolio')
+                setIsOpen(false)
+              }}
+            >
+              <Wallet size={16} />
+              <h1 className="text-sm font-medium">Portfolio</h1>
+            </Button>
             <div className="w-full rounded-sm bg-accent p-0">
               <Button
                 className="flex w-full justify-between rounded-sm bg-accent px-5 py-3 text-secondary-foreground shadow-none"
@@ -143,7 +210,7 @@ export default function NavBarMobile() {
                   <MoreIcon />
                   <h1 className="text-sm font-medium">More</h1>
                 </div>
-                <ChevronDown size={12} />
+                {isDropped ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </Button>
               {isDropped && (
                 <>
@@ -161,7 +228,7 @@ export default function NavBarMobile() {
                     {
                       name: 'Docs',
                       icon: <BookOpenText />,
-                      link: 'https://docs.olive.finance',
+                      link: EXTERNAL_LINKS.docs,
                     },
                     {
                       name: 'Feedback',
@@ -171,22 +238,22 @@ export default function NavBarMobile() {
                     {
                       name: 'Medium',
                       icon: <TableColumnsSplit />,
-                      link: 'https://medium.com',
+                      link: EXTERNAL_LINKS.medium,
                     },
                     {
                       name: 'X',
                       icon: <Image src={x} alt="x link" />,
-                      link: 'https://x.com/_olivefinance',
+                      link: EXTERNAL_LINKS.twitter,
                     },
                     {
                       name: 'Telegram',
                       icon: <Image src={telegram} alt="telegram link" />,
-                      link: 'https://t.me/olive_financee',
+                      link: EXTERNAL_LINKS.telegram,
                     },
                     {
                       name: 'Discord',
                       icon: <Image src={discord} alt="discord link" />,
-                      link: 'https://discord.gg/u6pq5yNj',
+                      link: EXTERNAL_LINKS.discord,
                     },
                   ].map((item, idx) => (
                     <div
@@ -213,17 +280,24 @@ export default function NavBarMobile() {
             <SettingsMobile />
           </div>
         </div>
-        <div className="w-full px-3 pb-10">
-          {connected ? (
-            <WalletSideBar></WalletSideBar>
-          ) : (
-            <AuthButton
-              signInVariant="default"
-              className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-background hover:bg-gradient-primary"
-              signInText="Connect Wallet"
-            />
-          )}
-        </div>
+        {/* Only show wallet/connect section when NOT authenticated */}
+        {!isAuthenticated && (
+          <div className="w-full px-3 pb-10">
+            {connected ? (
+              <div onClick={() => setIsOpen(false)}>
+                <WalletSideBar />
+              </div>
+            ) : (
+              <div onClick={() => setIsOpen(false)}>
+                <AuthButton
+                  signInVariant="default"
+                  className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-background hover:bg-gradient-primary"
+                  signInText="Connect Wallet"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -2,6 +2,7 @@ import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
 import { Button } from './ui/button'
 import { useContext, useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { cn } from '@/lib/utils'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
 import { orders, Position, positions } from '@/lib/data/Positions'
@@ -18,12 +19,20 @@ import { BN } from '@coral-xyz/anchor'
 import Pagination from './Pagination'
 import OpenOptionOrders from './OpenOptionOrders'
 import OrderBook from './OrderBook'
+import { useAuth } from '@/contexts/AuthProvider'
+import { createApiClient } from '@/lib/api-client'
+import type { Order } from '@/lib/data/Positions'
+import { format } from 'date-fns'
 
 export default function TradingPositions() {
+  const { token } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('Positions')
   const [optioninfos, setOptionInfos] = useState<Position[]>([])
+  const [orderInfos, setOrderInfos] = useState<Order[]>([])
   const [expiredInfos, setExpiredInfos] = useState<ExpiredOption[]>([])
   const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(false)
+
   const { program, getDetailInfos, pub, onClaimOption, onExerciseOption } =
     useContext(ContractContext)
 
@@ -39,17 +48,97 @@ export default function TradingPositions() {
     onExerciseOption(index)
   }
   useEffect(() => {
-    ; (async () => {
-      if (program && pub) {
-        const [pinfo, expiredpinfo, doneinfo] = await getDetailInfos(
-          program,
-          pub
-        )
-        setOptionInfos(pinfo)
-        setExpiredInfos(expiredpinfo)
-        setDoneInfo(doneinfo)
+    const fetchData = async () => {
+      if (!token) return
+      setLoading(true)
+      try {
+        const apiClient = createApiClient(token)
+
+        // 1. Fetch Futures Positions
+        const positionsRes = await apiClient.getFuturesPositions() as any
+        if (positionsRes.data && positionsRes.data.data) {
+          const mappedPositions: Position[] = positionsRes.data.data.map(
+            (pos: any) => ({
+              index: pos.id,
+              token: pos.product_symbol || 'Unknown',
+              logo: '/images/solana.png', // Default logo
+              symbol: pos.product_symbol || 'GRX',
+              type: pos.side === 'long' ? 'Call' : 'Put',
+              strikePrice: parseFloat(pos.entry_price),
+              expiry: 'Perpetual', // Futures don't have fixed expiry in this context
+              size: parseFloat(pos.quantity),
+              pnl: parseFloat(pos.unrealized_pnl || '0'),
+              greeks: {
+                delta: 0,
+                gamma: 0,
+                theta: 0,
+                vega: 0,
+              },
+            })
+          )
+          setOptionInfos(mappedPositions)
+        }
+
+        // 2. Fetch Trading Orders
+        const ordersRes = await apiClient.getOrders({ status: 'active' }) as any
+        if (ordersRes.data && ordersRes.data.data) {
+          const mappedOrders: Order[] = ordersRes.data.data.map(
+            (order: any) => ({
+              index: order.id,
+              token: 'GRID',
+              logo: '/images/grid.png',
+              symbol: 'GRX',
+              type: order.order_type || 'Limit',
+              transaction: order.side.toLowerCase(),
+              limitPrice: parseFloat(order.price_per_kwh),
+              strikePrice: 0,
+              expiry: order.expires_at
+                ? format(new Date(order.expires_at), 'MM/dd/yyyy')
+                : 'N/A',
+              orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
+              size: parseFloat(order.energy_amount),
+            }))
+          setOrderInfos(mappedOrders)
+        }
+
+        // 3. Fetch Trade History
+        const tradesRes = await apiClient.getTrades({ limit: 50 }) as any
+        if (tradesRes.data && tradesRes.data.trades) {
+          const mappedHistory: Transaction[] = tradesRes.data.trades.map(
+            (trade: any) => ({
+              transactionID: trade.id,
+              token: {
+                name: 'GridToken',
+                symbol: 'GRX',
+                logo: '/images/grid.png',
+              },
+              transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
+              optionType: 'Spot',
+              strikePrice: parseFloat(trade.price),
+              expiry: format(new Date(trade.executed_at), 'dd MMM, yyy HH:mm:ss'),
+            })
+          )
+          setDoneInfo(mappedHistory)
+        }
+      } catch (err) {
+        console.error('Error fetching trading data:', err)
+      } finally {
+        setLoading(false)
       }
-    })()
+    }
+
+    fetchData()
+  }, [token])
+
+  useEffect(() => {
+    if (program && pub) {
+      // Keep legacy blockchain fetching for now if needed, or replace entirely
+      // This part currently only fills expiredInfos which we don't have a clear API for yet
+      ; (async () => {
+        const [_, expiredpinfo, __] = await getDetailInfos(program, pub)
+        setExpiredInfos(expiredpinfo)
+      })()
+    }
   }, [program, pub, getDetailInfos])
 
   const [currentPage, setCurrentPage] = useState(1)
@@ -148,7 +237,10 @@ export default function TradingPositions() {
         </DropdownMenu>
       </div>
       {activeTab === 'Positions' && (
-        <div className="flex min-h-[300px] flex-col justify-between space-y-[10px] px-3 py-4 pb-[10px] md:px-6">
+        <div className={cn(
+          "flex min-h-[300px] flex-col px-3 py-4 pb-[10px] md:px-6",
+          optioninfos && optioninfos.length > 0 ? "justify-between space-y-[10px]" : "justify-center"
+        )}>
           {optioninfos && optioninfos.length > 0 ? (
             <>
               {optioninfos.map((position, index) => (
@@ -220,11 +312,14 @@ export default function TradingPositions() {
         </div>
       )}
       {activeTab === 'OpenOrders' && (
-        <div className="flex min-h-[300px] flex-col justify-between space-y-[10px] px-3 py-4 pb-[10px] md:px-6">
-          {dummyOrders.length > 0 ? (
+        <div className={cn(
+          "flex min-h-[300px] flex-col px-3 py-4 pb-[10px] md:px-6",
+          orderInfos && orderInfos.length > 0 ? "justify-between space-y-[10px]" : "justify-center"
+        )}>
+          {orderInfos.length > 0 ? (
             <>
               <div className="flex flex-col space-y-[10px]">
-                {dummyOrders
+                {orderInfos
                   .slice(indexOfFirstItem, indexOfLastItem)
                   .map((pos, idx) => (
                     <OpenOptionOrders
@@ -245,7 +340,7 @@ export default function TradingPositions() {
               <div className="w-full pb-4">
                 <Pagination
                   currentPage={currentPage}
-                  totalItems={dummyOrders.length}
+                  totalItems={orderInfos.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
                 />

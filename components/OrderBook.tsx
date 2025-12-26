@@ -39,17 +39,20 @@ export default function OrderBook() {
 
             if (data && data.data) {
                 const items = data.data
-                const transform = (item: any) => ({
-                    ...item,
-                    id: item.id,
-                    order_type: item.side === 'Buy' ? 'Buy' : 'Sell',
-                    seller: item.side === 'Sell' ? (item.user_email || item.user_id) : 'Market',
-                    buyer: item.side === 'Buy' ? (item.user_email || item.user_id) : 'Market',
-                    amount: parseFloat(item.energy_amount),
-                    filled_amount: parseFloat(item.filled_amount || 0),
-                    price_per_kwh: parseFloat(item.price_per_kwh),
-                    status: item.status
-                })
+                const transform = (item: any) => {
+                    const side = (item.side || '').toLowerCase()
+                    return {
+                        ...item,
+                        id: item.id,
+                        order_type: side === 'buy' ? 'Buy' : 'Sell',
+                        seller: side === 'sell' ? (item.user_email || item.user_id) : 'Market',
+                        buyer: side === 'buy' ? (item.user_email || item.user_id) : 'Market',
+                        amount: parseFloat(item.energy_amount),
+                        filled_amount: parseFloat(item.filled_amount || 0),
+                        price_per_kwh: parseFloat(item.price_per_kwh),
+                        status: item.status
+                    }
+                }
 
                 setOrders(items.map(transform))
                 setLastUpdate(new Date())
