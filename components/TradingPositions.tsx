@@ -17,6 +17,7 @@ import { Transaction } from '@/lib/data/WalletActivity'
 import { BN } from '@coral-xyz/anchor'
 import Pagination from './Pagination'
 import OpenOptionOrders from './OpenOptionOrders'
+import OrderBook from './OrderBook'
 
 export default function TradingPositions() {
   const [activeTab, setActiveTab] = useState<string>('Positions')
@@ -38,7 +39,7 @@ export default function TradingPositions() {
     onExerciseOption(index)
   }
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       if (program && pub) {
         const [pinfo, expiredpinfo, doneinfo] = await getDetailInfos(
           program,
@@ -96,6 +97,13 @@ export default function TradingPositions() {
               onClick={() => handleClickTab('History')}
             >
               History
+            </TabsTrigger>
+            <TabsTrigger
+              value="OrderBook"
+              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
+              onClick={() => handleClickTab('OrderBook')}
+            >
+              Order Book
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -260,6 +268,11 @@ export default function TradingPositions() {
               <br /> Start Trading Now
             </div>
           )}
+        </div>
+      )}
+      {activeTab === 'OrderBook' && (
+        <div className="min-h-[300px] p-0">
+          <OrderBook />
         </div>
       )}
     </div>

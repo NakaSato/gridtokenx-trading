@@ -7,7 +7,7 @@ import TradingPositionsFallback from '@/components/TradingPositionsFallback'
 import TradingPositions from '@/components/TradingPositions'
 import PriceQuote from '@/components/PriceQuote'
 import GreekPopup from '@/components/GreekPopup'
-import TransactionHistory from '@/components/TransactionHistory'
+import TradeHistory from '@/components/TradeHistory'
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
 import { Button } from '@/components/ui/button'
@@ -83,17 +83,17 @@ export default function Homepage() {
           'flex h-full w-full flex-col pb-4'
         )}
       >
-        <div className="grid w-full flex-1 grid-cols-1 justify-between gap-4 overflow-hidden pt-4 md:grid-cols-12">
-          {/* LEFT SIDEBAR - TRANSACTION HISTORY */}
-          <div className="hidden h-full flex-col space-y-4 md:col-span-2 md:flex">
-            <TransactionHistory useMockData={true} />
+        <div className="grid w-full flex-1 grid-cols-1 justify-between gap-4 overflow-y-auto pt-4 md:grid-cols-12">
+          {/* LEFT SIDEBAR - TRADING HISTORY */}
+          <div className="hidden h-full flex-col space-y-4 overflow-y-auto md:col-span-2 md:flex">
+            <TradeHistory />
           </div>
 
           {/* CENTER - CHART */}
           <div
             className={cn(
               active === 'chart' ? 'w-full' : 'hidden',
-              'h-full flex-col space-y-4 md:col-span-7 md:flex'
+              'h-full flex-col space-y-4 overflow-y-auto md:col-span-7 md:flex'
             )}
           >
             <div className="min-h-0 flex-1">
@@ -140,9 +140,8 @@ export default function Homepage() {
               onTransactionChange={setTransaction}
             />
             <div
-              className={`${
-                transaction === 'sell' ? 'hidden' : 'flex'
-              } w-full flex-col space-y-4`}
+              className={`${transaction === 'sell' ? 'hidden' : 'flex'
+                } w-full flex-col space-y-4`}
             >
               <PriceQuote
                 active={tokenIdx}
@@ -198,3 +197,4 @@ export default function Homepage() {
     </>
   )
 }
+

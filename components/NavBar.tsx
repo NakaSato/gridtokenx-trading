@@ -58,6 +58,7 @@ interface NavItem {
     value?: string
   }
   hideOnMobile?: boolean
+  requiresAuth?: boolean
 }
 
 interface DropdownItem {
@@ -96,6 +97,7 @@ const NAV_ITEMS: NavItem[] = [
     name: 'Smart Meter',
     href: '/meter',
     icon: <Activity size={16} />,
+    requiresAuth: true,
   },
   {
     name: 'Futures',
@@ -115,6 +117,7 @@ const NAV_ITEMS: NavItem[] = [
     href: '/portfolio',
     icon: <WalletIcon />,
     hideOnMobile: true,
+    requiresAuth: true,
   },
 ]
 
@@ -269,7 +272,7 @@ export default function NavBar() {
         </div>
 
         <nav className="hidden items-center justify-evenly gap-8 md:flex" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated).map((item) => (
             <NavLink
               key={item.name}
               item={item}
@@ -367,10 +370,10 @@ export default function NavBar() {
       </div>
 
       <div className="flex items-center justify-between gap-3 py-2">
-        <PointsDropDown setActive={setActiveItem} />
+        {isAuthenticated && <PointsDropDown setActive={setActiveItem} />}
         <Settings />
-        <Profile />
-        <Notifications />
+        {isAuthenticated && <Profile />}
+        {isAuthenticated && <Notifications />}
 
         {connected || isAuthenticated ? (
           <WalletSideBar />
