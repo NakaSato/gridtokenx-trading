@@ -10,21 +10,25 @@ export const ENERGY_TOKEN_MINT = new PublicKey(
 );
 
 // Mainnet
-// export const USDC_MINT = new PublicKey(
-//   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-// );
+export const USDC_MINT = new PublicKey(
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+);
+export const USDC_DECIMALS = 6;
 // export const WSOL_MINT = new PublicKey(
 //   "So11111111111111111111111111111111111111112"
 // );
 // export const SOL_USD_PYTH_ACCOUNT = new PublicKey(
 //   "H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"
 // );
+export const USDC_ORACLE = new PublicKey(
+  "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
+);
 
 // Devnet
-export const USDC_MINT = new PublicKey(
-  "3d79oe7AKxxHfLz11BXAnWqBX72rubLiQppUNoKGhMPk"
+export const THB_MINT = new PublicKey(
+  "3d79oe7AKxxHfLz11BXAnWqBX72rubLiQppUNoKGhMPk" // TODO: Replace with actual THB Mint
 );
-export const USDC_DECIMALS = 6;
+export const THB_DECIMALS = 6;
 export const WSOL_MINT = new PublicKey(
   "349kUpx5gmhFhy3bmYFW6SqNteDyc4uUt4Do5nSRM5B7"
 );
@@ -40,8 +44,8 @@ export const Option_Program_Address = new PublicKey(
 export const WSOL_ORACLE = new PublicKey(
   "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
 );
-export const USDC_ORACLE = new PublicKey(
-  "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
+export const THB_ORACLE = new PublicKey(
+  "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7" // TODO: Replace with actual THB Oracle
 );
 
 export const HERMES_URL = "https://hermes.pyth.network/";

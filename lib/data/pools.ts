@@ -14,4 +14,11 @@ export const pools: Pool[] = [
     token1: 'USDC',
     decimals: 6,
   },
+  {
+    programId: 'GrDK9rQpeFeb5yLpPhMhuJr2vhY9toePrRxnAUoMT9KD',
+    name: 'SOL/THB',
+    token0: 'SOL',
+    token1: 'THB',
+    decimals: 6,
+  },
 ]

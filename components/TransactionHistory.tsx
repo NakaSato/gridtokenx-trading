@@ -60,10 +60,10 @@ const MOCK_TRANSACTIONS: UserTransaction[] = [
 const getTransactionTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
     'EnergyTrade': 'TRADE ENERGY',
-    'TokenMint': 'MINT GRIDX',
-    'TokenBurn': 'BURN GRIDX',
-    'Stake': 'STAKE GRIDX',
-    'Unstake': 'UNSTAKE GRIDX',
+    'TokenMint': 'MINT GRX',
+    'TokenBurn': 'BURN GRX',
+    'Stake': 'STAKE GRX',
+    'Unstake': 'UNSTAKE GRX',
     'Reward': 'REWARD',
   }
   return labels[type] || type.toUpperCase()
@@ -110,7 +110,7 @@ export default function TransactionHistory({
       try {
         setLoading(true)
         setError(null)
-        
+
         const apiClient = createApiClient(token)
         const response = await apiClient.getUserTransactions({ limit })
 
@@ -137,7 +137,7 @@ export default function TransactionHistory({
           <span className="ml-2 text-xs font-normal text-yellow-500">(Mock Data)</span>
         )}
       </h3>
-      
+
       <div className="flex-1 space-y-3 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-8">

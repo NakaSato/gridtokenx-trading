@@ -15,10 +15,9 @@ export interface Token {
     fixed: boolean
   }
 }
-
 export const USDC: Token = {
   id: 'usdc',
-  name: 'USDC',
+  name: 'USD Coin',
   symbol: 'USDC',
   iconPath: '/images/usdc.png',
   pythSymbol: 'Crypto.USDC/USD',
@@ -34,12 +33,30 @@ export const USDC: Token = {
   },
 }
 
-export const GRIDX: Token = {
+export const THB: Token = {
+  id: 'thb',
+  name: 'THB',
+  symbol: 'THB',
+  iconPath: '/images/thb.png',
+  pythSymbol: 'Fiat.THB/USD',
+  category: {
+    crypto: false,
+    memes: false,
+    forex: true,
+    ai: false,
+    metals: false,
+    commodities: false,
+    equities: false,
+    fixed: false,
+  },
+}
+
+export const GRX: Token = {
   id: 'gridx',
   name: 'GridTokenX',
-  symbol: 'GRIDX',
+  symbol: 'GRX',
   iconPath: '/svgs/gridx.svg',
-  pythSymbol: 'Crypto.GRIDX/USD',
+  pythSymbol: 'Crypto.GRX/USD',
   category: {
     crypto: true,
     memes: false,
@@ -56,9 +73,9 @@ export const tokenList: Token[] = [
   {
     id: 'gridx',
     name: 'GridTokenX',
-    symbol: 'GRIDX',
+    symbol: 'GRX',
     iconPath: '/svgs/gridx.svg',
-    pythSymbol: 'Crypto.GRIDX/USD',
+    pythSymbol: 'Crypto.GRX/USD',
     category: {
       crypto: true,
       memes: false,

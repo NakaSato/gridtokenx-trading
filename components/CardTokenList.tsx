@@ -13,7 +13,7 @@ import { ChevronDown, Search, XIcon } from 'lucide-react'
 import { Input } from './ui/input'
 import { Separator } from './ui/separator'
 import { ScrollArea } from './ui/scroll-area'
-import { tokenList, Token, USDC } from '@/lib/data/tokenlist'
+import { tokenList, Token, THB, USDC } from '@/lib/data/tokenlist'
 
 interface CardTokenListProps {
   onSymbolChange: (symbol: string) => void
@@ -39,7 +39,8 @@ export default function CardTokenList({
 
   useEffect(() => {
     setSelectedToken(tokens[active])
-    const newPaymentTokens = [tokens[active], USDC]
+    // Allow payment in Underlying (e.g. SOL), THB, or USDC
+    const newPaymentTokens = [tokens[active], THB, USDC]
     setPaymentTokens(newPaymentTokens)
     setPayment(newPaymentTokens[0])
   }, [active, tokens])
@@ -74,7 +75,7 @@ export default function CardTokenList({
             />
             <div className="mr-2 flex flex-col items-start">
               <span className="text-base font-semibold">
-                {selectedToken.symbol.toUpperCase()}-USD
+                {selectedToken.symbol.toUpperCase()}
               </span>
               <span className="text-xs text-secondary-foreground">
                 {selectedToken.name}

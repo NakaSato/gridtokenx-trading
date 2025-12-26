@@ -11,6 +11,11 @@ export const coins: Coin[] = [
     logo: '/images/usdc.png',
   },
   {
+    symbol: 'THB',
+    name: 'Thai Baht Stable',
+    logo: '/images/thb.png',
+  },
+  {
     symbol: 'SOL',
     name: 'Solana',
     logo: '/images/solana.png',

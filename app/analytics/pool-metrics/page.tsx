@@ -32,7 +32,7 @@ export default function PoolMetrics() {
             <TokenInterestRate token="SOL" />
           </div>
           <div className="h-96 w-full border p-5">
-            <TokenInterestRate token="USDC" />
+            <TokenInterestRate token="THB" />
           </div>
           <div className="w-full border p-5">
             <VolatilityChart type="Call" />
@@ -41,7 +41,7 @@ export default function PoolMetrics() {
             <VolatilityChart type="Put" />
           </div>
           <div className="w-full border p-5">
-            <UtilizationChart token="USDC" />
+            <UtilizationChart token="THB" />
           </div>
           <div className="w-full border p-5">
             <UtilizationChart token="SOL" />

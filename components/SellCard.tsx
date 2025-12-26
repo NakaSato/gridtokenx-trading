@@ -70,7 +70,7 @@ export default function SellCard() {
   }
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       if (!wallet || !connected) {
         setOptions([])
         return
@@ -90,7 +90,7 @@ export default function SellCard() {
         )
 
         const [pool] = PublicKey.findProgramAddressSync(
-          [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+          [Buffer.from('pool'), Buffer.from('SOL-THB')],
           program.programId
         )
         const [custody] = PublicKey.findProgramAddressSync(
@@ -140,7 +140,7 @@ export default function SellCard() {
               purchaseDate: new Date(
                 (optionData.expired_date.toNumber() -
                   optionData.period * 3600 * 24) *
-                  1000
+                1000
               ),
             })
           } catch (error) {
@@ -182,11 +182,10 @@ export default function SellCard() {
       {/* Trading Direction and Status */}
       <div className="flex items-center space-x-3">
         <div
-          className={`flex flex-1 items-center justify-center rounded-md border px-4 py-2 ${
-            selectedOption.type === 'Call'
+          className={`flex flex-1 items-center justify-center rounded-md border px-4 py-2 ${selectedOption.type === 'Call'
               ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500'
               : 'border-red-500 bg-red-500/10 text-red-500'
-          }`}
+            }`}
         >
           {selectedOption.type === 'Call' ? (
             <>

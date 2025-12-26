@@ -11,7 +11,7 @@ import {
   PurpleDot,
   PutIconDark,
 } from '@/public/svgs/icons'
-import { tokenList, USDC } from '@/lib/data/tokenlist'
+import { tokenList, THB } from '@/lib/data/tokenlist'
 import { useOptionsPricing } from '@/hooks/useOptionsPricing'
 import { black_scholes } from '@/utils/optionsPricing'
 import { differenceInSeconds, differenceInYears } from 'date-fns'
@@ -37,7 +37,7 @@ export default function PriceQuote({
   const [dropDownActive, setDropDownActive] = useState<boolean>(true)
   const [moreInfo, setMoreInfo] = useState<boolean>(false)
   const tokens = tokenList
-  const usdc = USDC
+  const usdc = THB
   const s = priceData.price ?? 0
 
   const total = currency === usdc.pythSymbol ? s / premium / s : s / premium
@@ -164,7 +164,7 @@ export default function PriceQuote({
                     </span>
                   </div>
                   <span className="text-sm font-medium text-secondary-foreground">
-                    5 USDC
+                    5 THB
                   </span>
                 </div>
                 <div className="flex w-full justify-between">

@@ -7,7 +7,7 @@ export interface Token {
 
 export const tokens: Token[] = [
   {
-    symbol: 'GRIDX',
+    symbol: 'GRX',
     name: 'GridTokenX',
     logo: '/svgs/gridx.svg',
     address: 'GRIDX...11112',
@@ -16,6 +16,12 @@ export const tokens: Token[] = [
     symbol: 'USDC',
     name: 'USD coin',
     logo: '/images/usdc-big.png',
+    address: 'So111...11112',
+  },
+  {
+    symbol: 'THB',
+    name: 'Thai Baht Stable',
+    logo: '/images/thb.png',
     address: 'So111...11112',
   },
   {

@@ -119,7 +119,7 @@ export function PortfolioSummary() {
     const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
     const { tokenBalance, loading } = portfolioData
 
-    // Calculate estimated USD value (mock price: 1 GEC = $0.05, 1 SOL = $175)
+    // Calculate estimated USD value (mock price: 1 GRX = $0.05, 1 SOL = $175)
     const gecPrice = 0.05
     const solPrice = 175
     const gecValue = (tokenBalance?.token_balance_raw || 0) * gecPrice
@@ -185,7 +185,7 @@ export function PortfolioSummary() {
                                         {truncateAddress(walletAddress)}
                                     </p>
                                     <p className="text-xs text-green-500 mt-1">
-                                        ≈ ${formatBalance(solValue, 2)} USD
+                                        ≈ ${formatBalance(solValue, 2)} THB
                                     </p>
                                 </>
                             ) : (
@@ -226,10 +226,10 @@ export function PortfolioSummary() {
                                 <>
                                     <h3 className="text-lg font-semibold text-foreground">
                                         <Coins className="inline h-5 w-5 mr-1 text-green-500" />
-                                        {formatBalance(tokenBalance?.token_balance || '0', 2)} GEC
+                                        {formatBalance(tokenBalance?.token_balance || '0', 2)} GRX
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
-                                        ≈ ${formatBalance(gecValue, 2)} USD
+                                        ≈ ${formatBalance(gecValue, 2)} THB
                                     </p>
                                     {tokenBalance?.token_mint && (
                                         <p className="text-xs text-muted-foreground/60 mt-1 font-mono">
@@ -264,7 +264,7 @@ export function PortfolioSummary() {
                                     </h3>
                                     <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                                         <p>SOL: ${formatBalance(solValue, 2)}</p>
-                                        <p>GEC: ${formatBalance(gecValue, 2)}</p>
+                                        <p>GRX: ${formatBalance(gecValue, 2)}</p>
                                     </div>
                                 </>
                             )}

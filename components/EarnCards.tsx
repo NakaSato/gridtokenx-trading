@@ -34,10 +34,10 @@ export default function EarnCards() {
     sortBy === 'featured'
       ? [...allStrategies]
       : [...allStrategies].sort((a, b) => {
-          if (sortBy === 'tvl') return b.stats.tvl - a.stats.tvl
-          if (sortBy === 'apy') return b.stats.apy - a.stats.apy
-          return 0
-        })
+        if (sortBy === 'tvl') return b.stats.tvl - a.stats.tvl
+        if (sortBy === 'apy') return b.stats.apy - a.stats.apy
+        return 0
+      })
 
   const totalPages = Math.ceil(filteredStrategies.length / cardsPerPage)
   const indexOfLastCard = 19
@@ -56,10 +56,10 @@ export default function EarnCards() {
             <SheetTrigger asChild>
               <div className="group relative cursor-pointer">
                 <div
-                  className={`absolute inset-2 opacity-25 blur ${strategy.symbol === 'USDC' ? 'group-hover:bg-[#FEEDCB]' : 'group-hover:bg-gradient-primary'} transition duration-1000 group-hover:opacity-100 group-hover:duration-200`}
+                  className={`absolute inset-2 opacity-25 blur ${strategy.symbol === 'THB' ? 'group-hover:bg-[#FEEDCB]' : 'group-hover:bg-gradient-primary'} transition duration-1000 group-hover:opacity-100 group-hover:duration-200`}
                 ></div>
                 <Card
-                  className={`w-full ${strategy.symbol === 'USDC' ? 'hover:border-[#FEEDCB]/45' : 'hover:border-primary/45'} relative rounded-sm`}
+                  className={`w-full ${strategy.symbol === 'THB' ? 'hover:border-[#FEEDCB]/45' : 'hover:border-primary/45'} relative rounded-sm`}
                 >
                   <CardHeader className="border-b p-5">
                     <div className="flex items-center justify-start space-x-2">

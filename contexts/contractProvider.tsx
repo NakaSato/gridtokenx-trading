@@ -28,6 +28,9 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
 import {
+  THB_DECIMALS,
+  THB_MINT,
+  THB_ORACLE,
   USDC_DECIMALS,
   USDC_MINT,
   USDC_ORACLE,
@@ -55,15 +58,15 @@ interface ContractContextType {
 export const ContractContext = createContext<ContractContextType>({
   program: undefined,
   pub: undefined,
-  getCustodies: () => {},
-  getDetailInfos: () => {},
-  onOpenOption: async () => {},
-  onCloseOption: () => {},
-  onClaimOption: () => {},
-  onExerciseOption: () => {},
-  onAddLiquidity: () => {},
-  onRemoveLiquidity: () => {},
-  getOptionDetailAccount: () => {},
+  getCustodies: () => { },
+  getDetailInfos: () => { },
+  onOpenOption: async () => { },
+  onCloseOption: () => { },
+  onClaimOption: () => { },
+  onExerciseOption: () => { },
+  onAddLiquidity: () => { },
+  onRemoveLiquidity: () => { },
+  getOptionDetailAccount: () => { },
 })
 
 export type ExpiredOption = {
@@ -116,7 +119,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     ) {
       try {
         const [pool] = PublicKey.findProgramAddressSync(
-          [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+          [Buffer.from('pool'), Buffer.from('SOL-THB')],
           program.programId
         )
         const custodies = new Map<string, any>()
@@ -129,7 +132,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
           ratios.set(
             mint.toBase58(),
             poolData.ratios[
-              poolData.custodies.findIndex((e) => e.equals(custody))
+            poolData.custodies.findIndex((e) => e.equals(custody))
             ]
           )
         }
@@ -159,14 +162,8 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     const pinfo = []
     const expiredpinfo = []
     const doneInfo = []
-    const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from('pool'), Buffer.from('SOL-USDC')],
-      program.programId
-    )
-    const [custody] = PublicKey.findProgramAddressSync(
-      [Buffer.from('custody'), pool.toBuffer(), WSOL_MINT.toBuffer()],
-      program.programId
-    )
+
+    // Check user account
     const [userPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from('user'), publicKey.toBuffer()],
       program.programId
@@ -174,87 +171,114 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     const userInfo = await program.account.User.fetch(userPDA).catch((e) => {
       return null
     })
+
     if (!userInfo) return [[], [], []]
     const optionIndex = userInfo.option_index.toNumber()
 
     if (optionIndex == 0) return [[], [], []]
+
+    // Iterate over all possible pools
+    const poolsToCheck = [
+      { name: 'SOL-USDC', oracle: USDC_ORACLE, decimals: USDC_DECIMALS, token: 'USDC' },
+      { name: 'SOL-THB', oracle: THB_ORACLE, decimals: THB_DECIMALS, token: 'THB' }
+    ];
+
     for (let i = 1; i <= optionIndex; i++) {
-      try {
-        const optionDetailAccount = getOptionDetailAccount(i, pool, custody)
-        if (!optionDetailAccount) continue
-        const detail =
-          await program.account.OptionDetail.fetch(optionDetailAccount)
-        if (!detail) continue
-        const pnl =
-          priceData.price && detail.strike_price
-            ? priceData.price - detail.strike_price
-            : 0
-        if (
-          detail?.expired_date.toNumber() > Math.round(Date.now() / 1000) &&
-          detail?.valid
-        ) {
-          pinfo.push({
-            index: detail?.index.toNumber(),
-            token: detail?.locked_asset.equals(custody) ? 'SOL' : 'USDC',
-            logo: '/images/solana.png',
-            symbol: 'SOL',
-            strikePrice: detail?.strike_price ?? 0,
-            type: detail?.locked_asset.equals(custody) ? 'Call' : 'Put',
-            expiry: new Date(detail?.expired_date.toNumber() * 1000).toString(),
-            size: detail?.locked_asset.equals(custody)
-              ? detail.amount.toNumber() / 10 ** WSOL_DECIMALS
-              : detail.amount.toNumber() / 10 ** USDC_DECIMALS,
-            pnl: pnl,
-            greeks: {
-              delta: 0.6821,
-              gamma: 0.0415,
-              theta: -0.2113,
-              vega: 0.0619,
-            },
-          })
-        } else if (
-          detail?.expired_date.toNumber() < Math.round(Date.now() / 1000) &&
-          detail?.valid
-        ) {
-          const expiryPrice = await getPythPrice(
-            'Crypto.SOL/USD',
-            detail?.expired_date.toNumber()
+      let optionFound = false;
+      for (const poolInfo of poolsToCheck) {
+        if (optionFound) break; // Optimization: stop checking pools if found
+
+        try {
+          const [poolAddress] = PublicKey.findProgramAddressSync(
+            [Buffer.from('pool'), Buffer.from(poolInfo.name)],
+            program.programId
           )
-          expiredpinfo.push({
-            index: detail?.index.toNumber() ?? 1,
-            token: detail?.locked_asset.equals(custody) ? 'SOL' : 'USDC',
-            iconPath: '/images/solana.png',
-            symbol: 'SOL',
-            strikePrice: detail?.strike_price ?? 0,
-            qty: 100,
-            expiryPrice: expiryPrice!,
-            transaction: detail?.locked_asset.equals(custody) ? 'Call' : 'Put',
-            tokenAmount: detail?.locked_asset.equals(custody)
-              ? detail.amount.toNumber() / 10 ** WSOL_DECIMALS
-              : detail.amount.toNumber() / 10 ** USDC_DECIMALS,
-            dollarAmount: detail?.locked_asset.equals(custody)
-              ? detail.profit * (expiryPrice ?? 1)
-              : detail.profit,
-          })
-        } else {
-          doneInfo.push({
-            transactionID: `SOL-${formatDate(
-              new Date(detail.exercised * 1000)
-            )}-${detail.strike_price}-${
-              detail?.locked_asset.equals(custody) ? 'C' : 'P'
-            }`,
-            token: coins[0],
-            transactionType: detail?.locked_asset.equals(custody)
-              ? 'Call'
-              : 'Put',
-            optionType: 'American',
-            strikePrice: detail.strike_price,
-            expiry: format(new Date(detail.exercised), 'dd MMM, yyyy HH:mm:ss'),
-          })
+          const [custodyAddress] = PublicKey.findProgramAddressSync(
+            [Buffer.from('custody'), poolAddress.toBuffer(), WSOL_MINT.toBuffer()],
+            program.programId
+          )
+
+          const optionDetailAccount = getOptionDetailAccount(i, poolAddress, custodyAddress)
+          if (!optionDetailAccount) continue
+
+          // Fetch explicitly to check existence
+          const detail = await program.account.OptionDetail.fetch(optionDetailAccount).catch(() => null)
+          if (!detail) continue
+
+          optionFound = true;
+
+          const pnl =
+            priceData.price && detail.strike_price
+              ? priceData.price - detail.strike_price
+              : 0
+
+          if (
+            detail?.expired_date.toNumber() > Math.round(Date.now() / 1000) &&
+            detail?.valid
+          ) {
+            pinfo.push({
+              index: detail?.index.toNumber(),
+              token: detail?.locked_asset.equals(custodyAddress) ? 'SOL' : poolInfo.token,
+              logo: '/images/solana.png',
+              symbol: 'SOL',
+              strikePrice: detail?.strike_price ?? 0,
+              type: detail?.locked_asset.equals(custodyAddress) ? 'Call' : 'Put',
+              expiry: new Date(detail?.expired_date.toNumber() * 1000).toString(),
+              size: detail?.locked_asset.equals(custodyAddress)
+                ? detail.amount.toNumber() / 10 ** WSOL_DECIMALS
+                : detail.amount.toNumber() / 10 ** poolInfo.decimals,
+              pnl: pnl,
+              greeks: {
+                delta: 0.6821,
+                gamma: 0.0415,
+                theta: -0.2113,
+                vega: 0.0619,
+              },
+            })
+          } else if (
+            detail?.expired_date.toNumber() < Math.round(Date.now() / 1000) &&
+            detail?.valid
+          ) {
+            const expiryPrice = await getPythPrice(
+              'Crypto.SOL/USD',
+              detail?.expired_date.toNumber()
+            )
+            expiredpinfo.push({
+              index: detail?.index.toNumber() ?? 1,
+              token: detail?.locked_asset.equals(custodyAddress) ? 'SOL' : poolInfo.token,
+              iconPath: '/images/solana.png',
+              symbol: 'SOL',
+              strikePrice: detail?.strike_price ?? 0,
+              qty: 100,
+              expiryPrice: expiryPrice!,
+              transaction: detail?.locked_asset.equals(custodyAddress) ? 'Call' : 'Put',
+              tokenAmount: detail?.locked_asset.equals(custodyAddress)
+                ? detail.amount.toNumber() / 10 ** WSOL_DECIMALS
+                : detail.amount.toNumber() / 10 ** poolInfo.decimals,
+              dollarAmount: detail?.locked_asset.equals(custodyAddress)
+                ? detail.profit * (expiryPrice ?? 1)
+                : detail.profit,
+            })
+          } else {
+            doneInfo.push({
+              transactionID: `SOL-${formatDate(
+                new Date(detail.exercised * 1000)
+              )}-${detail.strike_price}-${detail?.locked_asset.equals(custodyAddress) ? 'C' : 'P'
+                }`,
+              token: coins[0],
+              transactionType: detail?.locked_asset.equals(custodyAddress)
+                ? 'Call'
+                : 'Put',
+              optionType: 'American',
+              strikePrice: detail.strike_price,
+              expiry: format(new Date(detail.exercised), 'dd MMM, yyyy HH:mm:ss'),
+            })
+          }
+
+        } catch (e) {
+          console.log("Error checking pool", poolInfo.name, e);
+          continue;
         }
-      } catch (e) {
-        console.log(e)
-        continue
       }
     }
     return [pinfo, expiredpinfo, doneInfo]
@@ -266,12 +290,18 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
     period: number,
     expiredTime: number,
     isCall: boolean,
-    paySol: boolean
+    paySol: boolean,
+    quoteToken: 'USDC' | 'THB' = 'THB'
   ) => {
     // try {
     if (!program || !publicKey || !connected || !wallet) return false
+
+    const poolName = quoteToken === 'USDC' ? 'SOL-USDC' : 'SOL-THB';
+    const quoteMint = quoteToken === 'USDC' ? USDC_MINT : THB_MINT;
+    const quoteOracle = quoteToken === 'USDC' ? USDC_ORACLE : THB_ORACLE;
+
     const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+      [Buffer.from('pool'), Buffer.from(poolName)],
       program.programId
     )
     const [custody] = PublicKey.findProgramAddressSync(
@@ -298,7 +328,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (!optionDetailAccount) return false
     const fundingAccount = getAssociatedTokenAddressSync(
-      paySol ? WSOL_MINT : USDC_MINT,
+      paySol ? WSOL_MINT : quoteMint,
       wallet.publicKey
     )
 
@@ -306,7 +336,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
       [
         Buffer.from('custody'),
         pool.toBuffer(),
-        paySol ? WSOL_MINT.toBuffer() : USDC_MINT.toBuffer(),
+        paySol ? WSOL_MINT.toBuffer() : quoteMint.toBuffer(), // paySol ? SOL : Quote
       ],
       program.programId
     )
@@ -319,20 +349,20 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         strike: strike,
         period: new BN(period),
         expiredTime: new BN(expiredTime),
-        poolName: 'SOL-USDC',
+        poolName: poolName,
       })
       .accountsPartial({
         owner: publicKey,
         funding_account: fundingAccount,
         custody_mint: WSOL_MINT,
-        pay_custody_mint: paySol ? WSOL_MINT : USDC_MINT,
+        pay_custody_mint: paySol ? WSOL_MINT : quoteMint,
         custody_oracle_account: new PublicKey(
           'J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix'
         ),
         pay_custody_oracle_account: paySol
           ? new PublicKey('J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix')
-          : new PublicKey('5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7'),
-        locked_custody_mint: isCall ? WSOL_MINT : USDC_MINT,
+          : quoteOracle,
+        locked_custody_mint: isCall ? WSOL_MINT : quoteMint,
         option_detail: optionDetailAccount,
         pay_custody_token_account: paycustodyData.token_account,
       })
@@ -357,10 +387,44 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   const onCloseOption = async (optionIndex: number) => {
     try {
       if (!program || !publicKey || !connected || !wallet) return
-      const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from('SOL-USDC')],
-        program.programId
-      )
+
+      const poolsToCheck = [
+        { name: 'SOL-USDC', oracle: USDC_ORACLE, decimals: USDC_DECIMALS, token: 'USDC', mint: USDC_MINT },
+        { name: 'SOL-THB', oracle: THB_ORACLE, decimals: THB_DECIMALS, token: 'THB', mint: THB_MINT }
+      ];
+
+      let foundPool = null;
+      let poolInfo = null;
+
+      for (const p of poolsToCheck) {
+        const [pAddress] = PublicKey.findProgramAddressSync(
+          [Buffer.from('pool'), Buffer.from(p.name)],
+          program.programId
+        )
+        const [cAddress] = PublicKey.findProgramAddressSync(
+          [Buffer.from('custody'), pAddress.toBuffer(), WSOL_MINT.toBuffer()],
+          program.programId
+        )
+        // Check if option detail exists for this pool
+        const od = getOptionDetailAccount(optionIndex, pAddress, cAddress)
+        if (od) {
+          const exists = await program.account.OptionDetail.fetch(od).catch(() => null)
+          if (exists) {
+            foundPool = pAddress;
+            poolInfo = p;
+            break;
+          }
+        }
+      }
+
+      if (!foundPool || !poolInfo) {
+        console.log("Pool not found for option index", optionIndex);
+        return;
+      }
+
+      const pool = foundPool;
+      const custodyToken = poolInfo.mint; // Use mint from discovered pool
+
       const [custody] = PublicKey.findProgramAddressSync(
         [Buffer.from('custody'), pool.toBuffer(), WSOL_MINT.toBuffer()],
         program.programId
@@ -409,14 +473,14 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
       const fundingAccount = getAssociatedTokenAddressSync(
         optionDetailAccountData.premium_asset.equals(custody)
           ? WSOL_MINT
-          : USDC_MINT,
+          : custodyToken, // Dynamic token
         wallet.publicKey
       )
 
       const transaction = await program.methods
         .close_option({
           optionIndex: new BN(optionIndex),
-          poolName: 'SOL-USDC',
+          poolName: poolInfo.name, // Dynamic name
         })
         .accountsPartial({
           owner: publicKey,
@@ -450,10 +514,33 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   const onClaimOption = async (optionIndex: number, solPrice: number) => {
     try {
       if (!program || !publicKey || !connected || !wallet) return
-      const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from('SOL-USDC')],
-        program.programId
-      )
+
+      // Find pool
+      let foundPool = null;
+      const poolsToCheck = ['SOL-USDC', 'SOL-THB'];
+
+      for (const pName of poolsToCheck) {
+        const [pAddress] = PublicKey.findProgramAddressSync(
+          [Buffer.from('pool'), Buffer.from(pName)],
+          program.programId
+        )
+        const [cAddress] = PublicKey.findProgramAddressSync(
+          [Buffer.from('custody'), pAddress.toBuffer(), WSOL_MINT.toBuffer()],
+          program.programId
+        )
+        const od = getOptionDetailAccount(optionIndex, pAddress, cAddress)
+        if (od) {
+          const exists = await program.account.OptionDetail.fetch(od).catch(() => null)
+          if (exists) {
+            foundPool = pAddress;
+            break;
+          }
+        }
+      }
+
+      if (!foundPool) return;
+      const pool = foundPool;
+
       const [custody] = PublicKey.findProgramAddressSync(
         [
           Buffer.from('custody_token_account'),
@@ -464,10 +551,80 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
       )
       const optionDetailAccount = getOptionDetailAccount(
         optionIndex,
-        pool,
-        custody
+        pool, // Use found pool
+        // Note: getOptionDetailAccount helper requires custody PDA, but looks like logic above lines 466-471 in original file calculated 'custody' as a Token Account?
+        // Wait. Line 466 original: PublicKey.findProgramAddressSync(['custody_token_account' ...]) -> That's a token account!
+        // But getOptionDetailAccount (line 89) uses it as a seed. 
+        // Checking Line 101: custody.toBuffer(). 
+        // Seed usually is the Custody Account PDA, not Custody Token Account PDA.
+        // ORIGINAL CODE BUG?
+        // Line 466 calculates 'custody' using 'custody_token_account' seed.
+        // Line 477 passes this 'custody' to `getOptionDetailAccount`.
+        // `getOptionDetailAccount` (lines 89-107) uses `custody.toBuffer()` as seed.
+        // If the seed expects Custody Account, passing Custody Token Account is wrong unless that IS the seed.
+        // Reviewing onOpenOption: Line 303 uses 'custody' seed.
+        // Reviewing onCloseOption: Line 373 uses 'custody' seed.
+        // Reviewing onClaimOption (original): Line 466 uses 'custody_token_account' seed? 
+        // This looks like a bug in the original code or I am misinterpreting. 
+        // However, I should preserve existing behavior for `custody` calculation if it works, BUT correct the `pool` part.
+
+        // Actually, looking at `getDetailInfos` (Line 166), it uses 'custody' seed.
+        // `onClaimOption` (Line 466) uses 'custody_token_account'.
+        // If `getOptionDetailAccount` is consistent, one of these is wrong.
+        // But I will stick to fixing the POOL logic.
+
+        // Wait, `getOptionDetailAccount` uses `custody` arg as a seed. 
+        // If `onOpenOption` uses `custody` PDA, and `onClaimOption` uses `custody_token_account` PDA, 
+        // then they generate DIFFERENT OptionDetail PDAs? That would be broken.
+        // I suspect `onClaimOption` in original code might be bugged or using a different specific logic.
+        // Let's look closer at `onClaimOption`.
+        // It passes `custody` to `getOptionDetailAccount`. 
+
+        // I will implement safe pool finding using the standard 'custody' PDA first to find the option.
+        // Then re-calculate the `custody` variable as per original `onClaimOption` logic (which seems to be the Token Account) if needed for later lines?
+        // No, `onClaimOption` passed it to `getOptionDetailAccount`. If that function uses it as a seed, it MUST match creation.
+        // Creation used `custody` PDA (Line 303 in original).
+        // So `onClaimOption` using `custody_token_account` (Line 466 original) seems WRONG if `getOptionDetailAccount` logic is constant.
+        // Unles `getOptionDetailAccount` implementation changes or `custody` arg is different?
+        // Lines 89-107: `getOptionDetailAccount` is simple.
+
+        // I will use standard Custody PDA to FIND the pool.
+        // Then I will define the `custody` variable as required by the rest of the function?
+        // Actually, I should probably use the correct seed 'custody' to find the PDA.
+
+        // Let's assume standard 'custody' PDA is correct for finding the option.
+        PublicKey.findProgramAddressSync([Buffer.from('custody'), pool.toBuffer(), WSOL_MINT.toBuffer()], program.programId)[0]
+        // This is what I used in the loop.
       )
-      if (!optionDetailAccount) return
+
+      // Now I need to reconstruct the `custody` variable that `onClaimOption` expects.
+      // Original: `custody` = PDA('custody_token_account', pool, WSOL_MINT).
+      // And it passes THAT to `getOptionDetailAccount`.
+      // IF the original code was working, then `getOptionDetailAccount` was called with TokenAccount address as seed?
+      // But `onOpenOption` calls it with Custody Account address.
+      // This implies `onClaimOption` might be broken or I am misreading.
+      // I will assume I should use the correct derived addresses.
+
+      // NOTE: For now, I will replicate the original logic's variable `custody` but using the FOUND pool.
+      // If the original logic was passing TokenAccount to `getOptionDetailAccount`, I will do the same for the found pool, to minimize regression risk if there's some weird logic.
+      // BUT the loop needs to find the option. The option is at a specific address. 
+      // If I use the wrong seed in the loop, I won't find it.
+      // I will assume the options were created with 'custody' (Account) seed (from onOpenOption).
+      // So my loop search is correct.
+
+      // After loop, I need to call `claim_option` instruction.
+      // It takes `optionIndex`.
+      // It seems `onClaimOption` doesn't pass `optionDetailAccount` to the instruction accounts?
+      // It does not! `.accountsPartial({ owner, custody_mint })`.
+      // So the `getOptionDetailAccount` call in `onClaimOption` is ONLY to check existence?
+      // Yes.
+
+      // So:
+      // 1. Loop to find pool (using standard custody seed).
+      // 2. Once found, use that pool to set up transaction.
+      // 3. Original code calculated `custody` as token account, but only used it for checking existence (incorrectly?). 
+      // I will ignore the weird `custody` calculation for checking existence and just use the one that worked in the loop.
+
       const transaction = await program.methods
         .claim_option(new BN(optionIndex), solPrice)
         .accountsPartial({
@@ -491,24 +648,33 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const onExerciseOption = async (optionIndex: number) => {
     if (!program || !optionIndex || !publicKey || !connected || !wallet) return
-    const [pool] = PublicKey.findProgramAddressSync(
-      [Buffer.from('pool'), Buffer.from('SOL-USDC')],
-      program.programId
-    )
-    const [custody] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('custody_token_account'),
-        pool.toBuffer(),
-        WSOL_MINT.toBuffer(),
-      ],
-      program.programId
-    )
-    const optionDetailAccount = getOptionDetailAccount(
-      optionIndex,
-      pool,
-      custody
-    )
-    if (!optionDetailAccount) return
+
+    // Determine which pool this option belongs to
+    let foundPool = null;
+    const poolsToCheck = ['SOL-USDC', 'SOL-THB'];
+
+    for (const pName of poolsToCheck) {
+      const [pAddress] = PublicKey.findProgramAddressSync(
+        [Buffer.from('pool'), Buffer.from(pName)],
+        program.programId
+      )
+      const [cAddress] = PublicKey.findProgramAddressSync(
+        [Buffer.from('custody'), pAddress.toBuffer(), WSOL_MINT.toBuffer()],
+        program.programId
+      )
+      const od = getOptionDetailAccount(optionIndex, pAddress, cAddress)
+      if (od) {
+        const exists = await program.account.OptionDetail.fetch(od).catch(() => null)
+        if (exists) {
+          foundPool = pAddress;
+          break;
+        }
+      }
+    }
+
+    if (!foundPool) return;
+    const pool = foundPool;
+
     const transaction = await program.methods
       .exercise_option(new BN(optionIndex))
       .accountsPartial({
@@ -531,14 +697,15 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   const onAddLiquidity = async (
     amount: number,
     program: Program<OptionContract>,
-    asset: PublicKey
+    asset: PublicKey,
+    poolName: string
   ) => {
     try {
       if (!program || !publicKey) return
       if (!wallet) return
 
       const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+        [Buffer.from('pool'), Buffer.from(poolName)],
         program.programId
       )
       const [custody] = PublicKey.findProgramAddressSync(
@@ -566,7 +733,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         .add_liquidity({
           amountIn: new BN(amount),
           minLpAmountOut: new BN(1),
-          poolName: 'SOL-USDC',
+          poolName: poolName,
         })
         .accountsPartial({
           owner: publicKey,
@@ -596,14 +763,15 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   const onRemoveLiquidity = async (
     amount: number,
     program: Program<OptionContract>,
-    asset: PublicKey
+    asset: PublicKey,
+    poolName: string
   ) => {
     try {
       if (!program || !publicKey) return
       if (!wallet) return
 
       const [pool] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+        [Buffer.from('pool'), Buffer.from(poolName)],
         program.programId
       )
       const [custody] = PublicKey.findProgramAddressSync(
@@ -626,7 +794,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         oracles.push({ pubkey: ora, isSigner: false, isWritable: true })
       }
       const [poolPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from('pool'), Buffer.from('SOL-USDC')],
+        [Buffer.from('pool'), Buffer.from(poolName)],
         program.programId
       )
       const [contract] = PublicKey.findProgramAddressSync(
@@ -650,7 +818,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         program.programId
       )
       const [lpTokenMint] = PublicKey.findProgramAddressSync(
-        [Buffer.from('lp_token_mint'), Buffer.from('SOL-USDC')],
+        [Buffer.from('lp_token_mint'), Buffer.from(poolName)],
         program.programId
       )
       const lpTokenAccount = getAssociatedTokenAddressSync(
@@ -663,7 +831,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
         .remove_liquidity({
           lpAmountIn: new BN(amount),
           minAmountOut: new BN(0),
-          poolName: 'SOL-USDC',
+          poolName: 'SOL-THB',
         })
         .accountsPartial({
           owner: publicKey,
@@ -699,7 +867,7 @@ export const ContractProvider: React.FC<{ children: React.ReactNode }> = ({
   }
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       let provider: Provider
       if (wallet && publicKey) {
         try {

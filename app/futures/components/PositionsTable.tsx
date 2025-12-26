@@ -17,9 +17,13 @@ export default function PositionsTable({ refreshTrigger }: { refreshTrigger: num
 
     const loadPositions = async () => {
         setLoading(true)
-        const { data } = await defaultApiClient.getFuturesPositions()
-        if (data) {
-            setPositions(data)
+        const response = await defaultApiClient.getFuturesPositions()
+        // Extract data correctly from the backend ApiResponse wrapper
+        const positionsData = (response.data as any)?.data
+        if (Array.isArray(positionsData)) {
+            setPositions(positionsData)
+        } else {
+            setPositions([])
         }
         setLoading(false)
     }
@@ -61,7 +65,7 @@ export default function PositionsTable({ refreshTrigger }: { refreshTrigger: num
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
-                            {positions.length === 0 ? (
+                            {(!Array.isArray(positions) || positions.length === 0) ? (
                                 <tr>
                                     <td colSpan={8} className="p-4 text-center text-muted-foreground">
                                         No active positions

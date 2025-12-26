@@ -43,7 +43,7 @@ export default function MarketDetails({
                   className="rounded-full"
                 />
                 <span className="text-sm font-medium text-foreground">
-                  {symbol}/USDC
+                  {symbol}/THB
                 </span>
               </div>
             </DropdownMenuTrigger>

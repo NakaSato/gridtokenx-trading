@@ -163,13 +163,27 @@ export default function OptionCard({
     const currentTime = Math.floor(Date.now() / 1000)
     const expTime = Math.floor(expiration.getTime() / 1000)
     const period = Math.floor((expTime - currentTime) / (3600 * 24)) + 1
+
+    // Determine quote token
+    let quoteToken: 'USDC' | 'THB' = 'USDC';
+    if (payCurrency === 'THB') {
+      quoteToken = 'THB';
+    } else if (payCurrency === 'USDC') {
+      quoteToken = 'USDC';
+    } else {
+      if (selectedSymbol.includes('THB')) {
+        quoteToken = 'THB';
+      }
+    }
+
     await sc.onOpenOption(
       parseFloat(optionSize) * 10 ** WSOL_DECIMALS,
       parseFloat(strikePrice),
       period,
       expTime,
       selectedOption == 'Call' ? true : false,
-      true
+      true,
+      quoteToken
     )
   }
 
@@ -200,9 +214,8 @@ export default function OptionCard({
                 ${priceData.price ? formatPrice(priceData.price) : priceLoading}
               </div>
               <div
-                className={`text-sm font-medium ${
-                  isPositive ? 'text-green-500' : 'text-red-500'
-                }`}
+                className={`text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'
+                  }`}
               >
                 {isPositive ? '+' : '-'}
                 {formatChange(percentChange)}%
@@ -236,18 +249,16 @@ export default function OptionCard({
                 setSelectedOption('Call')
                 onContractTypeChange('Call')
               }}
-              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${
-                selectedOption === 'Call'
+              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${selectedOption === 'Call'
                   ? 'border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20'
                   : 'border-border/40 hover:border-green-500 hover:bg-green-500/20 hover:text-green-500'
-              }`}
+                }`}
             >
               <TrendingUp
-                className={`mr-2 h-4 w-4 ${
-                  selectedOption === 'Call'
+                className={`mr-2 h-4 w-4 ${selectedOption === 'Call'
                     ? 'text-green-500'
                     : 'text-muted-foreground group-hover:text-green-500'
-                }`}
+                  }`}
               />
               Call
             </Button>
@@ -257,18 +268,16 @@ export default function OptionCard({
                 setSelectedOption('Put')
                 onContractTypeChange('Put')
               }}
-              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${
-                selectedOption === 'Put'
+              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${selectedOption === 'Put'
                   ? 'border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500/20'
                   : 'border-border/40 hover:border-red-500 hover:bg-red-500/20 hover:text-red-500'
-              }`}
+                }`}
             >
               <TrendingDown
-                className={`mr-2 h-4 w-4 ${
-                  selectedOption === 'Put'
+                className={`mr-2 h-4 w-4 ${selectedOption === 'Put'
                     ? 'text-red-500'
                     : 'text-muted-foreground group-hover:text-red-500'
-                }`}
+                  }`}
               />
               Put
             </Button>
@@ -293,11 +302,10 @@ export default function OptionCard({
                       setStrikePrice(price)
                       onStrikePriceChange(price)
                     }}
-                    className={`flex-1 rounded-sm px-4 py-2 ${
-                      strikePrice === price
+                    className={`flex-1 rounded-sm px-4 py-2 ${strikePrice === price
                         ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
                         : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
-                    }`}
+                      }`}
                   >
                     {selectedSymbol === 'Crypto.BONK/USD'
                       ? '$' + formatPrice(parseFloat(price))
@@ -345,12 +353,11 @@ export default function OptionCard({
                       setExpiration(exp.value)
                       onExpiryChange(exp.value)
                     }}
-                    className={`flex-1 rounded-sm px-4 py-2 ${
-                      format(expiration, 'yyyy-MM-dd') ===
-                      format(exp.value, 'yyyy-MM-dd')
+                    className={`flex-1 rounded-sm px-4 py-2 ${format(expiration, 'yyyy-MM-dd') ===
+                        format(exp.value, 'yyyy-MM-dd')
                         ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
                         : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
-                    }`}
+                      }`}
                   >
                     {exp.label}
                   </Button>

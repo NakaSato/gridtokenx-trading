@@ -28,9 +28,9 @@ export default function Profile() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [stats, setStats] = useState<TradingStats>({
     totalTrades: 0,
-    totalVolume: '0 GRIDX',
+    totalVolume: '0 GRX',
     winRate: '0%',
-    totalPnl: '+0 GRIDX'
+    totalPnl: '+0 GRX'
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -77,9 +77,9 @@ export default function Profile() {
 
         setStats({
           totalTrades: s.overall.total_transactions || 0,
-          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} GRIDX`,
+          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} GRX`,
           winRate: `${winRate}%`,
-          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} GRIDX`
+          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} GRX`
         })
       }
     } catch (error) {

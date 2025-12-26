@@ -24,6 +24,8 @@ import {
 import {
   connection,
   LP_DECIMALS,
+  THB_DECIMALS,
+  THB_MINT,
   USDC_DECIMALS,
   USDC_MINT,
   WSOL_DECIMALS,
@@ -63,58 +65,68 @@ export default function EarnSidebar({
   apy,
   apr,
 }: EarnSidebarProps) {
+  // Determine if we are engaged with USDC or THB pool based on symbol prop
+  const isTHB = symbol === 'THB' || name.includes('THB');
+  const QUOTE_MINT = isTHB ? THB_MINT : USDC_MINT;
+  const QUOTE_DECIMALS = isTHB ? THB_DECIMALS : USDC_DECIMALS;
+  const POOL_NAME = isTHB ? 'SOL-THB' : 'SOL-USDC';
+
   const poolData = (
     pooldata: Map<string, any>,
     ratioData: Map<string, any>,
     price: number
   ) => {
+    // Safety check if data is loaded
+    if (!pooldata || !ratioData || pooldata.size === 0) return []
+
     const solCustodyData = pooldata.get(WSOL_MINT.toBase58())
-    const usdcCustodyData = pooldata.get(USDC_MINT.toBase58())
+    const quoteCustodyData = pooldata.get(QUOTE_MINT.toBase58())
+
+    if (!solCustodyData || !quoteCustodyData) return []
+
     const solPoolsize =
       solCustodyData.tokenOwned.toNumber() / 10 ** WSOL_DECIMALS
-    const usdcPoolsize =
-      usdcCustodyData.tokenOwned.toNumber() / 10 ** USDC_DECIMALS
-    const total = solPoolsize * price + usdcPoolsize
+    const quotePoolsize =
+      quoteCustodyData.tokenOwned.toNumber() / 10 ** QUOTE_DECIMALS
+    const total = solPoolsize * price + quotePoolsize
     return [
       {
         img: logo,
-        symbol: symbol,
+        symbol: 'SOL',
         name: name,
-        poolSize: `${solPoolsize} ${symbol}`,
+        poolSize: `${solPoolsize} SOL`,
         current_weightage: `${Math.round(
           ((solPoolsize * price) / total) * 100
         )}%`,
         target_weightage: `${ratioData
           .get(WSOL_MINT.toBase58())
           .target.toNumber()}%`,
-        utilization: `${
-          Math.round(
-            (solCustodyData.tokenLocked.toNumber() /
-              solCustodyData.tokenOwned.toNumber()) *
-              100
-          ) ?? 0
-        }%`,
+        utilization: `${Math.round(
+          (solCustodyData.tokenLocked.toNumber() /
+            solCustodyData.tokenOwned.toNumber()) *
+          100
+        ) ?? 0
+          }%`,
       },
       {
-        img: usdc,
-        symbol: 'USDC',
-        name: 'USD Coin',
-        poolSize: `${usdcPoolsize} USDC`,
-        current_weightage: `${
-          100 - Math.round(((solPoolsize * price) / total) * 100)
-        }%`,
+        img: isTHB ? '/images/thb.png' : usdc,
+        symbol: isTHB ? 'THB' : 'USDC',
+        name: isTHB ? 'Thai Baht' : 'USD Coin',
+        poolSize: `${quotePoolsize} ${isTHB ? 'THB' : 'USDC'}`,
+        current_weightage: `${100 - Math.round(((solPoolsize * price) / total) * 100)
+          }%`,
         target_weightage: `${ratioData
-          .get(USDC_MINT.toBase58())
+          .get(QUOTE_MINT.toBase58())
           .target.toNumber()}%`,
-        utilization: `${
-          Math.round(
-            usdcCustodyData.tokenLocked.toNumber() /
-              usdcCustodyData.tokenOwned.toNumber()
-          ) ?? 0
-        }%`,
+        utilization: `${Math.round(
+          quoteCustodyData.tokenLocked.toNumber() /
+          quoteCustodyData.tokenOwned.toNumber()
+        ) ?? 0
+          }%`,
       },
     ]
   }
+
   const sc = useContext(ContractContext)
   const [activeTab, setActiveTab] = useState<string>('mint')
   const [isOpen, setIsOpen] = useState(false)
@@ -139,7 +151,7 @@ export default function EarnSidebar({
     setIsOpen(false)
   }
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       let provider: Provider
       if (wallet && connected) {
         try {
@@ -167,13 +179,15 @@ export default function EarnSidebar({
           sc.onAddLiquidity(
             tokenAmount * 10 ** WSOL_DECIMALS,
             program,
-            WSOL_MINT
+            WSOL_MINT,
+            POOL_NAME
           )
         } else {
           sc.onAddLiquidity(
-            tokenAmount * 10 ** USDC_DECIMALS,
+            tokenAmount * 10 ** QUOTE_DECIMALS,
             program,
-            USDC_MINT
+            QUOTE_MINT,
+            POOL_NAME
           )
         }
       } else if (activeTab == 'redeem') {
@@ -181,13 +195,15 @@ export default function EarnSidebar({
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
             program,
-            WSOL_MINT
+            WSOL_MINT,
+            POOL_NAME
           )
         } else {
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
             program,
-            USDC_MINT
+            QUOTE_MINT,
+            POOL_NAME
           )
         }
       }
@@ -531,9 +547,8 @@ export default function EarnSidebar({
                       <span className="text-foreground">
                         {activeTab === 'mint'
                           ? `${tokenAmount > 0 ? tokenAmount : 0} ${symbol} `
-                          : `${
-                              tokenAmount > 0 ? tokenAmount : 0
-                            } ${symbol}-LP `}
+                          : `${tokenAmount > 0 ? tokenAmount : 0
+                          } ${symbol}-LP `}
                       </span>
                       <span>
                         will be{' '}
@@ -550,9 +565,8 @@ export default function EarnSidebar({
                     </div>
                     <div className="flex gap-2 text-xs">
                       <svg
-                        className={`${
-                          loading ? 'animate-spin' : ''
-                        } h-4 w-4 text-primary`}
+                        className={`${loading ? 'animate-spin' : ''
+                          } h-4 w-4 text-primary`}
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"

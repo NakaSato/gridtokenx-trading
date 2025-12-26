@@ -301,7 +301,7 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
   useEffect(() => {
     if (isChartReady && chartRef.current) {
       chartRef.current.setSymbol(symbol)
-      setDisplaySymbol(symbol.replace('Crypto.', '').replace('/USD', ''))
+      setDisplaySymbol(symbol.replace('Crypto.', '').replace('/USD', '').replace('/THB', ''))
       resetPriceScale()
     }
   }, [symbol, isChartReady])
@@ -435,9 +435,8 @@ const OptionPrice: React.FC<OptionPriceProps> = ({
       <div
         id="tv_chart_container"
         ref={containerRef}
-        className={`tradingview-chart ${
-          chartTheme === 'Dark' ? 'theme-dark' : ''
-        } h-full w-full py-2`}
+        className={`tradingview-chart ${chartTheme === 'Dark' ? 'theme-dark' : ''
+          } h-full w-full py-2`}
         style={{
           backgroundColor: chartTheme === 'Dark' ? '#141519' : '#FFFFFF',
         }}

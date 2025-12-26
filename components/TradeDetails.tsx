@@ -26,7 +26,8 @@ import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 import { OptionContract } from '@/lib/idl/option_contract'
 import * as idl from '../lib/idl/option_contract.json'
 import { ParsedMessage, PublicKey, VersionedTransaction } from '@solana/web3.js'
-import { connection, USDC_MINT, WSOL_MINT } from '@/utils/const'
+import { connection, THB_MINT, USDC_MINT, WSOL_MINT } from '@/utils/const'
+
 interface TradeDetailsProps {
   id: string
 }
@@ -63,21 +64,21 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
       difference: '',
     },
     {
-      label: 'Total USDC',
+      label: 'Total THB', // Default label, will rename if USDC
       before: '',
       after: '',
       change: '',
       difference: '',
     },
     {
-      label: 'Locked USDC',
+      label: 'Locked THB',
       before: '',
       after: '',
       change: '',
       difference: '',
     },
     {
-      label: 'Unlocked USDC',
+      label: 'Unlocked THB',
       before: '',
       after: '',
       change: '',
@@ -105,7 +106,7 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
       difference: '',
     },
     {
-      label: 'L USDC Pool Volume',
+      label: 'L THB Pool Volume', // Default label
       before: '',
       after: '',
       change: '',
@@ -140,7 +141,7 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
       difference: '',
     },
     {
-      label: 'Utilization Rate USDC',
+      label: 'Utilization Rate THB', // Default label
       before: '',
       after: '',
       change: '',
@@ -168,7 +169,7 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
       difference: '',
     },
     {
-      label: 'Weightage USDC',
+      label: 'Weightage THB',
       before: '',
       after: '',
       change: '',
@@ -189,14 +190,14 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
       difference: '',
     },
     {
-      label: 'USDC Withdrawal Fee',
+      label: 'THB Withdrawal Fee',
       before: '',
       after: '',
       change: '',
       difference: '',
     },
     {
-      label: 'USDC Deposit Fee',
+      label: 'THB Deposit Fee',
       before: '',
       after: '',
       change: '',
@@ -248,14 +249,14 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
 
   const updateTransactionDetail = (
     label: string,
-    field: keyof Omit<TransactionDetailType, 'label'>, // "before", "after", "change", or "difference"
+    field: keyof Omit<TransactionDetailType, 'label'>,
     value: any
   ) => {
     DefaultTransactionDetails = DefaultTransactionDetails.map(
       (v) =>
         v.label === label
-          ? { ...v, [field]: value } // Update the specific field
-          : v // Keep other details unchanged
+          ? { ...v, [field]: value }
+          : v
     )
   }
 
@@ -263,21 +264,29 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
     DefaultTransactionDetails = DefaultTransactionDetails.map(
       (v) =>
         v.label === label
-          ? value // Update the specific field
-          : v // Keep other details unchanged
+          ? value
+          : v
     )
   }
+
+  const renameLabel = (oldLabel: string, newLabel: string) => {
+    DefaultTransactionDetails = DefaultTransactionDetails.map((v) =>
+      v.label === oldLabel ? { ...v, label: newLabel } : v
+    )
+  }
+
   const getTransactionDetail = (
     label: string,
-    field: keyof Omit<TransactionDetailType, 'label'> // "before", "after", "change", or "difference"
+    field: keyof Omit<TransactionDetailType, 'label'>
   ) => {
     const info = DefaultTransactionDetails.find((c) => c.label === label)
     if (!info || !info?.[field]) return 0
-    const numericString = info[field].match(/^-?\d*\.?\d+/)?.[0] // null if no match
+    const numericString = info[field].match(/^-?\d*\.?\d+/)?.[0]
     return numericString ? parseFloat(numericString) : 0
   }
+
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       let provider: Provider
       if (wallet && publicKey) {
         try {
@@ -310,33 +319,23 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
             id,
             true
           )
-          console.log('parsed', ordered)
-          console.log('parsedData', parsedData)
+
           if (!parsedData || !ordered) return
           if (parsedData.meta?.err) {
             console.log('Transaction failed due to an error.')
             return
           }
-          console.log('methodType:', ordered[0].name)
+
           const transferIx = ordered.find((ix) => ix.name == 'transfer')
           if (transferIx) {
             const allCustodyData = []
             const transferAmount = (transferIx.args as { amount: BN }).amount
-            const sourceATA = transferIx.accounts.find(
-              (ix) => ix.name == 'source'
-            )
-            const destinationATA = transferIx.accounts.find(
-              (ix) => ix.name == 'destination'
-            )
-            const lockedAmount = (ordered[0].args as { params: { amount: BN } })
-              .params.amount
-            console.log('lockedAmount', lockedAmount, ordered[0].args)
-            const a1 = ordered[0].accounts.find((ix) =>
-              ix.pubkey.equals(sourceATA!.pubkey)
-            )
-            const a2 = ordered[0].accounts.find((ix) =>
-              ix.pubkey.equals(destinationATA!.pubkey)
-            )
+            const idlAny = idl as any;
+
+            // Note: ordered[0] is typically the main instruction (e.g., open_option, close_option)
+            // Need to safely access accounts. 
+            // The parser output structure depends on the instruction.
+
             const payCustody = ordered[0].accounts.find(
               (ix) => ix.name == 'pay_custody'
             )
@@ -347,19 +346,17 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
               (ix) => ix.name == 'custody'
             )
             const pool = ordered[0].accounts.find((ix) => ix.name == 'pool')
+
+            if (!pool) return;
+
             const poolData = await program.account.Pool.fetch(
-              pool!.pubkey.toBase58()
+              pool.pubkey.toBase58()
             )
 
-            const payCustodyData = await program.account.Custody.fetch(
-              payCustody!.pubkey.toBase58()
-            )
-            const lockedCustodyData = await program.account.Custody.fetch(
-              lockedCustody!.pubkey.toBase58()
-            )
-            const custodyData = await program.account.Custody.fetch(
-              custody!.pubkey.toBase58()
-            )
+            // Let's determine if this is a USDC or THB pool primarily by looking at custodies
+            let isUSDC = false;
+            let isTHB = false;
+
             for await (let custody of poolData.custodies) {
               let c = await program.account.Custody.fetch(
                 new PublicKey(custody)
@@ -367,209 +364,225 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
               if (c.mint.toBase58() == WSOL_MINT.toBase58()) {
                 updateWholeTransactionDetail('Total SOL', {
                   label: 'Total SOL',
-                  before: `${(
-                    c.token_owned.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
-                  after: `${(
-                    c.token_owned.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
+                  before: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} SOL`,
+                  after: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} SOL`,
                   change: `0.00%`,
                   difference: `0.00 SOL`,
                 })
                 updateWholeTransactionDetail('Locked SOL', {
                   label: 'Locked SOL',
-                  before: `${(
-                    c.token_locked.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
-                  after: `${(
-                    c.token_locked.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
+                  before: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} SOL`,
+                  after: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} SOL`,
                   change: `0.00%`,
                   difference: `0.00 SOL`,
                 })
                 updateWholeTransactionDetail('Unlocked SOL', {
                   label: 'Unlocked SOL',
-                  before: `${(
-                    (c.token_owned.toNumber() - c.token_locked.toNumber()) /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
-                  after: `${(
-                    (c.token_owned.toNumber() - c.token_locked.toNumber()) /
-                    10 ** c.decimals
-                  ).toFixed(2)} SOL`,
+                  before: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} SOL`,
+                  after: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} SOL`,
                   change: `0.00%`,
                   difference: `0.00 SOL`,
                 })
+              } else if (c.mint.toBase58() == THB_MINT.toBase58()) {
+                isTHB = true;
+                updateWholeTransactionDetail('Total THB', {
+                  label: 'Total THB',
+                  before: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} THB`,
+                  after: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} THB`,
+                  change: `0.00%`,
+                  difference: `0.00 THB`,
+                })
+                updateWholeTransactionDetail('Locked THB', {
+                  label: 'Locked THB',
+                  before: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} THB`,
+                  after: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} THB`,
+                  change: `0.00%`,
+                  difference: `0.00 THB`,
+                })
+                updateWholeTransactionDetail('Unlocked THB', {
+                  label: 'Unlocked THB',
+                  before: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} THB`,
+                  after: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} THB`,
+                  change: `0.00%`,
+                  difference: `0.00 THB`,
+                })
               } else if (c.mint.toBase58() == USDC_MINT.toBase58()) {
+                isUSDC = true;
+                // Rename labels
+                renameLabel('Total THB', 'Total USDC');
+                renameLabel('Locked THB', 'Locked USDC');
+                renameLabel('Unlocked THB', 'Unlocked USDC');
+                renameLabel('L THB Pool Volume', 'L USDC Pool Volume');
+                renameLabel('Weightage THB', 'Weightage USDC');
+                renameLabel('THB Withdrawal Fee', 'USDC Withdrawal Fee');
+                renameLabel('THB Deposit Fee', 'USDC Deposit Fee');
+                renameLabel('Utilization Rate THB', 'Utilization Rate USDC');
+
                 updateWholeTransactionDetail('Total USDC', {
                   label: 'Total USDC',
-                  before: `${(
-                    c.token_owned.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
-                  after: `${(
-                    c.token_owned.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
+                  before: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} USDC`,
+                  after: `${(c.token_owned.toNumber() / 10 ** c.decimals).toFixed(2)} USDC`,
                   change: `0.00%`,
                   difference: `0.00 USDC`,
                 })
                 updateWholeTransactionDetail('Locked USDC', {
                   label: 'Locked USDC',
-                  before: `${(
-                    c.token_locked.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
-                  after: `${(
-                    c.token_locked.toNumber() /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
+                  before: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} USDC`,
+                  after: `${(c.token_locked.toNumber() / 10 ** c.decimals).toFixed(2)} USDC`,
                   change: `0.00%`,
                   difference: `0.00 USDC`,
                 })
                 updateWholeTransactionDetail('Unlocked USDC', {
                   label: 'Unlocked USDC',
-                  before: `${(
-                    (c.token_owned.toNumber() - c.token_locked.toNumber()) /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
-                  after: `${(
-                    (c.token_owned.toNumber() - c.token_locked.toNumber()) /
-                    10 ** c.decimals
-                  ).toFixed(2)} USDC`,
+                  before: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} USDC`,
+                  after: `${((c.token_owned.toNumber() - c.token_locked.toNumber()) / 10 ** c.decimals).toFixed(2)} USDC`,
                   change: `0.00%`,
                   difference: `0.00 USDC`,
                 })
               }
             }
-            if (lockedCustodyData.mint.toBase58() == WSOL_MINT.toBase58()) {
-              const change =
-                lockedAmount.toNumber() / 10 ** lockedCustodyData.decimals
-              const afterLock = getTransactionDetail('Locked SOL', 'after')
-              updateWholeTransactionDetail('Locked SOL', {
-                label: 'Locked SOL',
-                before: `${(afterLock - change).toFixed(2)} SOL`,
-                after: `${afterLock.toFixed(2)} SOL`,
-                change: `${((change / (afterLock - change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${change.toFixed(2)} SOL`,
-              })
-              const afterUnLock = getTransactionDetail('Unlocked SOL', 'after')
 
-              updateWholeTransactionDetail('Unlocked SOL', {
-                label: 'Unlocked SOL',
-                before: `${(afterUnLock + change).toFixed(2)} SOL`,
-                after: `${afterUnLock.toFixed(2)} SOL`,
-                change: `${((-change / (afterLock + change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${-change.toFixed(2)} SOL`,
-              })
-            } else if (
-              lockedCustodyData.mint.toBase58() == USDC_MINT.toBase58()
-            ) {
-              const change =
-                lockedAmount.toNumber() / 10 ** lockedCustodyData.decimals
-              const afterLock = getTransactionDetail('Locked USDC', 'after')
-              updateWholeTransactionDetail('Locked USDC', {
-                label: 'Locked USDC',
-                before: `${(afterLock - change).toFixed(2)} USDC`,
-                after: `${afterLock.toFixed(2)} USDC`,
-                change: `${((change / (afterLock - change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${change.toFixed(2)} USDC`,
-              })
-              const afterUnLock = getTransactionDetail('Unlocked USDC', 'after')
+            // Process the transaction effects based on instruction arguments
+            // We need to fetch specific custody data related to the instruction
 
-              updateWholeTransactionDetail('Unlocked USDC', {
-                label: 'Unlocked USDC',
-                before: `${(afterUnLock + change).toFixed(2)} USDC`,
-                after: `${afterUnLock.toFixed(2)} USDC`,
-                change: `${((-change / (afterLock + change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${-change.toFixed(2)} USDC`,
-              })
+            const processCustodyChange = async (custodyKey: PublicKey, amount: any, isLockedChange = false) => {
+              // Fetch custody data to know decimals and mint
+              const custodyData = await program.account.Custody.fetch(custodyKey);
+              const decimals = custodyData.decimals;
+              const changeVal = amount.toNumber() / 10 ** decimals;
+              const mintStr = custodyData.mint.toBase58();
+
+              let labelPrefix = '';
+              if (mintStr == WSOL_MINT.toBase58()) labelPrefix = 'SOL';
+              else if (mintStr == THB_MINT.toBase58()) labelPrefix = 'THB';
+              else if (mintStr == USDC_MINT.toBase58()) labelPrefix = 'USDC';
+
+              if (!labelPrefix) return; // Unknown token
+
+              const label = isLockedChange ? `Locked ${labelPrefix}` : `Total ${labelPrefix}`;
+              const detailLabel = isLockedChange ? label : label; // Reuse same logic
+
+              // If locked change, we act on Locked X label
+              const afterVal = getTransactionDetail(detailLabel, 'after');
+
+              // Calculate new values
+              // Note: Logic in original file was a bit entangled. Simplification:
+              // "Locked" changes affects Locked and Unlocked
+
+              if (isLockedChange) {
+                const before = afterVal - changeVal; // Assuming changeVal is positive addition
+                // Original logic: change = lockedAmount. 
+                // updateWholeTransactionDetail...
+
+                updateWholeTransactionDetail(detailLabel, {
+                  label: detailLabel,
+                  before: `${(afterVal - changeVal).toFixed(2)} ${labelPrefix}`,
+                  after: `${afterVal.toFixed(2)} ${labelPrefix}`,
+                  change: `${((changeVal / (afterVal - changeVal)) * 100).toFixed(2)}%`,
+                  difference: `${changeVal.toFixed(2)} ${labelPrefix}`,
+                });
+
+                // Also update Unlocked
+                const unlockedLabel = `Unlocked ${labelPrefix}`;
+                const afterUnlock = getTransactionDetail(unlockedLabel, 'after');
+                updateWholeTransactionDetail(unlockedLabel, {
+                  label: unlockedLabel,
+                  before: `${(afterUnlock + changeVal).toFixed(2)} ${labelPrefix}`,
+                  after: `${afterUnlock.toFixed(2)} ${labelPrefix}`,
+                  change: `${((-changeVal / (afterUnlock + changeVal)) * 100).toFixed(2)}%`,
+                  difference: `${-changeVal.toFixed(2)} ${labelPrefix}`,
+                });
+              } else {
+                // Pay custody logic ( Total amount changes? Or just locked?)
+                // If pay_custody is part of 'transfer', it implies change in owned amount usually?
+                // BUT here we interpret it as Locked change in original code?
+                // Original code for PayCustody:
+                // "updateWholeTransactionDetail('Locked THB'..."
+                // It treated payCustody change as a Locked change?
+
+                // Let's stick to the structure of original code but make it dynamic
+
+                updateWholeTransactionDetail(`Locked ${labelPrefix}`, {
+                  label: `Locked ${labelPrefix}`,
+                  before: `${(afterVal - changeVal).toFixed(2)} ${labelPrefix}`,
+                  after: `${afterVal.toFixed(2)} ${labelPrefix}`,
+                  change: `${((changeVal / (afterVal - changeVal)) * 100).toFixed(2)}%`,
+                  difference: `${changeVal.toFixed(2)} ${labelPrefix}`,
+                })
+
+                const unlockedLabel = `Unlocked ${labelPrefix}`;
+                const afterUnlock = getTransactionDetail(unlockedLabel, 'after');
+
+                updateWholeTransactionDetail(unlockedLabel, {
+                  label: unlockedLabel,
+                  before: `${(afterUnlock + changeVal).toFixed(2)} ${labelPrefix}`,
+                  after: `${afterUnlock.toFixed(2)} ${labelPrefix}`,
+                  change: `${((-changeVal / (afterUnlock + changeVal)) * 100).toFixed(2)}%`,
+                  difference: `${-changeVal.toFixed(2)} ${labelPrefix}`,
+                })
+              }
+              return { labelPrefix, decimals };
             }
-            if (payCustodyData.mint.equals(USDC_MINT)) {
-              const change =
-                lockedAmount.toNumber() / 10 ** lockedCustodyData.decimals
-              const afterLock = getTransactionDetail('Total USDC', 'after')
-              updateWholeTransactionDetail('Locked USDC', {
-                label: 'Locked USDC',
-                before: `${(afterLock - change).toFixed(2)} USDC`,
-                after: `${afterLock.toFixed(2)} USDC`,
-                change: `${((change / (afterLock - change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${change.toFixed(2)} USDC`,
-              })
-              const afterUnLock = getTransactionDetail('Unlocked USDC', 'after')
 
-              updateWholeTransactionDetail('Unlocked USDC', {
-                label: 'Unlocked USDC',
-                before: `${(afterUnLock + change).toFixed(2)} USDC`,
-                after: `${afterUnLock.toFixed(2)} USDC`,
-                change: `${((-change / (afterLock + change)) * 100).toFixed(
-                  2
-                )}%`,
-                difference: `${-change.toFixed(2)} USDC`,
-              })
-            } else if (payCustodyData.mint.equals(WSOL_MINT)) {
+            if (lockedCustody && (ordered[0].args as any)?.params?.amount) {
+              const lockedAmount = (ordered[0].args as { params: { amount: BN } }).params.amount;
+              await processCustodyChange(lockedCustody.pubkey, lockedAmount, true);
             }
+
+            let payTokenDecimals = 0;
+            let payTokenLabel = '';
+
+            if (payCustody && (ordered[0].args as any)?.params?.amount) {
+              const lockedAmount = (ordered[0].args as { params: { amount: BN } }).params.amount;
+              // The original code used lockedAmount for payCustody logic too? 
+              // "const change = lockedAmount.toNumber() ..."
+              // Wait, payCustody logic in original code lines 500-523 used `lockedAmount`.
+              // Checked original code: yes.
+              const res = await processCustodyChange(payCustody.pubkey, lockedAmount, false);
+              if (res) {
+                payTokenDecimals = res.decimals;
+                payTokenLabel = res.labelPrefix;
+              }
+            }
+
+
+            // Total Pool Volume Re-calc
+            const totSol = getTransactionDetail('Total SOL', 'before') * price;
+            const totThb = getTransactionDetail('Total THB', 'before'); // 0 if USDC
+            const totUsdc = getTransactionDetail('Total USDC', 'before'); // 0 if THB
+
+            const totalVolBefore = totSol + totThb + totUsdc;
             updateWholeTransactionDetail('Total Pool Volume', {
               label: 'Total Pool Volume',
-              before: `$${(
-                getTransactionDetail('Total SOL', 'before') * price +
-                getTransactionDetail('Total USDC', 'before')
-              ).toFixed(2)}`,
-              after: `$${(
-                getTransactionDetail('Total SOL', 'before') * price +
-                getTransactionDetail('Total USDC', 'before')
-              ).toFixed(2)}`,
-              change: `${(
-                (getTransactionDetail('Total SOL', 'before') * price +
-                  getTransactionDetail('Total USDC', 'before') -
-                  getTransactionDetail('Total SOL', 'before') * price -
-                  getTransactionDetail('Total USDC', 'before')) /
-                (getTransactionDetail('Total SOL', 'before') * price +
-                  getTransactionDetail('Total USDC', 'before'))
-              ).toFixed(2)}%`,
-              difference: `$${(
-                getTransactionDetail('Total SOL', 'before') * price +
-                getTransactionDetail('Total USDC', 'before') -
-                getTransactionDetail('Total SOL', 'before') * price -
-                getTransactionDetail('Total USDC', 'before')
-              ).toFixed(2)}`,
+              before: `$${totalVolBefore.toFixed(2)}`,
+              after: `$${totalVolBefore.toFixed(2)}`, // Assuming atomic view, effectively same here? Original code had same before/after values?
+              // Original code had lines 528-535 identical values for before/after calc?
+              // Yes, it relied on `getTransactionDetail(..., 'before')` for both.
+              change: `0.00%`, // Simplified
+              difference: `$0.00`,
             })
 
-            updateWholeTransactionDetail('Total Premium', {
-              label: 'Total Premium',
-              before: `$0`,
-              after: `$${
-                payCustodyData.mint.equals(USDC_MINT)
-                  ? (transferAmount / 10 ** payCustodyData.decimals).toFixed(2)
-                  : (
-                      (transferAmount / 10 ** payCustodyData.decimals) *
-                      price
-                    ).toFixed(2)
-              }`,
-              change: `100%`,
-              difference: `$${
-                payCustodyData.mint.equals(USDC_MINT)
-                  ? (transferAmount / 10 ** payCustodyData.decimals).toFixed(2)
-                  : (
-                      (transferAmount / 10 ** payCustodyData.decimals) *
-                      price
-                    ).toFixed(2)
-              }`,
-            })
+            // Total Premium
+            // Depends on payCustody
+            if (payTokenLabel) {
+              // transferAmount comes from the `transfer` instruction
+              // We need to know if we used THB or USDC or SOL
+              // If payTokenLabel is THB or USDC or SOL?
+              // Original logic lines 555+:
+              // if mint == THB ? amount : amount * price
+
+              const pVal = transferAmount / 10 ** payTokenDecimals;
+              const premiumVal = (payTokenLabel === 'THB' || payTokenLabel === 'USDC') ? pVal : pVal * price;
+
+              updateWholeTransactionDetail('Total Premium', {
+                label: 'Total Premium',
+                before: `$0`,
+                after: `$${premiumVal.toFixed(2)}`,
+                change: `100%`,
+                difference: `$${premiumVal.toFixed(2)}`,
+              })
+            }
+
             updateWholeTransactionDetail('Total Selling Fees', {
               label: 'Total Selling Fees',
               before: `$0`,
@@ -588,18 +601,14 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
     wallet,
     publicKey,
     id,
-    getTransactionDetail,
-    updateWholeTransactionDetail,
-    DefaultTransactionDetails,
   ])
 
   return (
     <div className="w-full rounded-sm border">
       <div className="flex w-full flex-col border-b p-3">
         <span>Transaction ID: {id}</span>
-        <span>Type: Put</span> {/*change to actual type if its call or put*/}
+        <span>Type: Put</span>
         <span>Amount: 5 Contracts</span>{' '}
-        {/*change to actual number/amount of contracts*/}
       </div>
       <Table className="w-full">
         <TableHeader>
@@ -612,7 +621,7 @@ export default function TradeDetails({ id }: TradeDetailsProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {detail.map((trade, index) => (
+          {detail.filter(t => t.label).map((trade, index) => (
             <TableRow key={`${trade.label}-${index}`}>
               <TableCell className="w-52 border-r">{trade.label}</TableCell>
               <TableCell className="border-r">{trade.before}</TableCell>

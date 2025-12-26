@@ -5,6 +5,7 @@ import axios from 'axios'
 import {
   clusterUrl,
   Option_Program_Address,
+  THB_DECIMALS,
   USDC_DECIMALS,
   WSOL_DECIMALS,
 } from '@/utils/const'
@@ -32,7 +33,7 @@ import toast from 'react-hot-toast'
 
 import { getPythPrice } from '@/hooks/usePythPrice'
 import { formatAddress, formatAmount, formatPrice } from '@/utils/formatter'
-import { USDC } from '@/lib/data/tokenlist'
+import { THB } from '@/lib/data/tokenlist'
 import {
   usePythMarketData,
   type MarketDataState,
@@ -275,34 +276,34 @@ export default function RecentTrades() {
             <TableCell className="px-3 py-[14px] text-justify text-sm font-normal text-foreground">
               {row.tx == 'Bought'
                 ? (
-                    parseFloat(row.amount) /
-                    10 ** (row.type == 'Call' ? WSOL_DECIMALS : USDC_DECIMALS)
-                  ).toFixed(2)
+                  parseFloat(row.amount) /
+                  10 ** (row.type == 'Call' ? WSOL_DECIMALS : (row.pool.includes('USDC') ? USDC_DECIMALS : THB_DECIMALS))
+                ).toFixed(2)
                 : row.tx == 'Sold'
                   ? (
-                      ((parseFloat(row.amount) / 10) * 9) /
-                      (row.type == 'Call'
-                        ? 10 ** WSOL_DECIMALS
-                        : 10 ** USDC_DECIMALS)
-                    ).toFixed(2)
+                    ((parseFloat(row.amount) / 10) * 9) /
+                    (row.type == 'Call'
+                      ? 10 ** WSOL_DECIMALS
+                      : 10 ** (row.pool.includes('USDC') ? USDC_DECIMALS : THB_DECIMALS))
+                  ).toFixed(2)
                   : row.tx == 'Exercised'
                     ? row.claimed != '0'
                       ? row.claimed
                       : parseFloat(row.profit).toFixed(2)
                     : '0'}{' '}
-              {row.type == 'Call' ? 'SOL' : 'USDC'}
+              {row.type == 'Call' ? 'SOL' : (row.pool.includes('USDC') ? 'USDC' : 'THB')}
             </TableCell>
             <TableCell className="px-3 py-[14px] text-justify text-sm font-normal text-foreground">
               {row.tx == 'Sold'
                 ? (
-                    parseFloat(row.amount) /
-                    10 /
-                    (row.type == 'Call'
-                      ? 10 ** WSOL_DECIMALS
-                      : 10 ** USDC_DECIMALS)
-                  ).toFixed(2)
+                  parseFloat(row.amount) /
+                  10 /
+                  (row.type == 'Call'
+                    ? 10 ** WSOL_DECIMALS
+                    : 10 ** (row.pool.includes('USDC') ? USDC_DECIMALS : THB_DECIMALS))
+                ).toFixed(2)
                 : '0'}{' '}
-              {row.type == 'Call' ? 'SOL' : 'USDC'}
+              {row.type == 'Call' ? 'SOL' : (row.pool.includes('USDC') ? 'USDC' : 'THB')}
             </TableCell>
             <TableCell className="px-3 py-[14px] text-justify text-sm font-normal text-foreground">
               {row.pool}
@@ -327,13 +328,13 @@ export default function RecentTrades() {
               $
               {row.purchasedPrice
                 ? (
-                    (Number(row.amount) * Number(row.purchasedPrice)) /
-                    (row.type == 'Call'
-                      ? 10 ** WSOL_DECIMALS
-                      : 10 ** USDC_DECIMALS)
-                  ).toFixed(2)
+                  (Number(row.amount) * Number(row.purchasedPrice)) /
+                  (row.type == 'Call'
+                    ? 10 ** WSOL_DECIMALS
+                    : 10 ** (row.pool.includes('USDC') ? USDC_DECIMALS : THB_DECIMALS))
+                ).toFixed(2)
                 : '0'}{' '}
-              USD
+              {row.pool.includes('USDC') ? 'USDC' : 'THB'}
             </TableCell>
             <TableCell className="py-[14px] pl-3 pr-5 text-justify text-sm font-normal text-foreground">
               {new Date(parseInt(row.executedDate) * 1000).toLocaleString()}

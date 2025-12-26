@@ -66,7 +66,7 @@ export function PointsCard() {
         ) : (
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-bold text-foreground">{formatPoints(points)}</span>
-            <span className="text-sm text-muted-foreground">GEC</span>
+            <span className="text-sm text-muted-foreground">GRX</span>
           </div>
         )}
       </CardContent>

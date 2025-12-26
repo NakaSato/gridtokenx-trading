@@ -23,7 +23,7 @@ export default function WalletSideBar() {
   const [iconPath, setIconPath] = useState<string>('')
 
   // Get balance data using the enhanced hook
-  const walletAddress = publicKey?.toBase58()
+  const walletAddress = publicKey?.toBase58() || user?.wallet_address
   const { balance, loading: balanceLoading } = useUserBalance(
     token || undefined,
     walletAddress || undefined
@@ -32,10 +32,12 @@ export default function WalletSideBar() {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
   const copyAddress = () => {
-    if (publicKey) {
-      navigator.clipboard.writeText(publicKey.toBase58())
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress)
+      toast.success('Address Copied')
+    } else {
+      toast.error('No wallet address available')
     }
-    toast.success('Address Copied')
   }
   const handleClickTab = (state: string) => {
     if (activeTab !== state) {
@@ -74,11 +76,9 @@ export default function WalletSideBar() {
               className="rounded-full"
             />
           )}
-          {isAuthenticated && user
-            ? user.username || user.email
-            : publicKey?.toBase58()
-              ? truncateAddress(publicKey?.toBase58())
-              : 'Connected'}
+          {walletAddress
+            ? truncateAddress(walletAddress)
+            : 'No Wallet'}
         </button>
       </SheetTrigger>
       <SheetContent className="w-full space-y-4 rounded-none bg-accent p-6 md:w-[550px] md:rounded-l-sm">
@@ -88,11 +88,9 @@ export default function WalletSideBar() {
               <Image src={iconPath} alt="Wallet Icon" width={20} height={20} />
             )}
             <span className="items-center pt-1 text-base font-medium text-foreground">
-              {isAuthenticated && user
-                ? user.username || user.email
-                : publicKey?.toBase58()
-                  ? truncateAddress(publicKey?.toBase58())
-                  : 'Connected'}
+              {walletAddress
+                ? truncateAddress(walletAddress)
+                : 'No Wallet'}
             </span>
             <SendIcon />
           </div>
@@ -141,7 +139,7 @@ export default function WalletSideBar() {
           </div>
           <div className="flex w-full flex-col space-y-2 rounded-sm bg-background p-4">
             <span className="text-sm font-medium text-secondary-foreground">
-              Points
+              SOL
             </span>
             {balanceLoading ? (
               <span className="animate-pulse text-[28px] font-medium text-foreground">
@@ -151,10 +149,10 @@ export default function WalletSideBar() {
               <span className="text-[28px] font-medium text-foreground">
                 {balance?.balance_sol
                   ? parseFloat(balance.balance_sol).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 6,
-                    })
-                  : '10 900'}
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 6,
+                  })
+                  : '0.00'}
               </span>
             )}
           </div>

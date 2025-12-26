@@ -476,13 +476,13 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">Username or Email</Label>
                   <Input
                     id="username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
+                    placeholder="Enter your username or email"
                     className="h-9 rounded-sm border border-border px-3 py-2"
                     minLength={3}
                     maxLength={50}
