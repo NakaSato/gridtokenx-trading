@@ -60,7 +60,7 @@ export default function OptionCardContainer({
 
   return (
     <ProtectedRoute fallback={<TradingPositionsFallback />}>
-      <div className="flex h-[540px] w-full flex-col space-y-0">
+      <div className="flex h-auto min-h-[540px] w-full flex-col space-y-0">
         <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1">
           <div className="flex gap-4">
             <Button

@@ -146,7 +146,7 @@ export default function RootLayout({
                 <EmailVerificationBanner />
                 <div className="mx-auto flex h-screen flex-col px-6">
                   <NavBar></NavBar>
-                  <main className="flex-1 overflow-hidden">{children}</main>
+                  <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
                 </div>
               </SocketProvider>
             </AuthProvider>

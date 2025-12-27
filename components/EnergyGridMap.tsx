@@ -1,90 +1,36 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import Map, {
-  Marker,
-  NavigationControl,
-  Source,
-  Layer,
-} from 'react-map-gl/mapbox'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Map, { NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import {
-  Zap,
-  Battery,
-  BatteryCharging,
-  X,
-  Maximize2,
-  Minimize2,
-} from 'lucide-react'
-import energyGridConfig from '@/lib/data/energyGridConfig.json'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import gsap from 'gsap'
 
-interface EnergyNode {
-  id: string
-  name: string
-  buildingCode?: string
-  type: 'generator' | 'storage' | 'consumer'
-  longitude: number
-  latitude: number
-  capacity: string
-  status: 'active' | 'idle' | 'maintenance'
-  // Generator specific
-  currentOutput?: string
-  solarPanels?: number
-  panelType?: string
-  efficiency?: string
-  peakGeneration?: string
-  tiltAngle?: string
-  orientation?: string
-  // Storage specific
-  currentCharge?: string
-  batteryType?: string
-  batteryPacks?: number
-  chargeRate?: string
-  dischargeRate?: string
-  cycleCount?: number
-  temperature?: string
-  // Consumer specific
-  currentLoad?: string
-  floors?: number
-  area?: string
-  occupancy?: string
-  hvacSystem?: string
-  lighting?: string
-  avgDailyConsumption?: string
-  peakDemand?: string
-  laboratories?: number
-  studySeats?: number
-  specialEquipment?: string
-  // Common
-  installDate?: string
-  lastMaintenance?: string
-  lastUpgrade?: string
-}
+// Import from energy-grid sub-components
+import {
+  EnergyFlowLayers,
+  EnergyNodeMarker,
+  GridStatsPanel,
+  MapLegend,
+  useEnergySimulation,
+} from './energy-grid'
+import type { EnergyNode, EnergyTransfer } from './energy-grid'
 
-interface EnergyTransfer {
-  from: string
-  to: string
-  power: number // in kW
-}
+// Load config
+import energyGridConfig from '@/lib/data/energyGridConfig.json'
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN'
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
-// Load energy grid data from config
-const {
-  campus,
-  energyNodes: configNodes,
-  energyTransfers: configTransfers,
-} = energyGridConfig
+// Check if token is properly configured
+const hasValidToken = MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' && MAPBOX_TOKEN.length > 20
+
+const { campus, energyNodes: configNodes, energyTransfers: configTransfers } = energyGridConfig
 const energyNodes = configNodes as EnergyNode[]
 const energyTransfers = configTransfers as EnergyTransfer[]
 
 export default function EnergyGridMap() {
+  // View state
   const [viewState, setViewState] = useState({
     longitude: campus.center.longitude,
     latitude: campus.center.latitude,
@@ -92,8 +38,72 @@ export default function EnergyGridMap() {
   })
   const [selectedNode, setSelectedNode] = useState<EnergyNode | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showFlowLines, setShowFlowLines] = useState(true)
+  const [dashOffset, setDashOffset] = useState(0)
+  const [hoveredFlow, setHoveredFlow] = useState<{
+    power: number
+    description: string
+    x: number
+    y: number
+  } | null>(null)
+
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<number | null>(null)
+
+  // Use the simulation hook
+  const { liveNodeData, liveTransferData, gridTotals } = useEnergySimulation({
+    energyNodes,
+    energyTransfers,
+    updateIntervalMs: 3000,
+  })
+
+  // Handle flow line hover
+  const handleFlowHover = useCallback((e: any) => {
+    if (e.features && e.features.length > 0) {
+      const feature = e.features[0]
+      setHoveredFlow({
+        power: feature.properties?.power ?? 0,
+        description: feature.properties?.description ?? '',
+        x: e.point.x,
+        y: e.point.y,
+      })
+    }
+  }, [])
+
+  const handleFlowLeave = useCallback(() => {
+    setHoveredFlow(null)
+  }, [])
+
+  // Animate the dash offset for flowing effect
+  useEffect(() => {
+    if (!mapLoaded || !showFlowLines) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+      return
+    }
+
+    let lastTime = 0
+    const speed = 0.05
+
+    const animate = (time: number) => {
+      if (time - lastTime > 16) {
+        setDashOffset((prev) => (prev + speed) % 20)
+        lastTime = time
+      }
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    animationRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
+    }
+  }, [mapLoaded, showFlowLines])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -102,16 +112,13 @@ export default function EnergyGridMap() {
         setSelectedNode(null)
       }
       if (e.key === 'r' || e.key === 'R') {
-        // Animate reset view with GSAP
         gsap.to(viewState, {
           longitude: campus.center.longitude,
           latitude: campus.center.latitude,
           zoom: campus.defaultZoom,
           duration: 1,
           ease: 'power2.inOut',
-          onUpdate: () => {
-            setViewState({ ...viewState })
-          },
+          onUpdate: () => setViewState({ ...viewState }),
         })
       }
     }
@@ -120,85 +127,62 @@ export default function EnergyGridMap() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [selectedNode, viewState])
 
-  // Listen for fullscreen changes
+  // Fullscreen change listener
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement)
     }
 
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () =>
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // Double click on marker to zoom
+  // Double click to zoom
   const handleMarkerDoubleClick = (node: EnergyNode) => {
-    // Animate zoom with GSAP
-    const newZoom = 18
     gsap.to(viewState, {
       longitude: node.longitude,
       latitude: node.latitude,
-      zoom: newZoom,
+      zoom: 18,
       duration: 1,
       ease: 'power2.inOut',
-      onUpdate: () => {
-        setViewState({ ...viewState })
-      },
+      onUpdate: () => setViewState({ ...viewState }),
     })
     setSelectedNode(node)
   }
 
+  // Toggle fullscreen
   const toggleFullscreen = async () => {
     const element = mapContainerRef.current
-
     if (!element) return
 
     try {
       if (!isFullscreen) {
-        if (element.requestFullscreen) {
-          await element.requestFullscreen()
-        }
+        await element.requestFullscreen?.()
       } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen()
-        }
+        await document.exitFullscreen?.()
       }
     } catch (error) {
       console.error('Fullscreen error:', error)
     }
   }
 
-  const getMarkerIcon = (type: string) => {
-    switch (type) {
-      case 'generator':
-        return <Zap className="h-4 w-4 text-yellow-500" />
-      case 'storage':
-        return <BatteryCharging className="h-4 w-4 text-green-500" />
-      case 'consumer':
-        return <Battery className="h-4 w-4 text-blue-500" />
-      default:
-        return <Zap className="h-4 w-4" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-500'
-      case 'idle':
-        return 'bg-yellow-500'
-      case 'maintenance':
-        return 'bg-red-500'
-      default:
-        return 'bg-gray-500'
-    }
+  // Show error if token is missing
+  if (!hasValidToken) {
+    return (
+      <div className="flex h-full w-full items-center justify-center rounded-b-sm bg-secondary/20 p-4">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <AlertTriangle className="h-8 w-8 text-yellow-500" />
+          <h3 className="font-semibold text-foreground">Mapbox Token Required</h3>
+          <p className="text-sm text-secondary-foreground">
+            Set <code className="rounded bg-secondary px-1">NEXT_PUBLIC_MAPBOX_TOKEN</code> in your environment
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div
-      ref={mapContainerRef}
-      className="relative h-full w-full overflow-hidden rounded-b-sm"
-    >
+    <div ref={mapContainerRef} className="relative h-full w-full overflow-hidden rounded-b-sm">
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -215,31 +199,70 @@ export default function EnergyGridMap() {
           background: rgba(var(--primary-rgb, 59, 130, 246), 0.7);
         }
       `}</style>
-      {!mapLoaded && (
+
+      {/* Loading state */}
+      {!mapLoaded && !mapError && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background">
           <p className="text-foreground">Loading map...</p>
         </div>
       )}
+
+      {/* Error state */}
+      {mapError && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-2 text-center p-4">
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+            <p className="text-sm text-secondary-foreground">{mapError}</p>
+          </div>
+        </div>
+      )}
+
       <Map
         {...viewState}
-        onMove={(evt: any) => setViewState(evt.viewState)}
+        onMove={(evt) => setViewState(evt.viewState)}
         mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
-        onLoad={() => {
-          console.log('Map loaded successfully')
-          setMapLoaded(true)
+        onLoad={() => setMapLoaded(true)}
+        onError={(e: any) => {
+          console.error('Map error:', e?.error || e)
+          setMapError(e?.error?.message || 'Failed to load map. Check your Mapbox token.')
         }}
-        onError={(e: any) => console.error('Map error:', e)}
+        interactiveLayerIds={showFlowLines ? ['energy-flow-line', 'energy-flow-glow'] : []}
+        onMouseMove={handleFlowHover}
+        onMouseLeave={handleFlowLeave}
+        cursor={hoveredFlow ? 'pointer' : 'grab'}
       >
         <NavigationControl position="top-right" />
 
-        {/* Fullscreen Toggle Button */}
+        {/* Energy Flow Layers */}
+        <EnergyFlowLayers
+          energyNodes={energyNodes}
+          energyTransfers={energyTransfers}
+          liveTransferData={liveTransferData}
+          dashOffset={dashOffset}
+          visible={showFlowLines}
+        />
+
+        {/* Control Buttons */}
+        <div className="absolute right-28 top-4 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showFlowLines ? 'border-green-500/50 text-green-500' : 'border-primary/30 text-primary'
+              }`}
+            onClick={() => setShowFlowLines(!showFlowLines)}
+            title={showFlowLines ? 'Hide energy flow' : 'Show energy flow'}
+          >
+            <Activity className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="absolute right-16 top-4 z-10">
           <Button
             variant="ghost"
             size="sm"
-            className="bg-background/95 h-8 w-8 border border-primary/30 p-0 shadow-lg backdrop-blur-md hover:bg-background"
+            className="h-8 w-8 border border-primary/30 bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           >
@@ -251,212 +274,51 @@ export default function EnergyGridMap() {
           </Button>
         </div>
 
+        {/* Node Markers */}
         {energyNodes.map((node) => (
-          <Marker
+          <EnergyNodeMarker
             key={node.id}
-            longitude={node.longitude}
-            latitude={node.latitude}
-          >
-            <Popover
-              open={selectedNode?.id === node.id}
-              onOpenChange={(open) => {
-                if (!open) setSelectedNode(null)
-              }}
-            >
-              <PopoverTrigger asChild>
-                <div
-                  className="group relative cursor-pointer transition-all duration-300 hover:scale-125"
-                  onClick={(e: any) => {
-                    e.stopPropagation()
-                    setSelectedNode(node)
-                  }}
-                  onDoubleClick={(e: any) => {
-                    e.stopPropagation()
-                    handleMarkerDoubleClick(node)
-                  }}
-                  title={`${node.name} - Double click to zoom`}
-                >
-                  {/* Pulsing outer ring */}
-                  <div
-                    className={`absolute inset-0 rounded-full ${getStatusColor(
-                      node.status
-                    )} animate-ping opacity-30`}
-                  />
-                  {/* Status indicator */}
-                  <div
-                    className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${getStatusColor(
-                      node.status
-                    )} z-10 animate-pulse border border-background`}
-                  />
-                  {/* Main marker */}
-                  <div className="from-background/95 to-background/80 relative rounded-full border border-primary/60 bg-gradient-to-br p-2 shadow-xl backdrop-blur-md transition-all group-hover:border-primary group-hover:shadow-primary/50">
-                    {getMarkerIcon(node.type)}
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 rounded-full bg-primary/20 opacity-0 blur-md transition-opacity group-hover:opacity-100" />
-                </div>
-              </PopoverTrigger>
-              {selectedNode?.id === node.id && (
-                <PopoverContent
-                  className="min-w-[280px] max-w-[320px] border border-primary/40 p-0"
-                  side="top"
-                  align="center"
-                  sideOffset={10}
-                >
-                  <div className="to-background/95 relative bg-gradient-to-br from-background p-4 text-foreground">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-2 h-6 w-6 p-0"
-                      onClick={() => setSelectedNode(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <h3 className="mb-2 flex items-center gap-2 pr-8 text-base font-bold text-primary">
-                      {getMarkerIcon(selectedNode.type)}
-                      <span className="flex-1">{selectedNode.name}</span>
-                    </h3>
-                    {selectedNode.buildingCode && (
-                      <p className="mb-3 font-mono text-xs text-secondary-foreground">
-                        {selectedNode.buildingCode}
-                      </p>
-                    )}
-
-                    <div className="custom-scrollbar max-h-[400px] space-y-1 overflow-y-auto text-xs">
-                      {/* Status Section */}
-                      <div className="bg-secondary/20 space-y-1 rounded-lg p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-secondary-foreground">
-                            Type:
-                          </span>
-                          <span className="font-semibold capitalize text-foreground">
-                            {selectedNode.type}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-secondary-foreground">
-                            Status:
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={`h-2.5 w-2.5 rounded-full ${getStatusColor(
-                                selectedNode.status
-                              )} animate-pulse`}
-                            />
-                            <span className="font-semibold capitalize text-foreground">
-                              {selectedNode.status}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-secondary-foreground">
-                            Capacity:
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedNode.capacity}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Building Details */}
-                      {(selectedNode.floors ||
-                        selectedNode.area ||
-                        selectedNode.occupancy) && (
-                        <div className="bg-secondary/20 space-y-1.5 rounded-lg p-2">
-                          <h4 className="mb-1 font-semibold text-foreground">
-                            Building Info
-                          </h4>
-                          {selectedNode.floors && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-secondary-foreground">
-                                Floors:
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                {selectedNode.floors}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNode.area && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-secondary-foreground">
-                                Area:
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                {selectedNode.area}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNode.occupancy && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-secondary-foreground">
-                                Use:
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                {selectedNode.occupancy}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNode.studySeats && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-secondary-foreground">
-                                Seats:
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                {selectedNode.studySeats}
-                              </span>
-                            </div>
-                          )}
-                          {selectedNode.laboratories && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-secondary-foreground">
-                                Labs:
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                {selectedNode.laboratories}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </PopoverContent>
-              )}
-            </Popover>
-          </Marker>
+            node={node}
+            liveData={liveNodeData[node.id]}
+            isSelected={selectedNode?.id === node.id}
+            onSelect={setSelectedNode}
+            onDeselect={() => setSelectedNode(null)}
+            onDoubleClick={handleMarkerDoubleClick}
+          />
         ))}
       </Map>
 
       {/* Legend */}
-      <div className="from-background/95 to-background/90 absolute bottom-8 left-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md">
-        <h4 className="mb-1 text-[10px] font-bold text-foreground">Legend</h4>
-        <div className="space-y-0.5">
-          <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
-            <div className="rounded-full border border-yellow-500/40 bg-yellow-500/20 p-0.5">
-              <Zap className="h-2 w-2 text-yellow-500" />
-            </div>
-            <span className="text-[9px] font-medium text-secondary-foreground">
-              Prosumer
+      <MapLegend showFlowLines={showFlowLines} />
+
+      {/* Grid Stats Panel */}
+      <GridStatsPanel
+        totalGeneration={gridTotals.totalGeneration}
+        totalConsumption={gridTotals.totalConsumption}
+        avgStorage={gridTotals.avgStorage}
+      />
+
+      {/* Flow Line Hover Tooltip */}
+      {hoveredFlow && (
+        <div
+          className="pointer-events-none absolute z-50 rounded border border-primary/40 bg-background/95 px-3 py-2 shadow-xl backdrop-blur-md"
+          style={{
+            left: hoveredFlow.x + 15,
+            top: hoveredFlow.y - 10,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-yellow-500" />
+            <span className="text-sm font-bold text-foreground">
+              {Math.round(hoveredFlow.power)} kW
             </span>
           </div>
-          <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
-            <div className="rounded-full border border-green-500/40 bg-green-500/20 p-0.5">
-              <BatteryCharging className="h-2 w-2 text-green-500" />
-            </div>
-            <span className="text-[9px] font-medium text-secondary-foreground">
-              Storage
-            </span>
-          </div>
-          <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
-            <div className="rounded-full border border-blue-500/40 bg-blue-500/20 p-0.5">
-              <Battery className="h-2 w-2 text-blue-500" />
-            </div>
-            <span className="text-[9px] font-medium text-secondary-foreground">
-              Consumer
-            </span>
-          </div>
+          {hoveredFlow.description && hoveredFlow.description !== `${Math.round(hoveredFlow.power)} kW` && (
+            <p className="mt-0.5 text-xs text-secondary-foreground">{hoveredFlow.description}</p>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -20,6 +20,11 @@ import {
 } from './ui/table'
 import { AvatarIcon, CallIconDark, PutIconDark } from '@/public/svgs/icons'
 import { ScrollArea, ScrollBar } from './ui/scroll-area'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Skeleton } from './ui/skeleton'
+import { Badge } from './ui/badge'
+import { Activity, Clock } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 import { OptionContract } from '@/lib/idl/option_contract'
 import * as idl from '../lib/idl/option_contract.json'
@@ -29,18 +34,10 @@ import { Keypair, PublicKey } from '@solana/web3.js'
 import { Wallet } from '@coral-xyz/anchor/dist/cjs/provider'
 
 import { pools } from '@/lib/data/pools'
-import toast from 'react-hot-toast'
 
 import { getPythPrice } from '@/hooks/usePythPrice'
-import { formatAddress, formatAmount, formatPrice } from '@/utils/formatter'
-import { THB } from '@/lib/data/tokenlist'
-import {
-  usePythMarketData,
-  type MarketDataState,
-} from '@/hooks/usePythMarketData'
-import { usePythPrice, type PythPriceState } from '@/hooks/usePythPrice'
-import { black_scholes } from '@/utils/optionsPricing'
-import { useOptionsPricing } from '@/hooks/useOptionsPricing'
+import { formatAddress } from '@/utils/formatter'
+import { usePythPrice } from '@/hooks/usePythPrice'
 
 interface OptionDetail {
   profile: string
@@ -76,7 +73,8 @@ interface ProgramAccount {
 
 export default function RecentTrades() {
   const [optionDetails, setOptionDetails] = useState<OptionDetail[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [program, setProgram] = useState<Program<OptionContract>>()
   const selectedSymbol = 'Crypto.SOL/USD'
 
@@ -168,10 +166,9 @@ export default function RecentTrades() {
   }
 
   useEffect(() => {
-    const fetchTrades = async () => {
+    const fetchTrades = async (silent = false) => {
       try {
-        setIsLoading(true)
-        toast.loading('Fetching trades...')
+        if (!silent) setIsLoading(true)
 
         const { data } = await axios.post(clusterUrl, {
           jsonrpc: '2.0',
@@ -229,22 +226,28 @@ export default function RecentTrades() {
         })
 
         setOptionDetails(_optionDetails)
+        setLastUpdated(new Date())
       } catch (error) {
         console.error('Error fetching trades:', error)
-        toast.error('Failed to fetch trades. Please try again later.')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchTrades()
+    const interval = setInterval(() => fetchTrades(true), 30000)
+    return () => clearInterval(interval)
   }, [initializeProvider])
 
   const memoizedTableContent = useMemo(
     () => (
       <TableBody className="w-full">
         {optionDetails.map((row, idx) => (
-          <TableRow key={idx} className="w-full border-none">
+          <TableRow
+            key={`${row.profile}-${row.executedDate}-${idx}`}
+            className="w-full border-b border-border/50 hover:bg-muted/30 transition-colors animate-in fade-in slide-in-from-left-2 duration-300"
+            style={{ animationDelay: `${idx * 50}ms` }}
+          >
             <TableCell className="py-3 pl-5 pr-3 text-justify text-sm font-normal text-foreground">
               <div className="flex items-center gap-[10px]">
                 <AvatarIcon />
@@ -253,17 +256,17 @@ export default function RecentTrades() {
             </TableCell>
             <TableCell className="px-3 py-[14px] text-justify text-sm font-normal text-foreground">
               {row.tx === 'Bought' ? (
-                <span className="rounded-[8px] bg-[#A3BFFB]/20 px-2 py-[6px] text-[#A3BFFB]">
+                <Badge variant="outline" className="bg-[#A3BFFB]/10 text-[#A3BFFB] border-[#A3BFFB]/20 hover:bg-[#A3BFFB]/20">
                   {row.tx}
-                </span>
+                </Badge>
               ) : row.tx === 'Sold' ? (
-                <span className="rounded-[8px] bg-[#FFD08E]/20 px-2 py-[6px] text-[#FFD08E]">
+                <Badge variant="outline" className="bg-[#FFD08E]/10 text-[#FFD08E] border-[#FFD08E]/20 hover:bg-[#FFD08E]/20">
                   {row.tx}
-                </span>
+                </Badge>
               ) : (
-                <span className="rounded-[8px] bg-[#A5F3C0]/20 px-2 py-[6px] text-[#A5F3C0]">
+                <Badge variant="outline" className="bg-[#A5F3C0]/10 text-[#A5F3C0] border-[#A5F3C0]/20 hover:bg-[#A5F3C0]/20">
                   {row.tx}
-                </span>
+                </Badge>
               )}
             </TableCell>
             <TableCell className="px-3 py-[14px] text-justify text-sm font-normal text-foreground">
@@ -336,8 +339,15 @@ export default function RecentTrades() {
                 : '0'}{' '}
               {row.pool.includes('USDC') ? 'USDC' : 'THB'}
             </TableCell>
-            <TableCell className="py-[14px] pl-3 pr-5 text-justify text-sm font-normal text-foreground">
-              {new Date(parseInt(row.executedDate) * 1000).toLocaleString()}
+            <TableCell className="py-[14px] pl-3 pr-5 text-justify text-sm font-normal text-foreground whitespace-nowrap">
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {formatDistanceToNow(new Date(parseInt(row.executedDate) * 1000), { addSuffix: true })}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(parseInt(row.executedDate) * 1000).toLocaleTimeString()}
+                </span>
+              </div>
             </TableCell>
           </TableRow>
         ))}
@@ -347,53 +357,88 @@ export default function RecentTrades() {
   )
 
   return (
-    <div className="flex h-full w-full flex-col justify-between rounded-b-sm border-t-0 border-none">
-      <ScrollArea className="h-full w-full rounded-b-sm">
-        <Table className="overflow-hidden whitespace-nowrap">
-          <TableHeader className="w-full">
-            <TableRow className="p-0">
-              <TableHead className="py-4 pl-5 pr-3 text-justify text-xs font-medium text-secondary-foreground">
-                Profile
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Bought/Sold/Exercised
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Quantity
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Collateral
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Paid/Received
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Fees
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Pool
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Call/Put
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Strike Price
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Expiry Date
-              </TableHead>
-              <TableHead className="px-3 py-4 text-justify text-xs font-medium text-secondary-foreground">
-                Trade Size
-              </TableHead>
-              <TableHead className="py-4 pl-3 pr-5 text-justify text-xs font-medium text-secondary-foreground">
-                Purchase Date
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          {memoizedTableContent}
-        </Table>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
-    </div>
+    <Card className="flex h-full w-full flex-col border border-border bg-card shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-lg">
+          <span className="flex items-center gap-2 font-bold">
+            <Activity className="h-5 w-5 text-primary" />
+            Recent Trades
+          </span>
+          <div className="flex items-center gap-4 text-xs font-normal text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="uppercase tracking-wider font-semibold text-green-500">Live</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {lastUpdated.toLocaleTimeString()}
+            </div>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <ScrollArea className="h-full w-full">
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-8 flex-1" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Table className="overflow-hidden whitespace-nowrap">
+              <TableHeader className="w-full bg-secondary/30">
+                <TableRow className="border-b border-border/50">
+                  <TableHead className="py-4 pl-5 pr-3 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Profile
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Action
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Quantity
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Collateral
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Value
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Fees
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Pool
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Type
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Strike
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Expiry
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Trade Size
+                  </TableHead>
+                  <TableHead className="py-4 pl-3 pr-5 text-justify text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Time
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              {memoizedTableContent}
+            </Table>
+          )}
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </CardContent>
+    </Card>
   )
 }

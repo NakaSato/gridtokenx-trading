@@ -80,12 +80,12 @@ export default function Homepage() {
       <div
         className={cn(
           active === 'trade' ? 'space-y-0' : 'space-y-2 md:space-y-4',
-          'flex h-full w-full flex-col overflow-y-auto pb-4'
+          'flex w-full flex-1 flex-col overflow-hidden pb-4 min-h-0'
         )}
       >
-        <div className="grid w-full grid-cols-1 gap-4 pt-4 md:grid-cols-12">
+        <div className="grid w-full h-full grid-cols-1 gap-4 pt-4 md:grid-cols-12">
           {/* LEFT SIDEBAR - TRADING HISTORY */}
-          <div className="hidden h-full flex-col space-y-4 overflow-y-auto md:col-span-2 md:flex">
+          <div className="hidden h-full flex-col space-y-4 overflow-y-auto md:col-span-3 lg:col-span-2 md:flex animate-in fade-in slide-in-from-left-4 duration-700">
             <TradeHistory />
           </div>
 
@@ -93,10 +93,10 @@ export default function Homepage() {
           <div
             className={cn(
               active === 'chart' ? 'flex w-full' : 'hidden',
-              'flex-col space-y-2 md:col-span-7 md:space-y-4'
+              'flex-col space-y-4 md:col-span-9 lg:col-span-7 h-full overflow-y-auto animate-in fade-in zoom-in-95 duration-700'
             )}
           >
-            <div className="min-h-0">
+            <div className="min-h-0 flex-1 flex flex-col">
               <TradingViewChartContainer
                 symbol={selectedSymbol}
                 logo={selectedLogo}
@@ -109,7 +109,7 @@ export default function Homepage() {
                 expiry={expiry}
               />
             </div>
-            <div className="w-full flex-shrink-0">
+            <div className="w-full flex-shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
               <ProtectedRoute fallback={<TradingPositionsFallback />}>
                 <TradingPositions />
               </ProtectedRoute>
@@ -120,7 +120,7 @@ export default function Homepage() {
           <div
             className={cn(
               active === 'trade' ? 'w-full' : 'hidden',
-              'flex-col space-y-4 md:col-span-3 md:flex'
+              'flex-col space-y-4 md:col-span-12 lg:col-span-3 lg:flex h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700'
             )}
           >
             <OptionCardContainer

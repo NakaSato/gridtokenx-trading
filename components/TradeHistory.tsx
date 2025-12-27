@@ -6,8 +6,9 @@ import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
-import { ArrowUpRight, ArrowDownRight, History } from 'lucide-react'
+import { History, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 interface Trade {
     id: string
@@ -71,19 +72,28 @@ export default function TradeHistory() {
 
     if (loading) {
         return (
-            <Card className="h-full">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <History className="h-5 w-5" />
+            <Card className="h-full border border-border">
+                <CardHeader className="pb-2 border-b border-border/50">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <History className="h-4 w-4 text-primary" />
                         Recent Trades
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
+                <CardContent className="p-3">
+                    <div className="space-y-2">
                         {[...Array(4)].map((_, i) => (
-                            <div key={i} className="animate-pulse flex justify-between items-center py-2">
-                                <div className="h-4 bg-secondary w-24 rounded" />
-                                <div className="h-4 bg-secondary w-16 rounded" />
+                            <div key={i} className="animate-pulse flex justify-between items-center p-2 rounded-sm bg-secondary/30">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-8 bg-secondary rounded-sm" />
+                                    <div className="space-y-1">
+                                        <div className="h-3 bg-secondary w-20 rounded" />
+                                        <div className="h-2 bg-secondary w-14 rounded" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1 text-right">
+                                    <div className="h-3 bg-secondary w-16 rounded" />
+                                    <div className="h-2 bg-secondary w-12 rounded" />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -93,64 +103,71 @@ export default function TradeHistory() {
     }
 
     return (
-        <Card className="h-full flex flex-col">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center justify-between">
+        <Card className="h-full flex flex-col border border-border">
+            <CardHeader className="pb-2 border-b border-border/50">
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                        <History className="h-5 w-5" />
+                        <History className="h-4 w-4 text-primary" />
                         Recent Trades
+                        {trades.length > 0 && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                {trades.length}
+                            </Badge>
+                        )}
                     </span>
-                    {trades.length > 0 && (
-                        <span className="text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-                            {trades.length}
-                        </span>
-                    )}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-0">
+            <CardContent className="flex-1 overflow-y-auto p-2">
                 {trades.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                        <p className="text-sm">No trades yet</p>
+                        <TrendingUp className="h-8 w-8 mb-2 opacity-30" />
+                        <p className="text-sm font-medium">No trades yet</p>
+                        <p className="text-xs">Your trade history will appear here</p>
                     </div>
                 ) : (
-                    <div className="divide-y">
-                        {trades.map((trade) => {
+                    <div className="space-y-1.5">
+                        {trades.map((trade, idx) => {
                             const isBuyer = trade.role === 'buyer'
 
                             return (
                                 <div
                                     key={trade.id}
-                                    className="flex items-center justify-between py-2.5 px-4 hover:bg-accent transition-colors"
+                                    className="flex items-center justify-between p-2 rounded-sm hover:bg-accent/50 transition-all"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <div className={cn(
-                                            "p-1.5 rounded",
-                                            isBuyer ? "bg-chart-2/10" : "bg-destructive/10"
-                                        )}>
-                                            {isBuyer ? (
-                                                <ArrowDownRight className="h-3 w-3 text-chart-2" />
-                                            ) : (
-                                                <ArrowUpRight className="h-3 w-3 text-destructive" />
-                                            )}
+                                    {/* Trade Info */}
+                                    <div className="flex flex-col justify-center min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    "text-[10px] px-1.5 py-0 h-4 font-semibold",
+                                                    isBuyer
+                                                        ? "bg-chart-2/10 text-chart-2 border-chart-2/20"
+                                                        : "bg-destructive/10 text-destructive border-destructive/20"
+                                                )}
+                                            >
+                                                {isBuyer ? 'BUY' : 'SELL'}
+                                            </Badge>
+                                            <span className="text-sm font-medium">
+                                                {parseFloat(trade.quantity).toFixed(1)} kWh
+                                            </span>
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-medium">
-                                                {isBuyer ? 'Bought' : 'Sold'} {parseFloat(trade.quantity).toFixed(1)} kWh
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
-                                            </div>
+                                        <div className="text-[10px] text-muted-foreground">
+                                            {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
                                         </div>
                                     </div>
-                                    <div className="text-right">
+
+                                    {/* Value */}
+                                    <div className="flex flex-col items-end justify-center">
                                         <div className={cn(
-                                            "font-mono text-sm font-medium",
+                                            "font-mono text-sm font-bold",
                                             isBuyer ? "text-destructive" : "text-chart-2"
                                         )}>
                                             {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
+                                            <span className="text-[10px] font-normal ml-0.5">THB</span>
                                         </div>
-                                        <div className="text-xs text-muted-foreground font-mono">
-                                            @{parseFloat(trade.price).toFixed(2)}
+                                        <div className="text-[10px] text-muted-foreground font-mono">
+                                            @{parseFloat(trade.price).toFixed(2)}/kWh
                                         </div>
                                     </div>
                                 </div>

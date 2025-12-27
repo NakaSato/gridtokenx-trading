@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { Card, CardContent, CardHeader } from './ui/card'
+import { Map as MapIcon, TrendingUp, BarChart3, History } from 'lucide-react'
 import TradingViewChart from './TradingViewChart'
 import PnlChartContainer from './PnlChartContainer'
 import EnergyGridMapWrapper from './EnergyGridMapWrapper'
@@ -17,6 +19,7 @@ interface TradingViewChartContainerProps {
   expiry: Date
 }
 
+
 export default function TradingViewChartContainer({
   symbol,
   logo,
@@ -28,7 +31,7 @@ export default function TradingViewChartContainer({
   positionType,
   expiry,
 }: TradingViewChartContainerProps) {
-  const [activeTab, setActiveTab] = useState<string>('chart')
+  const [activeTab, setActiveTab] = useState<string>('map')
 
   const handleClick = (state: string) => {
     if (activeTab !== state) {
@@ -37,44 +40,55 @@ export default function TradingViewChartContainer({
   }
   return (
     <>
-      <div className="flex h-full min-h-[500px] w-full flex-col sm:min-h-[400px]">
-        <div className="rounded-t-sm border border-b bg-inherit p-0">
-          <Tabs defaultValue={activeTab}>
-            <TabsList className="flex h-10 w-full overflow-x-auto rounded-full bg-inherit px-2 py-1 sm:grid sm:grid-cols-4 sm:px-4">
+      <Card className="flex h-full min-h-[450px] w-full flex-col overflow-hidden border border-border bg-card md:min-h-[600px]">
+        <CardHeader className="border-b bg-muted/20 px-4 py-2">
+          <Tabs defaultValue={activeTab} className="h-9">
+            <TabsList className="h-full w-full justify-center gap-4 bg-secondary/50 p-1">
               <TabsTrigger
                 value="map"
-                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
+                className="h-full rounded-sm px-3 text-xs transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
                 onClick={() => handleClick('map')}
               >
-                Map
+                <div className="flex items-center gap-2">
+                  <MapIcon className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Map</span>
+                </div>
               </TabsTrigger>
               <TabsTrigger
                 value="chart"
-                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
+                className="h-full rounded-sm px-3 text-xs transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
                 onClick={() => handleClick('chart')}
               >
-                Chart
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Chart</span>
+                </div>
               </TabsTrigger>
-
               <TabsTrigger
                 value="pnl"
-                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
+                className="h-full rounded-sm px-3 text-xs transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
                 onClick={() => handleClick('pnl')}
               >
-                P&L
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">P&L</span>
+                </div>
               </TabsTrigger>
               <TabsTrigger
                 value="transactions"
-                className="min-w-[60px] flex-shrink-0 rounded-none border-b px-2 py-2 text-xs text-secondary-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary sm:min-w-0 sm:px-0 sm:text-sm"
+                className="h-full rounded-sm px-3 text-xs transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
                 onClick={() => handleClick('transactions')}
               >
-                <span className="hidden sm:inline">Transactions</span>
-                <span className="sm:hidden">Txns</span>
+                <div className="flex items-center gap-2">
+                  <History className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Transactions</span>
+                  <span className="sm:hidden">Txns</span>
+                </div>
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
-        <div className="w-full flex-grow">
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-hidden">
           {activeTab === 'chart' && (
             <TradingViewChart symbol={symbol} logo={logo} />
           )}
@@ -93,8 +107,8 @@ export default function TradingViewChartContainer({
           {activeTab === 'transactions' && (
             <TransactionHistory useMockData={false} />
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </>
   )
 }
