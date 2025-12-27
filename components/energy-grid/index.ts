@@ -4,6 +4,7 @@ export { EnergyNodeMarker } from './EnergyNodeMarker'
 export { GridStatsPanel } from './GridStatsPanel'
 export { MapLegend } from './MapLegend'
 export { useEnergySimulation } from './useEnergySimulation'
+export { useMeterMapData } from './useMeterMapData'
 
 // Types
 export type {

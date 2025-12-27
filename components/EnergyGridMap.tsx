@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap } from 'lucide-react'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import gsap from 'gsap'
 
@@ -14,6 +14,7 @@ import {
   GridStatsPanel,
   MapLegend,
   useEnergySimulation,
+  useMeterMapData,
 } from './energy-grid'
 import type { EnergyNode, EnergyTransfer } from './energy-grid'
 
@@ -26,7 +27,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 const hasValidToken = MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' && MAPBOX_TOKEN.length > 20
 
 const { campus, energyNodes: configNodes, energyTransfers: configTransfers } = energyGridConfig
-const energyNodes = configNodes as EnergyNode[]
+const staticEnergyNodes = configNodes as EnergyNode[]
 const energyTransfers = configTransfers as EnergyTransfer[]
 
 export default function EnergyGridMap() {
@@ -41,6 +42,7 @@ export default function EnergyGridMap() {
   const [mapError, setMapError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFlowLines, setShowFlowLines] = useState(true)
+  const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
   const [dashOffset, setDashOffset] = useState(0)
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
@@ -52,7 +54,18 @@ export default function EnergyGridMap() {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const animationRef = useRef<number | null>(null)
 
-  // Use the simulation hook
+  // Fetch real meter data only (no static mock nodes)
+  const { realMeterNodes, isLoading: metersLoading } = useMeterMapData({
+    includeStaticNodes: false,
+    refreshIntervalMs: 30000,
+  })
+
+  // Only use real meters (no static mock data)
+  const energyNodes = useMemo(() => {
+    return showRealMeters ? realMeterNodes : []
+  }, [showRealMeters, realMeterNodes])
+
+  // Use the simulation hook with combined nodes
   const { liveNodeData, liveTransferData, gridTotals } = useEnergySimulation({
     energyNodes,
     energyTransfers,
@@ -245,6 +258,19 @@ export default function EnergyGridMap() {
         />
 
         {/* Control Buttons */}
+        <div className="absolute right-40 top-4 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showRealMeters ? 'border-blue-500/50 text-blue-500' : 'border-primary/30 text-primary'
+              }`}
+            onClick={() => setShowRealMeters(!showRealMeters)}
+            title={showRealMeters ? 'Hide my meters' : 'Show my meters'}
+          >
+            <Radio className="h-4 w-4" />
+          </Button>
+        </div>
+
         <div className="absolute right-28 top-4 z-10">
           <Button
             variant="ghost"
@@ -296,6 +322,8 @@ export default function EnergyGridMap() {
         totalGeneration={gridTotals.totalGeneration}
         totalConsumption={gridTotals.totalConsumption}
         avgStorage={gridTotals.avgStorage}
+        co2Saved={gridTotals.co2Saved}
+        activeMeters={gridTotals.activeMeters}
       />
 
       {/* Flow Line Hover Tooltip */}

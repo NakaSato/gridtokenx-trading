@@ -53,6 +53,10 @@ export async function apiRequest<T = any>(
   }
 
   try {
+    if (path.includes('analytics/my-stats')) {
+      console.log('API Request:', method, url, 'Token present:', !!token, 'Headers:', requestHeaders)
+    }
+
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
@@ -467,7 +471,7 @@ export class ApiClient {
     })
   }
 
-  async registerMeter(data: { serial_number: string; meter_type: string; location: string }) {
+  async registerMeter(data: { serial_number: string; meter_type: string; location: string; latitude?: number; longitude?: number }) {
     return apiRequest<import('../types/meter').RegisterMeterResponse>('/api/v1/meters', {
       method: 'POST',
       body: data,

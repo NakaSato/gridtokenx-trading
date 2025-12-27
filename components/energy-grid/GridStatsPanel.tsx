@@ -1,71 +1,155 @@
 'use client'
 
-import { Zap, Battery, BatteryCharging } from 'lucide-react'
+import { useState } from 'react'
+import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface GridStatsPanelProps {
     totalGeneration: number
     totalConsumption: number
     avgStorage: number
+    co2Saved?: number
+    activeMeters?: number
 }
 
 export function GridStatsPanel({
     totalGeneration,
     totalConsumption,
     avgStorage,
+    co2Saved = 0,
+    activeMeters = 0,
 }: GridStatsPanelProps) {
+    const [isCollapsed, setIsCollapsed] = useState(false)
     const netBalance = totalGeneration - totalConsumption
+    const totalLoad = totalGeneration + totalConsumption
+    const balancePercentage = totalLoad > 0 ? (totalGeneration / totalLoad) * 100 : 50
 
     return (
-        <div className="from-background/95 to-background/90 absolute bottom-8 right-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md">
-            <div className="mb-1 flex items-center justify-between gap-4">
-                <h4 className="text-[10px] font-bold text-foreground">Grid Status</h4>
-                <span className="flex items-center gap-1 text-[9px] text-green-500">
-                    <span className="h-1 w-1 animate-pulse rounded-full bg-green-500" />
-                    Live
-                </span>
+        <div
+            className={`absolute bottom-8 right-4 overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out hover:border-white/20 ${isCollapsed ? 'w-48 p-3' : 'w-56 p-4'
+                }`}
+        >
+            {/* Header - Clickable to toggle */}
+            <div
+                className={`flex items-center justify-between cursor-pointer group ${!isCollapsed ? 'mb-4 border-b border-white/5 pb-2' : ''}`}
+                onClick={() => setIsCollapsed(!isCollapsed)}
+            >
+                <div className="flex items-center gap-2">
+                    <Activity className={`transition-colors duration-300 ${isCollapsed ? 'h-3.5 w-3.5 text-blue-400/70' : 'h-4 w-4 text-blue-400'}`} />
+                    <h4 className={`font-bold uppercase tracking-wider text-white/90 transition-all ${isCollapsed ? 'text-[10px]' : 'text-sm'}`}>
+                        Grid Status
+                    </h4>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button className="text-white/30 group-hover:text-white/60 transition-colors">
+                        {isCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                </div>
             </div>
 
-            <div className="space-y-1">
-                <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-1">
-                        <Zap className="h-2.5 w-2.5 text-yellow-500" />
-                        <span className="text-secondary-foreground">Generation:</span>
-                    </div>
-                    <span className="font-bold text-yellow-500 transition-all duration-500">
-                        {totalGeneration.toFixed(0)} kW
-                    </span>
-                </div>
-                <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-1">
-                        <Battery className="h-2.5 w-2.5 text-blue-500" />
-                        <span className="text-secondary-foreground">Consumption:</span>
-                    </div>
-                    <span className="font-bold text-blue-500 transition-all duration-500">
-                        {totalConsumption.toFixed(0)} kW
-                    </span>
-                </div>
-                <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-1">
-                        <BatteryCharging className="h-2.5 w-2.5 text-green-500" />
-                        <span className="text-secondary-foreground">Storage Avg:</span>
-                    </div>
-                    <span className="font-bold text-green-500 transition-all duration-500">
-                        {avgStorage.toFixed(1)}%
-                    </span>
-                </div>
-                <div className="mt-1 border-t border-primary/20 pt-1">
-                    <div className="flex items-center justify-between">
-                        <span className="text-secondary-foreground">Net Balance:</span>
-                        <span
-                            className={`font-bold transition-all duration-500 ${netBalance >= 0 ? 'text-green-500' : 'text-red-500'
-                                }`}
-                        >
-                            {netBalance >= 0 ? '+' : ''}
-                            {netBalance.toFixed(0)} kW
+            {/* Metrics Content */}
+            <div className={`space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[500px] opacity-100'}`}>
+                {/* Generation */}
+                <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                        <div className="flex items-center gap-2 text-white/60">
+                            <Zap className="h-3.5 w-3.5 text-yellow-400" />
+                            <span>Generation</span>
+                        </div>
+                        <span className="font-mono font-bold text-yellow-400">
+                            {totalGeneration.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px]">kW</span>
                         </span>
                     </div>
+                    <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div
+                            className="h-full bg-yellow-400/80 transition-all duration-1000 ease-out"
+                            style={{ width: `${Math.min(100, (totalGeneration / 500) * 100)}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Consumption */}
+                <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                        <div className="flex items-center gap-2 text-white/60">
+                            <Battery className="h-3.5 w-3.5 text-blue-400" />
+                            <span>Consumption</span>
+                        </div>
+                        <span className="font-mono font-bold text-blue-400">
+                            {totalConsumption.toLocaleString(undefined, { maximumFractionDigits: 0 })} <span className="text-[10px]">kW</span>
+                        </span>
+                    </div>
+                    <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div
+                            className="h-full bg-blue-400/80 transition-all duration-1000 ease-out"
+                            style={{ width: `${Math.min(100, (totalConsumption / 500) * 100)}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Balance Progress Bar */}
+                <div className="pt-1">
+                    <div className="flex justify-between text-[10px] text-white/40 mb-1 uppercase tracking-widest font-bold">
+                        <span>Load Balance</span>
+                        <span className={netBalance >= 0 ? 'text-green-400' : 'text-red-400'}>
+                            {netBalance >= 0 ? '+' : ''}{Math.round(netBalance)} kW
+                        </span>
+                    </div>
+                    <div className="relative h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                        <div
+                            className={`absolute inset-y-0 h-full transition-all duration-700 ease-in-out ${netBalance >= 0 ? 'bg-green-500/60' : 'bg-red-500/60'
+                                }`}
+                            style={{
+                                left: netBalance >= 0 ? '50%' : `${balancePercentage}%`,
+                                width: `${Math.abs(50 - balancePercentage)}%`
+                            }}
+                        />
+                        <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/20 transform -translate-x-1/2" />
+                    </div>
+                </div>
+
+                {/* Secondary Metrics */}
+                <div className="mt-4 grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 text-white/40">
+                            <BatteryCharging className="h-3 w-3 text-emerald-400" />
+                            <span className="text-[9px] uppercase font-bold tracking-tighter">Storage</span>
+                        </div>
+                        <span className="text-xs font-bold text-white/90">{avgStorage.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 text-white/40">
+                            <Leaf className="h-3 w-3 text-green-400" />
+                            <span className="text-[9px] uppercase font-bold tracking-tighter">CO₂ Saved</span>
+                        </div>
+                        <span className="text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[8px] text-white/40 font-normal">kg/h</span></span>
+                    </div>
+                </div>
+
+                {/* Footer Info */}
+                <div className="flex items-center justify-between pt-1 text-[9px] text-white/30 italic">
+                    <span>{activeMeters} Active Meters</span>
+                    <span>v2.1.0</span>
                 </div>
             </div>
+
+            {/* Collapsed Mini-Stats (visible only when collapsed) */}
+            {isCollapsed && (
+                <div
+                    className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top-1 duration-300"
+                    onClick={(e) => { e.stopPropagation(); setIsCollapsed(false); }}
+                >
+                    <div className="flex flex-col">
+                        <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Net</span>
+                        <span className={`text-[10px] font-mono font-bold ${netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {netBalance >= 0 ? '+' : ''}{Math.round(netBalance)} <span className="text-[8px] opacity-50">kW</span>
+                        </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Active</span>
+                        <span className="text-[10px] font-mono font-bold text-white/80">{activeMeters}</span>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

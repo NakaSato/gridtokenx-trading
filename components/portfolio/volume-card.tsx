@@ -5,11 +5,12 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { Card, CardContent } from '../ui/card'
 import { TrendingUp } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { defaultApiClient } from '@/lib/api-client'
+import { useApiClient } from '@/hooks/useApi'
 import { Skeleton } from '../ui/skeleton'
 
 export function VolumeCard() {
-  const { user } = useAuth()
+  const { user, token } = useAuth()
+  const client = useApiClient(token || undefined)
   const [volume, setVolume] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
@@ -22,7 +23,7 @@ export function VolumeCard() {
 
       try {
         // Try to get user's trading volume from analytics API
-        const response = await defaultApiClient.getUserAnalytics({ timeframe: '7d' })
+        const response = await client.getUserAnalytics({ timeframe: '7d' })
         if (response.data && response.data.overall) {
           setVolume(response.data.overall.total_volume_kwh)
         }
@@ -35,7 +36,7 @@ export function VolumeCard() {
     }
 
     fetchVolume()
-  }, [user])
+  }, [user, token])
 
   const formatValue = (value: number): string => {
     if (value >= 1000000) {

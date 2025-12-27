@@ -7,6 +7,37 @@ export interface MeterReading {
     minted: boolean
     tx_signature?: string
     message?: string
+
+    // Energy Data
+    energy_generated?: number
+    energy_consumed?: number
+    surplus_energy?: number
+    deficit_energy?: number
+
+    // Electrical Parameters
+    voltage?: number
+    current?: number
+    power_factor?: number
+    frequency?: number
+    temperature?: number
+
+    // Location (GPS)
+    latitude?: number
+    longitude?: number
+
+    // Battery & Environmental
+    battery_level?: number
+    weather_condition?: string
+
+    // Trading & Certification
+    rec_eligible?: boolean
+    carbon_offset?: number
+    max_sell_price?: number
+    max_buy_price?: number
+
+    // Security
+    meter_signature?: string
+    meter_type?: string
 }
 
 export interface MeterResponse {
@@ -16,6 +47,28 @@ export interface MeterResponse {
     location: string
     is_verified: boolean
     wallet_address: string
+    /** Latitude coordinate for map display */
+    latitude?: number
+    /** Longitude coordinate for map display */
+    longitude?: number
+}
+
+/**
+ * Public meter response (for unauthenticated public API).
+ * Contains only privacy-safe fields - no id, serial_number, or wallet_address.
+ */
+export interface PublicMeterResponse {
+    location: string
+    meter_type: string
+    is_verified: boolean
+    /** Latitude coordinate for map display */
+    latitude?: number
+    /** Longitude coordinate for map display */
+    longitude?: number
+    /** Latest energy generation reading (kW) */
+    current_generation?: number
+    /** Latest energy consumption reading (kW) */
+    current_consumption?: number
 }
 
 export interface SubmitReadingRequest {
@@ -24,13 +77,46 @@ export interface SubmitReadingRequest {
     reading_timestamp: string
     meter_signature?: string
     meter_serial?: string
+
+    // Energy Data
+    energy_generated?: number
+    energy_consumed?: number
+    surplus_energy?: number
+    deficit_energy?: number
+
+    // Electrical Parameters
+    voltage?: number
+    current?: number
+    power_factor?: number
+    frequency?: number
+    temperature?: number
+
+    // Location
+    latitude?: number
+    longitude?: number
+
+    // Battery & Environmental
+    battery_level?: number
+    weather_condition?: string
+
+    // Trading
+    rec_eligible?: boolean
+    carbon_offset?: number
+    max_sell_price?: number
+    max_buy_price?: number
+
+    // Meter Type
+    meter_type?: string
 }
 
 export interface MeterStats {
     total_produced: number
+    total_consumed: number
     last_reading_time: string | null
     total_minted: number
+    total_minted_count: number
     pending_mint: number
+    pending_mint_count: number
 }
 
 export interface RegisterMeterResponse {
@@ -38,4 +124,3 @@ export interface RegisterMeterResponse {
     message: string
     meter?: MeterResponse
 }
-

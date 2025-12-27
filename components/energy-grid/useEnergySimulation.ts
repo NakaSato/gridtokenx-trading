@@ -71,8 +71,17 @@ export function useEnergySimulation({
     const calculateNodeValue = (node: EnergyNode, time: Date): number => {
         const hour = time.getHours()
         const baseValue = getInitialLiveValue(node)
-        const multiplier = getTimeMultiplier(hour, node.type)
 
+        // If it's a real meter (id starts with 'meter-'), we use the baseValue as is
+        // since it already represents the latest real-world data.
+        // We only apply the time multiplier to static/simulated nodes.
+        if (node.id.startsWith('meter-')) {
+            // Add very subtle minute-based variation for realism (0.5%)
+            const subtleVariation = Math.sin((time.getMinutes() / 60) * Math.PI * 2) * 0.005
+            return Math.max(0, baseValue * (1 + subtleVariation))
+        }
+
+        const multiplier = getTimeMultiplier(hour, node.type)
         // Add some minute-based variation for realism
         const minuteVariation = Math.sin((time.getMinutes() / 60) * Math.PI * 2) * 0.05
 
@@ -207,23 +216,35 @@ export function useEnergySimulation({
     }, [isLive, energyNodes, energyTransfers, updateIntervalMs])
 
     // Calculate grid totals
-    const gridTotals = useMemo(() => ({
-        totalGeneration: energyNodes
+    const gridTotals = useMemo(() => {
+        const totalGeneration = energyNodes
             .filter((n) => n.type === 'generator')
-            .reduce((sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0), 0),
-        totalConsumption: energyNodes
+            .reduce((sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0), 0)
+
+        const totalConsumption = energyNodes
             .filter((n) => n.type === 'consumer')
-            .reduce((sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0), 0),
-        avgStorage: (() => {
-            const storageNodes = energyNodes.filter((n) => n.type === 'storage')
-            if (storageNodes.length === 0) return 0
-            const totalPercent = storageNodes.reduce(
-                (sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0),
-                0
-            )
-            return totalPercent / storageNodes.length
-        })(),
-    }), [energyNodes, liveNodeData])
+            .reduce((sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0), 0)
+
+        // Estimated CO2 saved: ~0.4 kg CO2 per kWh (Thailand grid average)
+        // Since generation is in kW, this is a "rate" of CO2 saving per hour
+        const co2SavedPerhour = totalGeneration * 0.431 // kg CO2/h
+
+        return {
+            totalGeneration,
+            totalConsumption,
+            co2Saved: co2SavedPerhour,
+            activeMeters: energyNodes.filter(n => liveNodeData[n.id]?.status === 'active').length,
+            avgStorage: (() => {
+                const storageNodes = energyNodes.filter((n) => n.type === 'storage')
+                if (storageNodes.length === 0) return 0
+                const totalPercent = storageNodes.reduce(
+                    (sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0),
+                    0
+                )
+                return totalPercent / storageNodes.length
+            })(),
+        }
+    }, [energyNodes, liveNodeData])
 
     return {
         liveNodeData,

@@ -5,12 +5,12 @@ import { Separator } from './ui/separator'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { User, Upload, Copy, Check, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'
-import { defaultApiClient } from '@/lib/api-client'
+import { useApiClient } from '@/hooks/useApi'
 import type { UserProfile } from '@/types/auth'
 import toast from 'react-hot-toast'
 
@@ -23,7 +23,8 @@ interface TradingStats {
 
 export default function Profile() {
   const { publicKey, connected } = useWallet()
-  const { user: authUser, isAuthenticated } = useAuth()
+  const { user: authUser, isAuthenticated, token } = useAuth()
+  const client = useApiClient(token || undefined)
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [stats, setStats] = useState<TradingStats>({
@@ -45,17 +46,11 @@ export default function Profile() {
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchProfileData()
-    }
-  }, [isAuthenticated])
-
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     setIsLoading(true)
     try {
       // 1. Fetch real user profile
-      const profileResponse = await defaultApiClient.getProfile()
+      const profileResponse = await client.getProfile()
       if (profileResponse.data) {
         const userData = profileResponse.data as UserProfile
         setProfile(userData)
@@ -66,7 +61,7 @@ export default function Profile() {
       }
 
       // 2. Fetch trading analytics (7d by default)
-      const statsResponse = await defaultApiClient.getUserAnalytics({ timeframe: '7d' })
+      const statsResponse = await client.getUserAnalytics({ timeframe: '7d' })
       if (statsResponse.data) {
         const s = statsResponse.data
         const totalCreated = (s.as_seller.offers_created || 0) + (s.as_buyer.orders_created || 0)
@@ -88,7 +83,13 @@ export default function Profile() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [client])
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchProfileData()
+    }
+  }, [isAuthenticated, token, fetchProfileData])
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -115,7 +116,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      const response = await defaultApiClient.updateProfile({
+      const response = await client.updateProfile({
         email,
         first_name: firstName,
         last_name: lastName
