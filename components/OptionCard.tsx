@@ -198,7 +198,7 @@ export default function OptionCard({
         <div className="h-12 w-full animate-pulse rounded bg-muted"></div>
       }
     >
-      <div className="flex w-full flex-grow flex-col space-y-4 rounded-sm rounded-t-none border border-t-0 bg-card p-6">
+      <div className="flex w-full flex-grow flex-col space-y-5 rounded-sm rounded-t-none border border-t-0 bg-card p-5">
         {/* Token Selection */}
         <div className="flex items-start justify-between gap-3">
           <CardTokenList
@@ -240,27 +240,30 @@ export default function OptionCard({
         </div>
 
         {/* Trading Direction */}
-        <div className="space-y-2">
-          <p className="text-sm text-secondary-foreground">Option Type:</p>
-          <div className="grid grid-cols-11 gap-2">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-muted-foreground">Option Type</p>
+          <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               onClick={() => {
                 setSelectedOption('Call')
                 onContractTypeChange('Call')
               }}
-              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${selectedOption === 'Call'
-                  ? 'border-green-500 bg-green-500/10 text-green-500 hover:bg-green-500/20'
-                  : 'border-border/40 hover:border-green-500 hover:bg-green-500/20 hover:text-green-500'
+              className={`group relative flex h-auto flex-col items-center justify-center space-y-1 rounded-md border px-4 py-3 transition-all ${selectedOption === 'Call'
+                ? 'border-green-500/50 bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:text-green-500'
+                : 'border-border/60 hover:border-green-500/50 hover:bg-green-500/5 hover:text-green-500'
                 }`}
             >
-              <TrendingUp
-                className={`mr-2 h-4 w-4 ${selectedOption === 'Call'
+              <div className="flex items-center space-x-2">
+                <TrendingUp
+                  className={`h-4 w-4 ${selectedOption === 'Call'
                     ? 'text-green-500'
                     : 'text-muted-foreground group-hover:text-green-500'
-                  }`}
-              />
-              Call
+                    }`}
+                />
+                <span className="font-semibold">Call</span>
+              </div>
+              <span className="text-xs opacity-70">Price will go up</span>
             </Button>
             <Button
               variant="outline"
@@ -268,29 +271,29 @@ export default function OptionCard({
                 setSelectedOption('Put')
                 onContractTypeChange('Put')
               }}
-              className={`group col-span-5 flex items-center justify-center space-x-2 rounded-sm border px-4 py-3 transition-all ${selectedOption === 'Put'
-                  ? 'border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500/20'
-                  : 'border-border/40 hover:border-red-500 hover:bg-red-500/20 hover:text-red-500'
+              className={`group relative flex h-auto flex-col items-center justify-center space-y-1 rounded-md border px-4 py-3 transition-all ${selectedOption === 'Put'
+                ? 'border-red-500/50 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-500'
+                : 'border-border/60 hover:border-red-500/50 hover:bg-red-500/5 hover:text-red-500'
                 }`}
             >
-              <TrendingDown
-                className={`mr-2 h-4 w-4 ${selectedOption === 'Put'
+              <div className="flex items-center space-x-2">
+                <TrendingDown
+                  className={`h-4 w-4 ${selectedOption === 'Put'
                     ? 'text-red-500'
                     : 'text-muted-foreground group-hover:text-red-500'
-                  }`}
-              />
-              Put
-            </Button>
-            <Button variant={'outline'} className="col-span-1">
-              <EllipsisVertical />
+                    }`}
+                />
+                <span className="font-semibold">Put</span>
+              </div>
+              <span className="text-xs opacity-70">Price will go down</span>
             </Button>
           </div>
         </div>
 
         {/* Strike Price */}
-        <div className="space-y-2">
-          <label className="text-sm text-secondary-foreground">
-            Strike price
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-muted-foreground">
+            Strike Price
           </label>
           <div className="grid grid-cols-4 gap-2">
             {isDefaultStrike ? (
@@ -303,8 +306,8 @@ export default function OptionCard({
                       onStrikePriceChange(price)
                     }}
                     className={`flex-1 rounded-sm px-4 py-2 ${strikePrice === price
-                        ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
-                        : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
+                      ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
+                      : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
                       }`}
                   >
                     {selectedSymbol === 'Crypto.BONK/USD'
@@ -339,8 +342,8 @@ export default function OptionCard({
         </div>
 
         {/* Expiration */}
-        <div className="space-y-2">
-          <label className="text-sm text-secondary-foreground">
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-muted-foreground">
             Expiration
           </label>
           <div className="grid grid-cols-4 gap-2">
@@ -354,9 +357,9 @@ export default function OptionCard({
                       onExpiryChange(exp.value)
                     }}
                     className={`flex-1 rounded-sm px-4 py-2 ${format(expiration, 'yyyy-MM-dd') ===
-                        format(exp.value, 'yyyy-MM-dd')
-                        ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
-                        : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
+                      format(exp.value, 'yyyy-MM-dd')
+                      ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
+                      : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
                       }`}
                   >
                     {exp.label}
@@ -383,19 +386,61 @@ export default function OptionCard({
               </>
             )}
           </div>
+          <div className="grid grid-cols-4 gap-2">
+            {isDefaultExpiration ? (
+              <>
+                {defaultExpirations.map((exp) => (
+                  <Button
+                    key={exp.label}
+                    variant="outline"
+                    onClick={() => {
+                      setExpiration(exp.value)
+                      onExpiryChange(exp.value)
+                    }}
+                    className={`flex-1 rounded-md px-3 py-2 text-sm transition-colors ${format(expiration, 'yyyy-MM-dd') ===
+                      format(exp.value, 'yyyy-MM-dd')
+                      ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'border-border/60 bg-transparent text-foreground hover:bg-accent'
+                      }`}
+                  >
+                    {exp.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  className="rounded-md border-border/60 bg-transparent px-3 py-2 text-foreground hover:bg-accent"
+                  onClick={() => setShowExpirationModal(true)}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="col-span-3 rounded-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90">
+                  {getExpirationLabel(expiration)}
+                </Button>
+                <Button
+                  className="rounded-md border-border/60 bg-transparent px-3 py-2 text-foreground hover:bg-accent"
+                  onClick={() => setShowExpirationModal(true)}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Option Size */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-secondary-foreground">
+              <label className="text-sm font-medium text-muted-foreground">
                 Pay Amount
               </label>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-secondary-foreground" />
+                    <Info className="h-4 w-4 text-muted-foreground/70" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Enter amount you want to invest</p>
@@ -403,7 +448,7 @@ export default function OptionCard({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <span className="text-sm text-secondary-foreground">
+            <span className="text-xs text-muted-foreground">
               Balance: 0 SOL
             </span>
           </div>
@@ -426,7 +471,7 @@ export default function OptionCard({
                 setOptionSize(e.target.value)
               }}
               placeholder="0.00"
-              className="h-11 rounded-sm border-border pr-2 text-right text-base font-medium placeholder:text-secondary-foreground focus:border-primary"
+              className="h-12 rounded-md border-border/60 bg-accent/20 pr-4 text-right text-lg font-medium placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
               step="0.1"
               min="0.1"
             />

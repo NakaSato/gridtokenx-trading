@@ -61,16 +61,16 @@ export default function OptionCardContainer({
   return (
     <ProtectedRoute fallback={<TradingPositionsFallback />}>
       <div className="flex h-auto min-h-[540px] w-full flex-col space-y-0">
-        <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1">
-          <div className="flex gap-4">
+        <div className="flex h-[46px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1">
+          <div className="flex gap-6">
             <Button
-              className={`h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary ${active === 'buy' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground'}`}
+              className={`h-[46px] w-[60px] rounded-none border-b-2 bg-inherit px-0 font-medium shadow-none hover:text-primary ${active === 'buy' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
               onClick={() => handleTransaction('buy')}
             >
               Buy
             </Button>
             <Button
-              className={`h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary ${active === 'sell' ? 'border-primary text-primary' : 'border-transparent text-secondary-foreground'}`}
+              className={`h-[46px] w-[60px] rounded-none border-b-2 bg-inherit px-0 font-medium shadow-none hover:text-primary ${active === 'sell' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
               onClick={() => handleTransaction('sell')}
             >
               Sell
