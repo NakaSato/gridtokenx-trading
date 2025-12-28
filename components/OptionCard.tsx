@@ -6,7 +6,6 @@ import {
   Info,
   TrendingUp,
   TrendingDown,
-  EllipsisVertical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,8 +29,6 @@ import WalletModal from './WalletModal'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { ContractContext } from '@/contexts/contractProvider'
 import { WSOL_DECIMALS } from '@/utils/const'
-import toast from 'react-hot-toast'
-import BuyOption from './toasts/BuyOption'
 
 interface OptionCardProps {
   orderType: 'market' | 'limit'
@@ -59,16 +56,13 @@ export default function OptionCard({
   selectedSymbol,
   priceData,
   priceLoading,
-  marketData,
-  marketLoading,
   onStrikePriceChange,
   onExpiryChange,
   onContractTypeChange,
   onCurrencyChange,
 }: OptionCardProps) {
   const { connected } = useWallet()
-  const { isAuthenticated, isLoading, user } = useAuth()
-  const wallet = useAnchorWallet()
+  const { isAuthenticated } = useAuth()
 
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)
   const [optionSize, setOptionSize] = useState('0.1')
@@ -301,13 +295,14 @@ export default function OptionCard({
                 {defaultStrikePrices.map((price, idx) => (
                   <Button
                     key={idx}
+                    variant="outline"
                     onClick={() => {
                       setStrikePrice(price)
                       onStrikePriceChange(price)
                     }}
-                    className={`flex-1 rounded-sm px-4 py-2 ${strikePrice === price
-                      ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
-                      : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
+                    className={`flex-1 rounded-md px-3 py-2 text-sm transition-colors ${strikePrice === price
+                      ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'border-border/60 bg-transparent text-foreground hover:bg-accent'
                       }`}
                   >
                     {selectedSymbol === 'Crypto.BONK/USD'
@@ -316,7 +311,8 @@ export default function OptionCard({
                   </Button>
                 ))}
                 <Button
-                  className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
+                  variant="outline"
+                  className="rounded-md border-border/60 bg-transparent px-3 py-2 text-foreground hover:bg-accent"
                   onClick={() => setShowStrikePriceModal(true)}
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -326,12 +322,13 @@ export default function OptionCard({
               <>
                 <Button
                   variant="default"
-                  className="col-span-3 rounded-sm bg-gradient-primary px-4 py-2 text-backgroundSecondary"
+                  className="col-span-3 rounded-md bg-primary px-3 py-2 text-primary-foreground hover:bg-primary/90"
                 >
                   {formatStrikePrice(strikePrice)}
                 </Button>
                 <Button
-                  className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
+                  variant="outline"
+                  className="rounded-md border-border/60 bg-transparent px-3 py-2 text-foreground hover:bg-accent"
                   onClick={() => setShowStrikePriceModal(true)}
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -346,46 +343,6 @@ export default function OptionCard({
           <label className="text-sm font-medium text-muted-foreground">
             Expiration
           </label>
-          <div className="grid grid-cols-4 gap-2">
-            {isDefaultExpiration ? (
-              <>
-                {defaultExpirations.map((exp) => (
-                  <Button
-                    key={exp.label}
-                    onClick={() => {
-                      setExpiration(exp.value)
-                      onExpiryChange(exp.value)
-                    }}
-                    className={`flex-1 rounded-sm px-4 py-2 ${format(expiration, 'yyyy-MM-dd') ===
-                      format(exp.value, 'yyyy-MM-dd')
-                      ? 'bg-primary text-backgroundSecondary hover:bg-gradient-primary'
-                      : 'bg-backgroundSecondary text-foreground hover:bg-secondary'
-                      }`}
-                  >
-                    {exp.label}
-                  </Button>
-                ))}
-                <Button
-                  className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
-                  onClick={() => setShowExpirationModal(true)}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button className="col-span-3 rounded-sm bg-gradient-primary px-4 py-2 text-backgroundSecondary">
-                  {getExpirationLabel(expiration)}
-                </Button>
-                <Button
-                  className="rounded-sm bg-backgroundSecondary px-4 py-2 text-foreground hover:bg-secondary"
-                  onClick={() => setShowExpirationModal(true)}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
           <div className="grid grid-cols-4 gap-2">
             {isDefaultExpiration ? (
               <>
