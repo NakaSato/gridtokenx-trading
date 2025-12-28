@@ -76,9 +76,9 @@ export function useEnergySimulation({
         // since it already represents the latest real-world data.
         // We only apply the time multiplier to static/simulated nodes.
         if (node.id.startsWith('meter-')) {
-            // Add very subtle minute-based variation for realism (0.5%)
-            const subtleVariation = Math.sin((time.getMinutes() / 60) * Math.PI * 2) * 0.005
-            return Math.max(0, baseValue * (1 + subtleVariation))
+            // For real meters, we return the base value directly without any multipliers or fluctuations.
+            // This ensures the map shows exactly what the API reported.
+            return baseValue
         }
 
         const multiplier = getTimeMultiplier(hour, node.type)
@@ -172,8 +172,11 @@ export function useEnergySimulation({
                 energyNodes.forEach((node) => {
                     const current = prev[node.id]
                     if (current) {
+                        const isRealMeter = node.id.startsWith('meter-')
                         const baseValue = calculateNodeValue(node, now)
-                        const newValue = Math.max(0, fluctuate(baseValue, 8))
+
+                        // Only fluctuate simulated/static nodes
+                        const newValue = isRealMeter ? baseValue : Math.max(0, fluctuate(baseValue, 8))
 
                         // Occasionally change status (rare)
                         let newStatus = current.status

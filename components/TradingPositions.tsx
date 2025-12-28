@@ -165,18 +165,18 @@ export default function TradingPositions() {
     <Card className="flex h-[200px] w-full flex-col rounded-sm border border-border bg-card overflow-hidden">
       <CardHeader className="border-b bg-muted/20 px-4 py-3 md:px-6">
         <div className="flex w-full items-center justify-between">
-          <Tabs defaultValue={activeTab} className="h-9">
-            <TabsList className="h-full bg-secondary/50 p-1">
+          <Tabs defaultValue={activeTab} className="h-7">
+            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5">
               <TabsTrigger
                 value="Positions"
-                className="h-full rounded-sm px-3 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('Positions')}
               >
-                <div className="flex items-center gap-2">
-                  <Activity className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <Activity className="h-3 w-3" />
                   <span className="hidden sm:inline">Positions</span>
                   {optioninfos.length > 0 && (
-                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                    <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
                       {optioninfos.length}
                     </Badge>
                   )}
@@ -184,41 +184,41 @@ export default function TradingPositions() {
               </TabsTrigger>
               <TabsTrigger
                 value="OpenOrders"
-                className="h-full rounded-sm px-3 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('OpenOrders')}
               >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
                   <span className="hidden sm:inline">Orders</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
                 value="History"
-                className="h-full rounded-sm px-3 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('History')}
               >
-                <div className="flex items-center gap-2">
-                  <History className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <History className="h-3 w-3" />
                   <span className="hidden sm:inline">History</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
                 value="Expired"
-                className="h-full rounded-sm px-3 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('Expired')}
               >
-                <div className="flex items-center gap-2">
-                  <Ban className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <Ban className="h-3 w-3" />
                   <span className="hidden sm:inline">Expired</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
                 value="OrderBook"
-                className="h-full rounded-sm px-3 text-xs data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('OrderBook')}
               >
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
                   <span className="hidden sm:inline">Order Book</span>
                 </div>
               </TabsTrigger>

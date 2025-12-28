@@ -75,11 +75,18 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         latitude: lat,
         capacity: '100 kWh', // Default capacity for real meters
         status: meter.is_verified ? 'active' : 'idle',
+        // Telemetry from real meters
+        voltage: meter.voltage,
+        currentAmps: meter.current,
+        frequency: meter.frequency,
+        powerFactor: meter.power_factor,
+        surplusEnergy: meter.surplus_energy,
+        deficitEnergy: meter.deficit_energy,
         // Add type-specific defaults or real data if available
         ...(nodeType === 'generator' && {
             currentOutput: `${(meter.current_generation ?? 0).toFixed(2)} kW`,
             solarPanels: 4, // Assume some panels if it's a generator
-            efficiency: '94%', // Placeholder efficiency
+            efficiency: meter.power_factor ? `${(meter.power_factor * 100).toFixed(0)}%` : '94%',
         }),
         ...(nodeType === 'consumer' && {
             currentLoad: `${(meter.current_consumption ?? 0).toFixed(2)} kW`,

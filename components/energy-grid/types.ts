@@ -41,6 +41,13 @@ export interface EnergyNode {
     installDate?: string
     lastMaintenance?: string
     lastUpgrade?: string
+    // Telemetry (from real meters)
+    voltage?: number
+    currentAmps?: number
+    frequency?: number
+    powerFactor?: number
+    surplusEnergy?: number
+    deficitEnergy?: number
 }
 
 export interface EnergyTransfer {

@@ -1,0 +1,119 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+
+export interface GridStatus {
+    total_generation: number
+    total_consumption: number
+    net_balance: number
+    active_meters: number
+    co2_saved_kg: number
+    timestamp: string
+}
+
+export interface UseGridStatusResult {
+    status: GridStatus | null
+    isLoading: boolean
+    error: string | null
+    refresh: () => Promise<void>
+}
+
+/**
+ * Hook to fetch real-time aggregate grid status from the PUBLIC API.
+ * Supports both polling and persistent WebSocket updates.
+ */
+export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
+    const [status, setStatus] = useState<GridStatus | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const wsRef = useRef<WebSocket | null>(null)
+
+    const fetchStatus = useCallback(async () => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+            const response = await fetch(`${apiUrl}/api/v1/public/grid-status`)
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch grid status: ${response.status}`)
+            }
+
+            const data = await response.json() as GridStatus
+            setStatus(data)
+            setError(null)
+        } catch (err) {
+            console.error('Error fetching grid status:', err)
+            setError(err instanceof Error ? err.message : 'Failed to fetch grid status')
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    // WebSocket connection logic
+    useEffect(() => {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const wsUrl = apiUrl.replace('http', 'ws') + '/ws'
+
+        const connectWs = () => {
+            if (wsRef.current?.readyState === WebSocket.OPEN) return
+
+            console.log('🔌 Connecting to Grid Status WebSocket:', wsUrl)
+            const ws = new WebSocket(wsUrl)
+            wsRef.current = ws
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data)
+                    if (data.type === 'grid_status_updated') {
+                        console.log('⚡ Real-time Grid Update Received:', data)
+                        setStatus({
+                            total_generation: data.total_generation,
+                            total_consumption: data.total_consumption,
+                            net_balance: data.net_balance,
+                            active_meters: data.active_meters,
+                            co2_saved_kg: data.co2_saved_kg,
+                            timestamp: data.timestamp
+                        })
+                    }
+                } catch (e) {
+                    console.error('Failed to parse WS message:', e)
+                }
+            }
+
+            ws.onclose = () => {
+                console.log('❌ WebSocket connection closed. Reconnecting in 5s...')
+                setTimeout(connectWs, 5000)
+            }
+
+            ws.onerror = () => {
+                // Error handler - close event will trigger reconnection
+                // Note: Browser WebSocket errors don't provide details
+                ws.close()
+            }
+        }
+
+        connectWs()
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close()
+            }
+        }
+    }, [])
+
+    // Polling fallback (much slower when WS is active)
+    useEffect(() => {
+        fetchStatus()
+
+        if (refreshIntervalMs > 0) {
+            const interval = setInterval(fetchStatus, refreshIntervalMs)
+            return () => clearInterval(interval)
+        }
+    }, [fetchStatus, refreshIntervalMs])
+
+    return {
+        status,
+        isLoading,
+        error,
+        refresh: fetchStatus
+    }
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { Zap, Battery, BatteryCharging, X } from 'lucide-react'
+import { Zap, Battery, BatteryCharging, X, Gauge, TrendingUp, Building2 } from 'lucide-react'
 import { Marker } from 'react-map-gl/mapbox'
 import {
     Popover,
@@ -8,6 +8,12 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion'
 import type { EnergyNode, LiveNodeData } from './types'
 import { getStatusColor, parseNumericValue } from './utils'
 
@@ -43,6 +49,12 @@ export function EnergyNodeMarker({
 }: EnergyNodeMarkerProps) {
     const status = liveData?.status ?? node.status
     const liveValue = liveData?.currentValue ?? 0
+
+    // Check if telemetry sections have data
+    const hasTelemetry = node.voltage || node.currentAmps || node.frequency || node.powerFactor
+    const hasEnergyTrading = (node.surplusEnergy !== undefined && node.surplusEnergy > 0) ||
+        (node.deficitEnergy !== undefined && node.deficitEnergy > 0)
+    const hasBuildingInfo = node.floors || node.area || node.occupancy
 
     return (
         <Marker longitude={node.longitude} latitude={node.latitude}>
@@ -104,8 +116,8 @@ export function EnergyNodeMarker({
                                 </p>
                             )}
 
-                            <div className="custom-scrollbar max-h-[400px] space-y-1 overflow-y-auto text-xs">
-                                {/* Live Values Section */}
+                            <div className="custom-scrollbar max-h-[400px] space-y-2 overflow-y-auto text-xs">
+                                {/* Live Values Section - Always visible */}
                                 <div className="space-y-1 rounded-lg border border-green-500/20 bg-gradient-to-r from-green-500/10 to-transparent p-2">
                                     <div className="flex items-center justify-between">
                                         <span className="font-medium text-secondary-foreground">
@@ -138,7 +150,7 @@ export function EnergyNodeMarker({
                                     </div>
                                 </div>
 
-                                {/* Status Section */}
+                                {/* Status Section - Always visible */}
                                 <div className="space-y-1 rounded-lg bg-secondary/20 p-2">
                                     <div className="flex items-center justify-between">
                                         <span className="font-medium text-secondary-foreground">Type:</span>
@@ -162,41 +174,123 @@ export function EnergyNodeMarker({
                                     </div>
                                 </div>
 
-                                {/* Building Details */}
-                                {(node.floors || node.area || node.occupancy) && (
-                                    <div className="space-y-1.5 rounded-lg bg-secondary/20 p-2">
-                                        <h4 className="mb-1 font-semibold text-foreground">Building Info</h4>
-                                        {node.floors && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-secondary-foreground">Floors:</span>
-                                                <span className="font-semibold text-foreground">{node.floors}</span>
-                                            </div>
+                                {/* Accordion for detailed sections */}
+                                {(hasTelemetry || hasEnergyTrading || hasBuildingInfo) && (
+                                    <Accordion type="multiple" className="w-full">
+                                        {/* Electrical Telemetry Accordion */}
+                                        {hasTelemetry && (
+                                            <AccordionItem value="telemetry" className="border-blue-500/20">
+                                                <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                                                    <div className="flex items-center gap-2 text-blue-400">
+                                                        <Gauge className="h-3.5 w-3.5" />
+                                                        <span className="font-semibold">Electrical Telemetry</span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-2 pt-0">
+                                                    <div className="space-y-1.5 rounded-lg bg-blue-500/5 p-2">
+                                                        {node.voltage !== undefined && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Voltage:</span>
+                                                                <span className="font-semibold text-foreground">{node.voltage.toFixed(1)} V</span>
+                                                            </div>
+                                                        )}
+                                                        {node.currentAmps !== undefined && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Current:</span>
+                                                                <span className="font-semibold text-foreground">{node.currentAmps.toFixed(2)} A</span>
+                                                            </div>
+                                                        )}
+                                                        {node.frequency !== undefined && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Frequency:</span>
+                                                                <span className="font-semibold text-foreground">{node.frequency.toFixed(2)} Hz</span>
+                                                            </div>
+                                                        )}
+                                                        {node.powerFactor !== undefined && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Power Factor:</span>
+                                                                <span className="font-semibold text-foreground">{(node.powerFactor * 100).toFixed(0)}%</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
                                         )}
-                                        {node.area && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-secondary-foreground">Area:</span>
-                                                <span className="font-semibold text-foreground">{node.area}</span>
-                                            </div>
+
+                                        {/* Energy Trading Accordion */}
+                                        {hasEnergyTrading && (
+                                            <AccordionItem value="trading" className="border-yellow-500/20">
+                                                <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                                                    <div className="flex items-center gap-2 text-yellow-400">
+                                                        <TrendingUp className="h-3.5 w-3.5" />
+                                                        <span className="font-semibold">Energy Trading</span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-2 pt-0">
+                                                    <div className="space-y-1.5 rounded-lg bg-yellow-500/5 p-2">
+                                                        {node.surplusEnergy !== undefined && node.surplusEnergy > 0 && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Surplus:</span>
+                                                                <span className="font-semibold text-green-400">+{node.surplusEnergy.toFixed(2)} kWh</span>
+                                                            </div>
+                                                        )}
+                                                        {node.deficitEnergy !== undefined && node.deficitEnergy > 0 && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Deficit:</span>
+                                                                <span className="font-semibold text-red-400">-{node.deficitEnergy.toFixed(2)} kWh</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
                                         )}
-                                        {node.occupancy && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-secondary-foreground">Use:</span>
-                                                <span className="font-semibold text-foreground">{node.occupancy}</span>
-                                            </div>
+
+                                        {/* Building Info Accordion */}
+                                        {hasBuildingInfo && (
+                                            <AccordionItem value="building" className="border-secondary/20">
+                                                <AccordionTrigger className="py-2 text-xs hover:no-underline">
+                                                    <div className="flex items-center gap-2 text-foreground">
+                                                        <Building2 className="h-3.5 w-3.5" />
+                                                        <span className="font-semibold">Building Info</span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-2 pt-0">
+                                                    <div className="space-y-1.5 rounded-lg bg-secondary/10 p-2">
+                                                        {node.floors && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Floors:</span>
+                                                                <span className="font-semibold text-foreground">{node.floors}</span>
+                                                            </div>
+                                                        )}
+                                                        {node.area && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Area:</span>
+                                                                <span className="font-semibold text-foreground">{node.area}</span>
+                                                            </div>
+                                                        )}
+                                                        {node.occupancy && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Use:</span>
+                                                                <span className="font-semibold text-foreground">{node.occupancy}</span>
+                                                            </div>
+                                                        )}
+                                                        {node.studySeats && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Seats:</span>
+                                                                <span className="font-semibold text-foreground">{node.studySeats}</span>
+                                                            </div>
+                                                        )}
+                                                        {node.laboratories && (
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-secondary-foreground">Labs:</span>
+                                                                <span className="font-semibold text-foreground">{node.laboratories}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
                                         )}
-                                        {node.studySeats && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-secondary-foreground">Seats:</span>
-                                                <span className="font-semibold text-foreground">{node.studySeats}</span>
-                                            </div>
-                                        )}
-                                        {node.laboratories && (
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-secondary-foreground">Labs:</span>
-                                                <span className="font-semibold text-foreground">{node.laboratories}</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    </Accordion>
                                 )}
                             </div>
                         </div>

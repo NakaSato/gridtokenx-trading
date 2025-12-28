@@ -65,10 +65,22 @@ export interface PublicMeterResponse {
     latitude?: number
     /** Longitude coordinate for map display */
     longitude?: number
-    /** Latest energy generation reading (kW) */
+    /** Latest energy generation reading (kWh) */
     current_generation?: number
-    /** Latest energy consumption reading (kW) */
+    /** Latest energy consumption reading (kWh) */
     current_consumption?: number
+    /** Electrical: Grid voltage in Volts */
+    voltage?: number
+    /** Electrical: Current in Amperes */
+    current?: number
+    /** Electrical: Grid frequency in Hz */
+    frequency?: number
+    /** Electrical: Power factor (0-1) */
+    power_factor?: number
+    /** Energy: Surplus energy available for trading (kWh) */
+    surplus_energy?: number
+    /** Energy: Deficit energy needed from grid (kWh) */
+    deficit_energy?: number
 }
 
 export interface SubmitReadingRequest {

@@ -15,6 +15,7 @@ import {
   MapLegend,
   useEnergySimulation,
   useMeterMapData,
+  useGridStatus,
 } from './energy-grid'
 import type { EnergyNode, EnergyTransfer } from './energy-grid'
 
@@ -59,6 +60,9 @@ export default function EnergyGridMap() {
     includeStaticNodes: false,
     refreshIntervalMs: 30000,
   })
+
+  // Fetch aggregate grid status from the API
+  const { status: apiGridStatus, isLoading: gridStatusLoading } = useGridStatus(10000)
 
   // Only use real meters (no static mock data)
   const energyNodes = useMemo(() => {
@@ -319,11 +323,11 @@ export default function EnergyGridMap() {
 
       {/* Grid Stats Panel */}
       <GridStatsPanel
-        totalGeneration={gridTotals.totalGeneration}
-        totalConsumption={gridTotals.totalConsumption}
+        totalGeneration={apiGridStatus?.total_generation ?? gridTotals.totalGeneration}
+        totalConsumption={apiGridStatus?.total_consumption ?? gridTotals.totalConsumption}
         avgStorage={gridTotals.avgStorage}
-        co2Saved={gridTotals.co2Saved}
-        activeMeters={gridTotals.activeMeters}
+        co2Saved={apiGridStatus?.co2_saved_kg ?? gridTotals.co2Saved}
+        activeMeters={apiGridStatus?.active_meters ?? gridTotals.activeMeters}
       />
 
       {/* Flow Line Hover Tooltip */}

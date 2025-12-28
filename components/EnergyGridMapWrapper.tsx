@@ -29,5 +29,9 @@ export default function EnergyGridMapWrapper() {
     )
   }
 
-  return <MapComponent />
+  return (
+    <div className="h-full w-full">
+      <MapComponent />
+    </div>
+  )
 }

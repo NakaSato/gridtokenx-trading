@@ -5,6 +5,7 @@ export { GridStatsPanel } from './GridStatsPanel'
 export { MapLegend } from './MapLegend'
 export { useEnergySimulation } from './useEnergySimulation'
 export { useMeterMapData } from './useMeterMapData'
+export { useGridStatus } from './useGridStatus'
 
 // Types
 export type {
@@ -14,6 +15,7 @@ export type {
     LiveTransferData,
     CampusConfig,
 } from './types'
+export type { GridStatus } from './useGridStatus'
 
 // Utilities
 export {
