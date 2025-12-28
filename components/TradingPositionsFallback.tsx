@@ -20,71 +20,78 @@ export default function TradingPositionsFallback() {
 
   return (
     <div className="flex h-[300px] w-full flex-col rounded-sm border">
-      <div className="flex w-full justify-between border-b px-3 py-1 md:px-6 md:py-3">
-        <Tabs
-          defaultValue="Positions"
-          className="overflow-hidden whitespace-nowrap p-0"
-        >
-          <TabsList className="flex w-full gap-2 bg-inherit p-0 text-secondary-foreground md:gap-3 lg:gap-6">
-            <TabsTrigger
-              value="Positions"
-              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
-            >
-              Positions
-            </TabsTrigger>
-            <TabsTrigger
-              value="OpenOrders"
-              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
-            >
-              Orders
-            </TabsTrigger>
-            <TabsTrigger
-              value="Expired"
-              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
-            >
-              Expired
-            </TabsTrigger>
-            <TabsTrigger
-              value="History"
-              className="rounded-none border-b border-transparent px-2 py-[2px] text-[11px] data-[state=active]:border-primary md:text-sm"
-            >
-              History
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {/* <div className="hidden md:flex gap-3 items-center">
-                    <Button
-                        className="bg-secondary p-2 w-full h-auto rounded-sm"
-                    >
-                        <RotateCw className="text-secondary-foreground"/>
-                    </Button>
-                    <Button
-                        className="bg-secondary w-full h-auto py-[6px] px-[10px] rounded-sm"
-                    >
-                        <Ban className="text-secondary-foreground p-0"/>
-                        <span className="text-sm font-normal text-secondary-foreground p-0">Cancel all</span>
-                    </Button>
-                </div> */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="h-auto w-fit rounded-[10px] bg-inherit p-[6px] shadow-none md:hidden">
-              <EllipsisVertical className="text-secondary-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="min-w-fit rounded-[12px] p-1"
+      <div className="border-b bg-muted/20 px-3 py-2 md:px-4">
+        <div className="flex w-full items-center justify-between">
+          <Tabs
+            defaultValue="Positions"
+            className="h-6"
           >
-            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
-              <RotateCw className="w-fit text-secondary-foreground" />
-              <span>Reload</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
-              <Ban className="text-secondary-foreground" />
-              <span>Cancel All</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5">
+              <TabsTrigger
+                value="Positions"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  {/* Activity icon would be here but saving space/imports for fallback if needed, or just text */}
+                  <span>Positions</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="OpenOrders"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  <span>Orders</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="History"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  <span>History</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="Expired"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  <span>Expired</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="OrderBook"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              >
+                <div className="flex items-center gap-1">
+                  <span>Book</span>
+                </div>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="h-auto w-fit rounded-[10px] bg-inherit p-[6px] shadow-none md:hidden">
+                <EllipsisVertical className="text-secondary-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="min-w-fit rounded-[12px] p-1"
+            >
+              <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
+                <RotateCw className="w-fit text-secondary-foreground" />
+                <span>Reload</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="w-fit gap-0 space-x-[6px]">
+                <Ban className="text-secondary-foreground" />
+                <span>Cancel All</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="m-auto flex w-full justify-center p-6">
         <div className="flex flex-col items-center gap-3">

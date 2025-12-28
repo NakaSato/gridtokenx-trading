@@ -163,9 +163,9 @@ export default function TradingPositions() {
 
   return (
     <Card className="flex h-[200px] w-full flex-col rounded-sm border border-border bg-card overflow-hidden">
-      <CardHeader className="border-b bg-muted/20 px-4 py-3 md:px-6">
+      <CardHeader className="border-b bg-muted/20 px-3 py-2 md:px-4">
         <div className="flex w-full items-center justify-between">
-          <Tabs defaultValue={activeTab} className="h-7">
+          <Tabs defaultValue={activeTab} className="h-6">
             <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5">
               <TabsTrigger
                 value="Positions"
@@ -174,9 +174,9 @@ export default function TradingPositions() {
               >
                 <div className="flex items-center gap-1">
                   <Activity className="h-3 w-3" />
-                  <span className="hidden sm:inline">Positions</span>
+                  <span>Positions</span>
                   {optioninfos.length > 0 && (
-                    <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
+                    <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">
                       {optioninfos.length}
                     </Badge>
                   )}
@@ -189,7 +189,7 @@ export default function TradingPositions() {
               >
                 <div className="flex items-center gap-1">
                   <BookOpen className="h-3 w-3" />
-                  <span className="hidden sm:inline">Orders</span>
+                  <span>Orders</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
@@ -199,7 +199,7 @@ export default function TradingPositions() {
               >
                 <div className="flex items-center gap-1">
                   <History className="h-3 w-3" />
-                  <span className="hidden sm:inline">History</span>
+                  <span>History</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
@@ -209,7 +209,7 @@ export default function TradingPositions() {
               >
                 <div className="flex items-center gap-1">
                   <Ban className="h-3 w-3" />
-                  <span className="hidden sm:inline">Expired</span>
+                  <span>Expired</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger
@@ -219,40 +219,40 @@ export default function TradingPositions() {
               >
                 <div className="flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  <span className="hidden sm:inline">Order Book</span>
+                  <span>Book</span>
                 </div>
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <div className="flex items-center gap-2">
-            <div className="mr-2 hidden items-center gap-1.5 text-[10px] text-muted-foreground md:flex">
+          <div className="flex items-center gap-1.5 h-6">
+            <div className="hidden items-center gap-1 text-[10px] text-muted-foreground md:flex">
               <Clock className="h-3 w-3" />
-              <span>Refreshed: {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-3 text-[11px] font-medium"
+              className="h-6 px-2 text-[10px] font-medium leading-none"
             >
-              Liquidation
+              Liq
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-3 text-[11px] font-medium"
+              className="h-6 px-2 text-[10px] font-medium leading-none"
             >
               TP/SL
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={() => {
                 fetchData()
               }}
             >
-              <RotateCw className={cn("h-4 w-4", loading && "animate-spin")} />
+              <RotateCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             </Button>
           </div>
         </div>

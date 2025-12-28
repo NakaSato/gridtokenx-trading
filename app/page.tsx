@@ -193,8 +193,8 @@ export default function Homepage() {
             <ResizableHandle withHandle />
 
             {/* RIGHT SIDEBAR */}
-            <ResizablePanel id="right-sidebar" defaultSize={18} minSize={12} maxSize={30}>
-              <div className="flex flex-col space-y-4 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-2 text-sm">
+            <ResizablePanel id="right-sidebar" defaultSize={20} minSize={12} maxSize={30}>
+              <div className="flex flex-col space-y-2 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-1 pr-1 text-xs">
                 <OptionCardContainer
                   selectedSymbol={selectedSymbol}
                   onSymbolChange={handleSymbolChange}
@@ -212,7 +212,7 @@ export default function Homepage() {
                   onTransactionChange={setTransaction}
                 />
                 <div
-                  className={`${transaction === 'sell' ? 'hidden' : 'flex'} w-full flex-col space-y-4`}
+                  className={`${transaction === 'sell' ? 'hidden' : 'flex'} w-full flex-col space-y-2`}
                 >
                   <PriceQuote
                     active={tokenIdx}
