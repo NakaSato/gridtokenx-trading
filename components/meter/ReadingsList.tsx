@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,17 +34,19 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
     }
 
     // Apply filters to readings
-    const filteredReadings = readings.filter(reading => {
-        // Status filter
-        if (statusFilter === 'minted' && !reading.minted) return false
-        if (statusFilter === 'pending' && reading.minted) return false
+    const filteredReadings = useMemo(() => {
+        return readings.filter(reading => {
+            // Status filter
+            if (statusFilter === 'minted' && !reading.minted) return false
+            if (statusFilter === 'pending' && reading.minted) return false
 
-        // Type filter  
-        if (typeFilter === 'generation' && reading.kwh <= 0) return false
-        if (typeFilter === 'consumption' && reading.kwh > 0) return false
+            // Type filter  
+            if (typeFilter === 'generation' && reading.kwh <= 0) return false
+            if (typeFilter === 'consumption' && reading.kwh > 0) return false
 
-        return true
-    })
+            return true
+        })
+    }, [readings, statusFilter, typeFilter])
 
     // Calculate pagination
     const totalItems = filteredReadings.length
@@ -232,3 +234,5 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
     )
 
 }
+
+export const MemoizedReadingsList = React.memo(ReadingsList)

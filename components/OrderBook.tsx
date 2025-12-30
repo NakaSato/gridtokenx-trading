@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { useSocket } from '@/contexts/SocketContext'
@@ -28,12 +28,14 @@ export default function OrderBook() {
 
     const { socket } = useSocket()
 
-    const fetchOrderBook = async () => {
-        if (!token) return
-
+    const fetchOrderBook = useCallback(async () => {
         setLoading(true)
         try {
-            defaultApiClient.setToken(token)
+            // defaultApiClient.setToken(token) // Optional: set if available, but don't block
+            if (token) {
+                defaultApiClient.setToken(token)
+            }
+
             const response = await defaultApiClient.getP2POrderBook() as any
             const data = response.data
 
@@ -62,7 +64,8 @@ export default function OrderBook() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [token])
+
 
     useEffect(() => {
         fetchOrderBook()
@@ -87,7 +90,7 @@ export default function OrderBook() {
         }
 
         return () => clearInterval(interval)
-    }, [socket, token])
+    }, [socket, token, fetchOrderBook])
 
     // Process orders into aggregated price levels
     const { askLevels, bidLevels, spread, maxVolume } = useMemo(() => {

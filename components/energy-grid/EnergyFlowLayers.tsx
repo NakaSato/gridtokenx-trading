@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { EnergyNode, EnergyTransfer, LiveTransferData } from './types'
 import { getPowerColor, getPowerWidth } from './utils'
@@ -68,13 +68,52 @@ function generateCurvedLine(
     return points
 }
 
+import { useWasmMath } from './useWasmMath'
+
+// ... existing imports ...
+
 export function EnergyFlowLayers({
     energyNodes,
     energyTransfers,
     liveTransferData,
-    dashOffset,
     visible,
-}: EnergyFlowLayersProps) {
+}: Omit<EnergyFlowLayersProps, 'dashOffset'>) {
+    // Internal animation state
+    const [dashOffset, setDashOffset] = useState(0)
+    const animationRef = useRef<number | null>(null)
+
+    // Wasm hook
+    const { isLoaded: wasmLoaded, generateCurvedLineWasm } = useWasmMath()
+
+    // Animation loop
+    useEffect(() => {
+        if (!visible) {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+            return
+        }
+
+        let lastTime = 0
+        const speed = 0.05
+
+        const animate = (time: number) => {
+            if (time - lastTime > 33) { // Throttled to ~30fps
+                setDashOffset((prev) => (prev + speed) % 20)
+                lastTime = time
+            }
+            animationRef.current = requestAnimationFrame(animate)
+        }
+
+        animationRef.current = requestAnimationFrame(animate)
+
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+        }
+    }, [visible])
+
     // Generate GeoJSON for curved energy flow lines with live data
     const flowLinesGeoJSON = useMemo(() => {
         const features = energyTransfers
@@ -89,12 +128,27 @@ export function EnergyFlowLayers({
                 const power = liveTransfer?.currentPower ?? transfer.power
 
                 // Generate curved line coordinates
-                const curvedCoordinates = generateCurvedLine(
-                    [fromNode.longitude, fromNode.latitude],
-                    [toNode.longitude, toNode.latitude],
-                    0.15, // Curve intensity (0.1-0.3 works well)
-                    24    // Number of segments for smoothness
-                )
+                let curvedCoordinates: [number, number][] | null = null
+
+                // Try Wasm first if loaded
+                if (wasmLoaded) {
+                    curvedCoordinates = generateCurvedLineWasm(
+                        [fromNode.longitude, fromNode.latitude],
+                        [toNode.longitude, toNode.latitude],
+                        0.15,
+                        24
+                    )
+                }
+
+                // Fallback to JS if Wasm failed or invalid
+                if (!curvedCoordinates) {
+                    curvedCoordinates = generateCurvedLine(
+                        [fromNode.longitude, fromNode.latitude],
+                        [toNode.longitude, toNode.latitude],
+                        0.15,
+                        24
+                    )
+                }
 
                 return {
                     type: 'Feature' as const,
@@ -108,7 +162,7 @@ export function EnergyFlowLayers({
                     },
                     geometry: {
                         type: 'LineString' as const,
-                        coordinates: curvedCoordinates,
+                        coordinates: curvedCoordinates!,
                     },
                 }
             })
@@ -118,7 +172,7 @@ export function EnergyFlowLayers({
             type: 'FeatureCollection' as const,
             features,
         }
-    }, [energyNodes, energyTransfers, liveTransferData])
+    }, [energyNodes, energyTransfers, liveTransferData, wasmLoaded, generateCurvedLineWasm])
 
     if (!visible) return null
 

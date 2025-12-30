@@ -320,6 +320,47 @@ export class ApiClient {
     })
   }
 
+  // P2P Transaction Cost Calculation
+  async calculateP2PCost(request: {
+    buyer_zone_id: number
+    seller_zone_id: number
+    energy_amount: number
+    agreed_price?: number
+  }) {
+    return apiRequest<{
+      energy_cost: number
+      wheeling_charge: number
+      loss_cost: number
+      total_cost: number
+      effective_energy: number
+      loss_factor: number
+      loss_allocation: string
+      zone_distance_km: number
+      buyer_zone: number
+      seller_zone: number
+      is_grid_compliant: boolean
+      grid_violation_reason?: string
+    }>('/api/v1/trading/p2p/calculate-cost', {
+      method: 'POST',
+      body: request,
+      token: this.token,
+    })
+  }
+
+  async getP2PMarketPrices() {
+    return apiRequest<{
+      base_price_thb_kwh: number
+      grid_import_price_thb_kwh: number
+      grid_export_price_thb_kwh: number
+      loss_allocation_model: string
+      wheeling_charges: Record<string, number>
+      loss_factors: Record<string, number>
+    }>('/api/v1/trading/p2p/market-prices', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
   // User
   async getProfile() {
     return apiRequest('/api/v1/users/me', {

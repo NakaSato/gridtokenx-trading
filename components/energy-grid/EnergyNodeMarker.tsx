@@ -1,5 +1,7 @@
 'use client'
 
+import React from 'react'
+
 import { Zap, Battery, BatteryCharging, X, Gauge, TrendingUp, Building2 } from 'lucide-react'
 import { Marker } from 'react-map-gl/mapbox'
 import {
@@ -74,7 +76,7 @@ export function EnergyNodeMarker({
                     >
                         {/* Status indicator */}
                         <div
-                            className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${getStatusColor(status)} z-10 animate-pulse border border-background`}
+                            className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ${getStatusColor(status)} z-10 border border-background`}
                         />
                         {/* Main marker */}
                         <div className="from-background/95 to-background/80 relative rounded-full border border-primary/60 bg-gradient-to-br p-2 shadow-xl backdrop-blur-md transition-all group-hover:border-primary group-hover:shadow-primary/50">
@@ -106,7 +108,7 @@ export function EnergyNodeMarker({
                                 <span className="flex-1">{node.name}</span>
                                 {/* LIVE Badge */}
                                 <span className="flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-[10px] font-medium text-green-500">
-                                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+                                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                                     LIVE
                                 </span>
                             </h3>
@@ -159,7 +161,7 @@ export function EnergyNodeMarker({
                                     <div className="flex items-center justify-between">
                                         <span className="font-medium text-secondary-foreground">Status:</span>
                                         <span className="flex items-center gap-2">
-                                            <span className={`h-2.5 w-2.5 rounded-full ${getStatusColor(status)} animate-pulse`} />
+                                            <span className={`h-2.5 w-2.5 rounded-full ${getStatusColor(status)}`} />
                                             <span className="font-semibold capitalize text-foreground">{status}</span>
                                         </span>
                                     </div>
@@ -300,3 +302,14 @@ export function EnergyNodeMarker({
         </Marker>
     )
 }
+
+// Memoized version to prevent unnecessary re-renders
+export const MemoizedEnergyNodeMarker = React.memo(EnergyNodeMarker, (prev, next) => {
+    // Only re-render if these props changed
+    return (
+        prev.node.id === next.node.id &&
+        prev.isSelected === next.isSelected &&
+        prev.liveData?.currentValue === next.liveData?.currentValue &&
+        prev.liveData?.status === next.liveData?.status
+    )
+})

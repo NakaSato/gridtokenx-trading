@@ -1,23 +1,25 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import Map, { NavigationControl } from 'react-map-gl/mapbox'
+import Map, { NavigationControl, MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio } from 'lucide-react'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import gsap from 'gsap'
+// import gsap from 'gsap' // Removed in favor of native Mapbox transitions
 
 // Import from energy-grid sub-components
 import {
   EnergyFlowLayers,
-  EnergyNodeMarker,
+  LightweightMarker,
+  ClusterMarker,
   GridStatsPanel,
   MapLegend,
-  useEnergySimulation,
+  useWasmSimulation as useEnergySimulation, // Aliased to minimize code changes
   useMeterMapData,
+  useMeterClusters,
   useGridStatus,
 } from './energy-grid'
-import type { EnergyNode, EnergyTransfer } from './energy-grid'
+import type { EnergyNode, EnergyTransfer, ClusterOrPoint } from './energy-grid'
 
 // Load config
 import energyGridConfig from '@/lib/data/energyGridConfig.json'
@@ -44,16 +46,17 @@ export default function EnergyGridMap() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFlowLines, setShowFlowLines] = useState(true)
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
-  const [dashOffset, setDashOffset] = useState(0)
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
     description: string
     x: number
     y: number
   } | null>(null)
+  // Track map bounds for clustering
+  const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
 
+  const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const animationRef = useRef<number | null>(null)
 
   // Fetch real meter data only (no static mock nodes)
   const { realMeterNodes, isLoading: metersLoading } = useMeterMapData({
@@ -69,11 +72,20 @@ export default function EnergyGridMap() {
     return showRealMeters ? realMeterNodes : []
   }, [showRealMeters, realMeterNodes])
 
+  // Cluster markers for performance (266+ meters)
+  const { clusters, getClusterExpansionZoom } = useMeterClusters({
+    nodes: energyNodes,
+    zoom: viewState.zoom,
+    bounds: mapBounds,
+    radius: 50,
+    maxZoom: 16,
+  })
+
   // Use the simulation hook with combined nodes
   const { liveNodeData, liveTransferData, gridTotals } = useEnergySimulation({
     energyNodes,
     energyTransfers,
-    updateIntervalMs: 3000,
+    updateIntervalMs: 10000, // Optimized from 3000ms
   })
 
   // Handle flow line hover
@@ -93,35 +105,6 @@ export default function EnergyGridMap() {
     setHoveredFlow(null)
   }, [])
 
-  // Animate the dash offset for flowing effect
-  useEffect(() => {
-    if (!mapLoaded || !showFlowLines) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-      return
-    }
-
-    let lastTime = 0
-    const speed = 0.05
-
-    const animate = (time: number) => {
-      if (time - lastTime > 16) {
-        setDashOffset((prev) => (prev + speed) % 20)
-        lastTime = time
-      }
-      animationRef.current = requestAnimationFrame(animate)
-    }
-
-    animationRef.current = requestAnimationFrame(animate)
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [mapLoaded, showFlowLines])
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -129,13 +112,11 @@ export default function EnergyGridMap() {
         setSelectedNode(null)
       }
       if (e.key === 'r' || e.key === 'R') {
-        gsap.to(viewState, {
-          longitude: campus.center.longitude,
-          latitude: campus.center.latitude,
+        mapRef.current?.flyTo({
+          center: [campus.center.longitude, campus.center.latitude],
           zoom: campus.defaultZoom,
-          duration: 1,
-          ease: 'power2.inOut',
-          onUpdate: () => setViewState({ ...viewState }),
+          duration: 1000,
+          essential: true
         })
       }
     }
@@ -156,13 +137,11 @@ export default function EnergyGridMap() {
 
   // Double click to zoom
   const handleMarkerDoubleClick = (node: EnergyNode) => {
-    gsap.to(viewState, {
-      longitude: node.longitude,
-      latitude: node.latitude,
+    mapRef.current?.flyTo({
+      center: [node.longitude, node.latitude],
       zoom: 18,
-      duration: 1,
-      ease: 'power2.inOut',
-      onUpdate: () => setViewState({ ...viewState }),
+      duration: 1000,
+      essential: true
     })
     setSelectedNode(node)
   }
@@ -217,10 +196,28 @@ export default function EnergyGridMap() {
         }
       `}</style>
 
-      {/* Loading state */}
-      {!mapLoaded && !mapError && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background">
-          <p className="text-foreground">Loading map...</p>
+      {/* Loading state - enhanced skeleton */}
+      {(!mapLoaded || metersLoading) && !mapError && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
+          <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
+          <p className="text-foreground font-medium">
+            {!mapLoaded ? 'Loading map...' : 'Loading meters...'}
+          </p>
+          {metersLoading && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Fetching {realMeterNodes.length > 0 ? realMeterNodes.length : ''} energy nodes
+            </p>
+          )}
+          {/* Skeleton placeholder markers */}
+          <div className="mt-6 flex gap-3">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="h-4 w-4 rounded-full bg-primary/20 animate-pulse"
+                style={{ animationDelay: `${i * 100}ms` }}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -235,8 +232,24 @@ export default function EnergyGridMap() {
       )}
 
       <Map
+        ref={mapRef}
         {...viewState}
-        onMove={(evt) => setViewState(evt.viewState)}
+        onMove={(evt) => {
+          setViewState(evt.viewState)
+          // Don't update bounds here to avoid re-clustering on every frame
+        }}
+        onMoveEnd={(evt) => {
+          // Update bounds for clustering only when movement ends
+          const bounds = evt.target.getBounds()
+          if (bounds) {
+            setMapBounds([
+              bounds.getWest(),
+              bounds.getSouth(),
+              bounds.getEast(),
+              bounds.getNorth(),
+            ])
+          }
+        }}
         mapStyle="mapbox://styles/mapbox/dark-v11"
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
@@ -257,7 +270,6 @@ export default function EnergyGridMap() {
           energyNodes={energyNodes}
           energyTransfers={energyTransfers}
           liveTransferData={liveTransferData}
-          dashOffset={dashOffset}
           visible={showFlowLines}
         />
 
@@ -304,18 +316,39 @@ export default function EnergyGridMap() {
           </Button>
         </div>
 
-        {/* Node Markers */}
-        {energyNodes.map((node) => (
-          <EnergyNodeMarker
-            key={node.id}
-            node={node}
-            liveData={liveNodeData[node.id]}
-            isSelected={selectedNode?.id === node.id}
-            onSelect={setSelectedNode}
-            onDeselect={() => setSelectedNode(null)}
-            onDoubleClick={handleMarkerDoubleClick}
-          />
-        ))}
+        {/* Node Markers - Clustered for performance */}
+        {clusters.map((clusterOrPoint) => {
+          // Check if it's a cluster
+          if (clusterOrPoint.properties.cluster) {
+            return (
+              <ClusterMarker
+                key={`cluster-${clusterOrPoint.properties.cluster_id}`}
+                cluster={clusterOrPoint as any}
+                onClick={(clusterId, lng, lat) => {
+                  const expansionZoom = getClusterExpansionZoom(clusterId)
+                  mapRef.current?.flyTo({
+                    center: [lng, lat],
+                    zoom: expansionZoom,
+                    duration: 500,
+                    essential: true
+                  })
+                }}
+              />
+            )
+          }
+          // It's an individual point
+          const node = clusterOrPoint.properties.node
+          return (
+            <LightweightMarker
+              key={node.id}
+              node={node}
+              liveData={liveNodeData[node.id]}
+              isSelected={selectedNode?.id === node.id}
+              onSelect={setSelectedNode}
+              onDoubleClick={handleMarkerDoubleClick}
+            />
+          )
+        })}
       </Map>
 
       {/* Legend */}
@@ -354,3 +387,4 @@ export default function EnergyGridMap() {
     </div>
   )
 }
+

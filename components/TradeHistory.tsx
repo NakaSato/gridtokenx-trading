@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { History, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 
 interface Trade {
     id: string
@@ -103,71 +104,74 @@ export default function TradeHistory() {
     }
 
     return (
-        <Card className="h-full flex flex-col border border-border">
-            <CardHeader className="pb-2 border-b border-border/50">
-                <CardTitle className="text-sm font-bold flex items-center justify-between">
+        <Card className="flex h-full flex-col border border-border shadow-none">
+            <CardHeader className="py-3 px-4 border-b border-border/40">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                        <History className="h-4 w-4 text-primary" />
+                        <History className="h-3.5 w-3.5" />
                         Recent Trades
-                        {trades.length > 0 && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                                {trades.length}
-                            </Badge>
-                        )}
                     </span>
+                    {trades.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-[10px] font-medium text-foreground">{trades.length} active</span>
+                        </div>
+                    )}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-2">
+            <CardContent className="flex-1 overflow-y-auto p-0">
                 {trades.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                        <TrendingUp className="h-8 w-8 mb-2 opacity-30" />
-                        <p className="text-sm font-medium">No trades yet</p>
-                        <p className="text-xs">Your trade history will appear here</p>
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-3">
+                        <div className="p-3 rounded-full bg-accent/50">
+                            <TrendingUp className="h-6 w-6 opacity-50" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-medium text-foreground">No trades yet</p>
+                            <p className="text-xs opacity-70">Market is quiet</p>
+                        </div>
                     </div>
                 ) : (
-                    <div className="space-y-1.5">
+                    <div className="divide-y divide-border/30">
                         {trades.map((trade, idx) => {
                             const isBuyer = trade.role === 'buyer'
 
                             return (
                                 <div
                                     key={trade.id}
-                                    className="flex items-center justify-between p-2 rounded-sm hover:bg-accent/50 transition-all"
+                                    className="group flex flex-col gap-1 px-4 py-3 hover:bg-accent/30 transition-colors"
                                 >
-                                    {/* Trade Info */}
-                                    <div className="flex flex-col justify-center min-w-0">
-                                        <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
                                             <Badge
                                                 variant="outline"
                                                 className={cn(
-                                                    "text-[10px] px-1.5 py-0 h-4 font-semibold",
+                                                    "text-[9px] px-1.5 py-0 h-4 font-mono font-bold tracking-tight border-opacity-40",
                                                     isBuyer
-                                                        ? "bg-chart-2/10 text-chart-2 border-chart-2/20"
-                                                        : "bg-destructive/10 text-destructive border-destructive/20"
+                                                        ? "bg-green-500/10 text-green-500 border-green-500"
+                                                        : "bg-red-500/10 text-red-500 border-red-500"
                                                 )}
                                             >
                                                 {isBuyer ? 'BUY' : 'SELL'}
                                             </Badge>
-                                            <span className="text-sm font-medium">
-                                                {parseFloat(trade.quantity).toFixed(1)} kWh
+                                            <span className="text-sm font-medium font-mono text-foreground">
+                                                {parseFloat(trade.quantity).toFixed(2)} kWh
                                             </span>
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground">
+                                        <span className="text-[10px] text-muted-foreground tabular-nums">
                                             {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
-                                        </div>
+                                        </span>
                                     </div>
 
-                                    {/* Value */}
-                                    <div className="flex flex-col items-end justify-center">
+                                    <div className="flex items-center justify-between pl-1">
+                                        <div className="flex items-center text-xs text-muted-foreground font-mono">
+                                            @{parseFloat(trade.price).toFixed(2)}
+                                        </div>
                                         <div className={cn(
-                                            "font-mono text-sm font-bold",
-                                            isBuyer ? "text-destructive" : "text-chart-2"
+                                            "font-mono text-sm font-medium tabular-nums",
+                                            isBuyer ? "text-red-500" : "text-green-500"
                                         )}>
                                             {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
-                                            <span className="text-[10px] font-normal ml-0.5">THB</span>
-                                        </div>
-                                        <div className="text-[10px] text-muted-foreground font-mono">
-                                            @{parseFloat(trade.price).toFixed(2)}/kWh
+                                            <span className="text-[10px] text-muted-foreground ml-1">THB</span>
                                         </div>
                                     </div>
                                 </div>

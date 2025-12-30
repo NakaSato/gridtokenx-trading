@@ -106,7 +106,7 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
     const {
         includeStaticNodes = true,
         staticNodes = [],
-        refreshIntervalMs = 30000, // Default: refresh every 30 seconds
+        refreshIntervalMs = 60000, // Optimized: refresh every 60 seconds (was 30s)
     } = options
 
     const [meters, setMeters] = useState<PublicMeterResponse[]>([])

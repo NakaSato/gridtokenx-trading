@@ -1,3 +1,4 @@
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Zap, Activity, BatteryCharging, CheckCircle2, Coins } from 'lucide-react'
 import { format } from 'date-fns'
@@ -116,3 +117,5 @@ export function MeterStats({
         </div>
     )
 }
+
+export const MemoizedMeterStats = React.memo(MeterStats)

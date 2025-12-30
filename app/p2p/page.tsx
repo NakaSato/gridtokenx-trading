@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { defaultApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -12,17 +11,14 @@ import OrderBook from '@/components/OrderBook'
 import OrderForm from './components/OrderForm'
 import TradeHistory from '@/components/TradeHistory'
 import UserOrders from './components/UserOrders'
+import UserOrders from './components/UserOrders'
 import P2PNav from './components/P2PNav'
+import QuantumTradeHistory from '@/components/p2p/QuantumTradeHistory'
 
 export default function P2PPage() {
-    const router = useRouter()
-
-    useEffect(() => {
-        router.push('/')
-    }, [router])
-
     const { token } = useAuth()
     const [active, setActive] = useState<'book' | 'trade'>('book')
+    const [historyMode, setHistoryMode] = useState<'market' | 'quantum'>('market')
     const [matching, setMatching] = useState(false)
     const [matchResult, setMatchResult] = useState('')
     const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -80,7 +76,32 @@ export default function P2PPage() {
 
                     {/* LEFT SIDEBAR - Trade History (2 cols) */}
                     <div className="hidden h-full flex-col space-y-4 overflow-y-auto md:col-span-2 md:flex">
-                        <TradeHistory />
+                        <div className="flex items-center justify-between px-1 mb-2">
+                            <h3 className="text-xs font-semibold text-muted-foreground uppercase">History</h3>
+                            <div className="flex gap-1 bg-secondary/50 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setHistoryMode('market')}
+                                    className={cn(
+                                        "px-2 py-0.5 text-[10px] rounded",
+                                        historyMode === 'market' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    Market
+                                </button>
+                                <button
+                                    onClick={() => setHistoryMode('quantum')}
+                                    className={cn(
+                                        "px-2 py-0.5 text-[10px] rounded",
+                                        historyMode === 'quantum' ? "bg-violet-500/20 text-violet-400 shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    Quantum
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1 h-full min-h-0">
+                            {historyMode === 'market' ? <TradeHistory /> : <QuantumTradeHistory />}
+                        </div>
                     </div>
 
                     {/* CENTER - Order Book (7 cols) */}

@@ -7,9 +7,10 @@ import { RefreshCw, Plus } from 'lucide-react'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
 import { SubmitReadingModal } from '@/components/SubmitReadingModal'
 import { useSmartMeter } from '@/hooks/useSmartMeter'
-import { MeterStats } from '@/components/meter/MeterStats'
-import { ReadingsList } from '@/components/meter/ReadingsList'
-import { MeterList } from '@/components/meter/MeterList'
+import { MemoizedMeterStats as MeterStats } from '@/components/meter/MeterStats'
+import { MemoizedReadingsList as ReadingsList } from '@/components/meter/ReadingsList'
+import { MemoizedMeterList as MeterList } from '@/components/meter/MeterList'
+import { SimulatorWalletCard } from '@/components/meter/SimulatorWalletCard'
 
 export default function SmartMeterPage() {
     const {
@@ -62,6 +63,9 @@ export default function SmartMeterPage() {
                     onClose={() => setIsRegisterOpen(false)}
                     onSuccess={fetchData}
                 />
+
+                {/* Simulator Wallet Integration */}
+                <SimulatorWalletCard />
 
                 <SubmitReadingModal
                     isOpen={isSubmitOpen}

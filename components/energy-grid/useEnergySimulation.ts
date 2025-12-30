@@ -58,7 +58,7 @@ function getTimeMultiplier(hour: number, nodeType: 'generator' | 'storage' | 'co
 export function useEnergySimulation({
     energyNodes,
     energyTransfers,
-    updateIntervalMs = 3000,
+    updateIntervalMs = 10000, // Optimized: 10s instead of 3s
     isLive = true,
     selectedTime,
 }: UseEnergySimulationProps) {
@@ -178,9 +178,9 @@ export function useEnergySimulation({
                         // Only fluctuate simulated/static nodes
                         const newValue = isRealMeter ? baseValue : Math.max(0, fluctuate(baseValue, 8))
 
-                        // Occasionally change status (rare)
+                        // Occasionally change status (very rare for performance)
                         let newStatus = current.status
-                        if (Math.random() < 0.02) {
+                        if (Math.random() < 0.005) {  // Reduced from 0.02 to 0.005
                             newStatus = Math.random() > 0.5 ? 'active' : 'idle'
                         }
 

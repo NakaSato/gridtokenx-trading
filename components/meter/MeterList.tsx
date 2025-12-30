@@ -1,3 +1,4 @@
+import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, AlertCircle, Upload } from 'lucide-react'
@@ -69,3 +70,5 @@ export function MeterList({ meters, loading, onOpenSubmit }: MeterListProps) {
         </div>
     )
 }
+
+export const MemoizedMeterList = React.memo(MeterList)
