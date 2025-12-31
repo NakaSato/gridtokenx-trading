@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
 
 export interface GridStatus {
     total_generation: number
@@ -30,10 +31,8 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
     const fetchStatus = useCallback(async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000'
-
             try {
-                const response = await fetch(`${apiUrl}/api/v1/public/grid-status`)
+                const response = await fetch(API_ENDPOINTS.grid.status)
                 if (response.ok) {
                     const statusData = await response.json() as GridStatus
                     setStatus(statusData)
@@ -55,8 +54,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
     // WebSocket connection logic
     useEffect(() => {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000'
-        const wsUrl = apiUrl.replace('http', 'ws') + '/ws'
+        const wsUrl = `${API_CONFIG.wsBaseUrl}/ws`
 
         const connectWs = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return

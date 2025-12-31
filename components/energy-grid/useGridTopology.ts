@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { EnergyNode, EnergyTransfer } from './types'
+import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
 
 interface ZoneData {
     zone_id: number
@@ -38,12 +39,14 @@ export function useGridTopology(): UseGridTopologyResult {
     const fetchTopology = useCallback(async () => {
         try {
             setIsLoading(true)
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-            const response = await fetch(`${apiUrl}/api/zones`)
+
+            // Try fetching from the main topology endpoint first
+            const response = await fetch(API_ENDPOINTS.grid.topology)
 
             if (!response.ok) {
-                // Fallback to thailand data if zones endpoint fails or is empty
-                const demoResponse = await fetch(`${apiUrl}/api/thailand/data`)
+                // Warning: Fallback to thailand data if main endpoint fails
+                // Ideally this should be handled by the backend or a specific fallback config
+                const demoResponse = await fetch(`${API_CONFIG.baseUrl}/api/thailand/data`)
                 if (!demoResponse.ok) {
                     throw new Error(`Failed to fetch grid topology: ${response.status}`)
                 }

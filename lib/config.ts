@@ -65,6 +65,11 @@ export const API_ENDPOINTS = {
     data: `${API_CONFIG.baseUrl}/api/v1/meters`,
     submit: `${API_CONFIG.baseUrl}/api/v1/meters`, // Base for submit, append {serial}/readings in usage
   },
+  // Grid
+  grid: {
+    status: `${API_CONFIG.baseUrl}/api/v1/public/grid-status`,
+    topology: `${API_CONFIG.baseUrl}/api/zones`,
+  },
   // WebSocket
   ws: {
     orderBook: `${API_CONFIG.wsBaseUrl}/ws/orderbook`,
