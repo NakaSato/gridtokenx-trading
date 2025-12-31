@@ -4,7 +4,7 @@ export interface EnergyNode {
     id: string
     name: string
     buildingCode?: string
-    type: 'generator' | 'storage' | 'consumer'
+    type: 'generator' | 'storage' | 'consumer' | 'transformer'
     longitude: number
     latitude: number
     capacity: string

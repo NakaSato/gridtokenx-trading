@@ -14,7 +14,7 @@ interface UseEnergySimulationProps {
 
 // Get time-of-day multiplier for different node types
 // Returns a value between 0 and 1 that scales the energy output/consumption
-function getTimeMultiplier(hour: number, nodeType: 'generator' | 'storage' | 'consumer'): number {
+function getTimeMultiplier(hour: number, nodeType: 'generator' | 'storage' | 'consumer' | 'transformer'): number {
     if (nodeType === 'generator') {
         // Solar: Peak at noon (12-14h), zero at night (19:00 - 06:00)
         if (hour >= 19 || hour < 6) return 0.05 // Night - minimal

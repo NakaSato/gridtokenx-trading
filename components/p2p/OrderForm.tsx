@@ -150,7 +150,7 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
                         )}
                         onClick={() => setOrderType('buy')}
                     >
-                        Buy
+                        Buy Option
                     </Button>
                     <Button
                         className={cn(
@@ -366,7 +366,7 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
                                 Processing...
                             </>
                         ) : (
-                            `${orderType === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} kWh`
+                            `${orderType === 'buy' ? 'Buy Option' : 'Sell'} ${amount || '0'} kWh`
                         )}
                     </Button>
 

@@ -30,16 +30,21 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
     const fetchStatus = useCallback(async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-            const response = await fetch(`${apiUrl}/api/v1/public/grid-status`)
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000'
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch grid status: ${response.status}`)
+            try {
+                const response = await fetch(`${apiUrl}/api/v1/public/grid-status`)
+                if (response.ok) {
+                    const statusData = await response.json() as GridStatus
+                    setStatus(statusData)
+                    setError(null)
+                } else {
+                    throw new Error(`API Gateway returned ${response.status}: ${response.statusText}`)
+                }
+            } catch (err) {
+                console.error('API Gateway failed:', err)
+                setError(err instanceof Error ? err.message : 'Failed to fetch grid status')
             }
-
-            const data = await response.json() as GridStatus
-            setStatus(data)
-            setError(null)
         } catch (err) {
             console.error('Error fetching grid status:', err)
             setError(err instanceof Error ? err.message : 'Failed to fetch grid status')
@@ -50,7 +55,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
     // WebSocket connection logic
     useEffect(() => {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000'
         const wsUrl = apiUrl.replace('http', 'ws') + '/ws'
 
         const connectWs = () => {

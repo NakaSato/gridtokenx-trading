@@ -1,10 +1,10 @@
 import {
-  delta_calc,
-  gamma_calc,
-  rho_calc,
-  theta_calc,
-  vega_calc,
-} from '@/utils/optionsPricing'
+  deltaCalc,
+  gammaCalc,
+  rhoCalc,
+  thetaCalc,
+  vegaCalc,
+} from '@/lib/wasm-bridge'
 import { differenceInSeconds } from 'date-fns'
 
 interface useGreeksProps {
@@ -32,11 +32,11 @@ export function useGreeks({
     return type === 'Call' ? true : false
   }
 
-  delta = delta_calc(currentPrice, strikePrice, time, isCall(type))
-  gamma = gamma_calc(currentPrice, strikePrice, time)
-  vega = vega_calc(currentPrice, strikePrice, time)
-  theta = theta_calc(currentPrice, strikePrice, time, isCall(type))
-  rho = rho_calc(currentPrice, strikePrice, time, isCall(type))
+  delta = deltaCalc(currentPrice, strikePrice, time, isCall(type))
+  gamma = gammaCalc(currentPrice, strikePrice, time)
+  vega = vegaCalc(currentPrice, strikePrice, time)
+  theta = thetaCalc(currentPrice, strikePrice, time, isCall(type))
+  rho = rhoCalc(currentPrice, strikePrice, time, isCall(type))
 
   return { delta, gamma, vega, theta, rho }
 }

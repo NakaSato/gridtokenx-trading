@@ -16,8 +16,8 @@ export const SOLANA_CONFIG = {
 // API Gateway Configuration
 // -----------------------------------------------------------------------------
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
-  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://localhost:8080',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000',
+  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://localhost:4000',
 } as const
 
 // -----------------------------------------------------------------------------

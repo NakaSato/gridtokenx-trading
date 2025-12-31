@@ -13,7 +13,7 @@ import {
 } from '@/public/svgs/icons'
 import { tokenList, THB } from '@/lib/data/tokenlist'
 import { useOptionsPricing } from '@/hooks/useOptionsPricing'
-import { black_scholes } from '@/utils/optionsPricing'
+import { blackScholes } from '@/lib/wasm-bridge'
 import { differenceInSeconds, differenceInYears } from 'date-fns'
 import { formatPrice } from '@/utils/formatter'
 

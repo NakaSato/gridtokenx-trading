@@ -28,8 +28,6 @@ interface CryptoNavProps {
   marketLoading: boolean
 
   type: string
-  mode: 'derivatives' | 'p2p'
-  onModeChange: (mode: 'derivatives' | 'p2p') => void
 }
 
 type MarketChanges = {
@@ -113,8 +111,6 @@ export default function CryptoNav({
   marketLoading,
 
   type,
-  mode,
-  onModeChange,
 }: CryptoNavProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const itemsRef = useRef<Map<string, HTMLDivElement>>(new Map())
@@ -299,31 +295,6 @@ export default function CryptoNav({
         </div>
       </div>
 
-      {/* Trading Mode Toggle */}
-      <div className="flex w-full items-center justify-center space-x-4 border-b pb-2 mb-2">
-        <button
-          onClick={() => onModeChange('derivatives')}
-          className={cn(
-            "px-4 py-2 text-sm font-medium transition-colors border-b-2",
-            mode === 'derivatives'
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          Derivatives & Options
-        </button>
-        <button
-          onClick={() => onModeChange('p2p')}
-          className={cn(
-            "px-4 py-2 text-sm font-medium transition-colors border-b-2",
-            mode === 'p2p'
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          P2P Energy Trading
-        </button>
-      </div>
 
       <TradingViewTopNav
         symbol={cryptoData[active].symbol}
@@ -337,6 +308,7 @@ export default function CryptoNav({
         priceLoading={priceLoading}
         marketLoading={marketLoading}
         type={type}
+        onNavigate={onIdxChange}
       />
     </>
   )

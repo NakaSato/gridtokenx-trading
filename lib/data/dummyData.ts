@@ -1,4 +1,4 @@
-import { black_scholes } from '@/utils/optionsPricing'
+import { blackScholes } from '@/lib/wasm-bridge'
 
 export interface OptionChainData {
   strikePrice: number
@@ -34,7 +34,7 @@ export const generateOptionChainData = (
       const increment = getIncrement(price)
       const baseStrike = Math.round(price / 2 + index * increment)
       const isPositive = index % 2 === 0
-      const bp = black_scholes(price, baseStrike, t, isCall)
+      const bp = blackScholes(price, baseStrike, t, isCall)
 
       return {
         strikePrice: baseStrike,

@@ -1,0 +1,273 @@
+/**
+ * WASM Bridge for Options Pricing
+ * 
+ * TypeScript wrapper to load and call WASM functions for
+ * Black-Scholes pricing and Greeks calculations.
+ * 
+ * @module wasm-bridge
+ */
+
+export interface Greeks {
+    delta: number;
+    gamma: number;
+    vega: number;
+    theta: number;
+    rho: number;
+}
+
+export interface WasmExports {
+    memory: WebAssembly.Memory;
+    get_buffer_ptr: () => number;
+    black_scholes: (s: number, k: number, t: number, isCall: number) => number;
+    delta_calc: (s: number, k: number, t: number, isCall: number) => number;
+    gamma_calc: (s: number, k: number, t: number) => number;
+    vega_calc: (s: number, k: number, t: number) => number;
+    theta_calc: (s: number, k: number, t: number, isCall: number) => number;
+    rho_calc: (s: number, k: number, t: number, isCall: number) => number;
+    batch_black_scholes: (ptr: number, count: number, outPtr: number) => number;
+    calc_all_greeks: (s: number, k: number, t: number, isCall: number, outPtr: number) => void;
+}
+
+let wasmInstance: WebAssembly.Instance | null = null;
+let wasmExports: WasmExports | null = null;
+
+/**
+ * Initialize the WASM module
+ * @param wasmPath - Path to the .wasm file (default: '/gridtokenx_wasm.wasm')
+ */
+export async function initWasm(wasmPath: string = '/gridtokenx_wasm.wasm'): Promise<WasmExports> {
+    if (wasmExports) {
+        return wasmExports;
+    }
+
+    try {
+        const response = await fetch(wasmPath);
+        const bytes = await response.arrayBuffer();
+        const { instance } = await WebAssembly.instantiate(bytes, {
+            env: {
+                // Add any imports WASM might need
+            }
+        });
+
+        wasmInstance = instance;
+        wasmExports = instance.exports as unknown as WasmExports;
+
+        console.log('[WASM] Options pricing module loaded successfully');
+        return wasmExports;
+    } catch (error) {
+        console.error('[WASM] Failed to load module:', error);
+        throw error;
+    }
+}
+
+/**
+ * Check if WASM module is loaded
+ */
+export function isWasmLoaded(): boolean {
+    return wasmExports !== null;
+}
+
+/**
+ * Get raw WASM exports (for advanced usage)
+ */
+export function getWasmExports(): WasmExports | null {
+    return wasmExports;
+}
+
+// =============================================================================
+// OPTIONS PRICING FUNCTIONS
+// =============================================================================
+
+/**
+ * Calculate option price using Black-Scholes formula
+ * @param s - Current underlying price
+ * @param k - Strike price
+ * @param t - Time to expiration (in years or as fraction)
+ * @param isCall - true for call option, false for put
+ * @returns Option price
+ */
+export function blackScholes(s: number, k: number, t: number, isCall: boolean): number {
+    if (!wasmExports) {
+        console.warn('[WASM] Module not loaded, falling back to JS implementation');
+        return blackScholesJS(s, k, t, isCall);
+    }
+    return wasmExports.black_scholes(s, k, t, isCall ? 1 : 0);
+}
+
+/**
+ * Calculate Delta (rate of change of option price vs underlying)
+ */
+export function deltaCalc(s: number, k: number, t: number, isCall: boolean): number {
+    if (!wasmExports) {
+        return deltaCalcJS(s, k, t, isCall);
+    }
+    return wasmExports.delta_calc(s, k, t, isCall ? 1 : 0);
+}
+
+/**
+ * Calculate Gamma (rate of change of delta)
+ */
+export function gammaCalc(s: number, k: number, t: number): number {
+    if (!wasmExports) {
+        return gammaCalcJS(s, k, t);
+    }
+    return wasmExports.gamma_calc(s, k, t);
+}
+
+/**
+ * Calculate Vega (sensitivity to volatility)
+ */
+export function vegaCalc(s: number, k: number, t: number): number {
+    if (!wasmExports) {
+        return vegaCalcJS(s, k, t);
+    }
+    return wasmExports.vega_calc(s, k, t);
+}
+
+/**
+ * Calculate Theta (time decay per day)
+ */
+export function thetaCalc(s: number, k: number, t: number, isCall: boolean): number {
+    if (!wasmExports) {
+        return thetaCalcJS(s, k, t, isCall);
+    }
+    return wasmExports.theta_calc(s, k, t, isCall ? 1 : 0);
+}
+
+/**
+ * Calculate Rho (sensitivity to interest rate)
+ */
+export function rhoCalc(s: number, k: number, t: number, isCall: boolean): number {
+    if (!wasmExports) {
+        return rhoCalcJS(s, k, t, isCall);
+    }
+    return wasmExports.rho_calc(s, k, t, isCall ? 1 : 0);
+}
+
+/**
+ * Calculate all Greeks at once (more efficient than calling individually)
+ */
+export function calculateGreeks(s: number, k: number, t: number, isCall: boolean): Greeks {
+    if (!wasmExports) {
+        return {
+            delta: deltaCalcJS(s, k, t, isCall),
+            gamma: gammaCalcJS(s, k, t),
+            vega: vegaCalcJS(s, k, t),
+            theta: thetaCalcJS(s, k, t, isCall),
+            rho: rhoCalcJS(s, k, t, isCall),
+        };
+    }
+
+    // Get buffer pointer and write results
+    const bufferPtr = wasmExports.get_buffer_ptr();
+    wasmExports.calc_all_greeks(s, k, t, isCall ? 1 : 0, bufferPtr);
+
+    // Read results from WASM memory
+    const memory = new Float64Array(wasmExports.memory.buffer, bufferPtr, 5);
+
+    return {
+        delta: memory[0],
+        gamma: memory[1],
+        vega: memory[2],
+        theta: memory[3],
+        rho: memory[4],
+    };
+}
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Convert price from one token to USD value
+ * @param amount - Amount of tokens
+ * @param fromTokenPrice - Price of the token in USD
+ * @returns Converted price
+ */
+export function convertPrice(amount: number, fromTokenPrice: number): number {
+    if (!amount || !fromTokenPrice) return 0;
+    return parseFloat((amount * fromTokenPrice).toFixed(8));
+}
+
+// =============================================================================
+// JAVASCRIPT FALLBACKS (copied from optionsPricing.ts)
+// =============================================================================
+
+const R = 0.0;
+const SIGMA = 0.5;
+
+function normalCdf(z: number): number {
+    const beta1 = -0.0004406;
+    const beta2 = 0.0418198;
+    const beta3 = 0.9;
+    const exponent = -Math.sqrt(Math.PI) * (beta1 * Math.pow(z, 5) + beta2 * Math.pow(z, 3) + beta3 * z);
+    return 1.0 / (1.0 + Math.exp(exponent));
+}
+
+function normalPdf(x: number): number {
+    return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+function blackScholesJS(s: number, k: number, t: number, isCall: boolean): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+
+    const d1 = (Math.log(s / k) + (R + 0.5 * SIGMA * SIGMA) * t) / (SIGMA * Math.sqrt(t));
+    const d2 = d1 - SIGMA * Math.sqrt(t);
+
+    const nd1 = normalCdf(d1);
+    const nd2 = normalCdf(d2);
+    const nNegd1 = normalCdf(-d1);
+    const nNegd2 = normalCdf(-d2);
+
+    if (isCall) {
+        return s * nd1 - k * Math.exp(-R * t) * nd2;
+    } else {
+        return k * Math.exp(-R * t) * nNegd2 - s * nNegd1;
+    }
+}
+
+function deltaCalcJS(s: number, k: number, t: number, isCall: boolean): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+    const d1 = (Math.log(s / k) + (R + Math.pow(SIGMA, 2) / 2) * t) / (SIGMA * Math.sqrt(t));
+    return isCall ? normalCdf(d1) : -normalCdf(-d1);
+}
+
+function gammaCalcJS(s: number, k: number, t: number): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+    const d1 = (Math.log(s / k) + (R + Math.pow(SIGMA, 2) / 2) * t) / (SIGMA * Math.sqrt(t));
+    return normalPdf(d1) / (s * SIGMA * Math.sqrt(t));
+}
+
+function vegaCalcJS(s: number, k: number, t: number): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+    const d1 = (Math.log(s / k) + (R + Math.pow(SIGMA, 2) / 2) * t) / (SIGMA * Math.sqrt(t));
+    return s * normalPdf(d1) * Math.sqrt(t) * 0.01;
+}
+
+function thetaCalcJS(s: number, k: number, t: number, isCall: boolean): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+    const d1 = (Math.log(s / k) + (R + Math.pow(SIGMA, 2) / 2) * t) / (SIGMA * Math.sqrt(t));
+    const d2 = d1 - SIGMA * Math.sqrt(t);
+
+    let thetaValue: number;
+    if (isCall) {
+        thetaValue = (-s * normalPdf(d1) * SIGMA) / (2 * Math.sqrt(t)) - R * k * Math.exp(-R * t) * normalCdf(d2);
+    } else {
+        thetaValue = (-s * normalPdf(d1) * SIGMA) / (2 * Math.sqrt(t)) - R * k * Math.exp(-R * t) * normalCdf(-d2);
+    }
+    return thetaValue / 365;
+}
+
+function rhoCalcJS(s: number, k: number, t: number, isCall: boolean): number {
+    if (t <= 0 || s <= 0 || k <= 0) return 0;
+    const d1 = (Math.log(s / k) + (R + Math.pow(SIGMA, 2) / 2) * t) / (SIGMA * Math.sqrt(t));
+    const d2 = d1 - SIGMA * Math.sqrt(t);
+
+    let rhoValue: number;
+    if (isCall) {
+        rhoValue = k * t * Math.exp(-R * t) * normalCdf(d2);
+    } else {
+        rhoValue = -k * t * Math.exp(-R * t) * normalCdf(-d2);
+    }
+    return rhoValue * 0.01;
+}

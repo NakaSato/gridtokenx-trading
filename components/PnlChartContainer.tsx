@@ -9,7 +9,7 @@ import { Button } from './ui/button'
 import { Minus, Plus } from 'lucide-react'
 import { PnLChart } from './PnlChart'
 import { formatPrice } from '@/utils/formatter'
-import { convertPrice } from '@/utils/optionsPricing'
+import { convertPrice } from '@/lib/wasm-bridge'
 import { usePythPrice } from '@/hooks/usePythPrice'
 
 interface PnlChartContainerProps {

@@ -1,4 +1,4 @@
-import { black_scholes } from '@/utils/optionsPricing'
+import { blackScholes } from '@/lib/wasm-bridge'
 import datafeed from './datafeed'
 import { differenceInSeconds } from 'date-fns'
 
@@ -22,7 +22,7 @@ const calculateOptionPrice = (
 ): number => {
   const timeToExpiry =
     differenceInSeconds(expiry, new Date(timestamp)) / (365 * 24 * 60 * 60)
-  return black_scholes(assetPrice, strikePrice, timeToExpiry, isCall)
+  return blackScholes(assetPrice, strikePrice, timeToExpiry, isCall)
 }
 
 export const optionsDatafeed = {

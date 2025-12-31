@@ -1,6 +1,6 @@
 'use client'
 
-import { black_scholes } from '@/utils/optionsPricing'
+import { blackScholes } from '@/lib/wasm-bridge'
 import { differenceInSeconds, differenceInYears } from 'date-fns'
 import { useState, useEffect } from 'react'
 
@@ -32,7 +32,7 @@ export function useOptionsPricing({
       return
     }
 
-    const calculatedPremium = black_scholes(
+    const calculatedPremium = blackScholes(
       currentPrice,
       strikePrice,
       time,

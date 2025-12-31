@@ -18,6 +18,7 @@ import {
   useMeterMapData,
   useMeterClusters,
   useGridStatus,
+  useGridTopology,
 } from './energy-grid'
 import type { EnergyNode, EnergyTransfer, ClusterOrPoint } from './energy-grid'
 
@@ -31,7 +32,7 @@ const hasValidToken = MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' && MA
 
 const { campus, energyNodes: configNodes, energyTransfers: configTransfers } = energyGridConfig
 const staticEnergyNodes = configNodes as EnergyNode[]
-const energyTransfers = configTransfers as EnergyTransfer[]
+const staticEnergyTransfers = configTransfers as EnergyTransfer[]
 
 export default function EnergyGridMap() {
   // View state
@@ -67,10 +68,20 @@ export default function EnergyGridMap() {
   // Fetch aggregate grid status from the API
   const { status: apiGridStatus, isLoading: gridStatusLoading } = useGridStatus(10000)
 
-  // Only use real meters (no static mock data)
+  // Fetch dynamic grid topology (transformers and lines)
+  const { transformers, transfers: topologyTransfers } = useGridTopology()
+
+  // Combine real meters with transformers if showing real data
   const energyNodes = useMemo(() => {
-    return showRealMeters ? realMeterNodes : []
-  }, [showRealMeters, realMeterNodes])
+    return showRealMeters
+      ? [...realMeterNodes, ...transformers]
+      : staticEnergyNodes
+  }, [showRealMeters, realMeterNodes, transformers, staticEnergyNodes])
+
+  // Use dynamic transfers if showing real meters, otherwise static config
+  const energyTransfers = useMemo(() => {
+    return showRealMeters ? topologyTransfers : staticEnergyTransfers
+  }, [showRealMeters, topologyTransfers, staticEnergyTransfers])
 
   // Cluster markers for performance (266+ meters)
   const { clusters, getClusterExpansionZoom } = useMeterClusters({

@@ -8,11 +8,10 @@ import { Loader2, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import OrderBook from '@/components/OrderBook'
-import OrderForm from './components/OrderForm'
+import OrderForm from '@/components/p2p/OrderForm'
 import TradeHistory from '@/components/TradeHistory'
-import UserOrders from './components/UserOrders'
-import UserOrders from './components/UserOrders'
-import P2PNav from './components/P2PNav'
+import UserOrders from '@/components/p2p/UserOrders'
+import P2PNav from '@/components/p2p/P2PNav'
 import QuantumTradeHistory from '@/components/p2p/QuantumTradeHistory'
 
 export default function P2PPage() {
@@ -34,7 +33,8 @@ export default function P2PPage() {
 
         try {
             defaultApiClient.setToken(token)
-            const response = await fetch('http://localhost:4000/api/v1/trading/admin/match-orders', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000';
+            const response = await fetch(`${apiUrl}/api/v1/trading/admin/match-orders`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

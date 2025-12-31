@@ -2,8 +2,10 @@
 import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import CryptoNav from '@/components/CryptoNav'
-import PriceQuote from '@/components/PriceQuote'
-import GreekPopup from '@/components/GreekPopup'
+const TradingPositionsPanel = dynamic(
+  () => import('@/components/TradingPositionsPanel'),
+  { ssr: false }
+)
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
 import { Button } from '@/components/ui/button'
@@ -14,17 +16,9 @@ const TradingViewChartContainer = dynamic(
   () => import('@/components/TradingViewChartContainer'),
   { ssr: false }
 )
-const TradingPositionsPanel = dynamic(
-  () => import('@/components/TradingPositionsPanel'),
-  { ssr: false }
-)
 const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
   ssr: false,
 })
-const OptionCardContainer = dynamic(
-  () => import('@/components/OptionCardContainer'),
-  { ssr: false }
-)
 import { useOptionsPricing } from '@/hooks/useOptionsPricing'
 import { useGreeks } from '@/hooks/useGreeks'
 import {
@@ -38,6 +32,7 @@ import {
 const OrderBook = dynamic(() => import('@/components/OrderBook'), { ssr: false })
 const P2POrderForm = dynamic(() => import('@/components/p2p/OrderForm'), { ssr: false })
 const UserOrders = dynamic(() => import('@/components/p2p/UserOrders'), { ssr: false })
+const TransactionHistory = dynamic(() => import('@/components/TransactionHistory'), { ssr: false })
 
 export default function Homepage() {
   const [active, setActive] = useState('chart')
@@ -55,7 +50,7 @@ export default function Homepage() {
   const [expiry, setExpiry] = useState<Date>(addWeeks(new Date(), 1))
 
   const [transaction, setTransaction] = useState('buy')
-  const [tradingMode, setTradingMode] = useState<'derivatives' | 'p2p'>('derivatives')
+  const [tradingMode, setTradingMode] = useState<'derivatives' | 'p2p' | 'transaction'>('derivatives')
 
   const handleSymbolChange = useCallback((newSymbol: string) => {
     setSelectedSymbol(newSymbol)
@@ -66,6 +61,15 @@ export default function Homepage() {
   }, [])
 
   const handleIndexChange = useCallback((newIdx: number) => {
+    if (newIdx === -1) {
+      setTradingMode('transaction')
+      // Reset active tab for mobile bottom nav if needed
+      setActive('transactions')
+      return
+    }
+
+    // Default behavior for positive indices (switching tokens)
+    setTradingMode('derivatives')
     setTokenIdx(newIdx)
   }, [])
 
@@ -99,8 +103,6 @@ export default function Homepage() {
         priceLoading={priceLoading}
         marketLoading={marketLoading}
         type="options"
-        mode={tradingMode}
-        onModeChange={setTradingMode}
       />
       <div
         className={cn(
@@ -127,54 +129,13 @@ export default function Homepage() {
               </div>
               <TradingPositionsPanel />
             </div>
-          ) : (
+          ) : active === 'trade' ? (
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700">
-              {tradingMode === 'derivatives' ? (
-                <>
-                  <OptionCardContainer
-                    selectedSymbol={selectedSymbol}
-                    onSymbolChange={handleSymbolChange}
-                    onIdxChange={handleIndexChange}
-                    index={tokenIdx}
-                    onStrikePriceChange={setStrikePrice}
-                    onExpiryChange={setExpiry}
-                    onPayAmountChange={setPayAmount}
-                    onContractTypeChange={setContractType}
-                    onCurrencyChange={setCurrency}
-                    priceData={priceData}
-                    marketData={marketData}
-                    priceLoading={priceLoading}
-                    marketLoading={marketLoading}
-                    onTransactionChange={setTransaction}
-                  />
-                  <div
-                    className={`${transaction === 'sell' ? 'hidden' : 'flex'} w-full flex-col space-y-4`}
-                  >
-                    <PriceQuote
-                      active={tokenIdx}
-                      currency={currency}
-                      value={payAmount}
-                      priceData={priceData}
-                      premium={premium.premium}
-                      contractType={contractType}
-                    />
-                    <GreekPopup
-                      value={payAmount}
-                      delta={greeks.delta}
-                      gamma={greeks.gamma}
-                      theta={greeks.theta}
-                      vega={greeks.vega}
-                      rho={greeks.rho}
-                    />
-                    <TradingPositionsPanel />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <P2POrderForm />
-                  <UserOrders />
-                </>
-              )}
+              <P2POrderForm />
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 p-2">
+              <TradeHistory />
             </div>
           )}
         </div>
@@ -221,10 +182,14 @@ export default function Homepage() {
                     </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>
-              ) : (
+              ) : tradingMode === 'p2p' ? (
                 <div className="flex h-full flex-col space-y-4 overflow-y-auto p-4">
                   <OrderBook />
                   <UserOrders />
+                </div>
+              ) : (
+                <div className="flex h-full flex-col space-y-4 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-500">
+                  <TransactionHistory />
                 </div>
               )}
             </ResizablePanel>
@@ -234,61 +199,20 @@ export default function Homepage() {
             {/* RIGHT SIDEBAR */}
             <ResizablePanel id="right-sidebar" defaultSize={20} minSize={12} maxSize={30}>
               <div className="flex flex-col space-y-2 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-1 pr-1 text-xs">
-                {tradingMode === 'derivatives' ? (
-                  <>
-                    <OptionCardContainer
-                      selectedSymbol={selectedSymbol}
-                      onSymbolChange={handleSymbolChange}
-                      onIdxChange={handleIndexChange}
-                      index={tokenIdx}
-                      onStrikePriceChange={setStrikePrice}
-                      onExpiryChange={setExpiry}
-                      onPayAmountChange={setPayAmount}
-                      onContractTypeChange={setContractType}
-                      onCurrencyChange={setCurrency}
-                      priceData={priceData}
-                      marketData={marketData}
-                      priceLoading={priceLoading}
-                      marketLoading={marketLoading}
-                      onTransactionChange={setTransaction}
-                    />
-                    <div
-                      className={`${transaction === 'sell' ? 'hidden' : 'flex'} w-full flex-col space-y-2`}
-                    >
-                      <PriceQuote
-                        active={tokenIdx}
-                        currency={currency}
-                        value={payAmount}
-                        priceData={priceData}
-                        premium={premium.premium}
-                        contractType={contractType}
-                      />
-                      <GreekPopup
-                        value={payAmount}
-                        delta={greeks.delta}
-                        gamma={greeks.gamma}
-                        theta={greeks.theta}
-                        vega={greeks.vega}
-                        rho={greeks.rho}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <P2POrderForm />
-                )}
+                <P2POrderForm />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
       </div >
       <div className="sticky bottom-0 z-10 w-full border-t bg-background p-3 pb-10 lg:hidden">
-        <div className="grid grid-cols-2 space-x-2">
+        <div className="grid grid-cols-3 space-x-2">
           <Button
             className={cn(
               active === 'chart'
                 ? 'border-primary text-primary'
                 : 'text-secondary-foreground',
-              'w-full rounded-sm border bg-inherit px-5 py-[6px]'
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
             )}
             onClick={() => setActive('chart')}
           >
@@ -299,11 +223,28 @@ export default function Homepage() {
               active === 'trade'
                 ? 'border-primary text-primary'
                 : 'text-secondary-foreground',
-              'w-full rounded-sm border bg-inherit px-5 py-[6px]'
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
             )}
-            onClick={() => setActive('trade')}
+            onClick={() => {
+              setActive('trade')
+              setTradingMode('p2p')
+            }}
           >
             Trade
+          </Button>
+          <Button
+            className={cn(
+              active === 'transactions'
+                ? 'border-primary text-primary'
+                : 'text-secondary-foreground',
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
+            )}
+            onClick={() => {
+              setActive('transactions')
+              setTradingMode('transaction')
+            }}
+          >
+            Transactions
           </Button>
         </div>
       </div>

@@ -116,16 +116,23 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
     const fetchMeters = useCallback(async () => {
         try {
             setError(null)
-            // Use public API - no auth required
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-            const response = await fetch(`${apiUrl}/api/v1/public/meters`)
+            const apiGatewayUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+            let metersData: PublicMeterResponse[] = []
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch meters: ${response.status}`)
+            try {
+                const apiResponse = await fetch(`${apiGatewayUrl}/api/v1/public/meters`)
+                if (apiResponse.ok) {
+                    metersData = await apiResponse.json() as PublicMeterResponse[]
+                } else {
+                    throw new Error(`API Gateway returned ${apiResponse.status}: ${apiResponse.statusText}`)
+                }
+            } catch (err) {
+                console.error('API Gateway failed:', err)
+                setError(err instanceof Error ? err.message : 'Failed to fetch meters')
             }
 
-            const data = await response.json() as PublicMeterResponse[]
-            setMeters(data)
+            console.log(`Loaded ${metersData.length} meters for map`)
+            setMeters(metersData)
         } catch (err) {
             console.error('Error fetching meters for map:', err)
             setError(err instanceof Error ? err.message : 'Failed to fetch meters')

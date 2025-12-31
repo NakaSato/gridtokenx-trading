@@ -57,6 +57,7 @@ interface TradingViewTopNavProps {
   priceLoading: boolean
   marketLoading: boolean
   type: string
+  onNavigate?: (idx: number) => void
 }
 
 export default function TradingViewTopNav({
@@ -71,6 +72,7 @@ export default function TradingViewTopNav({
   priceLoading,
   marketLoading,
   type,
+  onNavigate,
 }: TradingViewTopNavProps) {
   const [active, setActive] = useState<
     | 'all'
@@ -265,6 +267,24 @@ export default function TradingViewTopNav({
             </span>
           </Button>
         </div>
+      </div>
+
+      {/* Transaction Tab */}
+      <div className="hidden lg:flex items-center">
+        <div className="px-4 py-1">
+          <Separator orientation="vertical" />
+        </div>
+        <Button
+          variant="ghost"
+          className={`flex h-fit w-fit items-center gap-[6px] bg-inherit p-0 hover:bg-transparent ${type === 'Transaction' ? 'text-primary font-bold' : 'text-secondary-foreground hover:text-foreground'}`}
+          onClick={() => {
+            if (onNavigate) {
+              onNavigate(-1)
+            }
+          }}
+        >
+          <span className="text-sm font-medium">Transaction</span>
+        </Button>
       </div>
       <div className="hidden lg:flex">
         <div className="hidden px-4 py-1 md:flex">

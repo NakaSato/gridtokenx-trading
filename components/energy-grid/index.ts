@@ -10,6 +10,7 @@ export { useWasmSimulation } from './useWasmSimulation'
 export { useMeterMapData } from './useMeterMapData'
 export { useMeterClusters } from './useMeterClusters'
 export { useGridStatus } from './useGridStatus'
+export { useGridTopology } from './useGridTopology'
 
 // Types
 export type {

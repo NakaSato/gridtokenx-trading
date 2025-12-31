@@ -11,6 +11,7 @@ import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 import DevFaucet from '@/components/DevFaucet'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
+import { WasmProvider } from '@/lib/wasm-provider'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -27,7 +28,6 @@ export const metadata: Metadata = {
   applicationName: siteName,
   authors: [
     { name: 'GridTokenX', url: 'https://gridtokenx.com' },
-    { name: 'NakaSato', url: 'https://github.com/NakaSato' },
   ],
   generator: 'Next.js',
   keywords: [
@@ -141,13 +141,15 @@ export default function RootLayout({
           <Connectionprovider>
             <AuthProvider>
               <SocketProvider>
-                <AuthModalManager />
-                <DevFaucet />
-                <EmailVerificationBanner />
-                <div className="mx-auto flex h-screen flex-col px-6">
-                  <NavBar></NavBar>
-                  <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
-                </div>
+                <WasmProvider>
+                  <AuthModalManager />
+                  <DevFaucet />
+                  <EmailVerificationBanner />
+                  <div className="mx-auto flex h-screen flex-col px-6">
+                    <NavBar></NavBar>
+                    <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+                  </div>
+                </WasmProvider>
               </SocketProvider>
             </AuthProvider>
           </Connectionprovider>
