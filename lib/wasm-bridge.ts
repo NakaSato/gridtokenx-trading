@@ -25,6 +25,7 @@ export interface PnLData {
 export interface WasmExports {
     memory: WebAssembly.Memory;
     get_buffer_ptr: () => number;
+    // Options pricing
     black_scholes: (s: number, k: number, t: number, isCall: number) => number;
     delta_calc: (s: number, k: number, t: number, isCall: number) => number;
     gamma_calc: (s: number, k: number, t: number) => number;
@@ -38,6 +39,39 @@ export interface WasmExports {
     generate_pnl_batch: (strikePrice: number, premium: number, contractType: number, positionType: number, rangePercent: number, numPoints: number) => number;
     get_pnl_buffer_ptr: () => number;
     get_pnl_range: (numPoints: number, outPtr: number) => void;
+    // Order book
+    orderbook_init: () => void;
+    orderbook_add: (id: number, side: number, price: number, quantity: number, timestamp: number) => void;
+    orderbook_cancel: (id: number) => number;
+    orderbook_best_bid: () => number;
+    orderbook_best_ask: () => number;
+    orderbook_spread: () => number;
+    orderbook_mid_price: () => number;
+    orderbook_match: () => number;
+    orderbook_match_ptr: () => number;
+    orderbook_depth: (levels: number) => number;
+    orderbook_depth_ptr: () => number;
+    orderbook_bid_count: () => number;
+    orderbook_ask_count: () => number;
+    // Grid topology
+    topology_init: () => void;
+    topology_load_nodes: (ptr: number, count: number) => void;
+    topology_load_lines: (ptr: number, count: number) => void;
+    topology_shortest_path: (start: number, end: number) => number;
+    topology_path_ptr: () => number;
+    topology_calc_flow: () => number;
+    topology_flow_ptr: () => number;
+    topology_calc_losses: (voltage: number) => number;
+    topology_node_count: () => number;
+    topology_line_count: () => number;
+    // Crypto
+    crypto_sha256: (ptr: number, len: number) => number;
+    crypto_hash_ptr: () => number;
+    crypto_hash_hex: () => number;
+    crypto_hex_ptr: () => number;
+    crypto_sign: (keyPtr: number, keyLen: number, msgPtr: number, msgLen: number) => number;
+    crypto_sig_ptr: () => number;
+    crypto_verify: (keyPtr: number, keyLen: number, msgPtr: number, msgLen: number, sigPtr: number) => number;
 }
 
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -427,3 +461,195 @@ function generatePnLBatchJS(
     return { prices, pnlData, minPnL, maxPnL };
 }
 
+// =============================================================================
+// ORDER BOOK FUNCTIONS
+// =============================================================================
+
+export interface Order {
+    id: number;
+    side: 'buy' | 'sell';
+    price: number;
+    quantity: number;
+    timestamp: number;
+}
+
+export interface OrderMatch {
+    buyOrderId: number;
+    sellOrderId: number;
+    price: number;
+    quantity: number;
+}
+
+export interface DepthData {
+    bids: Array<{ price: number; quantity: number }>;
+    asks: Array<{ price: number; quantity: number }>;
+}
+
+/** Initialize order book */
+export function orderbookInit(): void {
+    if (wasmExports) {
+        wasmExports.orderbook_init();
+    }
+}
+
+/** Add order to book */
+export function orderbookAdd(order: Order): void {
+    if (wasmExports) {
+        wasmExports.orderbook_add(
+            order.id,
+            order.side === 'buy' ? 0 : 1,
+            order.price,
+            order.quantity,
+            order.timestamp
+        );
+    }
+}
+
+/** Cancel order */
+export function orderbookCancel(orderId: number): boolean {
+    if (wasmExports) {
+        return wasmExports.orderbook_cancel(orderId) === 1;
+    }
+    return false;
+}
+
+/** Get best bid/ask prices */
+export function orderbookBestBid(): number {
+    return wasmExports?.orderbook_best_bid() ?? -1;
+}
+
+export function orderbookBestAsk(): number {
+    return wasmExports?.orderbook_best_ask() ?? -1;
+}
+
+/** Get spread and mid price */
+export function orderbookSpread(): number {
+    return wasmExports?.orderbook_spread() ?? -1;
+}
+
+export function orderbookMidPrice(): number {
+    return wasmExports?.orderbook_mid_price() ?? -1;
+}
+
+/** Match orders and return matches */
+export function orderbookMatch(): OrderMatch[] {
+    if (!wasmExports) return [];
+
+    const count = wasmExports.orderbook_match();
+    if (count === 0) return [];
+
+    const ptr = wasmExports.orderbook_match_ptr();
+    const memory = new Float64Array(wasmExports.memory.buffer, ptr, count * 4);
+    const matches: OrderMatch[] = [];
+
+    for (let i = 0; i < count; i++) {
+        matches.push({
+            buyOrderId: memory[i * 4],
+            sellOrderId: memory[i * 4 + 1],
+            price: memory[i * 4 + 2],
+            quantity: memory[i * 4 + 3],
+        });
+    }
+    return matches;
+}
+
+/** Get depth data for visualization */
+export function orderbookDepth(levels: number = 10): DepthData {
+    if (!wasmExports) return { bids: [], asks: [] };
+
+    const count = wasmExports.orderbook_depth(levels);
+    if (count === 0) return { bids: [], asks: [] };
+
+    const ptr = wasmExports.orderbook_depth_ptr();
+    const memory = new Float64Array(wasmExports.memory.buffer, ptr, 2 + count * 2);
+
+    const bidCount = memory[0];
+    const askCount = memory[1];
+    const bids: Array<{ price: number; quantity: number }> = [];
+    const asks: Array<{ price: number; quantity: number }> = [];
+
+    let offset = 2;
+    for (let i = 0; i < bidCount; i++) {
+        bids.push({ price: memory[offset], quantity: memory[offset + 1] });
+        offset += 2;
+    }
+    for (let i = 0; i < askCount; i++) {
+        asks.push({ price: memory[offset], quantity: memory[offset + 1] });
+        offset += 2;
+    }
+
+    return { bids, asks };
+}
+
+// =============================================================================
+// CRYPTO FUNCTIONS
+// =============================================================================
+
+/** SHA-256 hash of a string */
+export function sha256(message: string): string {
+    if (!wasmExports) {
+        console.warn('[WASM] Crypto module not available');
+        return '';
+    }
+
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(message);
+
+    // Copy message to WASM memory
+    const ptr = wasmExports.get_buffer_ptr();
+    const memory = new Uint8Array(wasmExports.memory.buffer, ptr, bytes.length);
+    memory.set(bytes);
+
+    wasmExports.crypto_sha256(ptr, bytes.length);
+    wasmExports.crypto_hash_hex();
+
+    const hexPtr = wasmExports.crypto_hex_ptr();
+    const hexMemory = new Uint8Array(wasmExports.memory.buffer, hexPtr, 64);
+    return new TextDecoder().decode(hexMemory);
+}
+
+/** HMAC-SHA256 sign a message */
+export function hmacSign(key: string, message: string): Uint8Array {
+    if (!wasmExports) {
+        console.warn('[WASM] Crypto module not available');
+        return new Uint8Array(32);
+    }
+
+    const encoder = new TextEncoder();
+    const keyBytes = encoder.encode(key);
+    const msgBytes = encoder.encode(message);
+
+    const bufferPtr = wasmExports.get_buffer_ptr();
+    const keyPtr = bufferPtr;
+    const msgPtr = bufferPtr + keyBytes.length;
+
+    const memory = new Uint8Array(wasmExports.memory.buffer);
+    memory.set(keyBytes, keyPtr);
+    memory.set(msgBytes, msgPtr);
+
+    wasmExports.crypto_sign(keyPtr, keyBytes.length, msgPtr, msgBytes.length);
+
+    const sigPtr = wasmExports.crypto_sig_ptr();
+    return new Uint8Array(wasmExports.memory.buffer.slice(sigPtr, sigPtr + 32));
+}
+
+/** Verify HMAC-SHA256 signature */
+export function hmacVerify(key: string, message: string, signature: Uint8Array): boolean {
+    if (!wasmExports) return false;
+
+    const encoder = new TextEncoder();
+    const keyBytes = encoder.encode(key);
+    const msgBytes = encoder.encode(message);
+
+    const bufferPtr = wasmExports.get_buffer_ptr();
+    const keyPtr = bufferPtr;
+    const msgPtr = bufferPtr + keyBytes.length;
+    const sigPtr = msgPtr + msgBytes.length;
+
+    const memory = new Uint8Array(wasmExports.memory.buffer);
+    memory.set(keyBytes, keyPtr);
+    memory.set(msgBytes, msgPtr);
+    memory.set(signature, sigPtr);
+
+    return wasmExports.crypto_verify(keyPtr, keyBytes.length, msgPtr, msgBytes.length, sigPtr) === 1;
+}
