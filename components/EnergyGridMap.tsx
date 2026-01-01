@@ -20,6 +20,7 @@ import {
   useGridStatus,
   useGridTopology,
 } from './energy-grid'
+import { useTopology } from './energy-grid/useTopology'
 import type { EnergyNode, EnergyTransfer, ClusterOrPoint } from './energy-grid'
 
 // Load config
@@ -34,7 +35,11 @@ const { campus, energyNodes: configNodes, energyTransfers: configTransfers } = e
 const staticEnergyNodes = configNodes as EnergyNode[]
 const staticEnergyTransfers = configTransfers as EnergyTransfer[]
 
-export default function EnergyGridMap() {
+interface EnergyGridMapProps {
+  onTradeFromNode?: (node: EnergyNode) => void
+}
+
+export default function EnergyGridMap({ onTradeFromNode }: EnergyGridMapProps) {
   // View state
   const [viewState, setViewState] = useState({
     longitude: campus.center.longitude,
@@ -55,6 +60,8 @@ export default function EnergyGridMap() {
   } | null>(null)
   // Track map bounds for clustering
   const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
+  // Highlighted path state (array of 1-indexed node IDs for topology)
+  const [highlightedPath, setHighlightedPath] = useState<number[] | undefined>(undefined)
 
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -70,6 +77,9 @@ export default function EnergyGridMap() {
 
   // Fetch dynamic grid topology (transformers and lines)
   const { transformers, transfers: topologyTransfers } = useGridTopology()
+
+  // Use WASM topology for path finding
+  const { isLoaded: topologyLoaded, loadNetwork, findPath } = useTopology()
 
   // Combine real meters with transformers if showing real data
   const energyNodes = useMemo(() => {
@@ -98,6 +108,39 @@ export default function EnergyGridMap() {
     energyTransfers,
     updateIntervalMs: 10000, // Optimized from 3000ms
   })
+
+  // Load topology network when nodes/transfers change
+  useEffect(() => {
+    if (topologyLoaded && energyNodes.length > 0) {
+      loadNetwork(energyNodes, energyTransfers)
+    }
+  }, [topologyLoaded, energyNodes, energyTransfers, loadNetwork])
+
+  // Calculate path when node is selected
+  useEffect(() => {
+    if (!selectedNode || !topologyLoaded) {
+      setHighlightedPath(undefined)
+      return
+    }
+
+    // Find the index of the selected node
+    const selectedIdx = energyNodes.findIndex(n => n.id === selectedNode.id)
+    if (selectedIdx === -1) return
+
+    // For consumers, find path to nearest generator
+    // For generators, find path to first consumer
+    const targetType = selectedNode.type === 'generator' ? 'consumer' : 'generator'
+    const targetIdx = energyNodes.findIndex(n => n.type === targetType)
+
+    if (targetIdx === -1) return
+
+    const result = findPath(selectedIdx + 1, targetIdx + 1) // 1-indexed
+    if (result && result.nodeIds.length > 1) {
+      setHighlightedPath(result.nodeIds)
+    } else {
+      setHighlightedPath(undefined)
+    }
+  }, [selectedNode, topologyLoaded, energyNodes, findPath])
 
   // Handle flow line hover
   const handleFlowHover = useCallback((e: any) => {
@@ -282,6 +325,7 @@ export default function EnergyGridMap() {
           energyTransfers={energyTransfers}
           liveTransferData={liveTransferData}
           visible={showFlowLines}
+          highlightedPath={highlightedPath}
         />
 
         {/* Control Buttons */}
@@ -357,6 +401,7 @@ export default function EnergyGridMap() {
               isSelected={selectedNode?.id === node.id}
               onSelect={setSelectedNode}
               onDoubleClick={handleMarkerDoubleClick}
+              onTradeClick={onTradeFromNode}
             />
           )
         })}
@@ -398,4 +443,3 @@ export default function EnergyGridMap() {
     </div>
   )
 }
-

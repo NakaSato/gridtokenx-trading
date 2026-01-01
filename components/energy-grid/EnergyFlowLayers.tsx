@@ -19,6 +19,7 @@ interface EnergyFlowLayersProps {
     liveTransferData: Record<string, LiveTransferData>
     dashOffset: number
     visible: boolean
+    highlightedPath?: number[] // Array of node IDs forming the highlighted path
 }
 
 // Generate smooth curved line with multiple points using quadratic Bezier
@@ -77,6 +78,7 @@ export function EnergyFlowLayers({
     energyTransfers,
     liveTransferData,
     visible,
+    highlightedPath,
 }: Omit<EnergyFlowLayersProps, 'dashOffset'>) {
     // Internal animation state
     const [dashOffset, setDashOffset] = useState(0)
@@ -179,6 +181,58 @@ export function EnergyFlowLayers({
             features,
         }
     }, [energyNodes, energyTransfers, liveTransferData, wasmLoaded, generateCurvedLineWasm])
+
+    // Generate highlighted path GeoJSON
+    const highlightedFlowsGeoJSON = useMemo(() => {
+        if (!highlightedPath || highlightedPath.length < 2) {
+            return { type: 'FeatureCollection' as const, features: [] }
+        }
+
+        const features = []
+
+        // Find transfers that are part of the path
+        for (let i = 0; i < highlightedPath.length - 1; i++) {
+            const fromIdx = highlightedPath[i] - 1 // Convert 1-indexed to 0-indexed
+            const toIdx = highlightedPath[i + 1] - 1
+
+            const fromNode = energyNodes[fromIdx]
+            const toNode = energyNodes[toIdx]
+
+            if (!fromNode || !toNode) continue
+
+            // Generate curved line
+            let curvedCoordinates: [number, number][] | null = null
+            if (wasmLoaded) {
+                curvedCoordinates = generateCurvedLineWasm(
+                    [fromNode.longitude, fromNode.latitude],
+                    [toNode.longitude, toNode.latitude],
+                    0.15, 24
+                )
+            }
+            if (!curvedCoordinates) {
+                curvedCoordinates = generateCurvedLine(
+                    [fromNode.longitude, fromNode.latitude],
+                    [toNode.longitude, toNode.latitude],
+                    0.15, 24
+                )
+            }
+
+            features.push({
+                type: 'Feature' as const,
+                properties: {
+                    id: `path-${i}`,
+                    from: fromNode.name,
+                    to: toNode.name,
+                },
+                geometry: {
+                    type: 'LineString' as const,
+                    coordinates: curvedCoordinates,
+                },
+            })
+        }
+
+        return { type: 'FeatureCollection' as const, features }
+    }, [highlightedPath, energyNodes, wasmLoaded, generateCurvedLineWasm])
 
     if (!visible) return null
 
@@ -290,6 +344,55 @@ export function EnergyFlowLayers({
                     }}
                 />
             </Source>
+
+            {/* Highlighted Path Layer - shows selected route */}
+            {highlightedPath && highlightedPath.length >= 2 && (
+                <>
+                    {/* Glow for highlighted path */}
+                    <Source
+                        id="highlighted-path-glow"
+                        type="geojson"
+                        data={highlightedFlowsGeoJSON as GeoJSON.FeatureCollection}
+                    >
+                        <Layer
+                            id="highlighted-path-glow-layer"
+                            type="line"
+                            layout={{
+                                'line-cap': 'round',
+                                'line-join': 'round',
+                            }}
+                            paint={{
+                                'line-color': '#00ffff',
+                                'line-width': 16,
+                                'line-opacity': 0.4,
+                                'line-blur': 8,
+                            }}
+                        />
+                    </Source>
+
+                    {/* Main highlighted path */}
+                    <Source
+                        id="highlighted-path"
+                        type="geojson"
+                        data={highlightedFlowsGeoJSON as GeoJSON.FeatureCollection}
+                    >
+                        <Layer
+                            id="highlighted-path-layer"
+                            type="line"
+                            layout={{
+                                'line-cap': 'round',
+                                'line-join': 'round',
+                            }}
+                            paint={{
+                                'line-color': '#00ffff',
+                                'line-width': 4,
+                                'line-opacity': 1,
+                                'line-dasharray': [3, 1],
+                            }}
+                        />
+                    </Source>
+                </>
+            )}
         </>
     )
 }
