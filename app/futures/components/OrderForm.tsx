@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+'use client'
+
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,61 +10,65 @@ import { defaultApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { FuturesProduct } from '@/types/futures'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
-export default function OrderForm({ onOrderPlaced }: { onOrderPlaced: () => void }) {
-    const [products, setProducts] = useState<FuturesProduct[]>([])
+export default function OrderForm() {
+    const queryClient = useQueryClient()
     const [selectedProduct, setSelectedProduct] = useState<string>('')
     const [side, setSide] = useState<'long' | 'short'>('long')
     const [orderType, setOrderType] = useState<'market' | 'limit'>('market')
     const [quantity, setQuantity] = useState('')
     const [price, setPrice] = useState('')
     const [leverage, setLeverage] = useState('1')
-    const [loading, setLoading] = useState(false)
 
-    useEffect(() => {
-        loadProducts()
-    }, [])
-
-    const loadProducts = async () => {
-        const { data, error } = await defaultApiClient.getFuturesProducts()
-        if (data && data.length > 0) {
-            setProducts(data)
-            setSelectedProduct(data[0].id)
-        } else if (error) {
-            toast.error('Failed to load futures products')
+    // Fetch products
+    const { data: products = [] } = useQuery({
+        queryKey: ['futuresProducts'],
+        queryFn: async () => {
+            const { data } = await defaultApiClient.getFuturesProducts()
+            if (data && data.length > 0 && !selectedProduct) {
+                setSelectedProduct(data[0].id)
+            }
+            return data || []
         }
-    }
+    })
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    // Create order mutation
+    const orderMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            const { error, data } = await defaultApiClient.createFuturesOrder(payload)
+            if (error) throw new Error(error)
+            return data
+        },
+        onSuccess: () => {
+            toast.success('Order placed successfully')
+            setQuantity('')
+            setPrice('')
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({ queryKey: ['futuresOrders'] })
+            queryClient.invalidateQueries({ queryKey: ['futuresPositions'] })
+        },
+        onError: (err: Error) => {
+            toast.error(err.message)
+        }
+    })
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
 
         if (!selectedProduct) {
             toast.error('Please select a product')
-            setLoading(false)
             return
         }
 
-        const payload = {
+        orderMutation.mutate({
             product_id: selectedProduct,
             side,
             order_type: orderType,
             quantity: Number(quantity),
             price: Number(price) || 0,
             leverage: Number(leverage)
-        }
-
-        const { error } = await defaultApiClient.createFuturesOrder(payload)
-
-        if (error) {
-            toast.error(error)
-        } else {
-            toast.success('Order placed successfully')
-            setQuantity('')
-            setPrice('')
-            onOrderPlaced()
-        }
-        setLoading(false)
+        })
     }
 
     return (
@@ -148,8 +154,8 @@ export default function OrderForm({ onOrderPlaced }: { onOrderPlaced: () => void
                         />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Button type="submit" className="w-full" disabled={orderMutation.isPending}>
+                        {orderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {side === 'long' ? 'Buy / Long' : 'Sell / Short'}
                     </Button>
                 </form>

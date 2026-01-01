@@ -1,8 +1,8 @@
-'use client'
-
 import { useState, useEffect, useRef } from 'react'
 import { PRICE_FEEDS } from '../lib/data/price-feed'
 import { HermesClient } from '@pythnetwork/hermes-client'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+
 const PYTH_ENDPOINT = 'https://hermes.pyth.network'
 const POLLING_INTERVAL = 15000
 const HISTORICAL_INTERVAL = 45000
@@ -29,126 +29,97 @@ interface PriceChangeState {
 }
 
 export function usePythPrice(token: string): UsePythPriceResult {
-  const [priceData, setPriceData] = useState<PythPriceState>({
-    price: null,
-    confidence: null,
-    timestamp: null,
+  const feed = PRICE_FEEDS.find((f) => f.token === token)
+
+  const queryClient = useQueryClient()
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['pythPrice', token],
+    queryFn: async () => {
+      if (!feed) throw new Error('Invalid token')
+
+      const res = await fetch(`/api/pyth-price?id=${feed.id}`)
+      if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`)
+
+      const data = await res.json()
+      const price =
+        parseFloat(data.parsed[0].price.price) *
+        Math.pow(10, data.parsed[0].price.expo)
+      const confidence =
+        parseFloat(data.parsed[0].price.conf) *
+        Math.pow(10, data.parsed[0].price.expo)
+      const timestamp = data.parsed[0].price.publish_time * 1000
+
+      return { price, confidence, timestamp }
+    },
+    enabled: !!feed,
+    refetchInterval: POLLING_INTERVAL,
+    staleTime: 5000,
   })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
+  // WebSocket real-time updates
   useEffect(() => {
-    let mounted = true
-    const feed = PRICE_FEEDS.find((f) => f.token === token)
-    if (!feed) {
-      setError('Invalid token')
-      return
-    }
+    const handleWsMessage = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const message = customEvent.detail
 
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`/api/pyth-price?id=${feed.id}`)
-        const data = await res.json()
-        const price =
-          parseFloat(data.parsed[0].price.price) *
-          Math.pow(10, data.parsed[0].price.expo)
-        const confidence =
-          parseFloat(data.parsed[0].price.conf) *
-          Math.pow(10, data.parsed[0].price.expo)
-        const timestamp = data.parsed[0].price.publish_time * 1000
-
-        if (mounted) {
-          setPriceData({ price, confidence, timestamp })
-          setError(null)
-        }
-      } catch (err: any) {
-        if (mounted) {
-          setError(err.message || 'Fetch failed')
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+      if (message.type === 'PriceUpdated' && message.symbol === token) {
+        console.log(`🏷️ Price real-time update [${token}]:`, message.price)
+        queryClient.invalidateQueries({ queryKey: ['pythPrice', token] })
       }
     }
 
-    fetchData()
-    const interval = setInterval(fetchData, POLLING_INTERVAL)
+    window.addEventListener('ws-message', handleWsMessage)
+    return () => window.removeEventListener('ws-message', handleWsMessage)
+  }, [queryClient, token])
 
-    return () => {
-      mounted = false
-      clearInterval(interval)
-    }
-  }, [token])
-  return { priceData, loading, error }
+  return {
+    priceData: data || { price: null, confidence: null, timestamp: null },
+    loading: isLoading,
+    error: error ? (error as Error).message : null
+  }
 }
 
 export function usePyth24hChange(token: string): PriceChangeState {
-  const [state, setState] = useState<PriceChangeState>({
-    currentPrice: null,
-    pastPrice: null,
-    change: null,
-    percentChange: null,
-    loading: true,
-    error: null,
+  const feed = PRICE_FEEDS.find((f) => f.token === token)
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['pyth24hChange', token],
+    queryFn: async () => {
+      if (!feed) throw new Error('Invalid token')
+
+      const [nowRes, pastRes] = await Promise.all([
+        fetch(`/api/pyth-price?id=${feed.id}`),
+        fetch(`/api/pyth-price-history?id=${feed.id}&ago=24h`),
+      ])
+
+      const nowData = await nowRes.json()
+      const pastData = await pastRes.json()
+
+      const currentPrice = parseFloat(nowData.parsed[0].price.price)
+      const pastPrice = parseFloat(pastData.parsed[0].price.price)
+      const change = currentPrice - pastPrice
+      const percentChange = (change / pastPrice) * 100
+
+      return {
+        currentPrice,
+        pastPrice,
+        change,
+        percentChange,
+      }
+    },
+    enabled: !!feed,
+    refetchInterval: HISTORICAL_INTERVAL,
+    staleTime: 30000,
   })
 
-  useEffect(() => {
-    let mounted = true
-    const feed = PRICE_FEEDS.find((f) => f.token === token)
-    if (!feed) {
-      setState((s) => ({ ...s, error: 'Invalid token', loading: false }))
-      return
-    }
-
-    const fetchPrices = async () => {
-      try {
-        const [nowRes, pastRes] = await Promise.all([
-          fetch(`/api/pyth-price?id=${feed.id}`),
-          fetch(`/api/pyth-price-history?id=${feed.id}&ago=24h`),
-        ])
-
-        const nowData = await nowRes.json()
-        const pastData = await pastRes.json()
-
-        console.log('now', nowData)
-        console.log('past', pastData)
-        const currentPrice = parseFloat(nowData.parsed[0].price.price)
-        const pastPrice = parseFloat(pastData.parsed[0].price.price)
-        const change = currentPrice - pastPrice
-        const percentChange = (change / pastPrice) * 100
-
-        if (mounted) {
-          setState({
-            currentPrice,
-            pastPrice,
-            change,
-            percentChange,
-            loading: false,
-            error: null,
-          })
-        }
-      } catch (err: any) {
-        if (mounted) {
-          setState((s) => ({
-            ...s,
-            loading: false,
-            error: err.message || 'Failed to fetch prices',
-          }))
-        }
-      }
-    }
-
-    fetchPrices()
-    const interval = setInterval(fetchPrices, HISTORICAL_INTERVAL)
-
-    return () => {
-      mounted = false
-      clearInterval(interval)
-    }
-  }, [token])
-
-  return state
+  return {
+    currentPrice: data?.currentPrice ?? null,
+    pastPrice: data?.pastPrice ?? null,
+    change: data?.change ?? null,
+    percentChange: data?.percentChange ?? null,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  }
 }
 
 export const getPythPrice = async (token: string, timestamp: number) => {

@@ -293,6 +293,7 @@ export class ApiClient {
     side: 'Buy' | 'Sell'
     amount: string
     price_per_kwh: string
+    zone_id?: number
   }) {
     return apiRequest<{ id: string }>('/api/v1/trading/orders', {
       method: 'POST',
@@ -300,7 +301,8 @@ export class ApiClient {
         side: orderData.side, // Keep capitalized as backend expects "Buy" or "Sell"
         energy_amount: orderData.amount,
         price_per_kwh: orderData.price_per_kwh,
-        order_type: 'Limit' // Use Limit order type (capitalized)
+        order_type: 'Limit', // Use Limit order type (capitalized)
+        zone_id: orderData.zone_id
       },
       token: this.token,
     })

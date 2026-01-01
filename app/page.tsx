@@ -11,6 +11,7 @@ import { usePythMarketData } from '@/hooks/usePythMarketData'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { addWeeks } from 'date-fns'
+import { Map, TrendingUp, BarChart3 } from 'lucide-react'
 
 const TradingViewChartContainer = dynamic(
   () => import('@/components/TradingViewChartContainer'),
@@ -19,6 +20,10 @@ const TradingViewChartContainer = dynamic(
 const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
   ssr: false,
 })
+const EnergyGridMapWrapper = dynamic(
+  () => import('@/components/EnergyGridMapWrapper'),
+  { ssr: false }
+)
 import { useOptionsPricing } from '@/hooks/useOptionsPricing'
 import { useGreeks } from '@/hooks/useGreeks'
 import {
@@ -27,20 +32,14 @@ import {
   ResizablePanelGroup,
 
 } from '@/components/ui/resizable'
-
-// P2P Imports
-const OrderBook = dynamic(() => import('@/components/OrderBook'), { ssr: false })
-const P2POrderForm = dynamic(() => import('@/components/p2p/OrderForm'), { ssr: false })
-const UserOrders = dynamic(() => import('@/components/p2p/UserOrders'), { ssr: false })
-const TransactionHistory = dynamic(() => import('@/components/TransactionHistory'), { ssr: false })
+import P2POrderForm from '@/components/p2p/OrderForm'
 
 export default function Homepage() {
-  const [active, setActive] = useState('chart')
+  const [active, setActive] = useState('map')
   const [tokenIdx, setTokenIdx] = useState(0)
   const [selectedSymbol, setSelectedSymbol] = useState<string>('Crypto.SOL/USD')
   const [positionType, setPositionType] = useState<string>('long')
   const [contractType, setContractType] = useState<'Call' | 'Put'>('Call')
-  const [currency, setCurrency] = useState(selectedSymbol)
   const [selectedLogo, setSelectedLogo] = useState<string>('/images/solana.png')
   const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol)
   const { marketData, loading: marketLoading } =
@@ -48,9 +47,8 @@ export default function Homepage() {
   const [payAmount, setPayAmount] = useState('')
   const [strikePrice, setStrikePrice] = useState('')
   const [expiry, setExpiry] = useState<Date>(addWeeks(new Date(), 1))
-
+  const [currency, setCurrency] = useState(selectedSymbol)
   const [transaction, setTransaction] = useState('buy')
-  const [tradingMode, setTradingMode] = useState<'derivatives' | 'p2p' | 'transaction'>('derivatives')
 
   const handleSymbolChange = useCallback((newSymbol: string) => {
     setSelectedSymbol(newSymbol)
@@ -61,15 +59,6 @@ export default function Homepage() {
   }, [])
 
   const handleIndexChange = useCallback((newIdx: number) => {
-    if (newIdx === -1) {
-      setTradingMode('transaction')
-      // Reset active tab for mobile bottom nav if needed
-      setActive('transactions')
-      return
-    }
-
-    // Default behavior for positive indices (switching tokens)
-    setTradingMode('derivatives')
     setTokenIdx(newIdx)
   }, [])
 
@@ -83,6 +72,7 @@ export default function Homepage() {
     expiryDate: expiry,
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const greeks = useGreeks({
     type: contractType,
     currentPrice: s,
@@ -112,7 +102,11 @@ export default function Homepage() {
       >
         {/* Mobile Layout - Grid */}
         <div className="flex flex-col h-full pt-4 md:hidden">
-          {active === 'chart' ? (
+          {active === 'map' ? (
+            <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+              <EnergyGridMapWrapper />
+            </div>
+          ) : active === 'chart' ? (
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-700">
               <div className="min-h-0 flex-1 flex flex-col">
                 <TradingViewChartContainer
@@ -129,15 +123,11 @@ export default function Homepage() {
               </div>
               <TradingPositionsPanel />
             </div>
-          ) : active === 'trade' ? (
-            <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700">
-              <P2POrderForm />
-            </div>
-          ) : (
+          ) : active === 'pnl' ? (
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 p-2">
               <TradeHistory />
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Desktop Layout - Resizable Panels */}
@@ -152,46 +142,41 @@ export default function Homepage() {
 
             <ResizableHandle withHandle />
 
-            {/* CENTER - CHART & POSITIONS OR P2P ORDERBOOK */}
+            {/* CENTER - CHART & POSITIONS */}
             <ResizablePanel id="center-area" defaultSize={60} minSize={40}>
-              {tradingMode === 'derivatives' ? (
-                <ResizablePanelGroup direction="vertical" className="h-full" id="center-vertical-group">
-                  {/* CHART */}
-                  <ResizablePanel id="center-chart" defaultSize={70} minSize={30}>
-                    <div className="flex flex-col h-full overflow-hidden animate-in fade-in zoom-in-95 duration-700 px-2">
-                      <TradingViewChartContainer
-                        symbol={selectedSymbol}
-                        logo={selectedLogo}
-                        premium={premium.premium.toString()}
-                        investment={payAmount}
-                        strikePrice={strikePrice}
-                        currentPrice={priceData.price!}
-                        positionType={positionType}
-                        contractType={contractType}
-                        expiry={expiry}
-                      />
+              <ResizablePanelGroup direction="vertical" className="h-full" id="center-vertical-group">
+                {/* CHART */}
+                <ResizablePanel id="center-chart" defaultSize={70} minSize={30}>
+                  <div className="flex flex-col h-full overflow-hidden animate-in fade-in zoom-in-95 duration-700 px-2">
+                    <div className="flex-1 min-h-0">
+                      {active === 'map' ? (
+                        <EnergyGridMapWrapper />
+                      ) : (
+                        <TradingViewChartContainer
+                          symbol={selectedSymbol}
+                          logo={selectedLogo}
+                          premium={premium.premium.toString()}
+                          investment={payAmount}
+                          strikePrice={strikePrice}
+                          currentPrice={priceData.price!}
+                          positionType={positionType}
+                          contractType={contractType}
+                          expiry={expiry}
+                        />
+                      )}
                     </div>
-                  </ResizablePanel>
+                  </div>
+                </ResizablePanel>
 
-                  <ResizableHandle withHandle />
+                <ResizableHandle withHandle />
 
-                  {/* POSITIONS */}
-                  <ResizablePanel id="center-positions" defaultSize={30} minSize={15} maxSize={50}>
-                    <div className="h-full overflow-y-auto px-2 pt-2">
-                      <TradingPositionsPanel />
-                    </div>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              ) : tradingMode === 'p2p' ? (
-                <div className="flex h-full flex-col space-y-4 overflow-y-auto p-4">
-                  <OrderBook />
-                  <UserOrders />
-                </div>
-              ) : (
-                <div className="flex h-full flex-col space-y-4 overflow-y-auto p-4 animate-in fade-in zoom-in-95 duration-500">
-                  <TransactionHistory />
-                </div>
-              )}
+                {/* POSITIONS */}
+                <ResizablePanel id="center-positions" defaultSize={30} minSize={15} maxSize={50}>
+                  <div className="h-full overflow-y-auto px-2 pt-2">
+                    <TradingPositionsPanel />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -206,49 +191,45 @@ export default function Homepage() {
         </div>
       </div >
       <div className="sticky bottom-0 z-10 w-full border-t bg-background p-3 pb-10 lg:hidden">
-        <div className="grid grid-cols-3 space-x-2">
+        <div className="grid grid-cols-3 gap-2">
+          <Button
+            className={cn(
+              active === 'map'
+                ? 'border-primary text-primary bg-primary/10'
+                : 'text-secondary-foreground',
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs flex items-center justify-center gap-1.5'
+            )}
+            onClick={() => setActive('map')}
+          >
+            <Map size={14} />
+            Map
+          </Button>
           <Button
             className={cn(
               active === 'chart'
-                ? 'border-primary text-primary'
+                ? 'border-primary text-primary bg-primary/10'
                 : 'text-secondary-foreground',
-              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs flex items-center justify-center gap-1.5'
             )}
             onClick={() => setActive('chart')}
           >
+            <TrendingUp size={14} />
             Chart
           </Button>
           <Button
             className={cn(
-              active === 'trade'
-                ? 'border-primary text-primary'
+              active === 'pnl'
+                ? 'border-primary text-primary bg-primary/10'
                 : 'text-secondary-foreground',
-              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
+              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs flex items-center justify-center gap-1.5'
             )}
-            onClick={() => {
-              setActive('trade')
-              setTradingMode('p2p')
-            }}
+            onClick={() => setActive('pnl')}
           >
-            Trade
-          </Button>
-          <Button
-            className={cn(
-              active === 'transactions'
-                ? 'border-primary text-primary'
-                : 'text-secondary-foreground',
-              'w-full rounded-sm border bg-inherit px-2 py-[6px] text-xs'
-            )}
-            onClick={() => {
-              setActive('transactions')
-              setTradingMode('transaction')
-            }}
-          >
-            Transactions
+            <BarChart3 size={14} />
+            P&L
           </Button>
         </div>
       </div>
     </>
   )
 }
-

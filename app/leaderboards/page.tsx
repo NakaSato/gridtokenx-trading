@@ -1,6 +1,14 @@
+'use client'
 import LeaderboardPagination from '@/components/LeaderboardPagination'
 import LeaderboardStats from '@/components/LeaderboardStats'
-import LeaderboardTable from '@/components/LeaderboardTable'
+import dynamic from 'next/dynamic'
+import SkeletonTable from '@/components/ui/SkeletonTable'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
+
+const LeaderboardTable = dynamic(() => import('@/components/LeaderboardTable'), {
+  ssr: false,
+  loading: () => <SkeletonTable columns={6} rows={10} height={500} />
+})
 import LeaderBoardTopRanks from '@/components/LeaderBoardTopRanks'
 
 export default function leaderBoards() {
@@ -9,7 +17,9 @@ export default function leaderBoards() {
       <LeaderBoardTopRanks />
       <div className="flex w-full flex-col space-y-6">
         <LeaderboardStats />
-        <LeaderboardTable />
+        <ErrorBoundary name="Leaderboard Table">
+          <LeaderboardTable />
+        </ErrorBoundary>
         <LeaderboardPagination />
       </div>
     </div>

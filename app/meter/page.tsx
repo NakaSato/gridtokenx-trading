@@ -10,7 +10,7 @@ import { useSmartMeter } from '@/hooks/useSmartMeter'
 import { MemoizedMeterStats as MeterStats } from '@/components/meter/MeterStats'
 import { MemoizedReadingsList as ReadingsList } from '@/components/meter/ReadingsList'
 import { MemoizedMeterList as MeterList } from '@/components/meter/MeterList'
-import { SimulatorWalletCard } from '@/components/meter/SimulatorWalletCard'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export default function SmartMeterPage() {
     const {
@@ -64,9 +64,6 @@ export default function SmartMeterPage() {
                     onSuccess={fetchData}
                 />
 
-                {/* Simulator Wallet Integration */}
-                <SimulatorWalletCard />
-
                 <SubmitReadingModal
                     isOpen={isSubmitOpen}
                     onClose={() => setIsSubmitOpen(false)}
@@ -74,17 +71,19 @@ export default function SmartMeterPage() {
                     onSuccess={fetchData}
                 />
 
-                <MeterStats
-                    totalGenerated={stats.totalGenerated}
-                    totalMinted={stats.totalMinted}
-                    mintedCount={stats.mintedCount}
-                    pendingToMint={stats.pendingToMint}
-                    pendingCount={stats.pendingCount}
-                    netEnergy={stats.netEnergy}
-                    meterCount={meters.length}
-                    lastUpdate={stats.lastUpdate}
-                    lastRefreshed={lastRefreshed}
-                />
+                <ErrorBoundary name="Meter Stats">
+                    <MeterStats
+                        totalGenerated={stats.totalGenerated}
+                        totalMinted={stats.totalMinted}
+                        mintedCount={stats.mintedCount}
+                        pendingToMint={stats.pendingToMint}
+                        pendingCount={stats.pendingCount}
+                        netEnergy={stats.netEnergy}
+                        meterCount={meters.length}
+                        lastUpdate={stats.lastUpdate}
+                        lastRefreshed={lastRefreshed}
+                    />
+                </ErrorBoundary>
 
                 <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex items-center border-b pb-2 mb-4 flex-none">
@@ -106,28 +105,30 @@ export default function SmartMeterPage() {
                         </Button>
                     </div>
 
-                    {activeTab === 'readings' && (
-                        <div className="flex-1 min-h-0 flex flex-col">
-                            <ReadingsList
-                                readings={readings}
-                                meters={meters}
-                                loading={loading}
-                                onMint={handleMintTokens}
-                                onCopy={copyToClipboard}
-                                mintingId={mintingReadingId}
-                            />
-                        </div>
-                    )}
+                    <ErrorBoundary name="Meter Lists">
+                        {activeTab === 'readings' && (
+                            <div className="flex-1 min-h-0 flex flex-col">
+                                <ReadingsList
+                                    readings={readings}
+                                    meters={meters}
+                                    loading={loading}
+                                    onMint={async (id) => handleMintTokens(id)}
+                                    onCopy={copyToClipboard}
+                                    mintingId={mintingReadingId}
+                                />
+                            </div>
+                        )}
 
-                    {activeTab === 'meters' && (
-                        <div className="flex-1 min-h-0 overflow-y-auto">
-                            <MeterList
-                                meters={meters}
-                                loading={loading}
-                                onOpenSubmit={handleOpenSubmit}
-                            />
-                        </div>
-                    )}
+                        {activeTab === 'meters' && (
+                            <div className="flex-1 min-h-0 overflow-y-auto">
+                                <MeterList
+                                    meters={meters}
+                                    loading={loading}
+                                    onOpenSubmit={handleOpenSubmit}
+                                />
+                            </div>
+                        )}
+                    </ErrorBoundary>
                 </div>
             </main>
         </ProtectedRoute>

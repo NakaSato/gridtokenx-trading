@@ -11,6 +11,7 @@ import {
   Filler,
   Legend,
 } from 'chart.js'
+import { useMemo } from 'react'
 import { Line } from 'react-chartjs-2'
 
 ChartJS.register(
@@ -24,8 +25,20 @@ ChartJS.register(
   Legend
 )
 
-export function OptionChainChart() {
-  const options = {
+interface Leg {
+  side: 'Long' | 'Short'
+  type: 'Call' | 'Put'
+  strikePrice: number
+  bidPrice: number
+}
+
+interface OptionChainChartProps {
+  legs?: Leg[]
+  currentPrice?: number
+}
+
+export function OptionChainChart({ legs = [], currentPrice = 100 }: OptionChainChartProps) {
+  const options = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -44,72 +57,92 @@ export function OptionChainChart() {
         padding: 10,
         displayColors: false,
         callbacks: {
-          label: function (context: any) {
-            return `$${context.parsed.y.toFixed(2)}`
-          },
+          title: (tooltipItems: any) => `Price: $${tooltipItems[0].label}`,
+          label: (context: any) => `PnL: $${context.parsed.y.toFixed(2)}`,
         },
       },
-    },
-    interaction: {
-      mode: 'index' as const,
-      intersect: false,
     },
     scales: {
       x: {
-        grid: {
-          display: false,
-        },
-        border: {
-          display: false,
-        },
-        ticks: {
-          color: '#808693',
-          font: {
-            size: 12,
-          },
-        },
+        title: { display: true, text: 'Price at Expiry', color: '#808693', font: { size: 10 } },
+        grid: { display: false },
+        ticks: { color: '#808693', font: { size: 10 } },
       },
       y: {
-        position: 'left' as const,
-        grid: {
-          color: '#333339',
-          drawBorder: false,
-        },
-        border: {
-          display: false,
-        },
+        title: { display: true, text: 'Profit / Loss', color: '#808693', font: { size: 10 } },
+        grid: { color: '#333339' },
         ticks: {
           color: '#808693',
-          font: {
-            size: 12,
-          },
-          callback: function (value: any) {
-            return `$${value}`
-          },
+          font: { size: 10 },
+          callback: (value: any) => `$${value}`,
         },
       },
     },
-  }
+  }), [])
 
-  const labels = ['$0', '$20', '$40', '$60', '$80', '$100']
-  const data = {
+  const { labels, dataPoints } = useMemo(() => {
+    const range = 40 // +/- 20%
+    const minPrice = Math.max(0, currentPrice * 0.8)
+    const maxPrice = currentPrice * 1.2
+    const step = (maxPrice - minPrice) / 20
+
+    const lbs: string[] = []
+    const dps: number[] = []
+
+    for (let p = minPrice; p <= maxPrice; p += step) {
+      lbs.push(p.toFixed(0))
+
+      let totalPnL = 0
+      legs.forEach(leg => {
+        const isCall = leg.type === 'Call'
+        const isLong = leg.side === 'Long'
+
+        let pnl = 0
+        if (isCall) {
+          pnl = Math.max(0, p - leg.strikePrice)
+        } else {
+          pnl = Math.max(0, leg.strikePrice - p)
+        }
+
+        if (isLong) {
+          totalPnL += (pnl - leg.bidPrice)
+        } else {
+          totalPnL += (leg.bidPrice - pnl)
+        }
+      })
+      dps.push(totalPnL)
+    }
+
+    return { labels: lbs, dataPoints: dps }
+  }, [legs, currentPrice])
+
+  const chartData = useMemo(() => ({
     labels,
     datasets: [
       {
         fill: true,
-        data: [80, 90, 100, 110, 120, 130],
+        data: dataPoints,
         borderColor: '#B1A3FB',
-        backgroundColor: 'rgba(177, 163, 251, 0.4)',
-        tension: 0.4,
+        backgroundColor: (context: any) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return null;
+          const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          gradient.addColorStop(0, 'rgba(239, 68, 68, 0.2)'); // Red for loss
+          gradient.addColorStop(0.5, 'rgba(177, 163, 251, 0.1)');
+          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.2)'); // Green for profit
+          return gradient;
+        },
+        tension: 0.2,
         pointRadius: 0,
         borderWidth: 2,
       },
     ],
-  }
+  }), [labels, dataPoints])
 
   return (
     <div className="h-full w-full rounded-sm p-2">
-      <Line options={options} data={data} />
+      <Line options={options} data={chartData} />
     </div>
   )
 }

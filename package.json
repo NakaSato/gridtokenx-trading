@@ -11,6 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
+    "build:wasm": "cd ../gridtokenx-wasm && cargo build --target wasm32-unknown-unknown --release && mkdir -p ../gridtokenx-trading/public/wasm && cp target/wasm32-unknown-unknown/release/gridtokenx_wasm.wasm ../gridtokenx-trading/public/wasm/lib.wasm",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.4",
+    "@tanstack/react-query": "^5.90.16",
     "@types/supercluster": "^7.1.3",
     "chart.js": "^4.5.1",
     "chartjs-plugin-annotation": "^3.1.0",
@@ -64,6 +66,7 @@
     "react-hot-toast": "^2.6.0",
     "react-map-gl": "^8.1.0",
     "react-resizable-panels": "^2.1.7",
+    "react-window": "^2.2.3",
     "recharts": "^2.15.4",
     "rpc-websockets": "7.11.0",
     "supercluster": "^8.0.1",
@@ -82,6 +85,7 @@
     "@types/react": "19.2.5",
     "@types/react-dom": "19.2.3",
     "@types/react-map-gl": "^6.1.7",
+    "@types/react-window": "^1.8.8",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^8.57.1",
     "eslint-config-next": "16.0.3",

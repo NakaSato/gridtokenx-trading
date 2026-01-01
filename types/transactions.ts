@@ -2,7 +2,7 @@
  * Transaction types for GridTokenX Platform
  */
 
-export type TransactionType = 
+export type TransactionType =
   | 'EnergyTrade'
   | 'TokenMint'
   | 'TokenBurn'
@@ -10,7 +10,7 @@ export type TransactionType =
   | 'Unstake'
   | 'Reward'
 
-export type TransactionStatus = 
+export type TransactionStatus =
   | 'pending'
   | 'processing'
   | 'submitted'
@@ -30,6 +30,19 @@ export interface UserTransaction {
   submitted_at: string | null
   confirmed_at: string | null
   settled_at: string | null
+  metadata?: {
+    energy_amount?: number
+    price_per_kwh?: number
+    total_amount?: number
+    wheeling_charge?: number
+    loss_cost?: number
+    loss_factor?: number
+    effective_energy?: number
+    buyer_zone_id?: number
+    seller_zone_id?: number
+    side?: string
+    zone_id?: number
+  }
 }
 
 export interface GetUserTransactionsParams {
@@ -43,4 +56,7 @@ export interface GetUserTransactionsParams {
   has_signature?: boolean
 }
 
-export type UserTransactionsResponse = UserTransaction[]
+export interface UserTransactionsResponse {
+  transactions: UserTransaction[]
+  total: number
+}

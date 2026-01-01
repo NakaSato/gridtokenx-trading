@@ -5,7 +5,6 @@ import { Map as MapIcon, TrendingUp, BarChart3, History } from 'lucide-react'
 import TradingViewChart from './TradingViewChart'
 import PnlChartContainer from './PnlChartContainer'
 import EnergyGridMapWrapper from './EnergyGridMapWrapper'
-import TransactionHistory from './TransactionHistory'
 
 interface TradingViewChartContainerProps {
   symbol: string
@@ -74,16 +73,6 @@ export default function TradingViewChartContainer({
                   <span className="hidden sm:inline">P&L</span>
                 </div>
               </TabsTrigger>
-              <TabsTrigger
-                value="transactions"
-                className="h-full rounded-sm px-2 text-[10px] transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
-                onClick={() => handleClick('transactions')}
-              >
-                <div className="flex items-center gap-1">
-                  <History className="h-3 w-3" />
-                  <span className="hidden sm:inline">Transactions</span>
-                </div>
-              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -103,9 +92,6 @@ export default function TradingViewChartContainer({
             />
           )}
 
-          {activeTab === 'transactions' && (
-            <TransactionHistory useMockData={false} />
-          )}
         </CardContent>
       </Card>
     </>

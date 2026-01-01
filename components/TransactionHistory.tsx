@@ -117,7 +117,8 @@ export default function TransactionHistory({
         if (response.error) {
           setError(response.error)
         } else if (response.data) {
-          setTransactions(response.data)
+          // Response data is { transactions, total }
+          setTransactions(response.data.transactions || [])
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch transactions')

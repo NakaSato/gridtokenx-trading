@@ -59,7 +59,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
         const connectWs = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-            console.log('🔌 Connecting to Grid Status WebSocket:', wsUrl)
+            // console.log('🔌 Connecting to Grid Status WebSocket:', wsUrl)
             const ws = new WebSocket(wsUrl)
             wsRef.current = ws
 
@@ -67,7 +67,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                 try {
                     const data = JSON.parse(event.data)
                     if (data.type === 'grid_status_updated') {
-                        console.log('⚡ Real-time Grid Update Received:', data)
+                        // console.log('⚡ Real-time Grid Update Received:', data)
                         setStatus({
                             total_generation: data.total_generation,
                             total_consumption: data.total_consumption,

@@ -15,7 +15,8 @@ import {
 } from 'chart.js'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import { Line } from 'react-chartjs-2'
-import { useId } from 'react'
+import { useId, useMemo } from 'react'
+import { generatePnLBatch } from '@/lib/wasm-bridge'
 
 ChartJS.register(
   CategoryScale,
@@ -38,77 +39,27 @@ interface PnLChartProps {
   invested: number
 }
 
-const calculatePnL = (
-  price: number,
-  strikePrice: number,
-  premium: number,
-  contractType: string,
-  positionType: string,
-  invested: number
-) => {
-  let pnl = 0
-  const multiplier = Math.floor(invested / premium)
-
-  console.log(multiplier)
-
-  if (contractType === 'call') {
-    if (positionType === 'long') {
-      // Long Call: PnL = (max(Price - Strike, 0) - Premium) × Multiplier
-      pnl = Math.max(price - strikePrice, 0) - premium
-    } else {
-      // Short Call: PnL = (Premium - max(Price - Strike, 0)) × Multiplier
-      pnl = premium - Math.max(price - strikePrice, 0)
-    }
-  } else {
-    if (positionType === 'long') {
-      // Long Put: PnL = (max(Strike - Price, 0) - Premium) × Multiplier
-      pnl = Math.max(strikePrice - price, 0) - premium
-    } else {
-      // Short Put: PnL = (Premium - max(Strike - Price, 0)) × Multiplier
-      pnl = premium - Math.max(strikePrice - price, 0)
-    }
-  }
-  return pnl
-}
-
 const generatePnLData = ({
   strikePrice,
   premium,
   contractType,
   positionType,
-  currentPrice = strikePrice,
-  invested,
 }: PnLChartProps) => {
-  // Generate price range ±20% of strike price
-  const range = strikePrice * 0.2
-  const minPrice = strikePrice - range
-  const maxPrice = strikePrice + range
-  const numPoints = 400
-  const priceStep = (maxPrice - minPrice) / (numPoints - 1)
-
-  const priceRange = Array.from(
-    { length: numPoints },
-    (_, i) => minPrice + i * priceStep
+  // Use WASM-accelerated batch generation (with JS fallback)
+  const { prices, pnlData, minPnL, maxPnL } = generatePnLBatch(
+    strikePrice,
+    premium,
+    contractType,
+    positionType,
+    0.2, // ±20% range
+    400  // 400 points
   )
 
-  const pnlData = priceRange.map((price) =>
-    calculatePnL(
-      price,
-      strikePrice,
-      premium,
-      contractType,
-      positionType,
-      invested
-    )
-  )
-
-  const maxPnL = Math.max(...pnlData)
-  const minPnL = Math.min(...pnlData)
   const pnlRange = Math.max(Math.abs(maxPnL), Math.abs(minPnL))
 
   return {
-    labels: priceRange,
-    priceRange,
+    labels: prices,
+    priceRange: prices,
     datasets: [
       {
         label: 'Option P&L',
@@ -142,6 +93,7 @@ const generatePnLData = ({
     minPnL,
   }
 }
+
 
 export function PnLChart({
   strikePrice,
@@ -250,21 +202,21 @@ export function PnLChart({
           },
           currentPrice: currentPrice
             ? {
-                type: 'line',
-                xMin: priceRange.findIndex((p) => p >= (currentPrice || 0)),
-                xMax: priceRange.findIndex((p) => p >= (currentPrice || 0)),
-                borderColor: 'white',
-                borderWidth: 2,
-                label: {
-                  display: true,
-                  content: `Current: $${currentPrice.toLocaleString()}`,
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  color: 'white',
-                  padding: 4,
-                  position: 'end',
-                  yAdjust: 10,
-                },
-              }
+              type: 'line',
+              xMin: priceRange.findIndex((p) => p >= (currentPrice || 0)),
+              xMax: priceRange.findIndex((p) => p >= (currentPrice || 0)),
+              borderColor: 'white',
+              borderWidth: 2,
+              label: {
+                display: true,
+                content: `Current: $${currentPrice.toLocaleString()}`,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                color: 'white',
+                padding: 4,
+                position: 'end',
+                yAdjust: 10,
+              },
+            }
             : undefined,
           // breakEven: {
           //   type: 'line',

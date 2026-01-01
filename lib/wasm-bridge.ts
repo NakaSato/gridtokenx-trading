@@ -2,7 +2,7 @@
  * WASM Bridge for Options Pricing
  * 
  * TypeScript wrapper to load and call WASM functions for
- * Black-Scholes pricing and Greeks calculations.
+ * Black-Scholes pricing, Greeks calculations, and P&L chart generation.
  * 
  * @module wasm-bridge
  */
@@ -13,6 +13,13 @@ export interface Greeks {
     vega: number;
     theta: number;
     rho: number;
+}
+
+export interface PnLData {
+    prices: number[];
+    pnlData: number[];
+    minPnL: number;
+    maxPnL: number;
 }
 
 export interface WasmExports {
@@ -26,6 +33,11 @@ export interface WasmExports {
     rho_calc: (s: number, k: number, t: number, isCall: number) => number;
     batch_black_scholes: (ptr: number, count: number, outPtr: number) => number;
     calc_all_greeks: (s: number, k: number, t: number, isCall: number, outPtr: number) => void;
+    // P&L Chart functions
+    calculate_pnl: (price: number, strikePrice: number, premium: number, contractType: number, positionType: number) => number;
+    generate_pnl_batch: (strikePrice: number, premium: number, contractType: number, positionType: number, rangePercent: number, numPoints: number) => number;
+    get_pnl_buffer_ptr: () => number;
+    get_pnl_range: (numPoints: number, outPtr: number) => void;
 }
 
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -271,3 +283,147 @@ function rhoCalcJS(s: number, k: number, t: number, isCall: boolean): number {
     }
     return rhoValue * 0.01;
 }
+
+// =============================================================================
+// P&L CHART FUNCTIONS
+// =============================================================================
+
+/**
+ * Calculate single P&L value for an option position
+ * @param price - Current underlying price
+ * @param strikePrice - Option strike price
+ * @param premium - Premium paid/received
+ * @param contractType - 'call' or 'put'
+ * @param positionType - 'long' or 'short'
+ */
+export function calculatePnL(
+    price: number,
+    strikePrice: number,
+    premium: number,
+    contractType: 'call' | 'put' | string,
+    positionType: 'long' | 'short' | string
+): number {
+    const contractTypeNum = contractType === 'call' ? 0 : 1;
+    const positionTypeNum = positionType === 'long' ? 0 : 1;
+
+    if (wasmExports) {
+        return wasmExports.calculate_pnl(price, strikePrice, premium, contractTypeNum, positionTypeNum);
+    }
+    return calculatePnLJS(price, strikePrice, premium, contractType, positionType);
+}
+
+/**
+ * Generate batch P&L data for chart rendering
+ * @param strikePrice - Option strike price
+ * @param premium - Premium paid/received
+ * @param contractType - 'call' or 'put'
+ * @param positionType - 'long' or 'short'
+ * @param rangePercent - Price range as percentage of strike (default: 0.2 = ±20%)
+ * @param numPoints - Number of data points (default: 400)
+ * @returns P&L data with prices, pnl values, and min/max
+ */
+export function generatePnLBatch(
+    strikePrice: number,
+    premium: number,
+    contractType: 'call' | 'put' | string,
+    positionType: 'long' | 'short' | string,
+    rangePercent: number = 0.2,
+    numPoints: number = 400
+): PnLData {
+    const contractTypeNum = contractType === 'call' ? 0 : 1;
+    const positionTypeNum = positionType === 'long' ? 0 : 1;
+
+    if (wasmExports) {
+        // Use WASM for batch generation
+        const count = wasmExports.generate_pnl_batch(
+            strikePrice, premium, contractTypeNum, positionTypeNum, rangePercent, numPoints
+        );
+
+        if (count === 0) {
+            return { prices: [], pnlData: [], minPnL: 0, maxPnL: 0 };
+        }
+
+        // Read data from WASM buffer
+        const bufferPtr = wasmExports.get_pnl_buffer_ptr();
+        const memory = new Float64Array(wasmExports.memory.buffer, bufferPtr, count * 2);
+
+        const prices: number[] = [];
+        const pnlData: number[] = [];
+
+        for (let i = 0; i < count; i++) {
+            prices.push(memory[i * 2]);
+            pnlData.push(memory[i * 2 + 1]);
+        }
+
+        // Get min/max from WASM
+        const rangePtr = wasmExports.get_buffer_ptr();
+        wasmExports.get_pnl_range(count, rangePtr);
+        const rangeMemory = new Float64Array(wasmExports.memory.buffer, rangePtr, 2);
+
+        return {
+            prices,
+            pnlData,
+            minPnL: rangeMemory[0],
+            maxPnL: rangeMemory[1],
+        };
+    }
+
+    // JavaScript fallback
+    return generatePnLBatchJS(strikePrice, premium, contractType, positionType, rangePercent, numPoints);
+}
+
+// =============================================================================
+// P&L JAVASCRIPT FALLBACKS
+// =============================================================================
+
+function calculatePnLJS(
+    price: number,
+    strikePrice: number,
+    premium: number,
+    contractType: string,
+    positionType: string
+): number {
+    if (contractType === 'call') {
+        if (positionType === 'long') {
+            return Math.max(price - strikePrice, 0) - premium;
+        } else {
+            return premium - Math.max(price - strikePrice, 0);
+        }
+    } else {
+        if (positionType === 'long') {
+            return Math.max(strikePrice - price, 0) - premium;
+        } else {
+            return premium - Math.max(strikePrice - price, 0);
+        }
+    }
+}
+
+function generatePnLBatchJS(
+    strikePrice: number,
+    premium: number,
+    contractType: string,
+    positionType: string,
+    rangePercent: number,
+    numPoints: number
+): PnLData {
+    const range = strikePrice * rangePercent;
+    const minPrice = strikePrice - range;
+    const maxPrice = strikePrice + range;
+    const priceStep = (maxPrice - minPrice) / (numPoints - 1);
+
+    const prices: number[] = [];
+    const pnlData: number[] = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const price = minPrice + i * priceStep;
+        const pnl = calculatePnLJS(price, strikePrice, premium, contractType, positionType);
+        prices.push(price);
+        pnlData.push(pnl);
+    }
+
+    const maxPnL = Math.max(...pnlData);
+    const minPnL = Math.min(...pnlData);
+
+    return { prices, pnlData, minPnL, maxPnL };
+}
+

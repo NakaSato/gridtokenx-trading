@@ -21,24 +21,25 @@ import { Transaction } from '@/lib/data/WalletActivity'
 import { BN } from '@coral-xyz/anchor'
 import Pagination from './Pagination'
 import OpenOptionOrders from './OpenOptionOrders'
-import OrderBook from './OrderBook'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
+import { useOptionPositions } from '@/hooks/useOptions'
 
 export default function TradingPositions() {
   const { token } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('Positions')
   const [optioninfos, setOptionInfos] = useState<Position[]>([])
   const [orderInfos, setOrderInfos] = useState<Order[]>([])
-  const [expiredInfos, setExpiredInfos] = useState<ExpiredOption[]>([])
   const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
-  const { program, getDetailInfos, pub, onClaimOption, onExerciseOption } =
+  const { program, pub, onClaimOption, onExerciseOption } =
     useContext(ContractContext)
+
+  const { data: blockchainPositions, isLoading: blockchainLoading } = useOptionPositions(program, pub || null)
 
   const handleClickTab = (state: string) => {
     if (activeTab !== state) {
@@ -137,16 +138,9 @@ export default function TradingPositions() {
     return () => clearInterval(interval)
   }, [fetchData])
 
-  useEffect(() => {
-    if (program && pub) {
-      // Keep legacy blockchain fetching for now if needed, or replace entirely
-      // This part currently only fills expiredInfos which we don't have a clear API for yet
-      ; (async () => {
-        const [_, expiredpinfo, __] = await getDetailInfos(program, pub)
-        setExpiredInfos(expiredpinfo)
-      })()
-    }
-  }, [program, pub, getDetailInfos])
+  // Consolidate positions: futures + blockchain options
+  const allPositions = [...optioninfos, ...(blockchainPositions?.active || [])]
+  const expiredInfos = blockchainPositions?.expired || []
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
@@ -175,9 +169,9 @@ export default function TradingPositions() {
                 <div className="flex items-center gap-1">
                   <Activity className="h-3 w-3" />
                   <span>Positions</span>
-                  {optioninfos.length > 0 && (
+                  {allPositions.length > 0 && (
                     <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">
-                      {optioninfos.length}
+                      {allPositions.length}
                     </Badge>
                   )}
                 </div>
@@ -210,16 +204,6 @@ export default function TradingPositions() {
                 <div className="flex items-center gap-1">
                   <Ban className="h-3 w-3" />
                   <span>Expired</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="OrderBook"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('OrderBook')}
-              >
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  <span>Book</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -277,12 +261,12 @@ export default function TradingPositions() {
               {activeTab === 'Positions' && (
                 <div className={cn(
                   "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
-                  optioninfos && optioninfos.length > 0 ? "space-y-4" : "justify-center items-center"
+                  allPositions.length > 0 ? "space-y-4" : "justify-center items-center"
                 )}>
-                  {optioninfos && optioninfos.length > 0 ? (
+                  {allPositions.length > 0 ? (
                     <>
                       <div className="flex flex-col space-y-3">
-                        {optioninfos.map((position, index) => (
+                        {allPositions.map((position, index) => (
                           <OpenPositions
                             key={index}
                             index={position.index}
@@ -302,7 +286,7 @@ export default function TradingPositions() {
                       <div className="pt-2">
                         <Pagination
                           currentPage={currentPage}
-                          totalItems={optioninfos.length}
+                          totalItems={allPositions.length}
                           itemsPerPage={itemsPerPage}
                           onPageChange={setCurrentPage}
                         />
@@ -413,12 +397,6 @@ export default function TradingPositions() {
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'OrderBook' && (
-                <div className="h-full overflow-y-auto">
-                  <OrderBook />
                 </div>
               )}
             </>

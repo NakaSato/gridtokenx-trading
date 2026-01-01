@@ -1,20 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
 import OrderForm from './components/OrderForm'
 import PositionsTable from './components/PositionsTable'
 import PriceChart from './components/PriceChart'
 import OrderBookComponent from './components/OrderBook'
 import OrderHistory from './components/OrderHistory'
-import { Card, CardContent } from '@/components/ui/card'
 
 export default function FuturesPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
-
-  const handleOrderPlaced = () => {
-    setRefreshTrigger(prev => prev + 1)
-  }
-
   return (
     <div className="container mx-auto space-y-6 p-6">
       <h1 className="text-3xl font-bold">Futures Trading</h1>
@@ -30,12 +23,12 @@ export default function FuturesPage() {
               <OrderBookComponent />
             </div>
           </div>
-          <PositionsTable refreshTrigger={refreshTrigger} />
-          <OrderHistory refreshTrigger={refreshTrigger} />
+          <PositionsTable />
+          <OrderHistory />
         </div>
 
         <div className="lg:col-span-1">
-          <OrderForm onOrderPlaced={handleOrderPlaced} />
+          <OrderForm />
         </div>
       </div>
     </div>

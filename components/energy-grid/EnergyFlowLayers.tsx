@@ -98,7 +98,13 @@ export function EnergyFlowLayers({
         const speed = 0.05
 
         const animate = (time: number) => {
-            if (time - lastTime > 33) { // Throttled to ~30fps
+            // Stop animation if document is hidden to save battery/CPU
+            if (document.hidden) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            if (time - lastTime > 33) { // Throttled to ~30fps for smooth visual without overkill
                 setDashOffset((prev) => (prev + speed) % 20)
                 lastTime = time
             }

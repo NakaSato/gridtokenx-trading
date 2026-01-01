@@ -28,7 +28,7 @@ export function SimulatorWalletCard() {
     const fetchSimulatorData = async (silent = false) => {
         try {
             if (!silent) setRefreshing(true)
-            const response = await fetch('http://localhost:8000/api/status')
+            const response = await fetch('http://localhost:4000/api/status')
             if (response.ok) {
                 const data: SimulatorStatusResponse = await response.json()
                 const walletMeters = data.meters.map((m: any) => ({

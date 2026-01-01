@@ -1,16 +1,18 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 
 interface SocketContextType {
     socket: WebSocket | null;
     isConnected: boolean;
+    sendMessage: (data: any) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     isConnected: false,
+    sendMessage: () => { },
 });
 
 export const useSocket = () => useContext(SocketContext);
@@ -18,77 +20,83 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const { token } = useAuth(); // Assuming useAuth provides the JWT token
+    const { token } = useAuth();
+    const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    const socketRef = useRef<WebSocket | null>(null);
 
-    useEffect(() => {
-        // Only connect if we have a token (authenticated WS)
-        // or if we decide to allow public WS (market feed) without token.
-        // For now, let's try connecting to the market feed which seems public in Gateway code,
-        // OR the authenticated one if we have a token.
-
-        // Gateway has:
-        // /ws?token=... (Authenticated)
-        // /api/market/ws (Public Market Feed)
-
-        // For meter readings (personal), we likely need the Authenticated one.
-
+    const connect = useCallback(() => {
         if (!token) return;
 
         const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://127.0.0.1:4000';
         const wsUrl = `${wsBaseUrl}/ws`;
         const urlWithToken = `${wsUrl}?token=${token}`;
 
-        console.log('Connecting to WebSocket:', urlWithToken);
-
+        console.log('🔌 Connecting to WebSocket...');
         const ws = new WebSocket(urlWithToken);
+        socketRef.current = ws;
 
         ws.onopen = () => {
-            console.log('WebSocket connected');
+            console.log('✅ WebSocket connected');
             setIsConnected(true);
+            setSocket(ws);
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
         };
 
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
+        ws.onclose = (event) => {
+            console.log(`❌ WebSocket disconnected (Code: ${event.code})`);
             setIsConnected(false);
             setSocket(null);
+            socketRef.current = null;
+
+            // Simple exponential backoff or 3s retry
+            if (token) {
+                console.log('🔄 Attempting to reconnect in 3s...');
+                reconnectTimeoutRef.current = setTimeout(connect, 3000);
+            }
         };
 
         ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error('⚠️ WebSocket error:', error);
+            ws.close();
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                // Dispatch a custom event so hooks can listen
-                // or just rely on the hook adding listeners to the socket object itself if we expose it
-
-                // However, native WebSocket only has one onmessage handler.
-                // We need a way to multiplex.
-
-                // Simple Multiplexer: dispatch window event or use an EventEmitter pattern.
-                // Let's use a simple CustomEvent on the socket object for now if possible,
-                // OR better: use an Emitter in this context.
+                // Standard approach: Dispatch a CustomEvent for hooks to listen to
+                const customEvent = new CustomEvent('ws-message', { detail: data });
+                window.dispatchEvent(customEvent);
             } catch (e) {
                 console.error('Failed to parse WS message', e);
             }
         };
-
-        // To allow multiple listeners, we will overwrite onmessage to dispatch to a set of listeners.
-        // Actually, simpler: let's expose a subscribe method?
-        // Or just let hooks attach 'message' event listeners to the socket object? 
-        // WebSocket DOES supports addEventListener('message', ...) standard DOM event.
-        // So we don't need to overwrite onmessage. Hooks can just do socket.addEventListener('message').
-
-        setSocket(ws);
-
-        return () => {
-            ws.close();
-        };
     }, [token]);
 
+    const sendMessage = useCallback((data: any) => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify(data));
+        } else {
+            console.warn('Cannot send message: WebSocket is not open');
+        }
+    }, []);
+
+    useEffect(() => {
+        connect();
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+        };
+    }, [connect]);
+
     return (
-        <SocketContext.Provider value={{ socket, isConnected }}>
+        <SocketContext.Provider value={{ socket, isConnected, sendMessage }}>
             {children}
         </SocketContext.Provider>
     );

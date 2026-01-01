@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    unoptimized: true,
+    unoptimized: false,
     formats: [],
   },
   async rewrites() {

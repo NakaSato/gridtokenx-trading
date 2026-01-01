@@ -40,8 +40,8 @@ import {
 } from '@coral-xyz/anchor'
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 import { OptionContract } from '@/lib/idl/option_contract'
-import * as idl from '../lib/idl/option_contract.json'
 import { getPythPrice, usePythPrice } from '@/hooks/usePythPrice'
+import { useCustodies } from '@/hooks/useOptions'
 import { ChartStrategy } from './ChartStrategy'
 import { PublicKey } from '@solana/web3.js'
 import CardTokenList from './CardTokenList'
@@ -136,7 +136,7 @@ export default function EarnSidebar({
   const [tokenAmount, setTokenAmount] = useState<number>(0)
   const { connected, publicKey } = useWallet()
   const wallet = useAnchorWallet()
-  const [program, setProgram] = useState<Program<OptionContract>>()
+  const { data: custodies, isLoading: custodiesLoading } = useCustodies(sc.program, publicKey)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -152,25 +152,13 @@ export default function EarnSidebar({
   }
   useEffect(() => {
     ; (async () => {
-      let provider: Provider
-      if (wallet && connected) {
-        try {
-          provider = getProvider()
-        } catch {
-          provider = new AnchorProvider(connection, wallet, {})
-        }
-
-        const program = new Program<OptionContract>(
-          idl as OptionContract,
-          provider
-        )
-        setProgram(program)
+      if (custodies && connected) {
         const price = await getPythPrice('Crypto.SOL/USD', Date.now())
-        const [data, ratios] = await sc?.getCustodies(program)
-        setPoolDatas(poolData(data, ratios, price))
+        // For now, passing empty ratios Map as current useCustodies doesn't provide them yet
+        setPoolDatas(poolData(custodies, new Map(), price))
       }
     })()
-  }, [connected, poolData, sc, wallet])
+  }, [connected, poolData, custodies])
 
   const onSubmit = () => {
     if (connected) {
@@ -178,14 +166,14 @@ export default function EarnSidebar({
         if (selectedToken == 0) {
           sc.onAddLiquidity(
             tokenAmount * 10 ** WSOL_DECIMALS,
-            program,
+            sc.program,
             WSOL_MINT,
             POOL_NAME
           )
         } else {
           sc.onAddLiquidity(
             tokenAmount * 10 ** QUOTE_DECIMALS,
-            program,
+            sc.program,
             QUOTE_MINT,
             POOL_NAME
           )
@@ -194,14 +182,14 @@ export default function EarnSidebar({
         if (selectedToken == 0) {
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
-            program,
+            sc.program,
             WSOL_MINT,
             POOL_NAME
           )
         } else {
           sc.onRemoveLiquidity(
             tokenAmount * 10 ** LP_DECIMALS,
-            program,
+            sc.program,
             QUOTE_MINT,
             POOL_NAME
           )

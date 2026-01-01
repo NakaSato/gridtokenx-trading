@@ -21,6 +21,15 @@ interface WasmExports extends WebAssembly.Exports {
     get_node_output_ptr: () => number
     get_flow_output_ptr: () => number
 
+    // Options Pricing
+    black_scholes: (s: number, k: number, t: number, is_call: number) => number
+    delta_calc: (s: number, k: number, t: number, is_call: number) => number
+    gamma_calc: (s: number, k: number, t: number) => number
+    vega_calc: (s: number, k: number, t: number) => number
+    theta_calc: (s: number, k: number, t: number, is_call: number) => number
+    rho_calc: (s: number, k: number, t: number, is_call: number) => number
+    calc_all_greeks: (s: number, k: number, t: number, is_call: number, out_ptr: number) => void
+
     get_buffer_ptr: () => number
     get_output_buffer_ptr: () => number
     memory: WebAssembly.Memory
@@ -37,7 +46,7 @@ export function useWasmMath() {
             try {
                 // In streaming instantiation, response MUST be fetched from the public dir
                 // Adjust the path to where you put the .wasm file
-                const response = await fetch('/wasm/gridtokenx_math_wasm.wasm')
+                const response = await fetch('/wasm/lib.wasm')
 
                 if (!response.ok) {
                     throw new Error(`Failed to load wasm: ${response.statusText}`)
@@ -202,6 +211,29 @@ export function useWasmMath() {
         return { nodes: nodesSlice, flows: flowsSlice }
     }, [wasm])
 
+    const calculateOptionsPrice = useCallback((s: number, k: number, t: number, isCall: boolean) => {
+        if (!wasm) return 0
+        return wasm.black_scholes(s, k, t, isCall ? 1 : 0)
+    }, [wasm])
+
+    const calculateGreeks = useCallback((s: number, k: number, t: number, isCall: boolean) => {
+        if (!wasm || !wasm.memory) return null
+
+        const outPtr = bufferPtrRef.current // Re-using static buffer for output
+        wasm.calc_all_greeks(s, k, t, isCall ? 1 : 0, outPtr)
+
+        const memoryArray = new Float64Array(wasm.memory.buffer)
+        const offset = outPtr / 8
+
+        return {
+            delta: memoryArray[offset],
+            gamma: memoryArray[offset + 1],
+            vega: memoryArray[offset + 2],
+            theta: memoryArray[offset + 3],
+            rho: memoryArray[offset + 4]
+        }
+    }, [wasm])
+
     return {
         isLoaded: !!wasm,
         isLoading,
@@ -211,6 +243,8 @@ export function useWasmMath() {
         getClustersWasm,
         initSimulationNodesWasm,
         initSimulationFlowsWasm,
-        updateSimulationWasm
+        updateSimulationWasm,
+        calculateOptionsPrice,
+        calculateGreeks
     }
 }

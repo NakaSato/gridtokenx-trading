@@ -1,123 +1,153 @@
+'use client'
+
+import React, { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+const { FixedSizeList: List } = require('react-window')
 import { Rank1Icon, Rank2Icon, Rank3Icon, StarIcon } from '@/public/svgs/icons'
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from './ui/table'
 import { Separator } from './ui/separator'
+import SkeletonTable from './ui/SkeletonTable'
 
 export default function LeaderboardTable() {
-  const generateLeaderboardData = (numEntries: number) => {
-    const baseAddress = [
-      '4FDKx3S3',
-      'CA14Dxk6',
-      '7WVG5b9b',
-      '53gDPFjM',
-      'GWE2zPNp',
-      'HDG5LNix',
-    ]
-    const leaderboardData = []
+  const { data: leaderboardData = [], isLoading } = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: async () => {
+      // Simulating API fetch with delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-    for (let i = 1; i <= numEntries; i++) {
-      const basePoints = 130000000000 - i * 100000000
-      const totalPoints = basePoints * 5
+      const numEntries = 500
+      const baseAddress = [
+        '4FDKx3S3',
+        'CA14Dxk6',
+        '7WVG5b9b',
+        '53gDPFjM',
+        'GWE2zPNp',
+        'HDG5LNix',
+      ]
+      const data = []
 
-      leaderboardData.push({
-        rank: i,
-        address: `${baseAddress[i % baseAddress.length]}...${Math.random().toString(36).substring(2, 10)}`,
-        tradingPoints: basePoints.toLocaleString(),
-        liquidityPoints: (basePoints - 100000000).toLocaleString(),
-        referralPoints: (basePoints - 200000000).toLocaleString(),
-        totalPoints: totalPoints.toLocaleString(),
-      })
-    }
+      for (let i = 1; i <= numEntries; i++) {
+        const basePoints = 130000000000 - i * 100000000
+        const totalPoints = basePoints * 5
 
-    return leaderboardData
+        data.push({
+          rank: i,
+          address: `${baseAddress[i % baseAddress.length]}...${Math.random().toString(36).substring(2, 10)}`,
+          tradingPoints: basePoints.toLocaleString(),
+          liquidityPoints: (basePoints - 100000000).toLocaleString(),
+          referralPoints: (basePoints - 200000000).toLocaleString(),
+          totalPoints: totalPoints.toLocaleString(),
+        })
+      }
+      return data
+    },
+    staleTime: 60000,
+  })
+
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const row = leaderboardData[index]
+    if (!row) return null
+
+    return (
+      <div style={style}>
+        <TableRow className="border-none w-full flex items-center">
+          <TableCell className="w-[100px] py-3 text-center text-foreground">
+            {row.rank === 1 && (
+              <span className="flex justify-center">
+                <Rank1Icon />
+              </span>
+            )}
+            {row.rank === 2 && (
+              <span className="flex justify-center">
+                <Rank2Icon />
+              </span>
+            )}
+            {row.rank === 3 && (
+              <span className="flex justify-center">
+                <Rank3Icon />
+              </span>
+            )}
+            {row.rank > 3 && row.rank}
+          </TableCell>
+          <TableCell className="flex-1 py-3 text-foreground">
+            {row.address}
+          </TableCell>
+          <TableCell className="w-[150px] py-3 text-center text-foreground">
+            {row.tradingPoints}
+          </TableCell>
+          <TableCell className="w-[150px] py-3 text-center text-foreground">
+            {row.liquidityPoints}
+          </TableCell>
+          <TableCell className="w-[150px] py-3 text-center text-foreground">
+            {row.referralPoints}
+          </TableCell>
+          <TableCell className="w-[180px] flex justify-center py-3">
+            <div className="flex items-center gap-2 rounded-sm bg-shade px-2 py-1">
+              <StarIcon />
+              <span className="text-sm font-normal text-foreground">
+                {row.totalPoints}
+              </span>
+            </div>
+          </TableCell>
+        </TableRow>
+      </div>
+    )
   }
 
-  const leaderboardData = generateLeaderboardData(50)
+  if (isLoading) {
+    return (
+      <div className="h-fit rounded-sm border">
+        <SkeletonTable columns={6} rows={10} height={500} />
+      </div>
+    )
+  }
 
   return (
     <div className="h-fit rounded-sm border">
-      {/* <ScrollArea className="h-fit w-full rounded-[25px]"> */}
       <div className="hidden md:block">
         <Table>
           <TableHeader>
-            <TableRow className="w-full">
-              <TableHead className="px-3 py-4 text-center font-normal text-secondary-foreground">
+            <TableRow className="w-full flex items-center">
+              <TableHead className="w-[100px] px-3 py-4 text-center font-normal text-secondary-foreground">
                 Rank
               </TableHead>
-              <TableHead className="px-3 py-4 font-normal text-secondary-foreground">
+              <TableHead className="flex-1 px-3 py-4 font-normal text-secondary-foreground">
                 Address
               </TableHead>
-              <TableHead className="px-3 py-4 text-center font-normal text-secondary-foreground">
+              <TableHead className="w-[150px] px-3 py-4 text-center font-normal text-secondary-foreground">
                 Trading Points
               </TableHead>
-              <TableHead className="px-3 py-4 text-center font-normal text-secondary-foreground">
+              <TableHead className="w-[150px] px-3 py-4 text-center font-normal text-secondary-foreground">
                 Liquidity Points
               </TableHead>
-              <TableHead className="px-3 py-4 text-center font-normal text-secondary-foreground">
+              <TableHead className="w-[150px] px-3 py-4 text-center font-normal text-secondary-foreground">
                 Borrowing Points
               </TableHead>
-              <TableHead className="px-3 py-4 text-center font-normal text-secondary-foreground">
+              <TableHead className="w-[180px] px-3 py-4 text-center font-normal text-secondary-foreground">
                 Total Points
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {leaderboardData.map((row) => (
-              <TableRow key={row.rank} className="border-none">
-                <TableCell className="px-[10px] py-3 text-center text-foreground">
-                  {row.rank === 1 && (
-                    <span className="flex justify-center">
-                      <Rank1Icon />
-                    </span>
-                  )}
-
-                  {row.rank === 2 && (
-                    <span className="flex justify-center">
-                      <Rank2Icon />
-                    </span>
-                  )}
-
-                  {row.rank === 3 && (
-                    <span className="flex justify-center">
-                      <Rank3Icon />
-                    </span>
-                  )}
-
-                  {row.rank > 3 && row.rank}
-                </TableCell>
-                <TableCell className="px-[10px] py-3 text-foreground">
-                  {row.address}
-                </TableCell>
-                <TableCell className="px-[10px] py-3 text-center text-foreground">
-                  {row.tradingPoints}
-                </TableCell>
-                <TableCell className="px-[10px] py-3 text-center text-foreground">
-                  {row.liquidityPoints}
-                </TableCell>
-                <TableCell className="px-[10px] py-3 text-center text-foreground">
-                  {row.referralPoints}
-                </TableCell>
-                <TableCell className="flex justify-center px-[10px] py-3">
-                  <div className="flex items-center gap-2 rounded-sm bg-shade px-2 py-1">
-                    <StarIcon />
-                    <span className="text-sm font-normal text-foreground">
-                      {row.totalPoints}
-                    </span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+          <div className="h-[500px]">
+            <List
+              height={500}
+              itemCount={leaderboardData.length}
+              itemSize={60}
+              width="100%"
+            >
+              {Row}
+            </List>
+          </div>
         </Table>
       </div>
       <div className="flex flex-col p-3 md:hidden">
-        {leaderboardData.map((data, index) => (
+        {leaderboardData.slice(0, 50).map((data, index) => (
           <div className="flex w-full flex-col" key={index}>
             <div className="flex w-full flex-col space-y-[10px]">
               <div className="flex w-full justify-start space-x-[10px]">
@@ -198,7 +228,6 @@ export default function LeaderboardTable() {
           </div>
         ))}
       </div>
-      {/* </ScrollArea> */}
     </div>
   )
 }

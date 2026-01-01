@@ -131,7 +131,6 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
                 setError(err instanceof Error ? err.message : 'Failed to fetch meters')
             }
 
-            console.log(`Loaded ${metersData.length} meters for map`)
             setMeters(metersData)
         } catch (err) {
             console.error('Error fetching meters for map:', err)
