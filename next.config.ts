@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
       },
     ],
     unoptimized: false,
-    formats: [],
+    formats: ['image/avif', 'image/webp'],
   },
   async rewrites() {
     return [
