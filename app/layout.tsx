@@ -13,6 +13,7 @@ import DevFaucet from '@/components/DevFaucet'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { WasmProvider } from '@/lib/wasm-provider'
 import QueryProvider from '@/components/QueryProvider'
+import Footer from '@/components/Footer'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -150,6 +151,7 @@ export default function RootLayout({
                     <div className="mx-auto flex h-screen flex-col px-6">
                       <NavBar></NavBar>
                       <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+                      <Footer />
                     </div>
                   </WasmProvider>
                 </SocketProvider>
