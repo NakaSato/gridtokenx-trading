@@ -1,7 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+
+interface GridHistoryPoint {
+    timestamp: string
+    total_generation: number
+    total_consumption: number
+}
 
 interface GridStatsPanelProps {
     totalGeneration: number
@@ -19,13 +26,36 @@ export function GridStatsPanel({
     activeMeters = 0,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
+    const [history, setHistory] = useState<GridHistoryPoint[]>([])
+
     const netBalance = totalGeneration - totalConsumption
     const totalLoad = totalGeneration + totalConsumption
     const balancePercentage = totalLoad > 0 ? (totalGeneration / totalLoad) * 100 : 50
 
+    // Fetch history on mount and periodic updates
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+                const response = await fetch(`${baseUrl}/api/v1/public/grid-status/history?limit=30`)
+                if (response.ok) {
+                    const data = await response.json()
+                    // Recharts likes chronological order
+                    setHistory(data.reverse())
+                }
+            } catch (error) {
+                console.error('Failed to fetch grid history:', error)
+            }
+        }
+
+        fetchHistory()
+        const interval = setInterval(fetchHistory, 30000) // Refresh every 30s
+        return () => clearInterval(interval)
+    }, [])
+
     return (
         <div
-            className={`absolute bottom-8 right-4 overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out hover:border-white/20 ${isCollapsed ? 'w-48 p-3' : 'w-56 p-4'
+            className={`absolute bottom-8 right-4 overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out hover:border-white/20 ${isCollapsed ? 'w-48 p-3' : 'w-64 p-4'
                 }`}
         >
             {/* Header - Clickable to toggle */}
@@ -47,7 +77,48 @@ export function GridStatsPanel({
             </div>
 
             {/* Metrics Content */}
-            <div className={`space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[500px] opacity-100'}`}>
+            <div className={`space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[800px] opacity-100'}`}>
+                {/* Visual Chart - Historical Trends */}
+                <div className="h-24 w-full bg-white/5 rounded-lg p-1 border border-white/5 mb-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={history.length > 0 ? history : []}>
+                            <defs>
+                                <linearGradient id="genGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id="consGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <Area
+                                type="monotone"
+                                dataKey="total_generation"
+                                stroke="#facc15"
+                                fillOpacity={1}
+                                fill="url(#genGradient)"
+                                strokeWidth={1}
+                                isAnimationActive={false}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="total_consumption"
+                                stroke="#60a5fa"
+                                fillOpacity={1}
+                                fill="url(#consGradient)"
+                                strokeWidth={1}
+                                isAnimationActive={false}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '10px' }}
+                                itemStyle={{ padding: '0px' }}
+                                labelStyle={{ display: 'none' }}
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+
                 {/* Generation */}
                 <div>
                     <div className="flex items-center justify-between text-xs mb-1">
@@ -121,14 +192,14 @@ export function GridStatsPanel({
                             <Leaf className="h-3 w-3 text-green-400" />
                             <span className="text-[9px] uppercase font-bold tracking-tighter">CO₂ Saved</span>
                         </div>
-                        <span className="text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[8px] text-white/40 font-normal">kg/h</span></span>
+                        <span className="text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[8px] text-white/40 font-normal">kg</span></span>
                     </div>
                 </div>
 
                 {/* Footer Info */}
                 <div className="flex items-center justify-between pt-1 text-[9px] text-white/30 italic">
                     <span>{activeMeters} Active Meters</span>
-                    <span>v2.1.0</span>
+                    <span>v2.2.0-analytics</span>
                 </div>
             </div>
 
