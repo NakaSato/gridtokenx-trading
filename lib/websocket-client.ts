@@ -12,6 +12,7 @@ export type WebSocketMessageType =
   | 'order_filled'
   | 'order_cancelled'
   | 'market_clearing'
+  | 'order_matched'
 
 export interface WebSocketMessage<T = any> {
   type: WebSocketMessageType

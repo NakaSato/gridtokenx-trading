@@ -169,11 +169,11 @@ export default function RootLayout({
         />
         <Script
           src="/charting_library/charting_library.standalone.js"
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
         <Script
           src="/datafeeds/udf/dist/bundle.js"
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
       </body>
     </html>

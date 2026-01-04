@@ -188,6 +188,23 @@ export function useOrderFilledWebSocket(
 }
 
 /**
+ * Hook for order matched notifications (P2P)
+ */
+export function useOrderMatchedWebSocket(
+  onOrderMatched: (data: any) => void,
+  token?: string
+) {
+  const { connected } = useWebSocketMessage(
+    'trades',
+    'order_matched',
+    onOrderMatched,
+    token
+  )
+
+  return { connected }
+}
+
+/**
  * Hook for market clearing notifications
  */
 export function useMarketClearingWebSocket(

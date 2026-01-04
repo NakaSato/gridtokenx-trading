@@ -32,10 +32,19 @@ import {
   ResizablePanelGroup,
 
 } from '@/components/ui/resizable'
-import P2POrderForm from '@/components/p2p/OrderForm'
+const P2POrderForm = dynamic(
+  () => import('@/components/p2p/OrderForm'),
+  { ssr: false, loading: () => <div className="h-full animate-pulse bg-secondary/50 rounded-lg" /> }
+)
+const P2PStatus = dynamic(
+  () => import('@/components/p2p/P2PStatus'),
+  { ssr: false, loading: () => <div className="h-32 animate-pulse bg-secondary/50 rounded-lg mb-4" /> }
+)
+import type { EnergyNode } from '@/components/energy-grid/types'
 
 export default function Homepage() {
   const [active, setActive] = useState('map')
+  const [selectedMeterNode, setSelectedMeterNode] = useState<EnergyNode | null>(null)
   const [tokenIdx, setTokenIdx] = useState(0)
   const [selectedSymbol, setSelectedSymbol] = useState<string>('Crypto.SOL/USD')
   const [positionType, setPositionType] = useState<string>('long')
@@ -60,6 +69,13 @@ export default function Homepage() {
 
   const handleIndexChange = useCallback((newIdx: number) => {
     setTokenIdx(newIdx)
+  }, [])
+
+  // Handle trade from map marker
+  const handleTradeFromNode = useCallback((node: EnergyNode) => {
+    setSelectedMeterNode(node)
+    // Map is visible on desktop, so just update the right sidebar order form
+    // No need to switch tabs on desktop since OrderForm is always visible
   }, [])
 
   const s = priceData.price ?? 0
@@ -104,7 +120,7 @@ export default function Homepage() {
         <div className="flex flex-col h-full pt-4 md:hidden">
           {active === 'map' ? (
             <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-700">
-              <EnergyGridMapWrapper />
+              <EnergyGridMapWrapper onTradeFromNode={handleTradeFromNode} />
             </div>
           ) : active === 'chart' ? (
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-700">
@@ -150,7 +166,7 @@ export default function Homepage() {
                   <div className="flex flex-col h-full overflow-hidden animate-in fade-in zoom-in-95 duration-700 px-2">
                     <div className="flex-1 min-h-0">
                       {active === 'map' ? (
-                        <EnergyGridMapWrapper />
+                        <EnergyGridMapWrapper onTradeFromNode={handleTradeFromNode} />
                       ) : (
                         <TradingViewChartContainer
                           symbol={selectedSymbol}
@@ -184,7 +200,12 @@ export default function Homepage() {
             {/* RIGHT SIDEBAR */}
             <ResizablePanel id="right-sidebar" defaultSize={20} minSize={12} maxSize={30}>
               <div className="flex flex-col space-y-2 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-1 pr-1 text-xs">
-                <P2POrderForm />
+                <P2PStatus />
+                <div className="py-2"></div>
+                <P2POrderForm
+                  selectedNode={selectedMeterNode}
+                  onClearNode={() => setSelectedMeterNode(null)}
+                />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

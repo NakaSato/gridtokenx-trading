@@ -1,7 +1,7 @@
 'use client'
 
-import { memo, useState, useCallback } from 'react'
-import { Zap, Battery, BatteryCharging } from 'lucide-react'
+import { memo, useCallback } from 'react'
+import { Zap, Battery, BatteryCharging, ShoppingCart } from 'lucide-react'
 import { Marker } from 'react-map-gl/mapbox'
 import type { EnergyNode, LiveNodeData } from './types'
 
@@ -11,6 +11,7 @@ interface LightweightMarkerProps {
     isSelected: boolean
     onSelect: (node: EnergyNode) => void
     onDoubleClick: (node: EnergyNode) => void
+    onTradeClick?: (node: EnergyNode) => void
 }
 
 // Get status color - simple inline function
@@ -42,6 +43,7 @@ MarkerIcon.displayName = 'MarkerIcon'
  * - No Popover/Accordion (heavy components)
  * - Minimal DOM nodes
  * - Simple click to select
+ * - Trade button when selected
  */
 function LightweightMarkerComponent({
     node,
@@ -49,8 +51,10 @@ function LightweightMarkerComponent({
     isSelected,
     onSelect,
     onDoubleClick,
+    onTradeClick,
 }: LightweightMarkerProps) {
     const status = liveData?.status ?? node.status
+    const liveValue = liveData?.currentValue ?? 0
 
     const handleClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation()
@@ -61,6 +65,11 @@ function LightweightMarkerComponent({
         e.stopPropagation()
         onDoubleClick(node)
     }, [node, onDoubleClick])
+
+    const handleTradeClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation()
+        onTradeClick?.(node)
+    }, [node, onTradeClick])
 
     return (
         <Marker longitude={node.longitude} latitude={node.latitude}>
@@ -76,11 +85,37 @@ function LightweightMarkerComponent({
                 />
                 {/* Main marker - simplified */}
                 <div className={`rounded-full p-1.5 shadow-md backdrop-blur-sm transition-colors ${isSelected
-                        ? 'bg-primary/90 border-2 border-primary'
-                        : 'bg-background/80 border border-primary/40 hover:border-primary'
+                    ? 'bg-primary/90 border-2 border-primary'
+                    : 'bg-background/80 border border-primary/40 hover:border-primary'
                     }`}>
                     <MarkerIcon type={node.type} />
                 </div>
+
+                {/* Selected Node Action Card */}
+                {isSelected && (
+                    <div
+                        className="absolute left-1/2 top-full mt-2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="bg-background/95 backdrop-blur-md border border-primary/40 rounded-lg p-2 shadow-xl min-w-[140px]">
+                            <p className="text-xs font-medium text-foreground truncate mb-1">{node.name}</p>
+                            <p className="text-[10px] text-secondary-foreground mb-2">
+                                {node.type === 'storage'
+                                    ? `${liveValue.toFixed(0)}% charged`
+                                    : `${liveValue.toFixed(1)} kW`}
+                            </p>
+                            {onTradeClick && (
+                                <button
+                                    onClick={handleTradeClick}
+                                    className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs font-medium rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                                >
+                                    <ShoppingCart className="h-3 w-3" />
+                                    Trade
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </Marker>
     )
@@ -91,8 +126,10 @@ export const LightweightMarker = memo(LightweightMarkerComponent, (prev, next) =
     return (
         prev.node.id === next.node.id &&
         prev.isSelected === next.isSelected &&
-        prev.liveData?.status === next.liveData?.status
+        prev.liveData?.status === next.liveData?.status &&
+        prev.liveData?.currentValue === next.liveData?.currentValue
     )
 })
 
 LightweightMarker.displayName = 'LightweightMarker'
+

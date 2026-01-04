@@ -29,10 +29,21 @@ export function useTopology(): UseTopologyResult {
     const [isLoaded, setIsLoaded] = useState(false)
 
     // Initialize WASM on mount
+    // Check WASM status on mount and when it changes
     useEffect(() => {
-        initWasm()
-            .then(() => setIsLoaded(true))
-            .catch((err) => console.error('[Topology] Failed to load WASM:', err))
+        if (isWasmLoaded()) {
+            setIsLoaded(true)
+        } else {
+            // Listen for WASM load event or poll? 
+            // For now, simple polling fallback since we don't have a global event bus for this yet
+            const interval = setInterval(() => {
+                if (isWasmLoaded()) {
+                    setIsLoaded(true)
+                    clearInterval(interval)
+                }
+            }, 100)
+            return () => clearInterval(interval)
+        }
     }, [])
 
     // Load network from energy nodes and transfers

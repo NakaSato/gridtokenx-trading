@@ -76,9 +76,10 @@ export interface WasmExports {
 
 let wasmInstance: WebAssembly.Instance | null = null;
 let wasmExports: WasmExports | null = null;
+let wasmLoadPromise: Promise<WasmExports> | null = null;
 
 /**
- * Initialize the WASM module
+ * Initialize the WASM module (deferred for better performance)
  * @param wasmPath - Path to the .wasm file (default: '/gridtokenx_wasm.wasm')
  */
 export async function initWasm(wasmPath: string = '/gridtokenx_wasm.wasm'): Promise<WasmExports> {
@@ -86,23 +87,51 @@ export async function initWasm(wasmPath: string = '/gridtokenx_wasm.wasm'): Prom
         return wasmExports;
     }
 
-    try {
-        const response = await fetch(wasmPath);
-        const bytes = await response.arrayBuffer();
-        const { instance } = await WebAssembly.instantiate(bytes, {
-            env: {
-                // Add any imports WASM might need
-            }
+    // If already loading, return the existing promise
+    if (wasmLoadPromise) {
+        return wasmLoadPromise;
+    }
+
+    wasmLoadPromise = (async () => {
+        try {
+            const response = await fetch(wasmPath);
+            const bytes = await response.arrayBuffer();
+            const { instance } = await WebAssembly.instantiate(bytes, {
+                env: {
+                    // Add any imports WASM might need
+                }
+            });
+
+            wasmInstance = instance;
+            wasmExports = instance.exports as unknown as WasmExports;
+
+            console.log('[WASM] Options pricing module loaded successfully');
+            return wasmExports;
+        } catch (error) {
+            console.error('[WASM] Failed to load module:', error);
+            wasmLoadPromise = null;
+            throw error;
+        }
+    })();
+
+    return wasmLoadPromise;
+}
+
+/**
+ * Defer WASM initialization to not block main thread
+ */
+export function deferWasmInit(): void {
+    if (typeof window === 'undefined') return;
+
+    if ('requestIdleCallback' in window) {
+        (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
+            initWasm().catch(() => { });
         });
-
-        wasmInstance = instance;
-        wasmExports = instance.exports as unknown as WasmExports;
-
-        console.log('[WASM] Options pricing module loaded successfully');
-        return wasmExports;
-    } catch (error) {
-        console.error('[WASM] Failed to load module:', error);
-        throw error;
+    } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+            initWasm().catch(() => { });
+        }, 100);
     }
 }
 

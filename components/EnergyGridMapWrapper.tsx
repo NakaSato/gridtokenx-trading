@@ -1,6 +1,7 @@
 'use client'
 import dynamic from 'next/dynamic'
 import ErrorBoundary from './ui/ErrorBoundary'
+import type { EnergyNode } from './energy-grid/types'
 
 const MapComponent = dynamic(() => import('./EnergyGridMap'), {
   ssr: false,
@@ -13,11 +14,15 @@ const MapComponent = dynamic(() => import('./EnergyGridMap'), {
   ),
 })
 
-export default function EnergyGridMapWrapper() {
+interface EnergyGridMapWrapperProps {
+  onTradeFromNode?: (node: EnergyNode) => void
+}
+
+export default function EnergyGridMapWrapper({ onTradeFromNode }: EnergyGridMapWrapperProps) {
   return (
     <div className="h-full w-full">
       <ErrorBoundary name="Energy Grid Map">
-        <MapComponent />
+        <MapComponent onTradeFromNode={onTradeFromNode} />
       </ErrorBoundary>
     </div>
   )

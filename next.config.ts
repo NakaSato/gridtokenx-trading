@@ -1,4 +1,9 @@
 import type { NextConfig } from 'next'
+import bundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -46,4 +51,4 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['10.1.1.204:3000', 'localhost:3000'],
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

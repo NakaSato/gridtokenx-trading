@@ -290,7 +290,7 @@ export class ApiClient {
 
   // P2P Trading
   async createP2POrder(orderData: {
-    side: 'Buy' | 'Sell'
+    side: 'buy' | 'sell'  // Backend expects lowercase
     amount: string
     price_per_kwh: string
     zone_id?: number
@@ -298,10 +298,10 @@ export class ApiClient {
     return apiRequest<{ id: string }>('/api/v1/trading/orders', {
       method: 'POST',
       body: {
-        side: orderData.side, // Keep capitalized as backend expects "Buy" or "Sell"
+        side: orderData.side, // Backend expects "buy" or "sell" (lowercase)
         energy_amount: orderData.amount,
         price_per_kwh: orderData.price_per_kwh,
-        order_type: 'Limit', // Use Limit order type (capitalized)
+        order_type: 'limit', // Use limit order type (lowercase)
         zone_id: orderData.zone_id
       },
       token: this.token,
@@ -317,6 +317,34 @@ export class ApiClient {
 
   async getMyP2POrders() {
     return apiRequest<any[]>('/api/v1/trading/orders', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getMatchingStatus() {
+    return apiRequest<{
+      pending_buy_orders: number
+      pending_sell_orders: number
+      pending_matches: number
+      buy_price_range: { min: number; max: number }
+      sell_price_range: { min: number; max: number }
+      can_match: boolean
+      match_reason: string
+    }>('/api/v1/trading/matching-status', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getSettlementStats() {
+    return apiRequest<{
+      pending_count: number
+      processing_count: number
+      confirmed_count: number
+      failed_count: number
+      total_settled_value: number
+    }>('/api/v1/trading/settlement-stats', {
       method: 'GET',
       token: this.token,
     })

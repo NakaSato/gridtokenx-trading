@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { defaultApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
-import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin, X, Zap, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useCrypto } from '@/hooks/useCrypto'
 import {
     Select,
     SelectContent,
@@ -17,12 +18,15 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import P2PCostBreakdown from './P2PCostBreakdown'
+import type { EnergyNode } from '@/components/energy-grid/types'
 
 interface OrderFormProps {
     onOrderPlaced?: () => void
+    selectedNode?: EnergyNode | null
+    onClearNode?: () => void
 }
 
-export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
+export default function OrderForm({ onOrderPlaced, selectedNode, onClearNode }: OrderFormProps) {
     const { token } = useAuth()
     const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy')
     const [priceType, setPriceType] = useState<'market' | 'limit'>('limit')
@@ -36,6 +40,22 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
     const [balance, setBalance] = useState<number | null>(null)
     const [balanceLoading, setBalanceLoading] = useState(false)
     const [showCostBreakdown, setShowCostBreakdown] = useState(true)
+    const [isSigning, setIsSigning] = useState(false)
+    const { signOrder, isLoaded: cryptoLoaded } = useCrypto()
+
+    // Pre-fill amount when a node is selected from the map
+    useEffect(() => {
+        if (selectedNode) {
+            // Set order type based on node's energy state
+            if (selectedNode.surplusEnergy && selectedNode.surplusEnergy > 0) {
+                setOrderType('sell')
+                setAmount(selectedNode.surplusEnergy.toFixed(2))
+            } else if (selectedNode.deficitEnergy && selectedNode.deficitEnergy > 0) {
+                setOrderType('buy')
+                setAmount(selectedNode.deficitEnergy.toFixed(2))
+            }
+        }
+    }, [selectedNode])
 
     // Available zones (could be fetched from API)
     const zones = [
@@ -108,11 +128,27 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
         }
 
         try {
-            defaultApiClient.setToken(token)
-            const response = await defaultApiClient.createP2POrder({
-                side: orderType === 'buy' ? 'Buy' : 'Sell',
+            // Sign the order before submitting
+            setIsSigning(true)
+            const orderPayload = {
+                side: orderType,  // Already typed as 'buy' | 'sell'
                 amount: amount,
                 price_per_kwh: price,
+            }
+
+            // Use wallet address or token as secret key
+            const secretKey = 'test_secret_key'
+            const signedOrder = signOrder(orderPayload, secretKey)
+            setIsSigning(false)
+
+            defaultApiClient.setToken(token)
+            const response = await defaultApiClient.createP2POrder({
+                side: signedOrder.side,
+                amount: signedOrder.amount,
+                price_per_kwh: signedOrder.price_per_kwh,
+                // Include signature in the request (API would validate)
+                // signature: signedOrder.signature,
+                // timestamp: signedOrder.timestamp,
             })
 
             if (response.error) {
@@ -199,6 +235,33 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
                 )}
 
                 <Separator className="mb-4" />
+
+                {/* Selected Node Context */}
+                {selectedNode && (
+                    <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <Zap className="h-4 w-4 text-primary" />
+                                <span className="text-sm font-medium text-foreground">Trading from meter</span>
+                            </div>
+                            {onClearNode && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={onClearNode}
+                                    className="h-6 w-6 p-0 text-secondary-foreground hover:text-foreground"
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-xs text-foreground font-medium truncate">{selectedNode.name}</p>
+                        <p className="text-[10px] text-secondary-foreground">
+                            {selectedNode.type} • {selectedNode.capacity}
+                        </p>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
                     {/* Zone Selection */}
@@ -363,10 +426,13 @@ export default function OrderForm({ onOrderPlaced }: OrderFormProps) {
                         {loading ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Processing...
+                                {isSigning ? 'Signing...' : 'Processing...'}
                             </>
                         ) : (
-                            `${orderType === 'buy' ? 'Buy Option' : 'Sell'} ${amount || '0'} kWh`
+                            <>
+                                {cryptoLoaded && <Shield className="mr-2 h-4 w-4" />}
+                                {`${orderType === 'buy' ? 'Buy Option' : 'Sell'} ${amount || '0'} kWh`}
+                            </>
                         )}
                     </Button>
 

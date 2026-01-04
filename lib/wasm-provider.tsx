@@ -50,15 +50,26 @@ export function WasmProvider({ children }: WasmProviderProps) {
             return
         }
 
-        initWasm('/gridtokenx_wasm.wasm')
-            .then(() => {
-                setIsLoaded(true)
-            })
-            .catch((err) => {
-                console.error('[WasmProvider] Failed to initialize WASM:', err)
-                setError(err instanceof Error ? err : new Error(String(err)))
-                // App still works - JS fallbacks will be used
-            })
+        // Defer WASM loading to not block initial render
+        const loadWasm = () => {
+            initWasm('/gridtokenx_wasm.wasm')
+                .then(() => {
+                    setIsLoaded(true)
+                })
+                .catch((err) => {
+                    console.error('[WasmProvider] Failed to initialize WASM:', err)
+                    setError(err instanceof Error ? err : new Error(String(err)))
+                    // App still works - JS fallbacks will be used
+                })
+        }
+
+        // Use requestIdleCallback for better performance
+        if ('requestIdleCallback' in window) {
+            (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(loadWasm)
+        } else {
+            // Fallback: load after a short delay to not block paint
+            setTimeout(loadWasm, 50)
+        }
     }, [])
 
     return (
