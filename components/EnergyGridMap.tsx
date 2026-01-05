@@ -37,15 +37,38 @@ const staticEnergyTransfers = configTransfers as EnergyTransfer[]
 
 interface EnergyGridMapProps {
   onTradeFromNode?: (node: EnergyNode) => void
+  viewState?: {
+    longitude: number
+    latitude: number
+    zoom: number
+  }
+  onViewStateChange?: (viewState: {
+    longitude: number
+    latitude: number
+    zoom: number
+  }) => void
 }
 
-export default function EnergyGridMap({ onTradeFromNode }: EnergyGridMapProps) {
-  // View state
-  const [viewState, setViewState] = useState({
+export default function EnergyGridMap({ onTradeFromNode, viewState: propViewState, onViewStateChange }: EnergyGridMapProps) {
+  // View state - local fallback if not controlled
+  const [localViewState, setLocalViewState] = useState({
     longitude: campus.center.longitude,
     latitude: campus.center.latitude,
     zoom: campus.defaultZoom,
   })
+
+  // Use controlled state if provided, otherwise local state
+  const viewState = propViewState || localViewState
+
+  const handleMapMove = useCallback((evt: any) => {
+    if (onViewStateChange) {
+      onViewStateChange(evt.viewState)
+    } else {
+      setLocalViewState(evt.viewState)
+    }
+    // Don't update bounds here to avoid re-clustering on every frame
+  }, [onViewStateChange])
+
   const [selectedNode, setSelectedNode] = useState<EnergyNode | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
@@ -216,6 +239,25 @@ export default function EnergyGridMap({ onTradeFromNode }: EnergyGridMapProps) {
     }
   }
 
+  // Handle dynamic map resizing (fix for ResizablePanel)
+  useEffect(() => {
+    if (!mapContainerRef.current) return
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Use requestAnimationFrame to avoid "ResizeObserver loop limit exceeded"
+      // and prevent flickering by aligning with the paint cycle
+      if (mapRef.current) {
+        requestAnimationFrame(() => {
+          mapRef.current?.resize()
+        })
+      }
+    })
+
+    resizeObserver.observe(mapContainerRef.current)
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
   // Show error if token is missing
   if (!hasValidToken) {
     return (
@@ -288,10 +330,8 @@ export default function EnergyGridMap({ onTradeFromNode }: EnergyGridMapProps) {
       <Map
         ref={mapRef}
         {...viewState}
-        onMove={(evt) => {
-          setViewState(evt.viewState)
-          // Don't update bounds here to avoid re-clustering on every frame
-        }}
+        reuseMaps
+        onMove={handleMapMove}
         onMoveEnd={(evt) => {
           // Update bounds for clustering only when movement ends
           const bounds = evt.target.getBounds()

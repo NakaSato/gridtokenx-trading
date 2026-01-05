@@ -51,6 +51,8 @@ export interface MeterResponse {
     latitude?: number
     /** Longitude coordinate for map display */
     longitude?: number
+    /** Zone ID for grid topology and pricing */
+    zone_id?: number
 }
 
 /**

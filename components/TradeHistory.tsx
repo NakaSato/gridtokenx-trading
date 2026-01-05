@@ -20,6 +20,11 @@ interface Trade {
     counterparty_id: string
     executed_at: string
     status: string
+    wheeling_charge?: number
+    loss_cost?: number
+    effective_energy?: number
+    buyer_zone_id?: number
+    seller_zone_id?: number
 }
 
 export default function TradeHistory() {
@@ -39,6 +44,7 @@ export default function TradeHistory() {
             defaultApiClient.setToken(token)
             const response = await defaultApiClient.getTrades({ limit: 20 })
             if (response.data) {
+                // @ts-ignore - API response might have different shape or fields, casting loosely
                 setTrades(response.data.trades || [])
             }
         } catch (error) {
@@ -134,6 +140,8 @@ export default function TradeHistory() {
                     <div className="divide-y divide-border/30">
                         {trades.map((trade, idx) => {
                             const isBuyer = trade.role === 'buyer'
+                            // Calculate extra costs if available (only relevant for buyer usually, or net for seller)
+                            const fees = (trade.wheeling_charge || 0) + (trade.loss_cost || 0);
 
                             return (
                                 <div
@@ -153,6 +161,22 @@ export default function TradeHistory() {
                                             >
                                                 {isBuyer ? 'BUY' : 'SELL'}
                                             </Badge>
+
+                                            {/* Zone Badge */}
+                                            {(trade.buyer_zone_id !== undefined && trade.seller_zone_id !== undefined) && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className={cn(
+                                                        "text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight",
+                                                        trade.buyer_zone_id === trade.seller_zone_id
+                                                            ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                                                            : "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20"
+                                                    )}
+                                                >
+                                                    {trade.buyer_zone_id === trade.seller_zone_id ? 'LOCAL' : 'X-ZONE'}
+                                                </Badge>
+                                            )}
+
                                             <span className="text-sm font-medium font-mono text-foreground">
                                                 {parseFloat(trade.quantity).toFixed(2)} kWh
                                             </span>
@@ -163,15 +187,24 @@ export default function TradeHistory() {
                                     </div>
 
                                     <div className="flex items-center justify-between pl-1">
-                                        <div className="flex items-center text-xs text-muted-foreground font-mono">
-                                            @{parseFloat(trade.price).toFixed(2)}
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center text-xs text-muted-foreground font-mono">
+                                                @{parseFloat(trade.price).toFixed(2)}
+                                            </div>
+                                            {fees > 0 && (
+                                                <div className="text-[9px] text-muted-foreground opacity-70">
+                                                    + Fees: {fees.toFixed(2)}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className={cn(
-                                            "font-mono text-sm font-medium tabular-nums",
-                                            isBuyer ? "text-red-500" : "text-green-500"
-                                        )}>
-                                            {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
-                                            <span className="text-[10px] text-muted-foreground ml-1">THB</span>
+                                        <div className="flex flex-col items-end">
+                                            <div className={cn(
+                                                "font-mono text-sm font-medium tabular-nums",
+                                                isBuyer ? "text-red-500" : "text-green-500"
+                                            )}>
+                                                {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
+                                                <span className="text-[10px] text-muted-foreground ml-1">THB</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

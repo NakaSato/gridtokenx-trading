@@ -44,7 +44,9 @@ export default function UserOrders() {
 
             if (Array.isArray(ordersData)) {
                 const mappedOrders = ordersData
-                    .filter((o: any) => o.status === 'pending' || o.status === 'active' || o.status === 'partial')
+                    .filter((o: any) =>
+                        ['pending', 'active', 'partially_filled', 'partial', 'expired'].includes(o.status)
+                    )
                     .map((o: any) => ({
                         ...o,
                         energy_amount: o.energy_amount || o.amount,
@@ -87,16 +89,17 @@ export default function UserOrders() {
     }
 
     const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'pending':
-                return <Badge variant="secondary">Pending</Badge>
-            case 'active':
-                return <Badge variant="outline" className="border-primary text-primary">Active</Badge>
-            case 'partial':
-                return <Badge variant="outline" className="border-chart-1 text-chart-1">Partial</Badge>
-            default:
-                return <Badge variant="outline">{status}</Badge>
-        }
+        // Normalize status
+        const s = status.toLowerCase()
+
+        if (s === 'pending') return <Badge variant="secondary">Pending</Badge>
+        if (s === 'active') return <Badge variant="outline" className="border-primary text-primary">Active</Badge>
+        if (s === 'partially_filled' || s === 'partial') return <Badge variant="outline" className="border-chart-1 text-chart-1">Partial</Badge>
+        if (s === 'filled') return <Badge variant="default" className="bg-green-500 hover:bg-green-600">Filled</Badge>
+        if (s === 'expired') return <Badge variant="outline" className="border-muted-foreground text-muted-foreground bg-muted/20">Expired</Badge>
+        if (s === 'cancelled') return <Badge variant="outline" className="border-destructive text-destructive">Cancelled</Badge>
+
+        return <Badge variant="outline">{status}</Badge>
     }
 
     if (loading) {

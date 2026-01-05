@@ -10,8 +10,10 @@ import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
 import { addWeeks } from 'date-fns'
 import { Map, TrendingUp, BarChart3 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthProvider'
 
 const TradingViewChartContainer = dynamic(
   () => import('@/components/TradingViewChartContainer'),
@@ -41,8 +43,20 @@ const P2PStatus = dynamic(
   { ssr: false, loading: () => <div className="h-32 animate-pulse bg-secondary/50 rounded-lg mb-4" /> }
 )
 import type { EnergyNode } from '@/components/energy-grid/types'
+import energyGridConfig from '@/lib/data/energyGridConfig.json'
 
 export default function Homepage() {
+  const { campus } = energyGridConfig
+  const [viewState, setViewState] = useState({
+    longitude: campus.center.longitude,
+    latitude: campus.center.latitude,
+    zoom: campus.defaultZoom
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleViewStateChange = useCallback((newViewState: any) => {
+    setViewState(newViewState)
+  }, [])
   const [active, setActive] = useState('map')
   const [selectedMeterNode, setSelectedMeterNode] = useState<EnergyNode | null>(null)
   const [tokenIdx, setTokenIdx] = useState(0)
@@ -58,6 +72,7 @@ export default function Homepage() {
   const [expiry, setExpiry] = useState<Date>(addWeeks(new Date(), 1))
   const [currency, setCurrency] = useState(selectedSymbol)
   const [transaction, setTransaction] = useState('buy')
+  const { token } = useAuth()
 
   const handleSymbolChange = useCallback((newSymbol: string) => {
     setSelectedSymbol(newSymbol)
@@ -120,7 +135,11 @@ export default function Homepage() {
         <div className="flex flex-col h-full pt-4 md:hidden">
           {active === 'map' ? (
             <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-700">
-              <EnergyGridMapWrapper onTradeFromNode={handleTradeFromNode} />
+              <EnergyGridMapWrapper
+                onTradeFromNode={handleTradeFromNode}
+                viewState={viewState}
+                onViewStateChange={handleViewStateChange}
+              />
             </div>
           ) : active === 'chart' ? (
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-700">
@@ -159,14 +178,18 @@ export default function Homepage() {
             <ResizableHandle withHandle />
 
             {/* CENTER - CHART & POSITIONS */}
-            <ResizablePanel id="center-area" defaultSize={60} minSize={40}>
+            <ResizablePanel id="center-area" defaultSize={65} minSize={40}>
               <ResizablePanelGroup direction="vertical" className="h-full" id="center-vertical-group">
                 {/* CHART */}
-                <ResizablePanel id="center-chart" defaultSize={70} minSize={30}>
-                  <div className="flex flex-col h-full overflow-hidden animate-in fade-in zoom-in-95 duration-700 px-2">
+                <ResizablePanel id="center-chart" defaultSize={75} minSize={30}>
+                  <div className="flex flex-col h-full overflow-hidden px-2">
                     <div className="flex-1 min-h-0">
                       {active === 'map' ? (
-                        <EnergyGridMapWrapper onTradeFromNode={handleTradeFromNode} />
+                        <EnergyGridMapWrapper
+                          onTradeFromNode={handleTradeFromNode}
+                          viewState={viewState}
+                          onViewStateChange={handleViewStateChange}
+                        />
                       ) : (
                         <TradingViewChartContainer
                           symbol={selectedSymbol}
@@ -187,7 +210,7 @@ export default function Homepage() {
                 <ResizableHandle withHandle />
 
                 {/* POSITIONS */}
-                <ResizablePanel id="center-positions" defaultSize={30} minSize={15} maxSize={50}>
+                <ResizablePanel id="center-positions" defaultSize={25} minSize={15} maxSize={50}>
                   <div className="h-full overflow-y-auto px-2 pt-2">
                     <TradingPositionsPanel />
                   </div>
@@ -200,8 +223,12 @@ export default function Homepage() {
             {/* RIGHT SIDEBAR */}
             <ResizablePanel id="right-sidebar" defaultSize={20} minSize={12} maxSize={30}>
               <div className="flex flex-col space-y-2 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-1 pr-1 text-xs">
-                <P2PStatus />
-                <div className="py-2"></div>
+                {token && (
+                  <>
+                    <P2PStatus />
+                    <div className="py-2"></div>
+                  </>
+                )}
                 <P2POrderForm
                   selectedNode={selectedMeterNode}
                   onClearNode={() => setSelectedMeterNode(null)}

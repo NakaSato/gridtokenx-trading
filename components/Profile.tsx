@@ -29,9 +29,9 @@ export default function Profile() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [stats, setStats] = useState<TradingStats>({
     totalTrades: 0,
-    totalVolume: '0 GRX',
+    totalVolume: '0 kWh',
     winRate: '0%',
-    totalPnl: '+0 GRX'
+    totalPnl: '+0 THB'
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -41,6 +41,8 @@ export default function Profile() {
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [meterZone, setMeterZone] = useState<number | null>(null)
+  const [meterId, setMeterId] = useState<string | null>(null)
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -60,7 +62,15 @@ export default function Profile() {
         setLastName(userData.last_name || '')
       }
 
-      // 2. Fetch trading analytics (7d by default)
+      // 2. Fetch Meter Info (Zone)
+      const metersResponse = await client.getMyMeters()
+      if (metersResponse.data && metersResponse.data.length > 0) {
+        const primaryMeter = metersResponse.data[0]
+        setMeterZone(primaryMeter.zone_id ?? null)
+        setMeterId(primaryMeter.id)
+      }
+
+      // 3. Fetch trading analytics (7d by default)
       const statsResponse = await client.getUserAnalytics({ timeframe: '7d' })
       if (statsResponse.data) {
         const s = statsResponse.data
@@ -72,9 +82,9 @@ export default function Profile() {
 
         setStats({
           totalTrades: s.overall.total_transactions || 0,
-          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} GRX`,
+          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} kWh`,
           winRate: `${winRate}%`,
-          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} GRX`
+          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} THB`
         })
       }
     } catch (error) {
@@ -208,9 +218,16 @@ export default function Profile() {
           {/* Wallet Address */}
           {(profile?.wallet_address || (connected && publicKey)) && (
             <div className="flex w-full flex-col space-y-[14px]">
-              <Label className="text-xs font-medium text-foreground">
-                Wallet Address
-              </Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-medium text-foreground">
+                  Wallet Address
+                </Label>
+                {meterZone !== null && (
+                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    Zone {meterZone}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center justify-between rounded-sm border bg-secondary px-3 py-2">
                 <span className="font-mono text-xs text-foreground">
                   {shortenAddress(profile?.wallet_address || publicKey!.toBase58())}

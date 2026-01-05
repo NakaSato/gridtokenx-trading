@@ -16,13 +16,27 @@ const MapComponent = dynamic(() => import('./EnergyGridMap'), {
 
 interface EnergyGridMapWrapperProps {
   onTradeFromNode?: (node: EnergyNode) => void
+  viewState?: {
+    longitude: number
+    latitude: number
+    zoom: number
+  }
+  onViewStateChange?: (viewState: {
+    longitude: number
+    latitude: number
+    zoom: number
+  }) => void
 }
 
-export default function EnergyGridMapWrapper({ onTradeFromNode }: EnergyGridMapWrapperProps) {
+export default function EnergyGridMapWrapper({ onTradeFromNode, viewState, onViewStateChange }: EnergyGridMapWrapperProps) {
   return (
     <div className="h-full w-full">
       <ErrorBoundary name="Energy Grid Map">
-        <MapComponent onTradeFromNode={onTradeFromNode} />
+        <MapComponent
+          onTradeFromNode={onTradeFromNode}
+          viewState={viewState}
+          onViewStateChange={onViewStateChange}
+        />
       </ErrorBoundary>
     </div>
   )
