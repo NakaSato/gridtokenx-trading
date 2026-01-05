@@ -14,11 +14,13 @@ import {
     AlertCircle,
     Database,
     Zap,
-    RefreshCw
+    RefreshCw,
+    Radio
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import { useOrderMatchedWebSocket } from '@/hooks/useWebSocket'
+import { useP2POrderUpdates, useSettlementUpdates } from '@/hooks/useTransactionUpdates'
 
 export default function P2PStatus() {
     const { token } = useAuth()
@@ -26,6 +28,18 @@ export default function P2PStatus() {
     const [settlementStats, setSettlementStats] = useState<any>(null)
     const [loading, setLoading] = useState(false)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+
+    // Real-time P2P order updates
+    const { connected: p2pConnected, latestUpdate: latestOrderUpdate } = useP2POrderUpdates({
+        showToasts: false, // Handle in parent component
+    })
+
+    // Real-time settlement updates
+    const { connected: settlementConnected, latestSettlement } = useSettlementUpdates({
+        showToasts: false,
+    })
+
+    const isRealTimeConnected = p2pConnected || settlementConnected
 
     const fetchData = useCallback(async () => {
         if (!token) return
@@ -50,13 +64,20 @@ export default function P2PStatus() {
         fetchData()
     }, [fetchData])
 
-    // Poll every 5 seconds
+    // Poll every 10 seconds (increased from 5s since we have WebSocket)
     useEffect(() => {
-        const interval = setInterval(fetchData, 5000)
+        const interval = setInterval(fetchData, 10000)
         return () => clearInterval(interval)
     }, [fetchData])
 
-    // Listen for WebSocket updates
+    // Refresh on WebSocket updates
+    useEffect(() => {
+        if (latestOrderUpdate || latestSettlement) {
+            fetchData()
+        }
+    }, [latestOrderUpdate, latestSettlement, fetchData])
+
+    // Listen for legacy WebSocket updates
     useOrderMatchedWebSocket(() => {
         fetchData()
     }, token || undefined)
@@ -65,6 +86,19 @@ export default function P2PStatus() {
 
     return (
         <div className="space-y-4">
+            {/* Real-time Connection Status */}
+            <div className="flex items-center justify-end gap-2 text-xs">
+                <Radio className={cn(
+                    "h-3 w-3",
+                    isRealTimeConnected ? "text-green-500 animate-pulse" : "text-secondary-foreground"
+                )} />
+                <span className={cn(
+                    isRealTimeConnected ? "text-green-500" : "text-secondary-foreground"
+                )}>
+                    {isRealTimeConnected ? "Live Updates" : "Polling"}
+                </span>
+            </div>
+
             {/* Matching Engine Status */}
             <Card>
                 <CardHeader className="pb-2">

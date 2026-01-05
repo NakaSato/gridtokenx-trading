@@ -2,7 +2,7 @@
 
 import { Button } from './ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from './ui/sheet'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { CopyIcon, LogOutIcon, SendIcon } from '@/public/svgs/icons'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
@@ -12,8 +12,10 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useUserBalance } from '@/hooks/useApi'
 import { allWallets } from './WalletModal'
-import { XIcon } from 'lucide-react'
+import { XIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useP2POrderUpdates } from '@/hooks/useTransactionUpdates'
+import { createApiClient } from '@/lib/api-client'
 
 export default function WalletSideBar() {
   const { wallet, publicKey, disconnect, connected } = useWallet()
@@ -28,6 +30,39 @@ export default function WalletSideBar() {
     token || undefined,
     walletAddress || undefined
   )
+
+  // Active P2P orders from real-time updates
+  // Note: Backend WebSocket already filters by authenticated user
+  const { activeBuyOrders, activeSellOrders } = useP2POrderUpdates({
+    showToasts: true,
+  })
+
+  // Fetch active orders count from API
+  const [orderCounts, setOrderCounts] = useState({ buy: 0, sell: 0 })
+
+  const fetchOrderCounts = useCallback(async () => {
+    if (!token) return
+    try {
+      const apiClient = createApiClient(token)
+      const response = await apiClient.getMyP2POrders()
+      if (response.data) {
+        const orders = response.data as any[]
+        const openOrders = orders.filter((o) => o.status === 'open')
+        setOrderCounts({
+          buy: openOrders.filter((o) => o.side === 'buy').length,
+          sell: openOrders.filter((o) => o.side === 'sell').length,
+        })
+      }
+    } catch (err) {
+      console.error('Failed to fetch order counts:', err)
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (isOpen && token) {
+      fetchOrderCounts()
+    }
+  }, [isOpen, token, fetchOrderCounts])
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
@@ -157,6 +192,60 @@ export default function WalletSideBar() {
             )}
           </div>
         </div>
+        {/* Financial Status - Locked Funds & Energy */}
+        {user && (user.locked_amount || user.locked_energy) ? (
+          <div className="flex w-full justify-between space-x-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm bg-yellow-500/10 border border-yellow-500/30 p-4">
+              <span className="text-sm font-medium text-yellow-500">
+                🔒 Locked (Escrow)
+              </span>
+              <span className="text-[20px] font-medium text-yellow-400">
+                ฿{(user.locked_amount || 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+            <div className="flex w-full flex-col space-y-2 rounded-sm bg-blue-500/10 border border-blue-500/30 p-4">
+              <span className="text-sm font-medium text-blue-500">
+                ⚡ Locked Energy
+              </span>
+              <span className="text-[20px] font-medium text-blue-400">
+                {(user.locked_energy || 0).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })} kWh
+              </span>
+            </div>
+          </div>
+        ) : null}
+        {/* Active P2P Orders */}
+        {token && (orderCounts.buy > 0 || orderCounts.sell > 0 || activeBuyOrders.length > 0 || activeSellOrders.length > 0) ? (
+          <div className="flex w-full justify-between space-x-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm bg-green-500/10 border border-green-500/30 p-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-500" />
+                <span className="text-sm font-medium text-green-500">
+                  Active Buy Orders
+                </span>
+              </div>
+              <span className="text-[20px] font-medium text-green-400">
+                {Math.max(orderCounts.buy, activeBuyOrders.length)}
+              </span>
+            </div>
+            <div className="flex w-full flex-col space-y-2 rounded-sm bg-red-500/10 border border-red-500/30 p-4">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-medium text-red-500">
+                  Active Sell Orders
+                </span>
+              </div>
+              <span className="text-[20px] font-medium text-red-400">
+                {Math.max(orderCounts.sell, activeSellOrders.length)}
+              </span>
+            </div>
+          </div>
+        ) : null}
         <div className="flex w-full flex-col space-y-4">
           <Tabs defaultValue={activeTab}>
             <TabsList className="grid h-fit w-full grid-cols-2 rounded-sm bg-accent-foreground p-2">
