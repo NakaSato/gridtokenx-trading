@@ -107,6 +107,10 @@ export interface UserProfile {
   first_name?: string;
   last_name?: string;
   blockchain_registered?: boolean;
+  // Financial fields
+  balance?: number;
+  locked_amount?: number;
+  locked_energy?: number;
 }
 
 export interface ProfileUpdateRequest {

@@ -23,6 +23,10 @@ interface User {
   blockchain_registered: boolean
   email_verified?: boolean
   wallet_address?: string
+  // Financial fields from API
+  balance?: number
+  locked_amount?: number
+  locked_energy?: number
 }
 
 interface AuthContextType {
