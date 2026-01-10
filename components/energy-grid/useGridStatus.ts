@@ -54,7 +54,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
     // WebSocket connection logic
     useEffect(() => {
-        const wsUrl = `${API_CONFIG.wsBaseUrl}/ws`
+        const wsUrl = `${API_CONFIG.wsBaseUrl}/api/market/ws`
 
         const connectWs = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return

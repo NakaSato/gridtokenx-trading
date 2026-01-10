@@ -8,6 +8,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  compress: true,
   images: {
     remotePatterns: [
       {
@@ -47,6 +48,13 @@ const nextConfig: NextConfig = {
     ]
   },
   experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'date-fns',
+      '@solana/wallet-adapter-react',
+      '@solana/wallet-adapter-base',
+      '@solana/wallet-adapter-wallets',
+    ],
   },
   allowedDevOrigins: ['10.1.1.204:3000', 'localhost:3000'],
 }

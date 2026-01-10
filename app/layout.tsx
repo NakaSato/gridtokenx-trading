@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Poppins } from 'next/font/google'
 import './globals.css'
 import NavBar from '@/components/NavBar'
 import { ThemeProvider } from '@/components/ThemeProvider'
@@ -19,6 +20,13 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
 const siteDescription =
   'Advanced P2P energy trading platform on Solana. Trade energy tokens, manage futures and options, earn yields, and participate in decentralized renewable energy markets.'
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-poppins',
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -137,8 +145,11 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
+        <link rel="preconnect" href="https://api.mapbox.com" />
+        <link rel="preconnect" href="https://events.mapbox.com" />
+        <link rel="preconnect" href="https://font.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`antialiased`} suppressHydrationWarning>
+      <body className={`${poppins.variable} min-h-screen bg-background font-sans antialiased overflow-hidden`} suppressHydrationWarning>
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <QueryProvider>
             <Connectionprovider>

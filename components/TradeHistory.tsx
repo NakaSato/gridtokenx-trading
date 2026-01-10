@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
@@ -27,7 +27,7 @@ interface Trade {
     seller_zone_id?: number
 }
 
-export default function TradeHistory() {
+const TradeHistory = React.memo(function TradeHistory() {
     const { token } = useAuth()
     const [trades, setTrades] = useState<Trade[]>([])
     const [loading, setLoading] = useState(true)
@@ -215,4 +215,6 @@ export default function TradeHistory() {
             </CardContent>
         </Card>
     )
-}
+})
+
+export default TradeHistory

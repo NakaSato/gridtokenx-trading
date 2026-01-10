@@ -63,7 +63,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['"TikTok Sans"', "var(--font-lufga)", "system-ui", "sans-serif"],
+        sans: ["var(--font-poppins)", '"TikTok Sans"', "var(--font-lufga)", "system-ui", "sans-serif"],
         tiktok: ['"TikTok Sans"', "system-ui", "sans-serif"],
       },
       screens: {

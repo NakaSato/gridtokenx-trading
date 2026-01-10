@@ -32,12 +32,15 @@ import {
 import { AuthButton } from './auth'
 import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Logo } from './Logo'
-import WalletSideBar from './WalletSidebar'
-import Settings from './Settings'
-import Profile from './Profile'
+import dynamic from 'next/dynamic'
 import NavBarMobile from './NavBarMobile'
-import Notifications from './Notifications'
-import PointsDropDown from './PointsDropDown'
+
+// Dynamic Imports for Header Performance
+const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
+const Settings = dynamic(() => import('./Settings'), { ssr: false })
+const Profile = dynamic(() => import('./Profile'), { ssr: false })
+const Notifications = dynamic(() => import('./Notifications'), { ssr: false })
+const PointsDropDown = dynamic(() => import('./PointsDropDown'), { ssr: false })
 
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'
@@ -295,7 +298,7 @@ export default function NavBar() {
                 isDropdownOpen || isDropdownItemActive
                   ? 'text-primary'
                   : 'text-secondary-foreground',
-                'hidden h-auto w-auto items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none md:flex'
+                'hidden h-12 min-w-[48px] items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none md:flex'
               )}
               aria-label="More navigation options"
             >

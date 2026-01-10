@@ -17,6 +17,7 @@ import OrderHistory from '../OrderHistory'
 import { useContext } from 'react'
 import { ContractContext, ExpiredOption } from '@/contexts/contractProvider'
 import ExpiredOptions from '../ExpiredOptions'
+import { CarbonCredits } from './carbon-credits'
 
 export function PortfolioTabs() {
   const { token, isAuthenticated } = useAuth()
@@ -148,12 +149,13 @@ export function PortfolioTabs() {
       onValueChange={setActiveTab}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <TabsList className="grid h-fit w-full grid-cols-2 rounded-sm border bg-inherit p-1 sm:w-fit sm:grid-cols-5">
+        <TabsList className="grid h-fit w-full grid-cols-2 rounded-sm border bg-inherit p-1 sm:w-fit sm:grid-cols-6">
           <TabsTrigger value="positions" className="text-xs sm:text-sm">Positions</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs sm:text-sm">Orders</TabsTrigger>
           <TabsTrigger value="order-history" className="text-xs sm:text-sm">Order History</TabsTrigger>
           <TabsTrigger value="trade-history" className="text-xs sm:text-sm">Trade History</TabsTrigger>
           <TabsTrigger value="funding-history" className="text-xs sm:text-sm">Funding</TabsTrigger>
+          <TabsTrigger value="carbon-credits" className="text-xs sm:text-sm">Carbon Credits</TabsTrigger>
         </TabsList>
         <Button variant={'outline'} className="h-fit py-2 text-sm">
           Filter
@@ -220,6 +222,12 @@ export function PortfolioTabs() {
       <TabsContent value="funding-history" className="mt-2 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {renderEmptyState("No funding history", "Funding payments will appear here")}
+        </ProtectedRoute>
+      </TabsContent>
+
+      <TabsContent value="carbon-credits" className="mt-2 min-h-[300px]">
+        <ProtectedRoute requireWallet={false} requireAuth={true}>
+          <CarbonCredits />
         </ProtectedRoute>
       </TabsContent>
     </Tabs>

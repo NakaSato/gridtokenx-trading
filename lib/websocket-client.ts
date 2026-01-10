@@ -39,7 +39,7 @@ export type WebSocketEventHandler = (message: WebSocketMessage) => void
 export class WebSocketClient {
   private ws: WebSocket | null = null
   private url: string
-  private options: Required<WebSocketClientOptions>
+  public options: Required<WebSocketClientOptions>
   private reconnectAttempts = 0
   private handlers: Map<WebSocketMessageType, Set<WebSocketEventHandler>> =
     new Map()
@@ -70,6 +70,12 @@ export class WebSocketClient {
         ? `${this.url}?token=${this.options.token}`
         : this.url
 
+      // Guard: Don't connect to /ws/ paths without a token
+      if (this.url.includes('/ws/') && !this.options.token) {
+        console.warn(`WebSocket connection deferred for ${this.url}: Token required.`)
+        return
+      }
+
       this.ws = new WebSocket(url)
 
       this.ws.onopen = () => {
@@ -87,7 +93,7 @@ export class WebSocketClient {
       }
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        console.error(`WebSocket error [${this.url}]:`, error)
       }
 
       this.ws.onclose = () => {
@@ -220,26 +226,48 @@ export function createEpochsWS(token?: string): WebSocketClient {
  */
 export class WebSocketManager {
   private clients: Map<string, WebSocketClient> = new Map()
+  private refCounts: Map<string, number> = new Map()
 
   getOrCreate(channel: string, token?: string): WebSocketClient {
-    if (!this.clients.has(channel)) {
-      const client = new WebSocketClient(`/ws/${channel}`, { token })
+    let client = this.clients.get(channel)
+    const path = `/ws/${channel}`
+
+    if (!client) {
+      client = new WebSocketClient(path, { token })
       this.clients.set(channel, client)
+      this.refCounts.set(channel, 1)
+    } else {
+      // Increment ref count
+      const count = this.refCounts.get(channel) || 0
+      this.refCounts.set(channel, count + 1)
+
+      if (token && client.options.token !== token) {
+        // Token changed, update it
+        client.setToken(token)
+      }
     }
-    return this.clients.get(channel)!
+
+    return client
   }
 
   disconnect(channel: string): void {
-    const client = this.clients.get(channel)
-    if (client) {
-      client.disconnect()
-      this.clients.delete(channel)
+    const count = this.refCounts.get(channel) || 0
+    if (count <= 1) {
+      const client = this.clients.get(channel)
+      if (client) {
+        client.disconnect()
+        this.clients.delete(channel)
+      }
+      this.refCounts.delete(channel)
+    } else {
+      this.refCounts.set(channel, count - 1)
     }
   }
 
   disconnectAll(): void {
     this.clients.forEach((client) => client.disconnect())
     this.clients.clear()
+    this.refCounts.clear()
   }
 
   setToken(token: string): void {

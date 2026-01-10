@@ -79,6 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuth()
   }, [])
 
+
   const checkAuth = async () => {
     setIsLoading(true)
     try {
@@ -351,6 +352,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return false
     }
   }
+
 
   const value: AuthContextType = {
     user,

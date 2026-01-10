@@ -552,4 +552,6 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   )
 }
 
-export default TradingViewChart
+// Memoize the chart component to prevent re-renders when parent props (like currentPrice) change
+// but symbol/logo haven't changed.
+export default React.memo(TradingViewChart)

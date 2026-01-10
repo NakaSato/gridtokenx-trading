@@ -4,7 +4,22 @@ import dynamic from 'next/dynamic'
 import CryptoNav from '@/components/CryptoNav'
 const TradingPositionsPanel = dynamic(
   () => import('@/components/TradingPositionsPanel'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="h-5 w-40 animate-pulse rounded bg-secondary" />
+          <div className="h-8 w-24 animate-pulse rounded bg-secondary" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-10 w-full animate-pulse rounded bg-secondary/30" />
+          <div className="h-10 w-full animate-pulse rounded bg-secondary/30" />
+          <div className="h-10 w-full animate-pulse rounded bg-secondary/30" />
+        </div>
+      </div>
+    )
+  }
 )
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
@@ -17,14 +32,47 @@ import { useAuth } from '@/contexts/AuthProvider'
 
 const TradingViewChartContainer = dynamic(
   () => import('@/components/TradingViewChartContainer'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full flex-col overflow-hidden border border-border bg-card rounded-lg">
+        <div className="border-b bg-muted/20 px-4 py-2 h-14 flex items-center">
+          <div className="h-7 w-48 animate-pulse rounded bg-secondary/50" />
+        </div>
+        <div className="flex-1 p-4">
+          <div className="h-full w-full animate-pulse rounded bg-secondary/30" />
+        </div>
+      </div>
+    )
+  }
 )
 const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
   ssr: false,
+  loading: () => (
+    <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="h-5 w-32 animate-pulse rounded bg-secondary mb-4" />
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex justify-between">
+            <div className="h-4 w-24 animate-pulse rounded bg-secondary/50" />
+            <div className="h-4 w-16 animate-pulse rounded bg-secondary/50" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 })
 const EnergyGridMapWrapper = dynamic(
   () => import('@/components/EnergyGridMapWrapper'),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse bg-secondary/20 rounded-lg flex flex-col items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-3" />
+        <p className="text-secondary-foreground text-sm font-medium">Loading map...</p>
+      </div>
+    )
+  }
 )
 import { useOptionsPricing } from '@/hooks/useOptionsPricing'
 import { useGreeks } from '@/hooks/useGreeks'
@@ -91,6 +139,10 @@ export default function Homepage() {
     setSelectedMeterNode(node)
     // Map is visible on desktop, so just update the right sidebar order form
     // No need to switch tabs on desktop since OrderForm is always visible
+  }, [])
+
+  const handleClearNode = useCallback(() => {
+    setSelectedMeterNode(null)
   }, [])
 
   const s = priceData.price ?? 0
@@ -223,16 +275,16 @@ export default function Homepage() {
             {/* RIGHT SIDEBAR */}
             <ResizablePanel id="right-sidebar" defaultSize={20} minSize={12} maxSize={30}>
               <div className="flex flex-col space-y-2 h-full overflow-y-auto animate-in fade-in slide-in-from-right-4 duration-700 pl-1 pr-1 text-xs">
-                {token && (
-                  <>
-                    <P2PStatus />
-                    <div className="py-2"></div>
-                  </>
-                )}
                 <P2POrderForm
                   selectedNode={selectedMeterNode}
-                  onClearNode={() => setSelectedMeterNode(null)}
+                  onClearNode={handleClearNode}
                 />
+                {token && (
+                  <>
+                    <div className="py-2"></div>
+                    <P2PStatus />
+                  </>
+                )}
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

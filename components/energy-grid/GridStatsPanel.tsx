@@ -59,9 +59,14 @@ export function GridStatsPanel({
                 }`}
         >
             {/* Header - Clickable to toggle */}
-            <div
-                className={`flex items-center justify-between cursor-pointer group ${!isCollapsed ? 'mb-4 border-b border-white/5 pb-2' : ''}`}
+            {/* Header - Clickable to toggle */}
+            <button
+                type="button"
+                className={`flex w-full items-center justify-between group appearance-none focus:outline-none ${!isCollapsed ? 'mb-4 border-b border-white/5 pb-2' : ''}`}
                 onClick={() => setIsCollapsed(!isCollapsed)}
+                aria-expanded={!isCollapsed}
+                aria-controls="grid-stats-content"
+                aria-label={isCollapsed ? "Expand grid statistics" : "Collapse grid statistics"}
             >
                 <div className="flex items-center gap-2">
                     <Activity className={`transition-colors duration-300 ${isCollapsed ? 'h-3.5 w-3.5 text-blue-400/70' : 'h-4 w-4 text-blue-400'}`} />
@@ -70,11 +75,11 @@ export function GridStatsPanel({
                     </h4>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="text-white/30 group-hover:text-white/60 transition-colors">
+                    <div className="text-white/30 group-hover:text-white/60 transition-colors">
                         {isCollapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
+                    </div>
                 </div>
-            </div>
+            </button>
 
             {/* Metrics Content */}
             <div className={`space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[800px] opacity-100'}`}>

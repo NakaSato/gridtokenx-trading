@@ -9,14 +9,77 @@ import {
 } from '@/public/svgs/icons'
 import Image from 'next/image'
 import { Separator } from './ui/separator'
+import { Button } from './ui/button'
+import { Download, FileDown, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthProvider'
+import { createApiClient } from '@/lib/api-client'
+import toast from 'react-hot-toast'
 
 export default function OrderHistory({
   doneOptioninfos,
 }: {
   doneOptioninfos: Transaction[]
 }) {
+  const { token } = useAuth()
+  const [exporting, setExporting] = useState<'csv' | 'json' | null>(null)
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    if (!token) return
+    setExporting(format)
+    try {
+      const apiClient = createApiClient(token)
+      const response = await apiClient.exportTradingHistory(format)
+
+      if (response.data) {
+        // Create a download link for the blob
+        const url = window.URL.createObjectURL(response.data as Blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `trade-history-${new Date().toISOString().split('T')[0]}.${format}`)
+        document.body.appendChild(link)
+        link.click()
+        link.parentNode?.removeChild(link)
+        toast.success(`History exported as ${format.toUpperCase()}`)
+      } else if (response.error) {
+        toast.error(`Export failed: ${response.error}`)
+      }
+    } catch (error) {
+      toast.error('Failed to export history')
+      console.error(error)
+    } finally {
+      setExporting(null)
+    }
+  }
+
   return (
     <>
+      <div className="flex items-center justify-between mb-4 px-2">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Trades</h3>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[10px] gap-1.5 px-2 hover:bg-secondary/50"
+            onClick={() => handleExport('csv')}
+            disabled={!!exporting}
+          >
+            {exporting === 'csv' ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[10px] gap-1.5 px-2 hover:bg-secondary/50"
+            onClick={() => handleExport('json')}
+            disabled={!!exporting}
+          >
+            {exporting === 'json' ? <Loader2 size={12} className="animate-spin" /> : <FileDown size={12} />}
+            Export JSON
+          </Button>
+        </div>
+      </div>
+
       <div className="hidden w-full flex-col space-y-[14px] md:flex">
         {doneOptioninfos &&
           doneOptioninfos.map((tx) => (

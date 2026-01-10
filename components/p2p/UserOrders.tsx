@@ -45,7 +45,7 @@ export default function UserOrders() {
             if (Array.isArray(ordersData)) {
                 const mappedOrders = ordersData
                     .filter((o: any) =>
-                        ['pending', 'active', 'partially_filled', 'partial', 'expired'].includes(o.status)
+                        ['pending', 'active', 'partially_filled', 'partial', 'expired', 'escrow_locked', 'escrow_released', 'escrow_refunded'].includes(o.status)
                     )
                     .map((o: any) => ({
                         ...o,
@@ -98,6 +98,11 @@ export default function UserOrders() {
         if (s === 'filled') return <Badge variant="default" className="bg-green-500 hover:bg-green-600">Filled</Badge>
         if (s === 'expired') return <Badge variant="outline" className="border-muted-foreground text-muted-foreground bg-muted/20">Expired</Badge>
         if (s === 'cancelled') return <Badge variant="outline" className="border-destructive text-destructive">Cancelled</Badge>
+
+        // Escrow Statuses
+        if (s === 'escrow_locked') return <Badge variant="outline" className="border-yellow-500 text-yellow-500 bg-yellow-500/10">🔒 Locked</Badge>
+        if (s === 'escrow_released') return <Badge variant="default" className="bg-teal-500 hover:bg-teal-600">✅ Settled</Badge>
+        if (s === 'escrow_refunded') return <Badge variant="secondary" className="text-muted-foreground">↩️ Refunded</Badge>
 
         return <Badge variant="outline">{status}</Badge>
     }

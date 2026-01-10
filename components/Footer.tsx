@@ -1,6 +1,13 @@
+'use client'
+
+import { useAuth } from '@/contexts/AuthProvider'
 import Link from 'next/link'
 
 export default function Footer() {
+    const { isAuthenticated } = useAuth()
+
+    if (isAuthenticated) return null
+
     return (
         <footer className="w-full border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 mt-auto">
             <div className="container flex flex-col items-center justify-between gap-4 md:h-12 md:flex-row">

@@ -1,10 +1,33 @@
+import dynamic from 'next/dynamic'
 import { useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Card, CardContent, CardHeader } from './ui/card'
-import { Map as MapIcon, TrendingUp, BarChart3, History } from 'lucide-react'
-import TradingViewChart from './TradingViewChart'
-import PnlChartContainer from './PnlChartContainer'
+import { Map as MapIcon, TrendingUp, BarChart3 } from 'lucide-react'
 import EnergyGridMapWrapper from './EnergyGridMapWrapper'
+
+// Dynamic imports to reduce initial bundle strain
+const TradingViewChart = dynamic(() => import('./TradingViewChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full flex-col overflow-hidden border-t-0 bg-card">
+      <div className="flex w-full items-center border-b border-border px-2 py-1 h-[42px]">
+        <div className="h-8 w-24 animate-pulse rounded bg-secondary/50" />
+      </div>
+      <div className="flex-1 p-4">
+        <div className="h-full w-full animate-pulse rounded bg-secondary/30" />
+      </div>
+    </div>
+  )
+})
+
+const PnlChartContainer = dynamic(() => import('./PnlChartContainer'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full flex-col rounded-b-sm border border-t-0 p-4">
+      <div className="h-full w-full animate-pulse rounded bg-secondary/20" />
+    </div>
+  )
+})
 
 interface TradingViewChartContainerProps {
   symbol: string

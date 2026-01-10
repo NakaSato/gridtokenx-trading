@@ -12,6 +12,7 @@ import {
   WebSocketEventHandler,
   defaultWSManager,
 } from '../lib/websocket-client'
+import { useAuth } from '../contexts/AuthProvider'
 
 /**
  * Hook for WebSocket connection with automatic cleanup
@@ -21,16 +22,23 @@ export function useWebSocket(
   token?: string,
   autoConnect: boolean = true
 ) {
+  const { token: authToken } = useAuth()
   const [connected, setConnected] = useState(false)
   const clientRef = useRef<WebSocketClient | null>(null)
+
+  // Use token from auth context if not provided explicitly
+  const effectiveToken = token || authToken || undefined
 
   useEffect(() => {
     if (!autoConnect) return
 
-    const client = defaultWSManager.getOrCreate(channel, token)
+    const client = defaultWSManager.getOrCreate(channel, effectiveToken)
     clientRef.current = client
 
-    client.connect()
+    // Only connect if we have a token (required for /ws/ paths)
+    if (effectiveToken) {
+      client.connect()
+    }
 
     const checkConnection = setInterval(() => {
       setConnected(client.isConnected())
@@ -40,7 +48,7 @@ export function useWebSocket(
       clearInterval(checkConnection)
       defaultWSManager.disconnect(channel)
     }
-  }, [channel, token, autoConnect])
+  }, [channel, effectiveToken, autoConnect])
 
   const connect = useCallback(() => {
     if (clientRef.current) {

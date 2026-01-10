@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -8,12 +8,10 @@ import { defaultApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import {
     Activity,
-    ArrowRightLeft,
     CheckCircle2,
     Clock,
     AlertCircle,
     Database,
-    Zap,
     RefreshCw,
     Radio
 } from 'lucide-react'
@@ -22,11 +20,10 @@ import { cn } from '@/lib/utils'
 import { useOrderMatchedWebSocket } from '@/hooks/useWebSocket'
 import { useP2POrderUpdates, useSettlementUpdates } from '@/hooks/useTransactionUpdates'
 
-export default function P2PStatus() {
+const P2PStatus = React.memo(function P2PStatus() {
     const { token } = useAuth()
     const [matchingStatus, setMatchingStatus] = useState<any>(null)
     const [settlementStats, setSettlementStats] = useState<any>(null)
-    const [loading, setLoading] = useState(false)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
     // Real-time P2P order updates
@@ -207,4 +204,6 @@ export default function P2PStatus() {
             </Card>
         </div>
     )
-}
+})
+
+export default P2PStatus

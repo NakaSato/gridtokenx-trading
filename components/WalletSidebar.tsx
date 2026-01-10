@@ -16,6 +16,7 @@ import { XIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useP2POrderUpdates } from '@/hooks/useTransactionUpdates'
 import { createApiClient } from '@/lib/api-client'
+import MultiWalletManager from './MultiWalletManager'
 
 export default function WalletSideBar() {
   const { wallet, publicKey, disconnect, connected } = useWallet()
@@ -248,24 +249,35 @@ export default function WalletSideBar() {
         ) : null}
         <div className="flex w-full flex-col space-y-4">
           <Tabs defaultValue={activeTab}>
-            <TabsList className="grid h-fit w-full grid-cols-2 rounded-sm bg-accent-foreground p-2">
+            <TabsList className="grid h-fit w-full grid-cols-3 rounded-sm bg-accent-foreground p-2">
               <TabsTrigger
                 value="portfolio"
-                className="rounded-sm border border-transparent px-5 py-[6px] text-sm data-[state=active]:border-primary"
+                className="rounded-sm border border-transparent px-2 py-[6px] text-xs data-[state=active]:border-primary"
                 onClick={() => handleClickTab('portfolio')}
               >
                 Portfolio
               </TabsTrigger>
               <TabsTrigger
                 value="activity"
-                className="rounded-sm border border-transparent px-5 py-[6px] text-sm data-[state=active]:border-primary"
+                className="rounded-sm border border-transparent px-2 py-[6px] text-xs data-[state=active]:border-primary"
                 onClick={() => handleClickTab('activity')}
               >
                 Activity
               </TabsTrigger>
+              <TabsTrigger
+                value="wallets"
+                className="rounded-sm border border-transparent px-2 py-[6px] text-xs data-[state=active]:border-primary"
+                onClick={() => handleClickTab('wallets')}
+              >
+                Wallets
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          {activeTab === 'portfolio' ? <WalletPortfolio /> : <WalletActivity />}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'portfolio' && <WalletPortfolio />}
+            {activeTab === 'activity' && <WalletActivity />}
+            {activeTab === 'wallets' && <MultiWalletManager />}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

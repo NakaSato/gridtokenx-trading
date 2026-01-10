@@ -173,9 +173,10 @@ export function useTransactionUpdates(
     options: {
         showToasts?: boolean
         onUpdate?: (update: TransactionStatusUpdate) => void
+        token?: string
     } = {}
 ) {
-    const { showToasts = true, onUpdate } = options
+    const { showToasts = true, onUpdate, token } = options
     const [latestUpdate, setLatestUpdate] = useState<TransactionStatusUpdate | null>(null)
     const [updates, setUpdates] = useState<TransactionStatusUpdate[]>([])
 
@@ -196,7 +197,8 @@ export function useTransactionUpdates(
     const { connected } = useWebSocketMessage<TransactionStatusUpdate>(
         'trades',
         'transaction_status_update',
-        handleUpdate
+        handleUpdate,
+        token
     )
 
     return {
@@ -216,9 +218,10 @@ export function useP2POrderUpdates(
         showToasts?: boolean
         onUpdate?: (update: P2POrderUpdate) => void
         filterUserId?: string // Only show updates for specific user
+        token?: string
     } = {}
 ) {
-    const { showToasts = true, onUpdate, filterUserId } = options
+    const { showToasts = true, onUpdate, filterUserId, token } = options
     const [latestUpdate, setLatestUpdate] = useState<P2POrderUpdate | null>(null)
     const [activeOrders, setActiveOrders] = useState<Map<string, P2POrderUpdate>>(new Map())
 
@@ -254,7 +257,8 @@ export function useP2POrderUpdates(
     const { connected } = useWebSocketMessage<P2POrderUpdate>(
         'trades',
         'p2p_order_update',
-        handleUpdate
+        handleUpdate,
+        token
     )
 
     return {
@@ -275,9 +279,10 @@ export function useSettlementUpdates(
         showToasts?: boolean
         onSettlement?: (settlement: SettlementComplete) => void
         filterUserId?: string // Only show settlements involving this user
+        token?: string
     } = {}
 ) {
-    const { showToasts = true, onSettlement, filterUserId } = options
+    const { showToasts = true, onSettlement, filterUserId, token } = options
     const [latestSettlement, setLatestSettlement] = useState<SettlementComplete | null>(null)
     const [settlements, setSettlements] = useState<SettlementComplete[]>([])
 
@@ -303,7 +308,8 @@ export function useSettlementUpdates(
     const { connected } = useWebSocketMessage<SettlementComplete>(
         'trades',
         'settlement_complete',
-        handleSettlement
+        handleSettlement,
+        token
     )
 
     return {
@@ -322,13 +328,14 @@ export function useAllTradingUpdates(
     options: {
         showToasts?: boolean
         userId?: string
+        token?: string
     } = {}
 ) {
-    const { showToasts = true, userId } = options
+    const { showToasts = true, userId, token } = options
 
-    const transactions = useTransactionUpdates({ showToasts })
-    const p2pOrders = useP2POrderUpdates({ showToasts, filterUserId: userId })
-    const settlements = useSettlementUpdates({ showToasts, filterUserId: userId })
+    const transactions = useTransactionUpdates({ showToasts, token })
+    const p2pOrders = useP2POrderUpdates({ showToasts, filterUserId: userId, token })
+    const settlements = useSettlementUpdates({ showToasts, filterUserId: userId, token })
 
     const isConnected = transactions.connected || p2pOrders.connected || settlements.connected
 

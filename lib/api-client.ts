@@ -14,6 +14,18 @@ import type {
   ResendVerificationRequest,
   ResendVerificationResponse,
 } from '../types/auth'
+import type {
+  CarbonBalanceResponse,
+  CarbonCredit,
+  CarbonTransaction,
+  UserWallet,
+  LinkWalletRequest,
+  Notification,
+  NotificationPreferences,
+  PriceAlert,
+  RecurringOrder,
+  CreateRecurringOrderRequest,
+} from '../types/phase3'
 
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -598,6 +610,207 @@ export class ApiClient {
         token: this.token,
       }
     )
+  }
+
+  // --- Carbon Credits ---
+  async getCarbonBalance(): Promise<ApiResponse<CarbonBalanceResponse>> {
+    return apiRequest<CarbonBalanceResponse>('/api/v1/carbon/balance', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getCarbonHistory(): Promise<ApiResponse<CarbonCredit[]>> {
+    return apiRequest<CarbonCredit[]>('/api/v1/carbon/history', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getCarbonTransactions(): Promise<ApiResponse<CarbonTransaction[]>> {
+    return apiRequest<CarbonTransaction[]>('/api/v1/carbon/transactions', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async transferCarbonCredits(data: {
+    receiver_username: string
+    amount: string
+    notes?: string
+  }): Promise<ApiResponse<{ transaction_id: string }>> {
+    return apiRequest<{ transaction_id: string }>('/api/v1/carbon/transfer', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  // --- Multi-wallet ---
+  async listWallets(): Promise<ApiResponse<UserWallet[]>> {
+    return apiRequest<UserWallet[]>('/api/v1/user-wallets', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async linkWallet(data: LinkWalletRequest): Promise<ApiResponse<UserWallet>> {
+    return apiRequest<UserWallet>('/api/v1/user-wallets', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  async removeWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/user-wallets/${walletId}`, {
+      method: 'DELETE',
+      token: this.token,
+    })
+  }
+
+  async setPrimaryWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/user-wallets/${walletId}/primary`, {
+      method: 'PUT',
+      token: this.token,
+    })
+  }
+
+  // --- Notifications ---
+  async listNotifications(filters?: { limit?: number; offset?: number }): Promise<ApiResponse<{
+    notifications: Notification[]
+    unread_count: number
+    total: number
+  }>> {
+    const params = new URLSearchParams(filters as any)
+    return apiRequest(`/api/v1/notifications?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async markNotificationAsRead(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}/read`, {
+      method: 'PUT',
+      token: this.token,
+    })
+  }
+
+  async markAllNotificationsAsRead(): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>('/api/v1/notifications/read-all', {
+      method: 'PUT',
+      token: this.token,
+    })
+  }
+
+  async getNotificationPreferences(): Promise<ApiResponse<NotificationPreferences>> {
+    return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>('/api/v1/notifications/preferences', {
+      method: 'PUT',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  // --- Price Alerts ---
+  async createPriceAlert(data: {
+    symbol: string
+    target_price: string
+    condition: 'above' | 'below'
+  }): Promise<ApiResponse<PriceAlert>> {
+    return apiRequest<PriceAlert>('/api/v1/trading/price-alerts', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  async listPriceAlerts(): Promise<ApiResponse<PriceAlert[]>> {
+    return apiRequest<PriceAlert[]>('/api/v1/trading/price-alerts', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async deletePriceAlert(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/trading/price-alerts/${id}`, {
+      method: 'DELETE',
+      token: this.token,
+    })
+  }
+
+  // --- Recurring Orders ---
+  async createRecurringOrder(data: CreateRecurringOrderRequest): Promise<ApiResponse<RecurringOrder>> {
+    return apiRequest<RecurringOrder>('/api/v1/trading/recurring', {
+      method: 'POST',
+      body: data,
+      token: this.token,
+    })
+  }
+
+  async listRecurringOrders(): Promise<ApiResponse<RecurringOrder[]>> {
+    return apiRequest<RecurringOrder[]>('/api/v1/trading/recurring', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getRecurringOrder(id: string): Promise<ApiResponse<RecurringOrder>> {
+    return apiRequest<RecurringOrder>(`/api/v1/trading/recurring/${id}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async cancelRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}`, {
+      method: 'DELETE',
+      token: this.token,
+    })
+  }
+
+  async pauseRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/pause`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
+
+  async resumeRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/resume`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
+
+
+
+  // --- Export ---
+  async exportTradingHistory(format: 'csv' | 'json', filters?: any): Promise<ApiResponse<Blob>> {
+    const params = new URLSearchParams(filters)
+    const url = `/api/v1/trading/export/${format}?${params.toString()}`
+
+    // Using native fetch because we need Blob for downloads
+    const apiUrl = getApiUrl(url)
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        }
+      })
+      if (!response.ok) throw new Error('Export failed')
+      const blob = await response.blob()
+      return { data: blob as any, status: response.status }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'Export failed', status: 500 }
+    }
   }
 }
 

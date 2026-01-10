@@ -5,11 +5,13 @@ import { Skeleton } from './ui/skeleton'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { Activity, History, BookOpen, Clock, TrendingUp, RotateCw, Ban, EllipsisVertical } from 'lucide-react'
+import { Activity, History, BookOpen, Clock, TrendingUp, RotateCw, Ban, EllipsisVertical, Bell, Repeat } from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
 import { orders, Position, positions } from '@/lib/data/Positions'
 import ExpiredOptions from './ExpiredOptions'
+import PriceAlerts from './trading/PriceAlerts'
+import RecurringOrdersList from './trading/RecurringOrdersList'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -197,6 +199,16 @@ export default function TradingPositions() {
                 </div>
               </TabsTrigger>
               <TabsTrigger
+                value="Alerts"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                onClick={() => handleClickTab('Alerts')}
+              >
+                <div className="flex items-center gap-1">
+                  <Bell className="h-3 w-3" />
+                  <span>Alerts</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
                 value="Expired"
                 className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                 onClick={() => handleClickTab('Expired')}
@@ -204,6 +216,16 @@ export default function TradingPositions() {
                 <div className="flex items-center gap-1">
                   <Ban className="h-3 w-3" />
                   <span>Expired</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger
+                value="DCA"
+                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                onClick={() => handleClickTab('DCA')}
+              >
+                <div className="flex items-center gap-1">
+                  <Repeat className="h-3 w-3" />
+                  <span>DCA</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -379,6 +401,12 @@ export default function TradingPositions() {
                 </div>
               )}
 
+              {activeTab === 'Alerts' && (
+                <div className="flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6">
+                  <PriceAlerts />
+                </div>
+              )}
+
               {activeTab === 'Expired' && (
                 <div className={cn(
                   "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
@@ -397,6 +425,12 @@ export default function TradingPositions() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'DCA' && (
+                <div className="flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6">
+                  <RecurringOrdersList />
                 </div>
               )}
             </>

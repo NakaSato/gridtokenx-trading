@@ -24,14 +24,16 @@ import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
 import { useRouter } from 'next/navigation'
 import { Separator } from './ui/separator'
-import SettingsMobile from './SettingsMobile'
-import WalletSideBar from './WalletSidebar'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'
 import telegram from '@/public/svgs/telegram.svg'
 import { Logo } from './Logo'
+import dynamic from 'next/dynamic'
+
+const SettingsMobile = dynamic(() => import('./SettingsMobile'), { ssr: false })
+const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
 
 export default function NavBarMobile() {
   const [isOpen, setIsOpen] = useState(false)
@@ -47,8 +49,8 @@ export default function NavBarMobile() {
   }
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger className="focus:outline-none md:hidden">
-        <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
+      <DialogTrigger className="focus:outline-none md:hidden" aria-label="Open navigation menu">
+        <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-secondary text-foreground hover:text-primary">
           <MenuIcon size={18} />
         </div>
       </DialogTrigger>

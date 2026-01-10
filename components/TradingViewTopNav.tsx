@@ -92,7 +92,10 @@ export default function TradingViewTopNav({
     <div className="flex h-fit w-full rounded-b-sm border border-t-0 py-1">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <div className="group flex cursor-pointer items-center space-x-6 px-2 py-1 lg:space-x-2">
+          <Button
+            variant="ghost"
+            className="group flex h-12 cursor-pointer items-center space-x-6 rounded-none px-2 hover:bg-transparent lg:space-x-2"
+          >
             <div className="flex items-center space-x-[6px]">
               <Image
                 src={logo}
@@ -106,7 +109,7 @@ export default function TradingViewTopNav({
               </span>
             </div>
             <ChevronDown className="h-3 w-3 text-secondary-foreground" />
-          </div>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className="flex w-fit flex-col space-y-2 rounded-sm bg-accent px-1 py-2"

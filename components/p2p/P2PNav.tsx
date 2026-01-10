@@ -58,7 +58,7 @@ export default function P2PNav({ onMatch, matching, matchResult }: P2PNavProps) 
             {/* Main Nav Bar (like TradingViewTopNav) */}
             <div className="flex h-fit w-full rounded-b-sm border border-t-0 py-1">
                 {/* Symbol Selector */}
-                <div className="group flex cursor-pointer items-center space-x-6 px-2 py-1 lg:space-x-2">
+                <Button className="group flex cursor-pointer items-center space-x-6 px-2 py-1 lg:space-x-2">
                     <div className="flex items-center space-x-[6px]">
                         <div className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary/20">
                             <Zap className="h-3 w-3 text-primary" />
@@ -68,7 +68,7 @@ export default function P2PNav({ onMatch, matching, matchResult }: P2PNavProps) 
                         </span>
                     </div>
                     <ChevronDown className="h-3 w-3 text-secondary-foreground" />
-                </div>
+                </Button>
 
                 <div className="hidden lg:flex">
                     {/* Oracle Price */}
