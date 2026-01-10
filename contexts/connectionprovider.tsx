@@ -3,28 +3,48 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from '@solana/wallet-adapter-react'
-
-import { TrustWalletAdapter } from '@solana/wallet-adapter-trust'
-import { SafePalWalletAdapter } from '@solana/wallet-adapter-safepal'
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare'
-import { TorusWalletAdapter } from '@solana/wallet-adapter-torus'
-import { useMemo } from 'react'
+import { WalletAdapterNetwork, Adapter } from '@solana/wallet-adapter-base'
+import { useMemo, useState, useEffect } from 'react'
 import { ContractProvider } from './contractProvider'
 
 export default ({ children }: { children: React.ReactNode }) => {
   const network = WalletAdapterNetwork.Mainnet
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new TrustWalletAdapter(),
-      new SafePalWalletAdapter(),
-      // new TorusWalletAdapter(),
-    ],
-    [network]
-  )
+
+  // Start with empty wallets to avoid including heavy libraries in initial bundle
+  const [wallets, setWallets] = useState<Adapter[]>([])
+
+  useEffect(() => {
+    const loadWallets = async () => {
+      try {
+        const [
+          { PhantomWalletAdapter },
+          { SolflareWalletAdapter },
+          { TrustWalletAdapter },
+          { SafePalWalletAdapter }
+        ] = await Promise.all([
+          import('@solana/wallet-adapter-phantom'),
+          import('@solana/wallet-adapter-solflare'),
+          import('@solana/wallet-adapter-trust'),
+          import('@solana/wallet-adapter-safepal')
+        ])
+
+        const loadedWallets = [
+          new PhantomWalletAdapter(),
+          new SolflareWalletAdapter(),
+          new TrustWalletAdapter(),
+          new SafePalWalletAdapter(),
+          // new TorusWalletAdapter(),
+        ]
+
+        setWallets(loadedWallets)
+      } catch (error) {
+        console.error('Failed to load wallet adapters:', error)
+      }
+    }
+
+    loadWallets()
+  }, [])
+
   const endpoint = useMemo(
     () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://localhost:8899',
     []
