@@ -18,7 +18,7 @@ interface PortfolioData {
 
 export function PortfolioSummary() {
     const { user, isAuthenticated, token, getProfile } = useAuth()
-    const { publicKey, connected } = useWallet()
+    const { publicKey } = useWallet()
     const apiClient = useApiClient()
     const [portfolioData, setPortfolioData] = useState<PortfolioData>({
         tokenBalance: null,
@@ -27,35 +27,25 @@ export function PortfolioSummary() {
     })
     const [profileData, setProfileData] = useState<any>(null)
 
-    // Fetch profile from API Gateway
     const fetchProfile = useCallback(async () => {
         if (!isAuthenticated || !token) return
-
         try {
             const profile = await getProfile()
-            if (profile) {
-                setProfileData(profile)
-            }
+            if (profile) setProfileData(profile)
         } catch (error) {
             console.error('Failed to fetch profile:', error)
         }
     }, [isAuthenticated, token, getProfile])
 
-    // Fetch balance from API Gateway
     const fetchPortfolioData = useCallback(async () => {
         const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
-
         if (!walletAddress) {
             setPortfolioData(prev => ({ ...prev, loading: false }))
             return
         }
-
         setPortfolioData(prev => ({ ...prev, loading: true, error: null }))
-
         try {
-            // Call API Gateway: GET /api/tokens/balance/{wallet_address}
             const response = await apiClient.getBalance(walletAddress)
-
             if (response.data) {
                 setPortfolioData({
                     tokenBalance: response.data,
@@ -63,7 +53,6 @@ export function PortfolioSummary() {
                     error: null,
                 })
             } else {
-                // If no data from API, set default mock values for demo
                 setPortfolioData({
                     tokenBalance: {
                         wallet_address: walletAddress,
@@ -88,14 +77,8 @@ export function PortfolioSummary() {
         }
     }, [apiClient, profileData?.wallet_address, user?.wallet_address, publicKey])
 
-    // Initial data fetch
-    useEffect(() => {
-        fetchProfile()
-    }, [fetchProfile])
-
-    useEffect(() => {
-        fetchPortfolioData()
-    }, [fetchPortfolioData])
+    useEffect(() => { fetchProfile() }, [fetchProfile])
+    useEffect(() => { fetchPortfolioData() }, [fetchPortfolioData])
 
     const handleRefresh = async () => {
         await fetchProfile()
@@ -114,21 +97,18 @@ export function PortfolioSummary() {
         return `${address.slice(0, 4)}...${address.slice(-4)}`
     }
 
-    // Use profile data if available, fallback to user context
     const displayUser = profileData || user
     const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
     const { tokenBalance, loading } = portfolioData
 
-    // Calculate estimated USD value (mock price: 1 GRX = $0.05, 1 SOL = $175)
-    const gecPrice = 0.05
-    const solPrice = 175
-    const gecValue = (tokenBalance?.token_balance_raw || 0) * gecPrice
+    const gecPrice = 1.8 // 1.8 THB/GRX
+    const solPrice = 6200 // 6,200 THB/SOL (approx)
+    const gecValue = (parseFloat(tokenBalance?.token_balance || '0')) * gecPrice
     const solValue = (tokenBalance?.balance_sol || 0) * solPrice
     const totalWealth = gecValue + solValue
 
     return (
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* User Info Card - from /api/auth/profile */}
             <Card className="rounded-sm bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">
@@ -162,7 +142,6 @@ export function PortfolioSummary() {
                 </CardContent>
             </Card>
 
-            {/* Wallet Balance Card - from /api/v1/wallets/{address}/balance */}
             <Card className="rounded-sm bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">
@@ -173,19 +152,18 @@ export function PortfolioSummary() {
                             </div>
                             {loading ? (
                                 <div className="space-y-2">
-                                    <Skeleton className="h-6 w-32" />
-                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-6 w-32" /><Skeleton className="h-4 w-24" />
                                 </div>
                             ) : walletAddress ? (
                                 <>
                                     <h3 className="text-lg font-semibold text-foreground">
                                         {formatBalance(tokenBalance?.balance_sol, 4)} SOL
                                     </h3>
-                                    <p className="text-sm text-muted-foreground font-mono">
+                                    <p className="text-xs text-muted-foreground font-mono">
                                         {truncateAddress(walletAddress)}
                                     </p>
-                                    <p className="text-xs text-green-500 mt-1">
-                                        ≈ ${formatBalance(solValue, 2)} THB
+                                    <p className="text-sm text-green-500 mt-1 font-medium">
+                                        ≈ ฿{formatBalance(solValue, 0)}
                                     </p>
                                 </>
                             ) : (
@@ -195,20 +173,13 @@ export function PortfolioSummary() {
                                 </>
                             )}
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={handleRefresh}
-                            disabled={loading}
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={loading}>
                             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Energy Token Balance Card - from /api/v1/wallets/{address}/balance */}
             <Card className="rounded-sm bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">
@@ -219,8 +190,7 @@ export function PortfolioSummary() {
                             </div>
                             {loading ? (
                                 <div className="space-y-2">
-                                    <Skeleton className="h-6 w-28" />
-                                    <Skeleton className="h-4 w-20" />
+                                    <Skeleton className="h-6 w-28" /><Skeleton className="h-4 w-20" />
                                 </div>
                             ) : (
                                 <>
@@ -228,11 +198,11 @@ export function PortfolioSummary() {
                                         <Coins className="inline h-5 w-5 mr-1 text-green-500" />
                                         {formatBalance(tokenBalance?.token_balance || '0', 2)} GRX
                                     </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        ≈ ${formatBalance(gecValue, 2)} THB
+                                    <p className="text-sm text-green-500 mt-1 font-medium">
+                                        ≈ ฿{formatBalance(gecValue, 2)}
                                     </p>
                                     {tokenBalance?.token_mint && (
-                                        <p className="text-xs text-muted-foreground/60 mt-1 font-mono">
+                                        <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono">
                                             Mint: {truncateAddress(tokenBalance.token_mint)}
                                         </p>
                                     )}
@@ -243,7 +213,6 @@ export function PortfolioSummary() {
                 </CardContent>
             </Card>
 
-            {/* Total Wealth Card - Combined */}
             <Card className="rounded-sm bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
                 <CardContent className="p-5">
                     <div className="flex items-start justify-between">
@@ -254,17 +223,16 @@ export function PortfolioSummary() {
                             </div>
                             {loading ? (
                                 <div className="space-y-2">
-                                    <Skeleton className="h-8 w-32" />
-                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-8 w-32" /><Skeleton className="h-4 w-24" />
                                 </div>
                             ) : (
                                 <>
                                     <h3 className="text-2xl font-bold text-foreground">
-                                        ${formatBalance(totalWealth, 2)}
+                                        ฿{formatBalance(totalWealth, 2)}
                                     </h3>
-                                    <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
-                                        <p>SOL: ${formatBalance(solValue, 2)}</p>
-                                        <p>GRX: ${formatBalance(gecValue, 2)}</p>
+                                    <div className="mt-1 text-[10px] text-muted-foreground space-y-0.5">
+                                        <p>SOL: ฿{formatBalance(solValue, 0)}</p>
+                                        <p>GRX: ฿{formatBalance(gecValue, 2)}</p>
                                     </div>
                                 </>
                             )}

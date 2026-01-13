@@ -113,6 +113,10 @@ function LightweightMarkerComponent({
                                     Trade
                                 </button>
                             )}
+                            <div className="mt-2 pt-1 border-t border-primary/20 flex flex-nowrap items-center justify-between gap-1 opacity-70">
+                                <span className="text-[9px] font-mono">Zone {node.zoneId || '??'}</span>
+                                <span className={`h-1.5 w-1.5 rounded-full ${getStatusColor(status).replace('bg-', 'animate-pulse bg-')}`} />
+                            </div>
                         </div>
                     </div>
                 )}

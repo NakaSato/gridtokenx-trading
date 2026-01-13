@@ -83,6 +83,8 @@ export interface PublicMeterResponse {
     surplus_energy?: number
     /** Energy: Deficit energy needed from grid (kWh) */
     deficit_energy?: number
+    /** Zone ID for grid topology and pricing */
+    zone_id?: number
 }
 
 export interface SubmitReadingRequest {

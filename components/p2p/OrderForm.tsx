@@ -45,7 +45,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     const [isSigning, setIsSigning] = useState(false)
     const { signOrder, isLoaded: cryptoLoaded } = useCrypto()
 
-    // Pre-fill amount when a node is selected from the map
+    // Pre-fill amount and zone when a node is selected from the map
     useEffect(() => {
         if (selectedNode) {
             // Set order type based on node's energy state
@@ -56,15 +56,28 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                 setOrderType('buy')
                 setAmount(selectedNode.deficitEnergy.toFixed(2))
             }
-        }
-    }, [selectedNode])
 
-    // Available zones (could be fetched from API)
+            // Sync Zone ID from map selection (ensures 1-indexed consistency)
+            if (selectedNode.zoneId) {
+                if (orderType === 'buy') {
+                    setBuyerZone(selectedNode.zoneId)
+                    // Default seller to same zone for minimum fees if not set
+                    if (sellerZone === 0) setSellerZone(selectedNode.zoneId)
+                } else if (orderType === 'sell') {
+                    setSellerZone(selectedNode.zoneId)
+                    // Default buyer to same zone for minimum fees if not set
+                    if (buyerZone === 0) setBuyerZone(selectedNode.zoneId)
+                }
+            }
+        }
+    }, [selectedNode, orderType])
+
+    // Available zones (Dynamic 1-indexed zones from API Gateway)
     const zones = [
-        { id: 0, name: 'Zone A - Residential' },
-        { id: 1, name: 'Zone B - Commercial' },
-        { id: 2, name: 'Zone C - Industrial' },
-        { id: 3, name: 'Zone D - Mixed Use' },
+        { id: 1, name: 'Zone 1 - Residential' },
+        { id: 2, name: 'Zone 2 - Commercial' },
+        { id: 3, name: 'Zone 3 - Industrial' },
+        { id: 4, name: 'Zone 4 - Mixed Use' },
     ]
 
     const fetchBalance = useCallback(async () => {

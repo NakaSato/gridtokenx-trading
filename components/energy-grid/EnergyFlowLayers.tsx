@@ -82,6 +82,8 @@ export function EnergyFlowLayers({
 }: Omit<EnergyFlowLayersProps, 'dashOffset'>) {
     // Internal animation state
     const [dashOffset, setDashOffset] = useState(0)
+    const [pulseOpacity, setPulseOpacity] = useState(0.85)
+    const [glowPulse, setGlowPulse] = useState(0.25)
     const animationRef = useRef<number | null>(null)
 
     // Wasm hook
@@ -108,6 +110,12 @@ export function EnergyFlowLayers({
 
             if (time - lastTime > 33) { // Throttled to ~30fps for smooth visual without overkill
                 setDashOffset((prev) => (prev + speed) % 20)
+
+                // Pulse logic: Sinusoidal oscillation for opacity and glow
+                const pulseValue = Math.sin(time / 800) // Slow pulse (approx 5s cycle)
+                setPulseOpacity(0.75 + (pulseValue * 0.15)) // 0.6 to 0.9
+                setGlowPulse(0.2 + (pulseValue * 0.15)) // 0.05 to 0.35
+
                 lastTime = time
             }
             animationRef.current = requestAnimationFrame(animate)
@@ -254,7 +262,7 @@ export function EnergyFlowLayers({
                     paint={{
                         'line-color': ['get', 'color'],
                         'line-width': ['+', ['get', 'width'], 8],
-                        'line-opacity': 0.25,
+                        'line-opacity': glowPulse,
                         'line-blur': 10,
                     }}
                 />
@@ -276,7 +284,7 @@ export function EnergyFlowLayers({
                     paint={{
                         'line-color': ['get', 'color'],
                         'line-width': ['get', 'width'],
-                        'line-opacity': 0.85,
+                        'line-opacity': pulseOpacity,
                         'line-dasharray': [2, 3],
                     }}
                 />

@@ -48,6 +48,8 @@ export interface EnergyNode {
     powerFactor?: number
     surplusEnergy?: number
     deficitEnergy?: number
+    // Grid Topology
+    zoneId?: number
 }
 
 export interface EnergyTransfer {

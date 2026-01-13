@@ -355,7 +355,7 @@ export default function TradingViewTopNav({
           <span className="h-3 text-[10px] font-normal text-secondary-foreground">
             24h volume
           </span>
-          <span className="text-xs font-medium text-foreground">$</span>
+          <span className="text-xs font-medium text-foreground">${marketData.volume24h ? formatPrice(marketData.volume24h) : "N/A"}</span>
         </div>
         <div className="px-4 py-1">
           <Separator orientation="vertical" />
@@ -444,7 +444,7 @@ export default function TradingViewTopNav({
               <span className="h-3 text-[10px] font-normal text-secondary-foreground">
                 Call Volatility
               </span>
-              <span className="text-xs font-medium text-foreground"></span>
+              <span className="text-xs font-medium text-foreground">--</span>
             </div>
             <div className="px-4 py-1">
               <Separator orientation="vertical" />
@@ -453,7 +453,7 @@ export default function TradingViewTopNav({
               <span className="h-3 text-[10px] font-normal text-secondary-foreground">
                 Put Volatility
               </span>
-              <span className="text-xs font-medium text-foreground"></span>
+              <span className="text-xs font-medium text-foreground">--</span>
             </div>
             <div className="px-4 py-1">
               <Separator orientation="vertical" />

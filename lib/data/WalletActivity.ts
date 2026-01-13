@@ -9,6 +9,13 @@ export interface Transaction {
   optionType: string
   expiry: string
   strikePrice: number
+  quantity?: number
+  totalValue?: number
+  wheelingCharge?: number
+  lossCost?: number
+  effectiveEnergy?: number
+  buyerZoneId?: number
+  sellerZoneId?: number
 }
 
 export interface FuturesTransaction {

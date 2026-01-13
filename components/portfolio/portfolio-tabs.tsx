@@ -102,6 +102,13 @@ export function PortfolioTabs() {
               optionType: 'Spot',
               strikePrice: parseFloat(trade.price),
               expiry: format(new Date(trade.executed_at), 'dd MMM, yyy HH:mm:ss'),
+              quantity: parseFloat(trade.quantity),
+              totalValue: parseFloat(trade.total_value),
+              wheelingCharge: trade.wheeling_charge ? parseFloat(trade.wheeling_charge) : undefined,
+              lossCost: trade.loss_cost ? parseFloat(trade.loss_cost) : undefined,
+              effectiveEnergy: trade.effective_energy ? parseFloat(trade.effective_energy) : undefined,
+              buyerZoneId: trade.buyer_zone_id,
+              sellerZoneId: trade.seller_zone_id,
             })
           )
           setHistory(mappedHistory)

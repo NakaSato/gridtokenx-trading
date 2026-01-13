@@ -24,16 +24,12 @@ import { useTopology } from './energy-grid/useTopology'
 import type { EnergyNode, EnergyTransfer, ClusterOrPoint } from './energy-grid'
 
 // Load config
-import energyGridConfig from '@/lib/data/energyGridConfig.json'
+import { CAMPUS_CONFIG } from '@/lib/constants'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
 // Check if token is properly configured
 const hasValidToken = MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' && MAPBOX_TOKEN.length > 20
-
-const { campus, energyNodes: configNodes, energyTransfers: configTransfers } = energyGridConfig
-const staticEnergyNodes = configNodes as EnergyNode[]
-const staticEnergyTransfers = configTransfers as EnergyTransfer[]
 
 interface EnergyGridMapProps {
   onTradeFromNode?: (node: EnergyNode) => void
@@ -51,11 +47,16 @@ interface EnergyGridMapProps {
 
 export default function EnergyGridMap({ onTradeFromNode, viewState: propViewState, onViewStateChange }: EnergyGridMapProps) {
   // View state - local fallback if not controlled
-  const [localViewState, setLocalViewState] = useState({
-    longitude: campus.center.longitude,
-    latitude: campus.center.latitude,
-    zoom: campus.defaultZoom,
-  })
+  const initialViewState = useMemo(() => {
+    return {
+      longitude: CAMPUS_CONFIG.center.longitude,
+      latitude: CAMPUS_CONFIG.center.latitude,
+      zoom: CAMPUS_CONFIG.defaultZoom,
+      ...propViewState,
+    }
+  }, [propViewState])
+
+  const [localViewState, setLocalViewState] = useState(initialViewState)
 
   // Use controlled state if provided, otherwise local state
   const viewState = propViewState || localViewState
@@ -99,7 +100,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const { status: apiGridStatus, isLoading: gridStatusLoading } = useGridStatus(10000)
 
   // Fetch dynamic grid topology (transformers and lines)
-  const { transformers, transfers: topologyTransfers } = useGridTopology()
+  const { transformers, transfers: realTransfers } = useGridTopology()
 
   // Use WASM topology for path finding
   const { isLoaded: topologyLoaded, loadNetwork, findPath } = useTopology()
@@ -108,13 +109,13 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const energyNodes = useMemo(() => {
     return showRealMeters
       ? [...realMeterNodes, ...transformers]
-      : staticEnergyNodes
-  }, [showRealMeters, realMeterNodes, transformers, staticEnergyNodes])
+      : []
+  }, [showRealMeters, realMeterNodes, transformers])
 
-  // Use dynamic transfers if showing real meters, otherwise static config
+  // Use dynamic transfers if showing real meters
   const energyTransfers = useMemo(() => {
-    return showRealMeters ? topologyTransfers : staticEnergyTransfers
-  }, [showRealMeters, topologyTransfers, staticEnergyTransfers])
+    return showRealMeters ? realTransfers : []
+  }, [showRealMeters, realTransfers])
 
   // Cluster markers for performance (266+ meters)
   const { clusters, getClusterExpansionZoom } = useMeterClusters({
@@ -457,6 +458,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         avgStorage={gridTotals.avgStorage}
         co2Saved={apiGridStatus?.co2_saved_kg ?? gridTotals.co2Saved}
         activeMeters={apiGridStatus?.active_meters ?? gridTotals.activeMeters}
+        zones={apiGridStatus?.zones}
       />
 
       {/* Flow Line Hover Tooltip */}

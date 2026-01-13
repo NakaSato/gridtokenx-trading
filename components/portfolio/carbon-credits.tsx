@@ -119,12 +119,21 @@ export function CarbonCredits() {
                                         history.map((credit) => (
                                             <tr key={credit.id} className="border-b transition-colors hover:bg-muted/50">
                                                 <td className="p-4 align-middle">{format(new Date(credit.created_at), 'MMM dd, yyyy')}</td>
-                                                <td className="p-4 align-middle capitalize">{credit.source}</td>
-                                                <td className="p-4 align-middle font-medium">{credit.amount}</td>
+                                                <td className="p-4 align-middle">
+                                                    <div className="flex flex-col">
+                                                        <span className="capitalize">{credit.source}</span>
+                                                        {credit.source === 'REC' && credit.description && (
+                                                            <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">
+                                                                {credit.description}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 align-middle font-medium">{credit.amount} kWh</td>
                                                 <td className="p-4 align-middle">
                                                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${credit.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                            credit.status === 'retired' ? 'bg-blue-100 text-blue-800' :
-                                                                'bg-gray-100 text-gray-800'
+                                                        credit.status === 'retired' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-gray-100 text-gray-800'
                                                         }`}>
                                                         {credit.status}
                                                     </span>

@@ -10,12 +10,15 @@ interface GridHistoryPoint {
     total_consumption: number
 }
 
+import type { ZoneGridStatus } from './useGridStatus'
+
 interface GridStatsPanelProps {
     totalGeneration: number
     totalConsumption: number
     avgStorage: number
     co2Saved?: number
     activeMeters?: number
+    zones?: Record<string, ZoneGridStatus>
 }
 
 export function GridStatsPanel({
@@ -24,6 +27,7 @@ export function GridStatsPanel({
     avgStorage,
     co2Saved = 0,
     activeMeters = 0,
+    zones = {}
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [history, setHistory] = useState<GridHistoryPoint[]>([])
@@ -182,6 +186,35 @@ export function GridStatsPanel({
                         <div className="absolute left-1/2 top-0 h-full w-0.5 bg-white/20 transform -translate-x-1/2" />
                     </div>
                 </div>
+
+                {/* Zone Breakdown */}
+                {Object.keys(zones).length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-white/10">
+                        <div className="text-[10px] text-white/40 mb-2 uppercase tracking-widest font-bold">Zone Breakdown</div>
+                        <div className="space-y-2">
+                            {Object.entries(zones).map(([id, zone]) => (
+                                <div key={id} className="bg-white/5 rounded p-2 border border-white/5">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-[10px] font-bold text-white/80">Zone {id}</span>
+                                        <span className="text-[9px] text-white/40">{zone.active_meters} meters</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                                            <span className="text-white/60">Gen:</span>
+                                            <span className="font-mono text-yellow-400">{Math.round(zone.generation)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                            <span className="text-white/60">Cons:</span>
+                                            <span className="font-mono text-blue-400">{Math.round(zone.consumption)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Secondary Metrics */}
                 <div className="mt-4 grid grid-cols-2 gap-2 pt-2 border-t border-white/5">

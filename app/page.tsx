@@ -91,14 +91,13 @@ const P2PStatus = dynamic(
   { ssr: false, loading: () => <div className="h-32 animate-pulse bg-secondary/50 rounded-lg mb-4" /> }
 )
 import type { EnergyNode } from '@/components/energy-grid/types'
-import energyGridConfig from '@/lib/data/energyGridConfig.json'
+import { CAMPUS_CONFIG } from '@/lib/constants'
 
 export default function Homepage() {
-  const { campus } = energyGridConfig
   const [viewState, setViewState] = useState({
-    longitude: campus.center.longitude,
-    latitude: campus.center.latitude,
-    zoom: campus.defaultZoom
+    longitude: CAMPUS_CONFIG.center.longitude,
+    latitude: CAMPUS_CONFIG.center.latitude,
+    zoom: CAMPUS_CONFIG.defaultZoom
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

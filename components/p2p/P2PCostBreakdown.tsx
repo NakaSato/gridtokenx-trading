@@ -161,10 +161,10 @@ export default function P2PCostBreakdown({
     const sellerPremium = cost.energy_cost - gridExportValue
 
     const zoneLabel = cost.buyer_zone === cost.seller_zone
-        ? 'Same Zone'
+        ? 'Local (Same Zone)'
         : Math.abs(cost.buyer_zone - cost.seller_zone) === 1
             ? 'Adjacent Zone'
-            : 'Cross Zone'
+            : 'Cross-Grid Transmission'
 
     return (
         <Card className="border-border/50 bg-card/50">

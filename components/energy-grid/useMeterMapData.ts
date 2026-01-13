@@ -82,6 +82,7 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         powerFactor: meter.power_factor,
         surplusEnergy: meter.surplus_energy,
         deficitEnergy: meter.deficit_energy,
+        zoneId: meter.zone_id,
         // Add type-specific defaults or real data if available
         ...(nodeType === 'generator' && {
             currentOutput: `${(meter.current_generation ?? 0).toFixed(2)} kW`,

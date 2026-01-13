@@ -112,22 +112,50 @@ export default function OrderHistory({
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col justify-center">
-                  <span className="text-xs font-medium text-foreground">
+                <div className="flex flex-col justify-center max-w-[150px]">
+                  <span className="text-xs font-medium text-foreground truncate">
                     {tx.transactionID}
                   </span>
                   <span className="flex items-center text-xs font-normal text-secondary-foreground">
-                    {tx.token.name} • {tx.transactionType} {tx.optionType === 'Spot' ? 'Trade' : 'Option'} •
-                    <span className="px-1">{tx.optionType}</span>
+                    {tx.token.name} • {tx.transactionType} Trade •
+                    <span className="px-1">Spot</span>
                   </span>
                 </div>
+
+                {/* Energy Specific Details */}
+                {tx.quantity && (
+                  <div className="flex flex-1 items-center justify-around px-4">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Matched</span>
+                      <span className="text-xs text-foreground font-medium">{tx.quantity.toFixed(2)} kWh</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold">Delivered</span>
+                      <span className="text-xs text-green-500 font-bold">
+                        {tx.effectiveEnergy ? tx.effectiveEnergy.toFixed(2) : tx.quantity.toFixed(2)} kWh
+                      </span>
+                    </div>
+                    {tx.wheelingCharge !== undefined && (
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">Wheeling</span>
+                        <span className="text-xs text-yellow-500 font-medium">฿{tx.wheelingCharge.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {tx.lossCost !== undefined && (
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">Loss</span>
+                        <span className="text-xs text-red-500 font-medium">฿{tx.lossCost.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="flex flex-col justify-center">
+              <div className="flex flex-col justify-center min-w-[120px]">
                 <div className="flex justify-end space-x-2">
                   <CopyIcon />
                   <SendIcon />
                 </div>
-                <span className="flex items-center whitespace-nowrap text-xs font-normal text-secondary-foreground">
+                <span className="flex items-center justify-end whitespace-nowrap text-[10px] font-normal text-secondary-foreground">
                   {tx.expiry}
                 </span>
               </div>

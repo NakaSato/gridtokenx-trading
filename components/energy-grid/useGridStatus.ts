@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
 
+export interface ZoneGridStatus {
+    zone_id: number
+    generation: number
+    consumption: number
+    net_balance: number
+    active_meters: number
+}
+
 export interface GridStatus {
     total_generation: number
     total_consumption: number
@@ -10,6 +18,7 @@ export interface GridStatus {
     active_meters: number
     co2_saved_kg: number
     timestamp: string
+    zones?: Record<string, ZoneGridStatus>
 }
 
 export interface UseGridStatusResult {
@@ -74,7 +83,8 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                             net_balance: data.net_balance,
                             active_meters: data.active_meters,
                             co2_saved_kg: data.co2_saved_kg,
-                            timestamp: data.timestamp
+                            timestamp: data.timestamp,
+                            zones: data.zones
                         })
                     }
                 } catch (e) {
