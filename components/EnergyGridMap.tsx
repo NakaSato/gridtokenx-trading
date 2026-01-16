@@ -389,7 +389,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         <NavigationControl position="top-right" />
 
         {/* Zone Polygon Background Layers */}
-        <ZonePolygonLayers
+        <ZonePolygonLayersWrapper
           energyNodes={energyNodes}
           visible={showZones}
         />
@@ -576,6 +576,25 @@ function TradeFlowLayersWrapper({
       trades={trades}
       transformers={transformers}
       visible={visible}
+    />
+  )
+}
+
+// Wrapper component for ZonePolygonLayers that passes active trades
+function ZonePolygonLayersWrapper({
+  energyNodes,
+  visible
+}: {
+  energyNodes: EnergyNode[]
+  visible: boolean
+}) {
+  const { trades } = useActiveTrades()
+
+  return (
+    <ZonePolygonLayers
+      energyNodes={energyNodes}
+      visible={visible}
+      activeTrades={trades}
     />
   )
 }

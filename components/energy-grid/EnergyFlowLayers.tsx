@@ -81,10 +81,49 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
     visible,
     highlightedPath,
 }: Omit<EnergyFlowLayersProps, 'dashOffset'>) {
-    // Static values (no animation)
-    const dashOffset = 0
+    // Animation state
+    const [dashOffset, setDashOffset] = useState(0)
+    const [glowPulse, setGlowPulse] = useState(0.25)
+    const animationRef = useRef<number | null>(null)
+
+    // Animation loop
+    useEffect(() => {
+        if (!visible) {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+            return
+        }
+
+        let lastTime = 0
+        const animate = (time: number) => {
+            if (document.hidden) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            if (time - lastTime > 50) { // ~20fps for smooth animation
+                setDashOffset(prev => (prev + 0.3) % 16)
+
+                // Pulsing glow effect
+                const pulseValue = Math.sin(time / 600)
+                setGlowPulse(0.2 + pulseValue * 0.1)
+
+                lastTime = time
+            }
+            animationRef.current = requestAnimationFrame(animate)
+        }
+
+        animationRef.current = requestAnimationFrame(animate)
+
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+        }
+    }, [visible])
+
     const pulseOpacity = 0.85
-    const glowPulse = 0.25
 
     // Curve geometry cache - persists across renders, keyed by "fromId-toId"
     const curveCache = useRef<Map<string, [number, number][]>>(new Map())

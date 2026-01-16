@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, memo } from 'react'
+import { useMemo, useState, useEffect, useRef, memo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { EnergyNode } from './types'
+import type { ActiveTrade } from './useActiveTrades'
 
 // Zone colors matching the simulator
 const ZONE_COLORS = [
@@ -16,9 +17,13 @@ const ZONE_COLORS = [
     { fill: 'rgba(249, 115, 22, 0.15)', stroke: '#f97316' },  // Orange
 ]
 
+// Active trading zone highlight
+const ACTIVE_TRADING_GLOW = 'rgba(0, 255, 255, 0.6)' // Cyan glow
+
 interface ZonePolygonLayersProps {
     energyNodes: EnergyNode[]
     visible?: boolean
+    activeTrades?: ActiveTrade[]
 }
 
 /**
@@ -87,7 +92,63 @@ function expandPolygon(points: [number, number][], factor: number = 1.15): [numb
 export const ZonePolygonLayers = memo(function ZonePolygonLayers({
     energyNodes,
     visible = true,
+    activeTrades = [],
 }: ZonePolygonLayersProps) {
+    // Animation state for active trading zones
+    const [pulseOpacity, setPulseOpacity] = useState(0.15)
+    const [strokeWidth, setStrokeWidth] = useState(2)
+    const animationRef = useRef<number | null>(null)
+
+    // Get zones with active trading
+    const activeZoneIds = useMemo(() => {
+        const zones = new Set<number>()
+        activeTrades.forEach(trade => {
+            if (trade.isActive) {
+                if (trade.buyer_zone_id !== undefined) zones.add(trade.buyer_zone_id)
+                if (trade.seller_zone_id !== undefined) zones.add(trade.seller_zone_id)
+            }
+        })
+        return zones
+    }, [activeTrades])
+
+    // Animation loop for active trading zones
+    useEffect(() => {
+        if (!visible || activeZoneIds.size === 0) {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+            return
+        }
+
+        let lastTime = 0
+        const animate = (time: number) => {
+            if (document.hidden) {
+                animationRef.current = requestAnimationFrame(animate)
+                return
+            }
+
+            if (time - lastTime > 50) { // ~20fps
+                // Pulsing opacity
+                const pulseValue = Math.sin(time / 400)
+                setPulseOpacity(0.25 + pulseValue * 0.15)
+
+                // Pulsing stroke width
+                const strokeValue = Math.sin(time / 500)
+                setStrokeWidth(2 + strokeValue * 1.5)
+
+                lastTime = time
+            }
+            animationRef.current = requestAnimationFrame(animate)
+        }
+
+        animationRef.current = requestAnimationFrame(animate)
+
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current)
+            }
+        }
+    }, [visible, activeZoneIds.size])
 
     // Group nodes by zone and create polygon GeoJSON
     const zonePolygonsGeoJSON = useMemo(() => {
@@ -111,6 +172,7 @@ export const ZonePolygonLayers = memo(function ZonePolygonLayers({
             .map(([zoneIdStr, meters]) => {
                 const zoneId = parseInt(zoneIdStr)
                 const color = ZONE_COLORS[zoneId % ZONE_COLORS.length]
+                const isActiveTrading = activeZoneIds.has(zoneId)
 
                 // Get coordinates
                 const points: [number, number][] = meters.map(m => [m.longitude, m.latitude])
@@ -125,9 +187,15 @@ export const ZonePolygonLayers = memo(function ZonePolygonLayers({
                     type: 'Feature' as const,
                     properties: {
                         zoneId,
-                        fillColor: color.fill,
-                        strokeColor: color.stroke,
+                        fillColor: isActiveTrading
+                            ? `rgba(0, 255, 255, ${pulseOpacity})` // Cyan glow for active
+                            : color.fill,
+                        strokeColor: isActiveTrading
+                            ? ACTIVE_TRADING_GLOW
+                            : color.stroke,
                         meterCount: meters.length,
+                        isActiveTrading,
+                        strokeWidth: isActiveTrading ? strokeWidth : 2,
                     },
                     geometry: {
                         type: 'Polygon' as const,
@@ -140,7 +208,7 @@ export const ZonePolygonLayers = memo(function ZonePolygonLayers({
             type: 'FeatureCollection' as const,
             features,
         }
-    }, [energyNodes])
+    }, [energyNodes, activeZoneIds, pulseOpacity, strokeWidth])
 
     if (!visible || zonePolygonsGeoJSON.features.length === 0) return null
 
@@ -165,7 +233,7 @@ export const ZonePolygonLayers = memo(function ZonePolygonLayers({
                     type="line"
                     paint={{
                         'line-color': ['get', 'strokeColor'],
-                        'line-width': 2,
+                        'line-width': ['get', 'strokeWidth'],
                         'line-opacity': 0.8,
                         'line-dasharray': [4, 2],
                     }}
