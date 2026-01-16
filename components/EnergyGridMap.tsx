@@ -3,13 +3,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { NavigationControl, MapRef, MapMouseEvent } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon } from 'lucide-react'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon, ArrowRightLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 // Import from energy-grid sub-components
 import {
   EnergyFlowLayers,
   ZonePolygonLayers,
+  TradeFlowLayers,
+  useActiveTrades,
   LightweightMarker,
   ClusterMarker,
   GridStatsPanel,
@@ -76,6 +78,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFlowLines, setShowFlowLines] = useState(true)
   const [showZones, setShowZones] = useState(true) // Toggle for zone polygons
+  const [showTrades, setShowTrades] = useState(true) // Toggle for trade flows
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
@@ -400,6 +403,12 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           highlightedPath={highlightedPath}
         />
 
+        {/* Trade Flow Layers - Animated trades between zones */}
+        <TradeFlowLayersWrapper
+          transformers={transformers}
+          visible={showTrades}
+        />
+
 
         {/* Control Buttons Group */}
         <div className="absolute right-10 top-2 z-10 flex flex-col sm:flex-row gap-2 sm:right-16 sm:top-4">
@@ -412,6 +421,17 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
             title={showZones ? 'Hide zone areas' : 'Show zone areas'}
           >
             <MapIcon className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showTrades ? 'border-cyan-500/50 text-cyan-500' : 'border-primary/30 text-primary'
+              }`}
+            onClick={() => setShowTrades(!showTrades)}
+            title={showTrades ? 'Hide trade flows' : 'Show trade flows'}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
           </Button>
 
           <Button
@@ -504,7 +524,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       </Map>
 
       {/* Legend */}
-      <MapLegend showFlowLines={showFlowLines} />
+      <MapLegend showFlowLines={showFlowLines} showZones={showZones} />
 
       {/* Grid Stats Panel */}
       <GridStatsPanel
@@ -538,5 +558,24 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         </div>
       )}
     </div>
+  )
+}
+
+// Wrapper component for TradeFlowLayers that fetches trade data
+function TradeFlowLayersWrapper({
+  transformers,
+  visible
+}: {
+  transformers: EnergyNode[]
+  visible: boolean
+}) {
+  const { trades } = useActiveTrades()
+
+  return (
+    <TradeFlowLayers
+      trades={trades}
+      transformers={transformers}
+      visible={visible}
+    />
   )
 }

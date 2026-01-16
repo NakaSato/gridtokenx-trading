@@ -1,6 +1,8 @@
 // Energy Grid Map Components - Barrel Export
 export { EnergyFlowLayers } from './EnergyFlowLayers'
 export { ZonePolygonLayers } from './ZonePolygonLayers'
+export { TradeFlowLayers } from './TradeFlowLayers'
+export { useActiveTrades } from './useActiveTrades'
 export { EnergyNodeMarker, MemoizedEnergyNodeMarker } from './EnergyNodeMarker'
 export { LightweightMarker } from './LightweightMarker'
 export { ClusterMarker } from './ClusterMarker'
