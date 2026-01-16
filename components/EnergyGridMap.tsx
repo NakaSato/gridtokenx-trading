@@ -524,7 +524,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       </Map>
 
       {/* Legend */}
-      <MapLegend showFlowLines={showFlowLines} showZones={showZones} />
+      <MapLegend showFlowLines={showFlowLines} showZones={showZones} showTrades={showTrades} />
 
       {/* Grid Stats Panel */}
       <GridStatsPanel

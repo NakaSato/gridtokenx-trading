@@ -5,6 +5,7 @@ import { Zap, Battery, BatteryCharging } from 'lucide-react'
 interface MapLegendProps {
     showFlowLines: boolean
     showZones?: boolean
+    showTrades?: boolean
 }
 
 // Zone colors matching ZonePolygonLayers
@@ -16,7 +17,7 @@ const ZONE_LEGEND = [
     { name: 'Zone 4', color: 'bg-amber-500' },
 ]
 
-export function MapLegend({ showFlowLines, showZones = true }: MapLegendProps) {
+export function MapLegend({ showFlowLines, showZones = true, showTrades = true }: MapLegendProps) {
     return (
         <div className="from-background/95 to-background/90 absolute bottom-12 left-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md w-auto">
             <h4 className="mb-1 text-[10px] font-bold text-foreground">Nodes</h4>
@@ -59,6 +60,10 @@ export function MapLegend({ showFlowLines, showZones = true }: MapLegendProps) {
                                 <span className="text-[9px] text-secondary-foreground">{zone.name}</span>
                             </div>
                         ))}
+                        <div className="flex items-center gap-1 p-0.5 col-span-2">
+                            <div className="h-2 w-2 rounded-sm bg-cyan-400 animate-pulse" />
+                            <span className="text-[9px] text-secondary-foreground">Active Trading</span>
+                        </div>
                     </div>
                 </>
             )}
@@ -88,7 +93,28 @@ export function MapLegend({ showFlowLines, showZones = true }: MapLegendProps) {
                     </div>
                 </>
             )}
+
+            {/* Trade Flow Legend */}
+            {showTrades && (
+                <>
+                    <div className="my-1.5 border-t border-primary/20" />
+                    <h4 className="mb-1 text-[10px] font-bold text-foreground">P2P Trades</h4>
+                    <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 p-0.5">
+                            <div className="h-0.5 w-4 rounded bg-cyan-400 animate-pulse shadow-[0_0_4px_rgba(0,255,255,0.6)]" />
+                            <span className="text-[9px] text-secondary-foreground">Trade Flow</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 p-0.5">
+                            <div className="flex gap-0.5">
+                                <div className="h-1 w-1 rounded-full bg-cyan-400" />
+                                <div className="h-1 w-1 rounded-full bg-cyan-400/60" />
+                                <div className="h-1 w-1 rounded-full bg-cyan-400/30" />
+                            </div>
+                            <span className="text-[9px] text-secondary-foreground">→ Direction</span>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     )
 }
-
