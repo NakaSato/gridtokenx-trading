@@ -31,12 +31,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         const wsUrl = `${wsBaseUrl}/ws`;
         const urlWithToken = `${wsUrl}?token=${token}`;
 
-        console.log('🔌 Connecting to WebSocket...');
         const ws = new WebSocket(urlWithToken);
         socketRef.current = ws;
 
         ws.onopen = () => {
-            console.log('✅ WebSocket connected');
             setIsConnected(true);
             setSocket(ws);
             if (reconnectTimeoutRef.current) {
@@ -45,14 +43,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         };
 
         ws.onclose = (event) => {
-            console.log(`❌ WebSocket disconnected (Code: ${event.code})`);
             setIsConnected(false);
             setSocket(null);
             socketRef.current = null;
 
             // Simple exponential backoff or 3s retry
             if (token) {
-                console.log('🔄 Attempting to reconnect in 3s...');
                 reconnectTimeoutRef.current = setTimeout(connect, 3000);
             }
         };

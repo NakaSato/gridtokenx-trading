@@ -87,7 +87,6 @@ export function useSmartMeter() {
             ]
 
             if (meterEvents.includes(message.type)) {
-                console.log('🔌 Smart Meter real-time update:', message.type)
                 queryClient.invalidateQueries({ queryKey: ['smartMeter'] })
             }
         }

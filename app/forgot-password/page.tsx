@@ -10,10 +10,19 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 type RequestState = 'idle' | 'loading' | 'success' | 'error'
 
 export default function ForgotPasswordPage() {
+    return (
+        <ErrorBoundary name="Forgot Password">
+            <ForgotPasswordContent />
+        </ErrorBoundary>
+    )
+}
+
+function ForgotPasswordContent() {
     const router = useRouter()
     const [email, setEmail] = useState('')
     const [state, setState] = useState<RequestState>('idle')

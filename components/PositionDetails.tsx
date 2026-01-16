@@ -5,12 +5,13 @@ import {
   PurchasePriceIcon,
 } from '@/public/svgs/icons'
 import Tpsl from './Tpsl'
+import { memo } from 'react'
 
 interface PositionDetailsProps {
   type: string
 }
 
-export default function PositionDetails({ type }: PositionDetailsProps) {
+export default memo(function PositionDetails({ type }: PositionDetailsProps) {
   return (
     <div className="flex w-full flex-col space-y-1">
       <div className="flex w-full justify-between text-sm font-normal text-secondary-foreground">
@@ -49,4 +50,4 @@ export default function PositionDetails({ type }: PositionDetailsProps) {
       </div>
     </div>
   )
-}
+})

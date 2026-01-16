@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown } from 'lucide-react'
+import { useState, useEffect, memo } from 'react'
+import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 interface GridHistoryPoint {
     timestamp: string
@@ -10,7 +11,8 @@ interface GridHistoryPoint {
     total_consumption: number
 }
 
-import type { ZoneGridStatus } from './useGridStatus'
+import { useGridHistory } from '@/hooks/useGridHistory'
+import { ZoneGridStatus } from '@/types/grid'
 
 interface GridStatsPanelProps {
     totalGeneration: number
@@ -21,7 +23,7 @@ interface GridStatsPanelProps {
     zones?: Record<string, ZoneGridStatus>
 }
 
-export function GridStatsPanel({
+export const GridStatsPanel = memo(function GridStatsPanel({
     totalGeneration,
     totalConsumption,
     avgStorage,
@@ -30,39 +32,21 @@ export function GridStatsPanel({
     zones = {}
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
-    const [history, setHistory] = useState<GridHistoryPoint[]>([])
+    const { history, error: historyError, refresh: fetchHistory } = useGridHistory(30, 30000)
 
     const netBalance = totalGeneration - totalConsumption
     const totalLoad = totalGeneration + totalConsumption
     const balancePercentage = totalLoad > 0 ? (totalGeneration / totalLoad) * 100 : 50
 
-    // Fetch history on mount and periodic updates
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-                const response = await fetch(`${baseUrl}/api/v1/public/grid-status/history?limit=30`)
-                if (response.ok) {
-                    const data = await response.json()
-                    // Recharts likes chronological order
-                    setHistory(data.reverse())
-                }
-            } catch (error) {
-                console.error('Failed to fetch grid history:', error)
-            }
-        }
-
-        fetchHistory()
-        const interval = setInterval(fetchHistory, 30000) // Refresh every 30s
-        return () => clearInterval(interval)
-    }, [])
-
     return (
         <div
-            className={`absolute bottom-8 right-4 overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out hover:border-white/20 ${isCollapsed ? 'w-48 p-3' : 'w-64 p-4'
+            className={`absolute overflow-hidden rounded-xl border border-white/10 bg-black/60 shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out hover:border-white/20
+                bottom-2 right-2 sm:bottom-8 sm:right-4
+                ${isCollapsed
+                    ? 'w-32 sm:w-48 p-2 sm:p-3'
+                    : 'w-48 sm:w-64 p-3 sm:p-4'
                 }`}
         >
-            {/* Header - Clickable to toggle */}
             {/* Header - Clickable to toggle */}
             <button
                 type="button"
@@ -72,9 +56,9 @@ export function GridStatsPanel({
                 aria-controls="grid-stats-content"
                 aria-label={isCollapsed ? "Expand grid statistics" : "Collapse grid statistics"}
             >
-                <div className="flex items-center gap-2">
-                    <Activity className={`transition-colors duration-300 ${isCollapsed ? 'h-3.5 w-3.5 text-blue-400/70' : 'h-4 w-4 text-blue-400'}`} />
-                    <h4 className={`font-bold uppercase tracking-wider text-white/90 transition-all ${isCollapsed ? 'text-[10px]' : 'text-sm'}`}>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Activity className={`transition-colors duration-300 ${isCollapsed ? 'h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-400/70' : 'h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-400'}`} />
+                    <h4 className={`font-bold uppercase tracking-wider text-white/90 transition-all ${isCollapsed ? 'text-[9px] sm:text-[10px]' : 'text-xs sm:text-sm'}`}>
                         Grid Status
                     </h4>
                 </div>
@@ -86,46 +70,60 @@ export function GridStatsPanel({
             </button>
 
             {/* Metrics Content */}
-            <div className={`space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[800px] opacity-100'}`}>
+            <div className={`space-y-2 sm:space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[800px] opacity-100'}`}>
                 {/* Visual Chart - Historical Trends */}
-                <div className="h-24 w-full bg-white/5 rounded-lg p-1 border border-white/5 mb-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={history.length > 0 ? history : []}>
-                            <defs>
-                                <linearGradient id="genGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="consGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <Area
-                                type="monotone"
-                                dataKey="total_generation"
-                                stroke="#facc15"
-                                fillOpacity={1}
-                                fill="url(#genGradient)"
-                                strokeWidth={1}
-                                isAnimationActive={false}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="total_consumption"
-                                stroke="#60a5fa"
-                                fillOpacity={1}
-                                fill="url(#consGradient)"
-                                strokeWidth={1}
-                                isAnimationActive={false}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '10px' }}
-                                itemStyle={{ padding: '0px' }}
-                                labelStyle={{ display: 'none' }}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <div className="h-16 sm:h-24 w-full bg-white/5 rounded-lg p-1 border border-white/5 mb-2 relative">
+                    {historyError ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                            <AlertCircle className="h-4 w-4 text-red-400/60" />
+                            <span className="text-[10px] text-red-400/60">{historyError}</span>
+                            <button
+                                onClick={fetchHistory}
+                                className="flex items-center gap-1 px-2 py-0.5 text-[9px] rounded bg-white/5 hover:bg-white/10 text-white/50 transition-colors"
+                            >
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                Retry
+                            </button>
+                        </div>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={history.length > 0 ? history : []}>
+                                <defs>
+                                    <linearGradient id="genGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="consGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <Area
+                                    type="monotone"
+                                    dataKey="total_generation"
+                                    stroke="#facc15"
+                                    fillOpacity={1}
+                                    fill="url(#genGradient)"
+                                    strokeWidth={1}
+                                    isAnimationActive={false}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="total_consumption"
+                                    stroke="#60a5fa"
+                                    fillOpacity={1}
+                                    fill="url(#consGradient)"
+                                    strokeWidth={1}
+                                    isAnimationActive={false}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '10px' }}
+                                    itemStyle={{ padding: '0px' }}
+                                    labelStyle={{ display: 'none' }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
 
                 {/* Generation */}
@@ -142,7 +140,7 @@ export function GridStatsPanel({
                     <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
                         <div
                             className="h-full bg-yellow-400/80 transition-all duration-1000 ease-out"
-                            style={{ width: `${Math.min(100, (totalGeneration / 500) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (totalGeneration / ENERGY_GRID_CONFIG.progressBar.maxCapacity) * 100)}%` }}
                         />
                     </div>
                 </div>
@@ -161,7 +159,7 @@ export function GridStatsPanel({
                     <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
                         <div
                             className="h-full bg-blue-400/80 transition-all duration-1000 ease-out"
-                            style={{ width: `${Math.min(100, (totalConsumption / 500) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (totalConsumption / ENERGY_GRID_CONFIG.progressBar.maxCapacity) * 100)}%` }}
                         />
                     </div>
                 </div>
@@ -217,27 +215,27 @@ export function GridStatsPanel({
                 )}
 
                 {/* Secondary Metrics */}
-                <div className="mt-4 grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-white/5">
                     <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5 text-white/40">
-                            <BatteryCharging className="h-3 w-3 text-emerald-400" />
-                            <span className="text-[9px] uppercase font-bold tracking-tighter">Storage</span>
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-white/40">
+                            <BatteryCharging className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-emerald-400" />
+                            <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-tighter">Storage</span>
                         </div>
-                        <span className="text-xs font-bold text-white/90">{avgStorage.toFixed(1)}%</span>
+                        <span className="text-[10px] sm:text-xs font-bold text-white/90">{avgStorage.toFixed(1)}%</span>
                     </div>
                     <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5 text-white/40">
-                            <Leaf className="h-3 w-3 text-green-400" />
-                            <span className="text-[9px] uppercase font-bold tracking-tighter">CO₂ Saved</span>
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-white/40">
+                            <Leaf className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-400" />
+                            <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-tighter">CO₂ Saved</span>
                         </div>
-                        <span className="text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[8px] text-white/40 font-normal">kg</span></span>
+                        <span className="text-[10px] sm:text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[7px] sm:text-[8px] text-white/40 font-normal">kg</span></span>
                     </div>
                 </div>
 
                 {/* Footer Info */}
-                <div className="flex items-center justify-between pt-1 text-[9px] text-white/30 italic">
+                <div className="flex items-center justify-between pt-1 text-[8px] sm:text-[9px] text-white/30 italic">
                     <span>{activeMeters} Active Meters</span>
-                    <span>v2.2.0-analytics</span>
+                    <span className="hidden sm:inline">v2.2.0-analytics</span>
                 </div>
             </div>
 
@@ -261,4 +259,4 @@ export function GridStatsPanel({
             )}
         </div>
     )
-}
+})

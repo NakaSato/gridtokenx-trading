@@ -3,14 +3,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 import { AnchorProvider, getProvider, Program, Provider, BN } from '@coral-xyz/anchor'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, Connection, TransactionSignature } from '@solana/web3.js'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { OptionContract } from '@/lib/idl/option_contract'
 import idl from '../lib/idl/option_contract.json'
 import { connection } from '@/utils/const'
 import { getOptionDetailPDA } from '@/lib/pda-utils'
 import { useOptionPositions, useCustodies } from '@/hooks/useOptions'
 import { ExpiredOption } from '@/types/contract'
-import { useContractMutations } from '@/hooks/useContractMutations'
+import * as actions from '@/lib/contract-actions'
 
 export type { ExpiredOption }
 
@@ -41,6 +42,77 @@ export const ContractContext = createContext<ContractContextType>({
   onRemoveLiquidity: async () => false,
   getOptionDetailAccount: () => undefined,
 })
+
+// Inlined from useContractMutations hook
+function useContractMutations(
+  program: Program<OptionContract> | undefined,
+  conn: Connection,
+  publicKey: PublicKey | null,
+  sendTransaction: (tx: any, connection: Connection) => Promise<TransactionSignature>
+) {
+  const queryClient = useQueryClient()
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['optionPositions'] })
+    queryClient.invalidateQueries({ queryKey: ['custodies'] })
+  }
+
+  const openOptionMutation = useMutation({
+    mutationFn: async (params: Parameters<typeof actions.openOption>[4]) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.openOption(program, conn, publicKey, sendTransaction, params)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  const closeOptionMutation = useMutation({
+    mutationFn: async (index: number) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.closeOption(program, conn, publicKey, sendTransaction, index)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  const claimOptionMutation = useMutation({
+    mutationFn: async ({ index, solPrice }: { index: number, solPrice: number }) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.claimOption(program, conn, publicKey, sendTransaction, index, solPrice)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  const exerciseOptionMutation = useMutation({
+    mutationFn: async (index: number) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.exerciseOption(program, conn, publicKey, sendTransaction, index)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  const addLiquidityMutation = useMutation({
+    mutationFn: async (params: Parameters<typeof actions.addLiquidity>[4]) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.addLiquidity(program, conn, publicKey, sendTransaction, params)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  const removeLiquidityMutation = useMutation({
+    mutationFn: async (params: Parameters<typeof actions.removeLiquidity>[4]) => {
+      if (!program || !publicKey) throw new Error('Not connected')
+      return actions.removeLiquidity(program, conn, publicKey, sendTransaction, params)
+    },
+    onSuccess: (success) => { if (success) invalidateAll() }
+  })
+
+  return {
+    openOptionMutation,
+    closeOptionMutation,
+    claimOptionMutation,
+    exerciseOptionMutation,
+    addLiquidityMutation,
+    removeLiquidityMutation
+  }
+}
 
 export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { connected, publicKey, sendTransaction } = useWallet()
@@ -126,9 +198,6 @@ export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const handleAddLiquidity = async (amount: number, prog: Program<OptionContract> | undefined, asset: PublicKey, poolName: string) => {
     try {
-      // If a specific program is passed, we use the mutation if it matches, or call action directly.
-      // But useContractMutation is bound to the provider's program.
-      // Most components use the provider's program anyway.
       return await addLiquidityMutation.mutateAsync({ amount, asset, poolName })
     } catch {
       return false
@@ -161,3 +230,4 @@ export const ContractProvider: React.FC<{ children: ReactNode }> = ({ children }
     </ContractContext.Provider>
   )
 }
+

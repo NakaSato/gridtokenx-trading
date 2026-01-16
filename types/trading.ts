@@ -7,17 +7,42 @@ export interface Bar {
     volume: number;
 }
 
+export interface ApiFuturesPosition {
+    id: number;
+    product_symbol: string;
+    side: 'long' | 'short';
+    entry_price: string;
+    quantity: string;
+    unrealized_pnl?: string;
+}
+
+export interface ApiOrder {
+    id: number;
+    order_type?: string;
+    side: string;
+    price_per_kwh: string;
+    energy_amount: string;
+    expires_at?: string;
+    created_at: string;
+}
+
 export interface TradeRecord {
     id: string;
-    buy_order_id: string;
-    sell_order_id: string;
     quantity: string;
     price: string;
     total_value: string;
     role: "buyer" | "seller";
-    counterparty_id: string;
     executed_at: string;
     status: string;
+    buy_order_id?: string;
+    sell_order_id?: string;
+    counterparty_id?: string;
+    product_symbol?: string;
+    wheeling_charge?: string;
+    loss_cost?: string;
+    effective_energy?: string;
+    buyer_zone_id?: number;
+    seller_zone_id?: number;
 }
 
 export interface TradeHistory {

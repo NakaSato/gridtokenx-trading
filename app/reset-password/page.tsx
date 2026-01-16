@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 type ResetState = 'idle' | 'loading' | 'success' | 'error' | 'invalid'
 
@@ -258,12 +259,14 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        }>
-            <ResetPasswordContent />
-        </Suspense>
+        <ErrorBoundary name="Reset Password">
+            <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            }>
+                <ResetPasswordContent />
+            </Suspense>
+        </ErrorBoundary>
     )
 }

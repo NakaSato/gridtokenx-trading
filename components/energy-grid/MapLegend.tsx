@@ -8,10 +8,10 @@ interface MapLegendProps {
 
 export function MapLegend({ showFlowLines }: MapLegendProps) {
     return (
-        <div className="from-background/95 to-background/90 absolute bottom-8 left-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md">
+        <div className="from-background/95 to-background/90 absolute bottom-12 left-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md w-auto">
             <h4 className="mb-1 text-[10px] font-bold text-foreground">Nodes</h4>
             <div className="space-y-0.5">
-                <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
+                <div className="flex items-center gap-1 rounded p-0.5">
                     <div className="rounded-full border border-yellow-500/40 bg-yellow-500/20 p-0.5">
                         <Zap className="h-2 w-2 text-yellow-500" />
                     </div>
@@ -19,7 +19,7 @@ export function MapLegend({ showFlowLines }: MapLegendProps) {
                         Prosumer
                     </span>
                 </div>
-                <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
+                <div className="flex items-center gap-1 rounded p-0.5">
                     <div className="rounded-full border border-green-500/40 bg-green-500/20 p-0.5">
                         <BatteryCharging className="h-2 w-2 text-green-500" />
                     </div>
@@ -27,7 +27,7 @@ export function MapLegend({ showFlowLines }: MapLegendProps) {
                         Storage
                     </span>
                 </div>
-                <div className="hover:bg-secondary/20 flex cursor-pointer items-center gap-1 rounded p-0.5 transition-colors">
+                <div className="flex items-center gap-1 rounded p-0.5">
                     <div className="rounded-full border border-blue-500/40 bg-blue-500/20 p-0.5">
                         <Battery className="h-2 w-2 text-blue-500" />
                     </div>
@@ -65,3 +65,4 @@ export function MapLegend({ showFlowLines }: MapLegendProps) {
         </div>
     )
 }
+

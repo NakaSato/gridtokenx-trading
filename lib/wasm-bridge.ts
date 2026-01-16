@@ -72,6 +72,17 @@ export interface WasmExports {
     crypto_sign: (keyPtr: number, keyLen: number, msgPtr: number, msgLen: number) => number;
     crypto_sig_ptr: () => number;
     crypto_verify: (keyPtr: number, keyLen: number, msgPtr: number, msgLen: number, sigPtr: number) => number;
+    // Energy Grid & Clustering
+    calculate_bezier: (x1: number, y1: number, x2: number, y2: number, intensity: number, segments: number, ptr: number) => number;
+    load_points: (ptr: number, count: number) => void;
+    get_clusters: (minLng: number, minLat: number, maxLng: number, maxLat: number, zoom: number) => number;
+    get_output_buffer_ptr: () => number;
+    // Simulation
+    init_simulation_nodes: (ptr: number, count: number) => void;
+    init_simulation_flows: (ptr: number, count: number) => void;
+    update_simulation: (hour: number, minute: number) => void;
+    get_node_output_ptr: () => number;
+    get_flow_output_ptr: () => number;
 }
 
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -105,7 +116,6 @@ export async function initWasm(wasmPath: string = '/gridtokenx_wasm.wasm'): Prom
             wasmInstance = instance;
             wasmExports = instance.exports as unknown as WasmExports;
 
-            console.log('[WASM] Options pricing module loaded successfully');
             return wasmExports;
         } catch (error) {
             console.error('[WASM] Failed to load module:', error);

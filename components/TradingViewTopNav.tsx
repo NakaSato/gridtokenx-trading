@@ -11,7 +11,7 @@ import {
 } from './ui/dropdown-menu'
 import { Input } from './ui/input'
 import { formatPrice } from '@/utils/formatter'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { cn } from '@/lib/utils'
 import TokenList from './TokenList'
 import MarketDetails from './MarketDetails'
@@ -60,7 +60,7 @@ interface TradingViewTopNavProps {
   onNavigate?: (idx: number) => void
 }
 
-export default function TradingViewTopNav({
+export default memo(function TradingViewTopNav({
   symbol,
   pythSymbol,
   logo,
@@ -505,4 +505,4 @@ export default function TradingViewTopNav({
       </div>
     </div>
   )
-}
+})

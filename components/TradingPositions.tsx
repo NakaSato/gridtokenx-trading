@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState, memo } from 'react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Skeleton } from './ui/skeleton'
@@ -28,8 +28,9 @@ import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
 import { useOptionPositions } from '@/hooks/useOptions'
+import { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 
-export default function TradingPositions() {
+export default memo(function TradingPositions() {
   const { token } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('Positions')
   const [optioninfos, setOptionInfos] = useState<Position[]>([])
@@ -61,10 +62,10 @@ export default function TradingPositions() {
       const apiClient = createApiClient(token)
 
       // 1. Fetch Futures Positions
-      const positionsRes = await apiClient.getFuturesPositions() as any
+      const positionsRes = await apiClient.getFuturesPositions() as unknown as { data: { data: ApiFuturesPosition[] } }
       if (positionsRes.data && positionsRes.data.data) {
         const mappedPositions: Position[] = positionsRes.data.data.map(
-          (pos: any) => ({
+          (pos: ApiFuturesPosition) => ({
             index: pos.id,
             token: pos.product_symbol || 'Unknown',
             logo: '/images/solana.png', // Default logo
@@ -86,10 +87,10 @@ export default function TradingPositions() {
       }
 
       // 2. Fetch Trading Orders
-      const ordersRes = await apiClient.getOrders({ status: 'active' }) as any
+      const ordersRes = await apiClient.getOrders({ status: 'active' }) as unknown as { data: { data: ApiOrder[] } }
       if (ordersRes.data && ordersRes.data.data) {
         const mappedOrders: Order[] = ordersRes.data.data.map(
-          (order: any) => ({
+          (order: ApiOrder) => ({
             index: order.id,
             token: 'GRID',
             logo: '/images/grid.png',
@@ -108,10 +109,10 @@ export default function TradingPositions() {
       }
 
       // 3. Fetch Trade History
-      const tradesRes = await apiClient.getTrades({ limit: 50 }) as any
+      const tradesRes = await apiClient.getTrades({ limit: 50 }) as unknown as { data: { trades: TradeRecord[] } }
       if (tradesRes.data && tradesRes.data.trades) {
         const mappedHistory: Transaction[] = tradesRes.data.trades.map(
-          (trade: any) => ({
+          (trade: TradeRecord) => ({
             transactionID: trade.id,
             token: {
               name: 'GridToken',
@@ -439,4 +440,4 @@ export default function TradingPositions() {
       </CardContent>
     </Card>
   )
-}
+})

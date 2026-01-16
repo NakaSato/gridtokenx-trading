@@ -15,6 +15,7 @@ import {
   Check,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 type VerificationState = 'loading' | 'success' | 'error' | 'expired' | 'invalid'
 
@@ -82,15 +83,18 @@ function VerifyEmailContent() {
   }, [resendCooldown, canResend])
 
   // Helper: Extract error message
-  const getErrorMessage = (error: any): string => {
-    if (typeof error === 'object' && error !== null) {
-      return error.message || JSON.stringify(error)
+  const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) {
+      return error.message
+    }
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      return String((error as { message: unknown }).message)
     }
     return String(error)
   }
 
   // Helper: Handle verification errors
-  const handleVerificationError = (response: any) => {
+  const handleVerificationError = (response: { status?: number; error?: unknown; retry_after?: number }) => {
     const errorMsg = getErrorMessage(response.error)
 
     if (response.status === 400) {
@@ -151,7 +155,7 @@ function VerifyEmailContent() {
         localStorage.setItem('user', JSON.stringify(response.data.auth.user))
         toast.success('Automatically signed in!')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Email verification error:', error)
       setState('error')
       setMessage(`Verification failed: ${getErrorMessage(error)}`)
@@ -159,9 +163,9 @@ function VerifyEmailContent() {
   }
 
   // Helper: Handle resend errors
-  const handleResendError = (response: any) => {
+  const handleResendError = (response: { status?: number; error?: unknown; retry_after?: number }) => {
     if (response.status === 429) {
-      const retryAfter = (response as any).retry_after || 30
+      const retryAfter = response.retry_after || 30
       toast.error(`Rate limit exceeded. Please wait ${retryAfter} seconds.`)
       setCanResend(false)
       setResendCooldown(retryAfter)
@@ -213,7 +217,7 @@ function VerifyEmailContent() {
         setCanResend(false)
         setResendCooldown(30)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Resend verification error:', error)
       toast.error(`Failed to resend: ${getErrorMessage(error)}`)
     } finally {
@@ -455,23 +459,25 @@ function ResendForm({
 // Default export with Suspense boundary
 export default function VerifyEmailPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center px-4 py-12">
-          <div className="w-full max-w-md">
-            <div className="rounded-lg border border-border bg-accent p-8 shadow-lg">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-center text-muted-foreground">
-                  Loading verification page...
-                </p>
+    <ErrorBoundary name="Email Verification">
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center px-4 py-12">
+            <div className="w-full max-w-md">
+              <div className="rounded-lg border border-border bg-accent p-8 shadow-lg">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-center text-muted-foreground">
+                    Loading verification page...
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      }
-    >
-      <VerifyEmailContent />
-    </Suspense>
+        }
+      >
+        <VerifyEmailContent />
+      </Suspense>
+    </ErrorBoundary>
   )
 }

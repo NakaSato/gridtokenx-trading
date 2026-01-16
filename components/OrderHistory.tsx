@@ -11,12 +11,12 @@ import Image from 'next/image'
 import { Separator } from './ui/separator'
 import { Button } from './ui/button'
 import { Download, FileDown, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
 
-export default function OrderHistory({
+export default memo(function OrderHistory({
   doneOptioninfos,
 }: {
   doneOptioninfos: Transaction[]
@@ -221,4 +221,4 @@ export default function OrderHistory({
       </div>
     </>
   )
-}
+})

@@ -25,7 +25,10 @@ export function ClusterMarker({ cluster, onClick }: ClusterMarkerProps) {
             anchor="center"
         >
             <div
-                className="flex items-center justify-center rounded-full cursor-pointer transition-transform hover:scale-110"
+                role="button"
+                tabIndex={0}
+                aria-label={`Cluster of ${point_count} meters. Click to zoom in and view individual meters.`}
+                className="flex items-center justify-center rounded-full cursor-pointer transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-500"
                 style={{
                     width: size,
                     height: size,
@@ -37,9 +40,15 @@ export function ClusterMarker({ cluster, onClick }: ClusterMarkerProps) {
                     e.stopPropagation()
                     onClick(cluster_id, longitude, latitude)
                 }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onClick(cluster_id, longitude, latitude)
+                    }
+                }}
                 title={`${point_count} meters - Click to zoom`}
             >
-                <span className="text-white font-bold text-sm drop-shadow-lg">
+                <span className="text-white font-bold text-sm drop-shadow-lg" aria-hidden="true">
                     {point_count_abbreviated}
                 </span>
             </div>

@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import Map, { NavigationControl, MapRef } from 'react-map-gl/mapbox'
+import Map, { NavigationControl, MapRef, MapMouseEvent } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2 } from 'lucide-react'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-// import gsap from 'gsap' // Removed in favor of native Mapbox transitions
 
 // Import from energy-grid sub-components
 import {
   EnergyFlowLayers,
+  ZonePolygonLayers,
   LightweightMarker,
   ClusterMarker,
   GridStatsPanel,
@@ -21,7 +21,7 @@ import {
   useGridTopology,
 } from './energy-grid'
 import { useTopology } from './energy-grid/useTopology'
-import type { EnergyNode, EnergyTransfer, ClusterOrPoint } from './energy-grid'
+import type { EnergyNode, EnergyTransfer, ClusterOrPoint, ClusterFeature } from './energy-grid'
 
 // Load config
 import { CAMPUS_CONFIG } from '@/lib/constants'
@@ -61,7 +61,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   // Use controlled state if provided, otherwise local state
   const viewState = propViewState || localViewState
 
-  const handleMapMove = useCallback((evt: any) => {
+  const handleMapMove = useCallback((evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
     if (onViewStateChange) {
       onViewStateChange(evt.viewState)
     } else {
@@ -75,6 +75,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const [mapError, setMapError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFlowLines, setShowFlowLines] = useState(true)
+  const [showZones, setShowZones] = useState(true) // Toggle for zone polygons
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
@@ -91,13 +92,20 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
   // Fetch real meter data only (no static mock nodes)
-  const { realMeterNodes, isLoading: metersLoading } = useMeterMapData({
+  const { realMeterNodes, isLoading: metersLoading, error: metersError, refresh: refreshMeters } = useMeterMapData({
     includeStaticNodes: false,
     refreshIntervalMs: 30000,
   })
 
   // Fetch aggregate grid status from the API
-  const { status: apiGridStatus, isLoading: gridStatusLoading } = useGridStatus(10000)
+  const { status: apiGridStatus, isLoading: gridStatusLoading, error: gridStatusError, refresh: refreshGridStatus } = useGridStatus(10000)
+
+  // Combined API error state
+  const apiError = metersError || gridStatusError
+  const handleRetry = () => {
+    if (metersError) refreshMeters()
+    if (gridStatusError) refreshGridStatus()
+  }
 
   // Fetch dynamic grid topology (transformers and lines)
   const { transformers, transfers: realTransfers } = useGridTopology()
@@ -167,7 +175,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   }, [selectedNode, topologyLoaded, energyNodes, findPath])
 
   // Handle flow line hover
-  const handleFlowHover = useCallback((e: any) => {
+  const handleFlowHover = useCallback((e: MapMouseEvent) => {
     if (e.features && e.features.length > 0) {
       const feature = e.features[0]
       setHoveredFlow({
@@ -191,8 +199,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       }
       if (e.key === 'r' || e.key === 'R') {
         mapRef.current?.flyTo({
-          center: [campus.center.longitude, campus.center.latitude],
-          zoom: campus.defaultZoom,
+          center: [CAMPUS_CONFIG.center.longitude, CAMPUS_CONFIG.center.latitude],
+          zoom: CAMPUS_CONFIG.defaultZoom,
           duration: 1000,
           essential: true
         })
@@ -328,6 +336,23 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         </div>
       )}
 
+      {/* API Error Banner */}
+      {apiError && !mapError && (
+        <div className="absolute top-20 sm:top-16 left-1/2 -translate-x-1/2 z-40 w-[90%] sm:w-auto animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 px-3 sm:px-4 py-2 rounded-lg border border-red-500/30 bg-red-500/10 backdrop-blur-md shadow-lg">
+            <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
+            <p className="text-[11px] sm:text-sm text-red-200">{apiError}</p>
+            <button
+              onClick={handleRetry}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-medium rounded bg-red-500/20 hover:bg-red-500/30 text-red-200 transition-colors"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       <Map
         ref={mapRef}
         {...viewState}
@@ -349,7 +374,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
         onLoad={() => setMapLoaded(true)}
-        onError={(e: any) => {
+        onError={(e: { error?: { message?: string } }) => {
           console.error('Map error:', e?.error || e)
           setMapError(e?.error?.message || 'Failed to load map. Check your Mapbox token.')
         }}
@@ -360,6 +385,12 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       >
         <NavigationControl position="top-right" />
 
+        {/* Zone Polygon Background Layers */}
+        <ZonePolygonLayers
+          energyNodes={energyNodes}
+          visible={showZones}
+        />
+
         {/* Energy Flow Layers */}
         <EnergyFlowLayers
           energyNodes={energyNodes}
@@ -369,8 +400,20 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           highlightedPath={highlightedPath}
         />
 
-        {/* Control Buttons */}
-        <div className="absolute right-40 top-4 z-10">
+
+        {/* Control Buttons Group */}
+        <div className="absolute right-10 top-2 z-10 flex flex-col sm:flex-row gap-2 sm:right-16 sm:top-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showZones ? 'border-purple-500/50 text-purple-500' : 'border-primary/30 text-primary'
+              }`}
+            onClick={() => setShowZones(!showZones)}
+            title={showZones ? 'Hide zone areas' : 'Show zone areas'}
+          >
+            <MapIcon className="h-4 w-4" />
+          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -381,9 +424,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           >
             <Radio className="h-4 w-4" />
           </Button>
-        </div>
 
-        <div className="absolute right-28 top-4 z-10">
           <Button
             variant="ghost"
             size="sm"
@@ -394,9 +435,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           >
             <Activity className="h-4 w-4" />
           </Button>
-        </div>
 
-        <div className="absolute right-16 top-4 z-10">
           <Button
             variant="ghost"
             size="sm"
@@ -412,40 +451,56 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           </Button>
         </div>
 
-        {/* Node Markers - Clustered for performance */}
-        {clusters.map((clusterOrPoint) => {
-          // Check if it's a cluster
-          if (clusterOrPoint.properties.cluster) {
+        {/* Node Markers - Clustered and Virtualized for performance */}
+        {clusters
+          // Viewport virtualization: only render markers within visible bounds + buffer
+          .filter((clusterOrPoint) => {
+            if (!mapBounds) return true // Render all if bounds not yet available
+            const coords = clusterOrPoint.geometry.coordinates
+            const [lng, lat] = coords
+            // Add 10% buffer around visible bounds to prevent pop-in
+            const bufferLng = (mapBounds[2] - mapBounds[0]) * 0.1
+            const bufferLat = (mapBounds[3] - mapBounds[1]) * 0.1
             return (
-              <ClusterMarker
-                key={`cluster-${clusterOrPoint.properties.cluster_id}`}
-                cluster={clusterOrPoint as any}
-                onClick={(clusterId, lng, lat) => {
-                  const expansionZoom = getClusterExpansionZoom(clusterId)
-                  mapRef.current?.flyTo({
-                    center: [lng, lat],
-                    zoom: expansionZoom,
-                    duration: 500,
-                    essential: true
-                  })
-                }}
+              lng >= mapBounds[0] - bufferLng &&
+              lng <= mapBounds[2] + bufferLng &&
+              lat >= mapBounds[1] - bufferLat &&
+              lat <= mapBounds[3] + bufferLat
+            )
+          })
+          .map((clusterOrPoint) => {
+            // Check if it's a cluster
+            if (clusterOrPoint.properties.cluster) {
+              return (
+                <ClusterMarker
+                  key={`cluster-${clusterOrPoint.properties.cluster_id}`}
+                  cluster={clusterOrPoint as ClusterFeature}
+                  onClick={(clusterId, lng, lat) => {
+                    const expansionZoom = getClusterExpansionZoom(clusterId)
+                    mapRef.current?.flyTo({
+                      center: [lng, lat],
+                      zoom: expansionZoom,
+                      duration: 500,
+                      essential: true
+                    })
+                  }}
+                />
+              )
+            }
+            // It's an individual point
+            const node = clusterOrPoint.properties.node
+            return (
+              <LightweightMarker
+                key={node.id}
+                node={node}
+                liveData={liveNodeData[node.id]}
+                isSelected={selectedNode?.id === node.id}
+                onSelect={setSelectedNode}
+                onDoubleClick={handleMarkerDoubleClick}
+                onTradeClick={onTradeFromNode}
               />
             )
-          }
-          // It's an individual point
-          const node = clusterOrPoint.properties.node
-          return (
-            <LightweightMarker
-              key={node.id}
-              node={node}
-              liveData={liveNodeData[node.id]}
-              isSelected={selectedNode?.id === node.id}
-              onSelect={setSelectedNode}
-              onDoubleClick={handleMarkerDoubleClick}
-              onTradeClick={onTradeFromNode}
-            />
-          )
-        })}
+          })}
       </Map>
 
       {/* Legend */}

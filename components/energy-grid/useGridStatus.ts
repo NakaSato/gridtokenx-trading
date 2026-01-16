@@ -2,24 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { defaultApiClient } from '@/lib/api-client'
+import { GridStatus, ZoneGridStatus } from '@/types/grid'
 
-export interface ZoneGridStatus {
-    zone_id: number
-    generation: number
-    consumption: number
-    net_balance: number
-    active_meters: number
-}
-
-export interface GridStatus {
-    total_generation: number
-    total_consumption: number
-    net_balance: number
-    active_meters: number
-    co2_saved_kg: number
-    timestamp: string
-    zones?: Record<string, ZoneGridStatus>
-}
+// Interfaces moved to types/grid.ts
 
 export interface UseGridStatusResult {
     status: GridStatus | null
@@ -33,33 +20,18 @@ export interface UseGridStatusResult {
  * Supports both polling and persistent WebSocket updates.
  */
 export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
-    const [status, setStatus] = useState<GridStatus | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const queryClient = useQueryClient()
     const wsRef = useRef<WebSocket | null>(null)
 
-    const fetchStatus = useCallback(async () => {
-        try {
-            try {
-                const response = await fetch(API_ENDPOINTS.grid.status)
-                if (response.ok) {
-                    const statusData = await response.json() as GridStatus
-                    setStatus(statusData)
-                    setError(null)
-                } else {
-                    throw new Error(`API Gateway returned ${response.status}: ${response.statusText}`)
-                }
-            } catch (err) {
-                console.error('API Gateway failed:', err)
-                setError(err instanceof Error ? err.message : 'Failed to fetch grid status')
-            }
-        } catch (err) {
-            console.error('Error fetching grid status:', err)
-            setError(err instanceof Error ? err.message : 'Failed to fetch grid status')
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
+    const { data: status = null, isLoading, error, refetch } = useQuery({
+        queryKey: ['grid-status'],
+        queryFn: async () => {
+            const response = await defaultApiClient.getGridStatus()
+            if (response.error) throw new Error(response.error)
+            return response.data || null
+        },
+        refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
+    })
 
     // WebSocket connection logic
     useEffect(() => {
@@ -68,7 +40,6 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
         const connectWs = () => {
             if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-            // console.log('🔌 Connecting to Grid Status WebSocket:', wsUrl)
             const ws = new WebSocket(wsUrl)
             wsRef.current = ws
 
@@ -76,8 +47,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                 try {
                     const data = JSON.parse(event.data)
                     if (data.type === 'grid_status_updated') {
-                        // console.log('⚡ Real-time Grid Update Received:', data)
-                        setStatus({
+                        const updatedStatus: GridStatus = {
                             total_generation: data.total_generation,
                             total_consumption: data.total_consumption,
                             net_balance: data.net_balance,
@@ -85,7 +55,9 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                             co2_saved_kg: data.co2_saved_kg,
                             timestamp: data.timestamp,
                             zones: data.zones
-                        })
+                        }
+                        // Update cache immediately on WS message
+                        queryClient.setQueryData(['grid-status'], updatedStatus)
                     }
                 } catch (e) {
                     console.error('Failed to parse WS message:', e)
@@ -93,13 +65,10 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
             }
 
             ws.onclose = () => {
-                console.log('❌ WebSocket connection closed. Reconnecting in 5s...')
                 setTimeout(connectWs, 5000)
             }
 
             ws.onerror = () => {
-                // Error handler - close event will trigger reconnection
-                // Note: Browser WebSocket errors don't provide details
                 ws.close()
             }
         }
@@ -111,22 +80,12 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                 wsRef.current.close()
             }
         }
-    }, [])
-
-    // Polling fallback (much slower when WS is active)
-    useEffect(() => {
-        fetchStatus()
-
-        if (refreshIntervalMs > 0) {
-            const interval = setInterval(fetchStatus, refreshIntervalMs)
-            return () => clearInterval(interval)
-        }
-    }, [fetchStatus, refreshIntervalMs])
+    }, [queryClient])
 
     return {
         status,
         isLoading,
-        error,
-        refresh: fetchStatus
+        error: error ? (error as Error).message : null,
+        refresh: async () => { await refetch() }
     }
 }

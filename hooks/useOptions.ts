@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { PublicKey } from '@solana/web3.js'
 import { Program, BN } from '@coral-xyz/anchor'
 import { OptionContract } from '@/lib/idl/option_contract'
@@ -13,6 +13,8 @@ import {
 import { getPoolPDA, getCustodyPDA, getOptionDetailPDA, getUserPDA } from '@/lib/pda-utils'
 import { calculateGreeks } from '@/lib/wasm-bridge'
 import { getPythPrice } from './usePythPrice'
+import * as actions from '@/lib/contract-actions'
+import { Connection } from '@solana/web3.js'
 
 export function useOptionPositions(program: Program<OptionContract> | undefined, publicKey: PublicKey | null) {
     return useQuery({
@@ -140,4 +142,52 @@ export function useCustodies(program: Program<OptionContract> | undefined, publi
         },
         enabled: !!program,
     })
+}
+
+/**
+ * Hook to specifically fetch and manage expired options
+ */
+export function useExpiredOptions(program: Program<OptionContract> | undefined, publicKey: PublicKey | null) {
+    const { data, ...rest } = useOptionPositions(program, publicKey)
+    return {
+        data: data?.expired || [],
+        ...rest
+    }
+}
+
+/**
+ * Hook for option settlement actions (claim, exercise)
+ */
+export function useOptionSettlement(
+    program: Program<OptionContract> | undefined,
+    connection: Connection,
+    publicKey: PublicKey | null,
+    sendTransaction: any
+) {
+    const queryClient = useQueryClient()
+    const invalidateAll = () => {
+        queryClient.invalidateQueries({ queryKey: ['optionPositions'] })
+        queryClient.invalidateQueries({ queryKey: ['custodies'] })
+    }
+
+    const claimMutation = useMutation({
+        mutationFn: async ({ index, solPrice }: { index: number, solPrice: number }) => {
+            if (!program || !publicKey) throw new Error('Not connected')
+            return actions.claimOption(program, connection, publicKey, sendTransaction, index, solPrice)
+        },
+        onSuccess: (success) => { if (success) invalidateAll() }
+    })
+
+    const exerciseMutation = useMutation({
+        mutationFn: async (index: number) => {
+            if (!program || !publicKey) throw new Error('Not connected')
+            return actions.exerciseOption(program, connection, publicKey, sendTransaction, index)
+        },
+        onSuccess: (success) => { if (success) invalidateAll() }
+    })
+
+    return {
+        claimMutation,
+        exerciseMutation
+    }
 }

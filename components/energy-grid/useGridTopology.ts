@@ -1,26 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { EnergyNode, EnergyTransfer } from './types'
 import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
+import { useQuery } from '@tanstack/react-query'
+import { defaultApiClient } from '@/lib/api-client'
+import { GridTopologyResponse } from '@/types/grid'
 
-interface ZoneData {
-    zone_id: number
-    centroid_lat: number
-    centroid_lon: number
-    meter_count: number
-    transformer_name: string
-}
-
-interface MeterLink {
-    meter_id: string
-    zone_id: number | null
-}
-
-interface GridTopologyResponse {
-    zones: Record<string, ZoneData>
-    meters: MeterLink[]
-}
+// Types moved to types/grid.ts
 
 interface UseGridTopologyResult {
     transformers: EnergyNode[]
@@ -31,41 +18,29 @@ interface UseGridTopologyResult {
 }
 
 export function useGridTopology(): UseGridTopologyResult {
-    const [transformers, setTransformers] = useState<EnergyNode[]>([])
-    const [transfers, setTransfers] = useState<EnergyTransfer[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const { data, isLoading, error, refetch } = useQuery({
+        queryKey: ['grid-topology'],
+        queryFn: async () => {
+            const response = await defaultApiClient.getGridTopology()
 
-    const fetchTopology = useCallback(async () => {
-        try {
-            setIsLoading(true)
-
-            // Try fetching from the main topology endpoint first
-            const response = await fetch(API_ENDPOINTS.grid.topology)
-
-            if (!response.ok) {
-                // Warning: Fallback to thailand data if main endpoint fails
-                // Ideally this should be handled by the backend or a specific fallback config
-                const demoResponse = await fetch(`${API_CONFIG.baseUrl}/api/thailand/data`)
-                if (!demoResponse.ok) {
-                    throw new Error(`Failed to fetch grid topology: ${response.status}`)
+            if (response.error || !response.data) {
+                // Fallback to thailand data if main endpoint fails
+                try {
+                    const demoResponse = await fetch(`${API_CONFIG.baseUrl}/api/thailand/data`)
+                    if (!demoResponse.ok) throw new Error(response.error || 'Failed to fetch topology')
+                    return await demoResponse.json() as GridTopologyResponse
+                } catch (e) {
+                    throw new Error(response.error || 'Failed to fetch topology')
                 }
-                const demoData = await demoResponse.json()
-                processTopologyData(demoData)
-                return
             }
+            return response.data
+        },
+        staleTime: 300000, // Topology doesn't change often
+    })
 
-            const data = await response.json()
-            processTopologyData(data)
-        } catch (err) {
-            console.error('Error fetching grid topology:', err)
-            setError(err instanceof Error ? err.message : 'Failed to fetch topology')
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
+    const processedData = useMemo(() => {
+        if (!data) return { transformers: [], transfers: [] }
 
-    const processTopologyData = (data: GridTopologyResponse) => {
         const newTransformers: EnergyNode[] = []
         const newTransfers: EnergyTransfer[] = []
 
@@ -78,7 +53,7 @@ export function useGridTopology(): UseGridTopologyResult {
                 type: 'transformer',
                 latitude: zone.centroid_lat,
                 longitude: zone.centroid_lon,
-                capacity: '500 kVA', // Placeholder
+                capacity: '500 kVA',
                 status: 'active',
                 buildingCode: `TR-${zone.zone_id}`,
             })
@@ -87,33 +62,23 @@ export function useGridTopology(): UseGridTopologyResult {
         // Process Meters connections
         data.meters.forEach((meter) => {
             if (meter.zone_id === null) return
-
             const transformerId = `transformer-${meter.zone_id}`
-
-            // Link Meter to Transformer
-            // We assume meters are already fetched by useMeterMapData
-            // This transfer represents the physical line
             newTransfers.push({
                 from: transformerId,
                 to: meter.meter_id,
-                power: 0, // Will be updated by live simulation data
+                power: 0,
                 description: 'Service Line'
             })
         })
 
-        setTransformers(newTransformers)
-        setTransfers(newTransfers)
-    }
-
-    useEffect(() => {
-        fetchTopology()
-    }, [fetchTopology])
+        return { transformers: newTransformers, transfers: newTransfers }
+    }, [data])
 
     return {
-        transformers,
-        transfers,
+        transformers: processedData.transformers,
+        transfers: processedData.transfers,
         isLoading,
-        error,
-        refresh: fetchTopology
+        error: error ? (error as Error).message : null,
+        refresh: async () => { await refetch() }
     }
 }

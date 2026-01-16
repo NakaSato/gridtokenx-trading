@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
 import { Badge } from './ui/badge'
@@ -19,91 +18,31 @@ import {
     ArrowDownRight
 } from 'lucide-react'
 import { Skeleton } from './ui/skeleton'
+import { useUserStats, useEnergyReadings, useTradeHistory } from '@/hooks/useUserAnalytics'
+import { TradeRecord } from '@/types/trading'
 
-interface UserStats {
-    total_energy_produced: number
-    total_energy_consumed: number
-    net_energy: number
-    token_balance: number
-    total_orders: number
-    successful_trades: number
-    total_profit_loss: number
-}
-
-interface EnergyReading {
-    timestamp: string
-    energy_produced: number
-    energy_consumed: number
-}
-
-interface TradeHistory {
-    id: string
-    side: 'buy' | 'sell'
-    amount: number
-    price: number
-    total: number
-    status: string
-    created_at: string
-}
+// Local interfaces removed in favor of centralized types
 
 export default function UserAnalytics() {
     const { user } = useAuth()
-    const [stats, setStats] = useState<UserStats | null>(null)
-    const [energyHistory, setEnergyHistory] = useState<EnergyReading[]>([])
-    const [trades, setTrades] = useState<TradeHistory[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const {
+        data: stats,
+        isLoading: statsLoading,
+        error: statsError
+    } = useUserStats()
 
-    const fetchData = useCallback(async () => {
-        try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-            const token = localStorage.getItem('access_token')
-            const headers = { 'Authorization': `Bearer ${token}` }
+    const {
+        data: energyHistory = [],
+        isLoading: energyLoading
+    } = useEnergyReadings(24)
 
-            // Fetch user analytics data
-            const [statsRes, readingsRes, tradesRes] = await Promise.all([
-                fetch(`${baseUrl}/api/v1/analytics/my-stats`, { headers }),
-                fetch(`${baseUrl}/api/v1/meters/readings?limit=24`, { headers }),
-                fetch(`${baseUrl}/api/v1/analytics/my-history?limit=10`, { headers })
-            ])
+    const {
+        data: trades = [],
+        isLoading: tradesLoading
+    } = useTradeHistory(10)
 
-            if (statsRes.ok) {
-                const statsData = await statsRes.json()
-                setStats(statsData)
-            } else {
-                // Use default stats if endpoint not available
-                setStats({
-                    total_energy_produced: 0,
-                    total_energy_consumed: 0,
-                    net_energy: 0,
-                    token_balance: 0,
-                    total_orders: 0,
-                    successful_trades: 0,
-                    total_profit_loss: 0
-                })
-            }
-
-            if (readingsRes.ok) {
-                setEnergyHistory(await readingsRes.json())
-            }
-
-            if (tradesRes.ok) {
-                setTrades(await tradesRes.json())
-            }
-
-        } catch (err) {
-            console.error('Analytics Fetch Error:', err)
-            setError(err instanceof Error ? err.message : 'Failed to load analytics')
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchData()
-        const interval = setInterval(fetchData, 30000) // Refresh every 30s
-        return () => clearInterval(interval)
-    }, [fetchData])
+    const loading = statsLoading || energyLoading || tradesLoading
+    const error = statsError ? (statsError as Error).message : null
 
     if (!user) {
         return (
@@ -223,8 +162,8 @@ export default function UserAnalytics() {
                         <CardDescription>Your latest trading activity.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {trades.length > 0 ? trades.slice(0, 5).map(trade => (
-                            <TradeItem key={trade.id} trade={trade} />
+                        {trades.length > 0 ? (trades as unknown as TradeRecord[]).slice(0, 5).map(trade => (
+                            <TradeItem key={trade.id} trade={trade as unknown as TradeRecord} />
                         )) : (
                             <p className="text-sm text-secondary-foreground py-4 text-center">No trades yet.</p>
                         )}
@@ -323,20 +262,20 @@ function EnergyBar({ produced, consumed }: { produced: number; consumed: number 
 }
 
 // Trade Item Component
-function TradeItem({ trade }: { trade: TradeHistory }) {
-    const isBuy = trade.side === 'buy'
+function TradeItem({ trade }: { trade: TradeRecord }) {
+    const isBuy = trade.role === 'buyer'
     return (
         <div className="flex items-center justify-between text-sm py-2 border-b border-secondary last:border-0">
             <div className="flex items-center gap-2">
                 <Badge variant={isBuy ? 'default' : 'secondary'} className="text-xs">
                     {isBuy ? 'BUY' : 'SELL'}
                 </Badge>
-                <span className="font-medium">{trade.amount.toFixed(2)} kWh</span>
+                <span className="font-medium">{parseFloat(trade.quantity).toFixed(2)} kWh</span>
             </div>
             <div className="text-right">
-                <span className="font-mono text-xs">${trade.total.toFixed(2)}</span>
+                <span className="font-mono text-xs">${parseFloat(trade.total_value).toFixed(2)}</span>
                 <p className="text-[10px] text-secondary-foreground">
-                    @ ${trade.price.toFixed(2)}/kWh
+                    @ ${parseFloat(trade.price).toFixed(2)}/kWh
                 </p>
             </div>
         </div>

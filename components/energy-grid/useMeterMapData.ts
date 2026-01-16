@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { PublicMeterResponse } from '@/types/meter'
 import type { EnergyNode } from './types'
+import { ENERGY_GRID_CONFIG } from '@/lib/constants'
+import { useQuery } from '@tanstack/react-query'
+import { defaultApiClient } from '@/lib/api-client'
 
 export interface UseMeterMapDataOptions {
     /** Whether to include static config nodes alongside real meters */
@@ -45,17 +48,15 @@ function generateMeterId(meter: PublicMeterResponse, index: number): string {
  * Uses default UTCC campus coordinates if meter has no location data.
  */
 function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNode {
-    // UTCC Campus default coordinates (Bangkok, Thailand)
-    const DEFAULT_LAT = 13.7856
-    const DEFAULT_LNG = 100.5661
+    const { defaultLocation } = ENERGY_GRID_CONFIG
 
-    // Use meter coordinates if available, otherwise use UTCC campus default
+    // Use meter coordinates if available, otherwise use default location
     const lat = (meter.latitude !== undefined && meter.latitude !== null)
         ? meter.latitude
-        : DEFAULT_LAT
+        : defaultLocation.latitude
     const lng = (meter.longitude !== undefined && meter.longitude !== null)
         ? meter.longitude
-        : DEFAULT_LNG
+        : defaultLocation.longitude
 
     // Determine node type based on meter_type
     let nodeType: 'generator' | 'consumer' | 'storage' = 'consumer'
@@ -73,7 +74,7 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         type: nodeType,
         longitude: lng,
         latitude: lat,
-        capacity: '100 kWh', // Default capacity for real meters
+        capacity: '100 kWh',
         status: meter.is_verified ? 'active' : 'idle',
         // Telemetry from real meters
         voltage: meter.voltage,
@@ -86,14 +87,14 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         // Add type-specific defaults or real data if available
         ...(nodeType === 'generator' && {
             currentOutput: `${(meter.current_generation ?? 0).toFixed(2)} kW`,
-            solarPanels: 4, // Assume some panels if it's a generator
+            solarPanels: 4,
             efficiency: meter.power_factor ? `${(meter.power_factor * 100).toFixed(0)}%` : '94%',
         }),
         ...(nodeType === 'consumer' && {
             currentLoad: `${(meter.current_consumption ?? 0).toFixed(2)} kW`,
         }),
         ...(nodeType === 'storage' && {
-            currentCharge: '50 kWh', // Still placeholder for storage
+            currentCharge: '50 kWh',
             batteryType: 'Li-ion',
         }),
     }
@@ -107,67 +108,37 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
     const {
         includeStaticNodes = true,
         staticNodes = [],
-        refreshIntervalMs = 60000, // Optimized: refresh every 60 seconds (was 30s)
+        refreshIntervalMs = 60000,
     } = options
 
-    const [meters, setMeters] = useState<PublicMeterResponse[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-
-    const fetchMeters = useCallback(async () => {
-        try {
-            setError(null)
-            const apiGatewayUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-            let metersData: PublicMeterResponse[] = []
-
-            try {
-                const apiResponse = await fetch(`${apiGatewayUrl}/api/v1/public/meters`)
-                if (apiResponse.ok) {
-                    metersData = await apiResponse.json() as PublicMeterResponse[]
-                } else {
-                    throw new Error(`API Gateway returned ${apiResponse.status}: ${apiResponse.statusText}`)
-                }
-            } catch (err) {
-                console.error('API Gateway failed:', err)
-                setError(err instanceof Error ? err.message : 'Failed to fetch meters')
-            }
-
-            setMeters(metersData)
-        } catch (err) {
-            console.error('Error fetching meters for map:', err)
-            setError(err instanceof Error ? err.message : 'Failed to fetch meters')
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
-
-    // Initial fetch
-    useEffect(() => {
-        fetchMeters()
-    }, [fetchMeters])
-
-    // Auto-refresh
-    useEffect(() => {
-        if (refreshIntervalMs <= 0) return
-
-        const interval = setInterval(fetchMeters, refreshIntervalMs)
-        return () => clearInterval(interval)
-    }, [fetchMeters, refreshIntervalMs])
+    const { data: meters = [], isLoading, error, refetch } = useQuery({
+        queryKey: ['public-meters'],
+        queryFn: async () => {
+            const response = await defaultApiClient.getPublicMeters()
+            if (response.error) throw new Error(response.error)
+            return response.data || []
+        },
+        refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
+    })
 
     // Convert meters to EnergyNodes with generated unique IDs
-    const realMeterNodes: EnergyNode[] = meters.map((meter, index) => meterToEnergyNode(meter, index))
+    const realMeterNodes: EnergyNode[] = useMemo(() =>
+        meters.map((meter, index) => meterToEnergyNode(meter, index)),
+        [meters]
+    )
 
     // Combine with static nodes if requested
-    const nodes: EnergyNode[] = includeStaticNodes
-        ? [...staticNodes, ...realMeterNodes]
-        : realMeterNodes
+    const nodes: EnergyNode[] = useMemo(() =>
+        includeStaticNodes ? [...staticNodes, ...realMeterNodes] : realMeterNodes,
+        [includeStaticNodes, staticNodes, realMeterNodes]
+    )
 
     return {
         nodes,
         realMeterNodes,
         meters,
         isLoading,
-        error,
-        refresh: fetchMeters,
+        error: error ? (error as Error).message : null,
+        refresh: async () => { await refetch() },
     }
 }

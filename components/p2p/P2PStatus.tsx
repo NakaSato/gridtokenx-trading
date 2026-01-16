@@ -20,10 +20,29 @@ import { cn } from '@/lib/utils'
 import { useOrderMatchedWebSocket } from '@/hooks/useWebSocket'
 import { useP2POrderUpdates, useSettlementUpdates } from '@/hooks/useTransactionUpdates'
 
+// Matching engine status from API
+interface MatchingStatus {
+    can_match: boolean
+    match_reason?: string
+    pending_buy_orders: number
+    pending_sell_orders: number
+    pending_matches: number
+    buy_price_range?: { min: number; max: number }
+    sell_price_range?: { min: number; max: number }
+}
+
+// Settlement statistics from API
+interface SettlementStats {
+    confirmed_count: number
+    pending_count: number
+    failed_count: number
+    total_settled_value: number
+}
+
 const P2PStatus = React.memo(function P2PStatus() {
     const { token } = useAuth()
-    const [matchingStatus, setMatchingStatus] = useState<any>(null)
-    const [settlementStats, setSettlementStats] = useState<any>(null)
+    const [matchingStatus, setMatchingStatus] = useState<MatchingStatus | null>(null)
+    const [settlementStats, setSettlementStats] = useState<SettlementStats | null>(null)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
     // Real-time P2P order updates
@@ -166,13 +185,16 @@ const P2PStatus = React.memo(function P2PStatus() {
                             </span>
                             <span className="font-mono">{settlementStats?.confirmed_count || 0}</span>
                         </div>
-                        <Progress value={
-                            ((settlementStats?.confirmed_count || 0) / (
-                                (settlementStats?.confirmed_count || 0) +
-                                (settlementStats?.failed_count || 0) +
-                                (settlementStats?.pending_count || 0) + 0.0001
-                            )) * 100
-                        } className="h-1.5 bg-secondary" indicatorClassName="bg-green-500" />
+                        <Progress
+                            value={
+                                ((settlementStats?.confirmed_count || 0) / (
+                                    (settlementStats?.confirmed_count || 0) +
+                                    (settlementStats?.failed_count || 0) +
+                                    (settlementStats?.pending_count || 0) + 0.0001
+                                )) * 100
+                            }
+                            className="h-1.5 bg-secondary [&>div]:bg-green-500"
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-1">
@@ -190,12 +212,12 @@ const P2PStatus = React.memo(function P2PStatus() {
                         </div>
                     </div>
 
-                    {settlementStats?.total_settled_value > 0 && (
+                    {(settlementStats?.total_settled_value ?? 0) > 0 && (
                         <div className="pt-2 border-t mt-2">
                             <div className="flex justify-between items-center">
                                 <span className="text-xs text-secondary-foreground">Total Settled Value</span>
                                 <span className="font-mono text-sm font-bold text-primary">
-                                    ฿{settlementStats.total_settled_value.toFixed(2)}
+                                    ฿{(settlementStats?.total_settled_value ?? 0).toFixed(2)}
                                 </span>
                             </div>
                         </div>

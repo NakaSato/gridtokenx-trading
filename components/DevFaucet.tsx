@@ -64,7 +64,7 @@ export default function DevFaucet() {
     }
 
     return (
-        <div className="fixed bottom-4 left-4 z-50 sm:left-auto sm:right-4">
+        <div className="fixed bottom-20 right-4 z-[100] sm:bottom-4 sm:right-4">
             {isMinimized ? (
                 <button
                     onClick={() => setIsMinimized(false)}

@@ -123,7 +123,6 @@ export function useTopology(): UseTopologyResult {
         }
         wasm.topology_load_lines(bufferPtr, transfers.length)
 
-        console.log(`[Topology] Loaded ${nodes.length} nodes, ${transfers.length} lines`)
     }, [])
 
     // Find shortest path between two nodes

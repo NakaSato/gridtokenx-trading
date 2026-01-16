@@ -15,3 +15,62 @@ export const CAMPUS_CONFIG = {
     operationalSince: "2024",
     efficiency: "94.5%"
 }
+
+/**
+ * Energy Grid Map Configuration
+ * Centralized settings for the energy grid visualization components.
+ */
+export const ENERGY_GRID_CONFIG = {
+    // Default coordinates (fallback when meter has no location)
+    defaultLocation: {
+        latitude: 13.7856,
+        longitude: 100.5661,
+    },
+
+    // Animation settings
+    animation: {
+        throttleMs: 33,  // ~30fps
+        dashSpeed: 0.05,
+        pulseCycle: 800,
+    },
+
+    // Power level thresholds (kW)
+    powerThresholds: {
+        high: 300,    // Green
+        medium: 200,  // Yellow
+        low: 100,     // Orange
+        // Below low = Red
+    },
+
+    // Progress bar max values
+    progressBar: {
+        maxCapacity: 500,  // kW
+    },
+}
+
+/**
+ * P2P Trading Configuration
+ * Centralized settings for peer-to-peer energy trading.
+ */
+export const P2P_CONFIG = {
+    // Available trading zones
+    zones: [
+        { id: 1, name: 'Zone 1 - Residential' },
+        { id: 2, name: 'Zone 2 - Commercial' },
+        { id: 3, name: 'Zone 3 - Industrial' },
+        { id: 4, name: 'Zone 4 - Mixed Use' },
+    ],
+
+    // Default price per kWh (THB)
+    defaultPrice: 4.0,
+
+    // Quick amount percentages
+    quickAmountPercentages: [25, 50, 75, 100],
+
+    // Grid pricing defaults (THB/kWh)
+    defaultGridImportPrice: 4.50,
+    defaultGridExportPrice: 2.20,
+
+    // Pagination
+    itemsPerPage: 10,
+}

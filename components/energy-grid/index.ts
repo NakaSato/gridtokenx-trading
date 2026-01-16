@@ -1,5 +1,6 @@
 // Energy Grid Map Components - Barrel Export
 export { EnergyFlowLayers } from './EnergyFlowLayers'
+export { ZonePolygonLayers } from './ZonePolygonLayers'
 export { EnergyNodeMarker, MemoizedEnergyNodeMarker } from './EnergyNodeMarker'
 export { LightweightMarker } from './LightweightMarker'
 export { ClusterMarker } from './ClusterMarker'
@@ -20,7 +21,7 @@ export type {
     LiveTransferData,
     CampusConfig,
 } from './types'
-export type { GridStatus } from './useGridStatus'
+export type { GridStatus, ZoneGridStatus } from '@/types/grid'
 export type { ClusterFeature, PointFeature, ClusterOrPoint } from './useMeterClusters'
 
 // Utilities

@@ -7,6 +7,7 @@ import {
 } from '@/public/svgs/icons'
 import { Button } from './ui/button'
 import PositionAdvancedGreeks from './PositionAdvancedGreeks'
+import { memo } from 'react'
 
 interface PositionGreeksProps {
   delta: number
@@ -15,7 +16,7 @@ interface PositionGreeksProps {
   vega: number
 }
 
-export default function PositionGreeks({
+export default memo(function PositionGreeks({
   delta,
   gamma,
   theta,
@@ -63,4 +64,4 @@ export default function PositionGreeks({
       <PositionAdvancedGreeks />
     </div>
   )
-}
+})

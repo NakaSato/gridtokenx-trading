@@ -79,7 +79,6 @@ export class WebSocketClient {
       this.ws = new WebSocket(url)
 
       this.ws.onopen = () => {
-        console.log('WebSocket connected')
         this.reconnectAttempts = 0
       }
 
@@ -97,7 +96,6 @@ export class WebSocketClient {
       }
 
       this.ws.onclose = () => {
-        console.log('WebSocket disconnected')
         this.attemptReconnect()
       }
     } catch (error) {

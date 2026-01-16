@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { ScrollArea } from './ui/scroll-area'
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { formatPrice } from '@/utils/formatter'
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 
 type Category =
   | 'all'
@@ -47,7 +47,7 @@ interface TokenListProps {
   query: string
 }
 
-function TokenListItem({
+const TokenListItem = memo(function TokenListItem({
   token,
   marketChange,
   onSelect,
@@ -108,9 +108,9 @@ function TokenListItem({
       </div>
     </div>
   )
-}
+})
 
-export default function TokenList({
+const TokenList = memo(function TokenList({
   tokens,
   category,
   marketChanges,
@@ -140,4 +140,6 @@ export default function TokenList({
       ))}
     </ScrollArea>
   )
-}
+})
+
+export default TokenList

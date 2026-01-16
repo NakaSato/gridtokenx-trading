@@ -28,7 +28,6 @@ export default function OrderHistory() {
             const refreshEvents = ['OrderCreated', 'OrderMatched', 'TradeExecuted']
 
             if (refreshEvents.includes(message.type)) {
-                console.log('⚡ Futures Orders real-time update:', message.type)
                 queryClient.invalidateQueries({ queryKey: ['futuresOrders'] })
             }
         }

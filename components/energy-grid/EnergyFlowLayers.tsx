@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useRef, useState, useEffect } from 'react'
+import { useMemo, useRef, useState, useEffect, memo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { EnergyNode, EnergyTransfer, LiveTransferData } from './types'
 import { getPowerColor, getPowerWidth } from './utils'
+import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 // Calculate animation speed multiplier based on power (1.0 - 2.0)
 function getSpeedMultiplier(power: number): number {
@@ -73,98 +74,83 @@ import { useWasmMath } from './useWasmMath'
 
 // ... existing imports ...
 
-export function EnergyFlowLayers({
+export const EnergyFlowLayers = memo(function EnergyFlowLayers({
     energyNodes,
     energyTransfers,
     liveTransferData,
     visible,
     highlightedPath,
 }: Omit<EnergyFlowLayersProps, 'dashOffset'>) {
-    // Internal animation state
-    const [dashOffset, setDashOffset] = useState(0)
-    const [pulseOpacity, setPulseOpacity] = useState(0.85)
-    const [glowPulse, setGlowPulse] = useState(0.25)
-    const animationRef = useRef<number | null>(null)
+    // Static values (no animation)
+    const dashOffset = 0
+    const pulseOpacity = 0.85
+    const glowPulse = 0.25
+
+    // Curve geometry cache - persists across renders, keyed by "fromId-toId"
+    const curveCache = useRef<Map<string, [number, number][]>>(new Map())
 
     // Wasm hook
     const { isLoaded: wasmLoaded, generateCurvedLineWasm } = useWasmMath()
 
-    // Animation loop
-    useEffect(() => {
-        if (!visible) {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current)
-            }
-            return
-        }
+    // Cache curved line geometry separately (only depends on node positions)
+    const cachedCurves = useMemo(() => {
+        const curves = new Map<string, [number, number][]>()
 
-        let lastTime = 0
-        const speed = 0.05
+        energyTransfers.forEach((transfer) => {
+            const cacheKey = `${transfer.from}-${transfer.to}`
 
-        const animate = (time: number) => {
-            // Stop animation if document is hidden to save battery/CPU
-            if (document.hidden) {
-                animationRef.current = requestAnimationFrame(animate)
+            // Check if we already have this curve cached
+            const existingCurve = curveCache.current.get(cacheKey)
+            if (existingCurve) {
+                curves.set(cacheKey, existingCurve)
                 return
             }
 
-            if (time - lastTime > 33) { // Throttled to ~30fps for smooth visual without overkill
-                setDashOffset((prev) => (prev + speed) % 20)
+            const fromNode = energyNodes.find((n) => n.id === transfer.from)
+            const toNode = energyNodes.find((n) => n.id === transfer.to)
+            if (!fromNode || !toNode) return
 
-                // Pulse logic: Sinusoidal oscillation for opacity and glow
-                const pulseValue = Math.sin(time / 800) // Slow pulse (approx 5s cycle)
-                setPulseOpacity(0.75 + (pulseValue * 0.15)) // 0.6 to 0.9
-                setGlowPulse(0.2 + (pulseValue * 0.15)) // 0.05 to 0.35
+            // Generate new curve
+            let curvedCoordinates: [number, number][] | null = null
 
-                lastTime = time
+            if (wasmLoaded) {
+                curvedCoordinates = generateCurvedLineWasm(
+                    [fromNode.longitude, fromNode.latitude],
+                    [toNode.longitude, toNode.latitude],
+                    0.15,
+                    24
+                )
             }
-            animationRef.current = requestAnimationFrame(animate)
-        }
 
-        animationRef.current = requestAnimationFrame(animate)
-
-        return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current)
+            if (!curvedCoordinates) {
+                curvedCoordinates = generateCurvedLine(
+                    [fromNode.longitude, fromNode.latitude],
+                    [toNode.longitude, toNode.latitude],
+                    0.15,
+                    24
+                )
             }
-        }
-    }, [visible])
+
+            curves.set(cacheKey, curvedCoordinates)
+            curveCache.current.set(cacheKey, curvedCoordinates)
+        })
+
+        return curves
+    }, [energyNodes, energyTransfers, wasmLoaded, generateCurvedLineWasm])
 
     // Generate GeoJSON for curved energy flow lines with live data
+    // Now uses cached curves - only power/color updates trigger re-render
     const flowLinesGeoJSON = useMemo(() => {
         const features = energyTransfers
             .map((transfer, index) => {
-                const fromNode = energyNodes.find((n) => n.id === transfer.from)
-                const toNode = energyNodes.find((n) => n.id === transfer.to)
+                const cacheKey = `${transfer.from}-${transfer.to}`
+                const curvedCoordinates = cachedCurves.get(cacheKey)
 
-                if (!fromNode || !toNode) return null
+                if (!curvedCoordinates) return null
 
                 // Get live power value
                 const liveTransfer = liveTransferData[`flow-${index}`]
                 const power = liveTransfer?.currentPower ?? transfer.power
-
-                // Generate curved line coordinates
-                let curvedCoordinates: [number, number][] | null = null
-
-                // Try Wasm first if loaded
-                if (wasmLoaded) {
-                    curvedCoordinates = generateCurvedLineWasm(
-                        [fromNode.longitude, fromNode.latitude],
-                        [toNode.longitude, toNode.latitude],
-                        0.15,
-                        24
-                    )
-                }
-
-                // Fallback to JS if Wasm failed or invalid
-                if (!curvedCoordinates) {
-                    curvedCoordinates = generateCurvedLine(
-                        [fromNode.longitude, fromNode.latitude],
-                        [toNode.longitude, toNode.latitude],
-                        0.15,
-                        24
-                    )
-                }
 
                 return {
                     type: 'Feature' as const,
@@ -178,7 +164,7 @@ export function EnergyFlowLayers({
                     },
                     geometry: {
                         type: 'LineString' as const,
-                        coordinates: curvedCoordinates!,
+                        coordinates: curvedCoordinates,
                     },
                 }
             })
@@ -188,7 +174,7 @@ export function EnergyFlowLayers({
             type: 'FeatureCollection' as const,
             features,
         }
-    }, [energyNodes, energyTransfers, liveTransferData, wasmLoaded, generateCurvedLineWasm])
+    }, [energyTransfers, liveTransferData, cachedCurves])
 
     // Generate highlighted path GeoJSON
     const highlightedFlowsGeoJSON = useMemo(() => {
@@ -403,4 +389,4 @@ export function EnergyFlowLayers({
             )}
         </>
     )
-}
+})

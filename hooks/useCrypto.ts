@@ -47,7 +47,6 @@ export function useCrypto() {
             signature = `fallback_${btoa(message).slice(0, 32)}`
         }
 
-        console.log('[Crypto] Order signed:', { message, signature: signature.slice(0, 16) + '...' })
 
         return {
             ...order,

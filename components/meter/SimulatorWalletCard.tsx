@@ -28,7 +28,9 @@ export function SimulatorWalletCard() {
     const fetchSimulatorData = async (silent = false) => {
         try {
             if (!silent) setRefreshing(true)
-            const response = await fetch('http://localhost:4000/api/status')
+            // Use environment variable for simulator URL, fallback to localhost for development
+            const simulatorUrl = process.env.NEXT_PUBLIC_SIMULATOR_URL || 'http://localhost:4000'
+            const response = await fetch(`${simulatorUrl}/api/status`)
             if (response.ok) {
                 const data: SimulatorStatusResponse = await response.json()
                 const walletMeters = data.meters.map((m: any) => ({
@@ -93,7 +95,7 @@ export function SimulatorWalletCard() {
                         </div>
                     ))}
                     {meters.length === 0 && (
-                        <div className="text-center text-xs text-muted-foreground">No simulation meters found running at localhost:8000</div>
+                        <div className="text-center text-xs text-muted-foreground">No simulation meters running</div>
                     )}
                 </div>
             </CardContent>

@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,6 +8,10 @@ import { ArrowUpRight, ArrowDownRight, CheckCircle2, Coins, Loader2, Copy } from
 import { format } from 'date-fns'
 import { MeterReading, MeterResponse } from '@/types/meter'
 import Pagination from '@/components/Pagination'
+import { P2P_CONFIG } from '@/lib/constants'
+
+type StatusFilter = 'all' | 'minted' | 'pending'
+type TypeFilter = 'all' | 'generation' | 'consumption'
 
 interface ReadingsListProps {
     readings: MeterReading[]
@@ -16,12 +22,12 @@ interface ReadingsListProps {
     mintingId: string | null
 }
 
-const ITEMS_PER_PAGE = 10
-
 export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintingId }: ReadingsListProps) {
-    const [statusFilter, setStatusFilter] = useState<'all' | 'minted' | 'pending'>('all')
-    const [typeFilter, setTypeFilter] = useState<'all' | 'generation' | 'consumption'>('all')
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+    const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
     const [currentPage, setCurrentPage] = useState(1)
+
+    const ITEMS_PER_PAGE = P2P_CONFIG.itemsPerPage
 
     // Reset pagination when filters change
     useEffect(() => {
@@ -67,7 +73,7 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
-                        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
                             <SelectTrigger className="w-[140px]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
@@ -78,7 +84,7 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                             </SelectContent>
                         </Select>
 
-                        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
                             <SelectTrigger className="w-[160px]">
                                 <SelectValue placeholder="Type" />
                             </SelectTrigger>
@@ -106,7 +112,10 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
             </CardHeader>
             <CardContent className="flex-1 flex flex-col min-h-0 relative">
                 {loading ? (
-                    <div className="flex h-full items-center justify-center">Loading...</div>
+                    <div className="flex h-full items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <span className="ml-2 text-muted-foreground">Loading readings...</span>
+                    </div>
                 ) : readings.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-muted-foreground">No readings found. Generate some data!</div>
                 ) : (

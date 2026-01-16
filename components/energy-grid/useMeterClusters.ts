@@ -81,11 +81,11 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
         // Only create if Wasm IS NOT loaded
         if (wasmLoaded) return null
 
-        const points = nodes.map((node) => ({
+        const points: GeoJSON.Feature<GeoJSON.Point, PointProperties>[] = nodes.map((node) => ({
             type: 'Feature' as const,
             geometry: {
                 type: 'Point' as const,
-                coordinates: [node.longitude, node.latitude],
+                coordinates: [node.longitude, node.latitude] as [number, number],
             },
             properties: {
                 cluster: false as const,
@@ -101,7 +101,7 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
             maxZoom,
             minZoom,
         })
-        sc.load(points as any)
+        sc.load(points)
         return sc
     }, [wasmLoaded, nodes, radius, maxZoom, minZoom])
 
@@ -148,7 +148,8 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
         // 2. Fallback to Supercluster
         if (superclusterFallback) {
             try {
-                return superclusterFallback.getClusters(bounds, Math.floor(zoom)) as ClusterOrPoint[]
+                const result = superclusterFallback.getClusters(bounds, Math.floor(zoom))
+                return result as ClusterOrPoint[]
             } catch (error) {
                 console.error('Error getting clusters:', error)
                 return []
@@ -158,9 +159,32 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
         return []
     }, [wasmLoaded, getClustersWasm, superclusterFallback, bounds, zoom, nodes])
 
-    // Helper stubs
-    const getClusterExpansionZoom = (clusterId: number) => zoom + 2
-    const getClusterLeaves = (clusterId: number, limit = 10) => []
+    // Get expansion zoom for a cluster - uses Supercluster if available
+    const getClusterExpansionZoom = (clusterId: number): number => {
+        if (superclusterFallback) {
+            try {
+                return superclusterFallback.getClusterExpansionZoom(clusterId)
+            } catch {
+                return zoom + 2
+            }
+        }
+        // WASM fallback: simple heuristic
+        return Math.min(maxZoom, zoom + 2)
+    }
+
+    // Get leaves (individual points) of a cluster
+    const getClusterLeaves = (clusterId: number, limit = 10): PointFeature[] => {
+        if (superclusterFallback) {
+            try {
+                const leaves = superclusterFallback.getLeaves(clusterId, limit)
+                return leaves as PointFeature[]
+            } catch {
+                return []
+            }
+        }
+        // WASM fallback: return empty (WASM doesn't track cluster membership)
+        return []
+    }
 
     return {
         clusters,

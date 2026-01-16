@@ -17,6 +17,7 @@ import {
     Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { P2P_CONFIG } from '@/lib/constants'
 
 interface P2PCostBreakdownProps {
     buyerZone: number
@@ -53,9 +54,9 @@ export default function P2PCostBreakdown({
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    // Market prices for comparison
-    const [gridImportPrice, setGridImportPrice] = useState(4.50)
-    const [gridExportPrice, setGridExportPrice] = useState(2.20)
+    // Market prices for comparison (use config defaults)
+    const [gridImportPrice, setGridImportPrice] = useState(P2P_CONFIG.defaultGridImportPrice)
+    const [gridExportPrice, setGridExportPrice] = useState(P2P_CONFIG.defaultGridExportPrice)
 
     useEffect(() => {
         const fetchCost = async () => {
@@ -87,8 +88,9 @@ export default function P2PCostBreakdown({
                     setError(response.error)
                     onCostCalculated?.(null)
                 }
-            } catch (err: any) {
-                setError(err.message || 'Failed to calculate cost')
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : 'Failed to calculate cost'
+                setError(errorMessage)
                 onCostCalculated?.(null)
             } finally {
                 setLoading(false)

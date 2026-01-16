@@ -92,19 +92,33 @@ export function useWasmSimulation({
             if (result) {
                 const { nodes, flows } = result
 
-                // Sync to React State (Batched)
-                // We create new objects to trigger re-renders
-                // Optimization: Maybe only update if needed?
+                // Optimization: Debounce updates - only update if values changed significantly
+                // This reduces re-renders when changes are minimal
+                const CHANGE_THRESHOLD = 0.02 // 2% change required to trigger update
 
                 // Update Nodes
                 // Result nodes layout: [val, status, val, status...]
                 const nextNodes: Record<string, LiveNodeData> = {}
+                let nodeDataChanged = false
+
                 energyNodes.forEach((n, i) => {
                     const val = nodes[i * 2]
                     const statusNum = nodes[i * 2 + 1]
                     let status: 'active' | 'idle' | 'maintenance' = 'idle'
                     if (statusNum === 1) status = 'active'
                     if (statusNum === 2) status = 'maintenance'
+
+                    const prevData = liveNodeData[n.id]
+                    const prevVal = prevData?.currentValue ?? 0
+                    const prevStatus = prevData?.status ?? 'idle'
+
+                    // Check if change is significant enough to warrant update
+                    const valueDiff = prevVal > 0 ? Math.abs(val - prevVal) / prevVal : (val > 0 ? 1 : 0)
+                    const hasSignificantChange = valueDiff > CHANGE_THRESHOLD || status !== prevStatus
+
+                    if (hasSignificantChange) {
+                        nodeDataChanged = true
+                    }
 
                     nextNodes[n.id] = {
                         nodeId: n.id,
@@ -113,20 +127,39 @@ export function useWasmSimulation({
                         lastUpdate: now
                     }
                 })
-                setLiveNodeData(nextNodes)
 
-                // Update Flows
+                // Only trigger re-render if data actually changed
+                if (nodeDataChanged) {
+                    setLiveNodeData(nextNodes)
+                }
+
+                // Update Flows with similar debounce logic
                 const nextFlows: Record<string, LiveTransferData> = {}
+                let flowDataChanged = false
+
                 energyTransfers.forEach((t, i) => {
                     const id = `flow-${i}`
+                    const newPower = flows[i]
+                    const prevPower = liveTransferData[id]?.currentPower ?? 0
+
+                    const valueDiff = prevPower > 0 ? Math.abs(newPower - prevPower) / prevPower : (newPower > 0 ? 1 : 0)
+                    if (valueDiff > CHANGE_THRESHOLD) {
+                        flowDataChanged = true
+                    }
+
                     nextFlows[id] = {
                         transferId: id,
-                        currentPower: flows[i]
+                        currentPower: newPower
                     }
                 })
-                setLiveTransferData(nextFlows)
 
-                setLastGlobalUpdate(now)
+                if (flowDataChanged) {
+                    setLiveTransferData(nextFlows)
+                }
+
+                if (nodeDataChanged || flowDataChanged) {
+                    setLastGlobalUpdate(now)
+                }
             }
 
         }, updateIntervalMs)

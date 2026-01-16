@@ -11,6 +11,8 @@ import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin, X, Zap
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { useCrypto } from '@/hooks/useCrypto'
+import { useWalletBalance } from '@/hooks/useWalletBalance'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
     Select,
     SelectContent,
@@ -21,6 +23,7 @@ import {
 import P2PCostBreakdown from './P2PCostBreakdown'
 import type { EnergyNode } from '@/components/energy-grid/types'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
+import { P2P_CONFIG } from '@/lib/constants'
 
 interface OrderFormProps {
     onOrderPlaced?: () => void
@@ -36,14 +39,18 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     const [price, setPrice] = useState('')
     const [buyerZone, setBuyerZone] = useState<number>(0)
     const [sellerZone, setSellerZone] = useState<number>(0)
-    const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
     const [isSuccess, setIsSuccess] = useState(false)
-    const [balance, setBalance] = useState<number | null>(null)
-    const [balanceLoading, setBalanceLoading] = useState(false)
     const [showCostBreakdown, setShowCostBreakdown] = useState(true)
     const [isSigning, setIsSigning] = useState(false)
     const { signOrder, isLoaded: cryptoLoaded } = useCrypto()
+    const queryClient = useQueryClient()
+
+    const {
+        data: balanceData,
+        isLoading: balanceLoading
+    } = useWalletBalance()
+    const balance = balanceData?.token_balance ?? null
 
     // Pre-fill amount and zone when a node is selected from the map
     useEffect(() => {
@@ -70,37 +77,12 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                 }
             }
         }
-    }, [selectedNode, orderType])
+    }, [selectedNode]) // Removed orderType from deps to avoid re-runs on type change
 
-    // Available zones (Dynamic 1-indexed zones from API Gateway)
-    const zones = [
-        { id: 1, name: 'Zone 1 - Residential' },
-        { id: 2, name: 'Zone 2 - Commercial' },
-        { id: 3, name: 'Zone 3 - Industrial' },
-        { id: 4, name: 'Zone 4 - Mixed Use' },
-    ]
+    // Use zones from centralized config
+    const { zones } = P2P_CONFIG
 
-    const fetchBalance = useCallback(async () => {
-        if (!token) return
-        setBalanceLoading(true)
-        try {
-            const response = await fetch('http://localhost:4000/api/v1/trading/balance', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setBalance(data.token_balance)
-            }
-        } catch (error) {
-            console.error('Failed to fetch balance:', error)
-        } finally {
-            setBalanceLoading(false)
-        }
-    }, [token])
-
-    useEffect(() => {
-        fetchBalance()
-    }, [fetchBalance])
+    // fetchBalance logic removed in favor of useWalletBalance
 
     useEffect(() => {
         if (isSuccess) {
@@ -118,43 +100,12 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-        setMessage('')
-        setIsSuccess(false)
+    const orderMutation = useMutation({
+        mutationFn: async (orderPayload: { side: 'buy' | 'sell', amount: string, price_per_kwh: string }) => {
+            if (!token) throw new Error('Please log in to create orders')
 
-        if (!token) {
-            setMessage('Please log in to create orders')
-            setLoading(false)
-            return
-        }
-
-
-        if (!amount || parseFloat(amount) <= 0) {
-            setMessage('Please enter a valid amount')
-            setLoading(false)
-            return
-        }
-
-        if (!price || parseFloat(price) <= 0) {
-            setMessage('Please enter a valid price')
-            setLoading(false)
-            return
-        }
-
-        try {
-            // Sign the order before submitting
             setIsSigning(true)
-            const orderPayload = {
-                side: orderType as 'buy' | 'sell',
-                amount: amount,
-                price_per_kwh: price,
-            }
-
-            // Use wallet address or token as secret key
-            const secretKey = 'test_secret_key'
-            const signedOrder = signOrder(orderPayload, secretKey)
+            const signedOrder = signOrder(orderPayload, token)
             setIsSigning(false)
 
             defaultApiClient.setToken(token)
@@ -162,27 +113,45 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                 side: signedOrder.side,
                 amount: signedOrder.amount,
                 price_per_kwh: signedOrder.price_per_kwh,
-                // Include signature in the request (API would validate)
-                // signature: signedOrder.signature,
-                // timestamp: signedOrder.timestamp,
             })
 
-            if (response.error) {
-                setMessage(response.error)
-            } else {
-                setMessage(`Order placed successfully!`)
-                setIsSuccess(true)
-                setAmount('')
-                setPrice('')
-                fetchBalance()
-                onOrderPlaced?.()
-            }
-        } catch (error: any) {
-            setMessage(error.message || 'Failed to place order')
-        } finally {
-            setLoading(false)
+            if (response.error) throw new Error(response.error)
+            return response.data
+        },
+        onSuccess: () => {
+            setMessage('Order placed successfully!')
+            setIsSuccess(true)
+            setAmount('')
+            setPrice('')
+            // Invalidate balance and other relevant queries
+            queryClient.invalidateQueries({ queryKey: ['wallet-balance'] })
+            queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+            onOrderPlaced?.()
+        },
+        onError: (error) => {
+            setMessage(error instanceof Error ? error.message : 'Failed to place order')
         }
+    })
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!amount || parseFloat(amount) <= 0) {
+            setMessage('Please enter a valid amount')
+            return
+        }
+        if (!price || parseFloat(price) <= 0) {
+            setMessage('Please enter a valid price')
+            return
+        }
+
+        orderMutation.mutate({
+            side: orderType as 'buy' | 'sell',
+            amount,
+            price_per_kwh: price
+        })
     }
+
+    const loading = orderMutation.isPending
 
 
     const totalValue = amount && price ? (parseFloat(amount) * parseFloat(price)).toFixed(2) : '0.00'
@@ -256,13 +225,6 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                     <div className="flex items-center justify-between pb-4">
                         <span className="text-xs text-secondary-foreground">Available Balance</span>
                         <div className="flex items-center gap-2">
-                            {/* Wallet Status */}
-                            {/* <div className="flex items-center gap-1">
-                                <Wallet className="h-3 w-3 text-secondary-foreground" />
-                                <span className="font-mono text-sm font-medium">
-                                    {balanceLoading ? '...' : (balance?.toFixed(2) || '0.00')} GRX
-                                </span>
-                            </div> */ }
                             <div className="flex items-center gap-1">
                                 <Wallet className="h-3 w-3 text-secondary-foreground" />
                                 <span className="font-mono text-sm font-medium">
@@ -386,7 +348,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                 </div>
                                 {/* Quick Amount Buttons */}
                                 <div className="flex gap-1">
-                                    {[25, 50, 75, 100].map((percent) => (
+                                    {P2P_CONFIG.quickAmountPercentages.map((percent) => (
                                         <Button
                                             key={percent}
                                             type="button"

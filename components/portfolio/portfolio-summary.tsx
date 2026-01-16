@@ -4,85 +4,22 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Card, CardContent } from '../ui/card'
 import { Wallet, User, Zap, TrendingUp, Coins, RefreshCw } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
-import { useApiClient } from '@/hooks/useApi'
-import { TokenBalance } from '@/types/auth'
+import { useState, useMemo } from 'react'
+import { useProfile, useWalletBalance } from '@/hooks/usePortfolio'
 import { Button } from '../ui/button'
 import { Skeleton } from '../ui/skeleton'
 
-interface PortfolioData {
-    tokenBalance: TokenBalance | null
-    loading: boolean
-    error: string | null
-}
-
 export function PortfolioSummary() {
-    const { user, isAuthenticated, token, getProfile } = useAuth()
+    const { isAuthenticated } = useAuth()
     const { publicKey } = useWallet()
-    const apiClient = useApiClient()
-    const [portfolioData, setPortfolioData] = useState<PortfolioData>({
-        tokenBalance: null,
-        loading: false,
-        error: null,
-    })
-    const [profileData, setProfileData] = useState<any>(null)
+    const { data: profileUser, isLoading: profileLoading, refetch: refetchProfile } = useProfile()
 
-    const fetchProfile = useCallback(async () => {
-        if (!isAuthenticated || !token) return
-        try {
-            const profile = await getProfile()
-            if (profile) setProfileData(profile)
-        } catch (error) {
-            console.error('Failed to fetch profile:', error)
-        }
-    }, [isAuthenticated, token, getProfile])
-
-    const fetchPortfolioData = useCallback(async () => {
-        const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
-        if (!walletAddress) {
-            setPortfolioData(prev => ({ ...prev, loading: false }))
-            return
-        }
-        setPortfolioData(prev => ({ ...prev, loading: true, error: null }))
-        try {
-            const response = await apiClient.getBalance(walletAddress)
-            if (response.data) {
-                setPortfolioData({
-                    tokenBalance: response.data,
-                    loading: false,
-                    error: null,
-                })
-            } else {
-                setPortfolioData({
-                    tokenBalance: {
-                        wallet_address: walletAddress,
-                        token_balance: '0',
-                        token_balance_raw: 0,
-                        balance_sol: 0,
-                        decimals: 9,
-                        token_mint: '',
-                        token_account: '',
-                    },
-                    loading: false,
-                    error: response.error || null,
-                })
-            }
-        } catch (error) {
-            console.error('Failed to fetch balance:', error)
-            setPortfolioData({
-                tokenBalance: null,
-                loading: false,
-                error: 'Failed to fetch portfolio data',
-            })
-        }
-    }, [apiClient, profileData?.wallet_address, user?.wallet_address, publicKey])
-
-    useEffect(() => { fetchProfile() }, [fetchProfile])
-    useEffect(() => { fetchPortfolioData() }, [fetchPortfolioData])
+    const walletAddress = profileUser?.wallet_address || publicKey?.toString()
+    const { data: tokenBalance, isLoading: balanceLoading, refetch: refetchBalance } = useWalletBalance(walletAddress)
 
     const handleRefresh = async () => {
-        await fetchProfile()
-        await fetchPortfolioData()
+        await refetchProfile()
+        await refetchBalance()
     }
 
     const formatBalance = (value: string | number | undefined, decimals: number = 2): string => {
@@ -97,9 +34,8 @@ export function PortfolioSummary() {
         return `${address.slice(0, 4)}...${address.slice(-4)}`
     }
 
-    const displayUser = profileData || user
-    const walletAddress = profileData?.wallet_address || user?.wallet_address || publicKey?.toString()
-    const { tokenBalance, loading } = portfolioData
+    const displayUser = profileUser
+    const loading = profileLoading || balanceLoading
 
     const gecPrice = 1.8 // 1.8 THB/GRX
     const solPrice = 6200 // 6,200 THB/SOL (approx)

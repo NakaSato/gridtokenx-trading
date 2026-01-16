@@ -1,4 +1,5 @@
 import type { EnergyNode } from './types'
+import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 // Helper to parse numeric value from string like "280 kW" or "150 kWh"
 export const parseNumericValue = (value: string | undefined): number => {
@@ -15,17 +16,19 @@ export const fluctuate = (baseValue: number, percentRange: number = 15): number 
 
 // Helper to get color based on power level
 export const getPowerColor = (power: number): string => {
-    if (power >= 300) return '#22c55e' // Green - high power
-    if (power >= 200) return '#eab308' // Yellow - medium power
-    if (power >= 100) return '#f97316' // Orange - low-medium power
+    const { high, medium, low } = ENERGY_GRID_CONFIG.powerThresholds
+    if (power >= high) return '#22c55e' // Green - high power
+    if (power >= medium) return '#eab308' // Yellow - medium power
+    if (power >= low) return '#f97316' // Orange - low-medium power
     return '#ef4444' // Red - low power
 }
 
 // Helper to get line width based on power level
 export const getPowerWidth = (power: number): number => {
-    if (power >= 300) return 4
-    if (power >= 200) return 3
-    if (power >= 100) return 2.5
+    const { high, medium, low } = ENERGY_GRID_CONFIG.powerThresholds
+    if (power >= high) return 4
+    if (power >= medium) return 3
+    if (power >= low) return 2.5
     return 2
 }
 

@@ -5,33 +5,47 @@ import { PortfolioSummary } from '@/components/portfolio/portfolio-summary'
 import { PortfolioTabs } from '@/components/portfolio/portfolio-tabs'
 import { VolumeCard } from '@/components/portfolio/volume-card'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export default function Portfolio() {
   return (
     <ProtectedRoute requireWallet={false} requireAuth={true}>
       <main className="flex h-full flex-1 flex-col overflow-y-auto rounded-sm py-4">
         {/* Portfolio Summary - User Info, Balance, Wealth */}
-        <PortfolioSummary />
+        <ErrorBoundary name="Portfolio Summary">
+          <PortfolioSummary />
+        </ErrorBoundary>
 
         {/* Stats Cards Row */}
         <div className="mb-4 grid flex-shrink-0 grid-cols-12 gap-4">
           <div className="col-span-12 flex flex-col gap-4 sm:flex-row lg:col-span-3 lg:flex-col">
-            <VolumeCard />
-            <PointsCard />
+            <ErrorBoundary name="Volume Card">
+              <VolumeCard />
+            </ErrorBoundary>
+            <ErrorBoundary name="Points Card">
+              <PointsCard />
+            </ErrorBoundary>
           </div>
           <div className="col-span-12 lg:col-span-3">
-            <PortfolioCard />
+            <ErrorBoundary name="Portfolio Card">
+              <PortfolioCard />
+            </ErrorBoundary>
           </div>
           <div className="col-span-12 lg:col-span-6">
-            <PortfolioChart />
+            <ErrorBoundary name="Portfolio Chart">
+              <PortfolioChart />
+            </ErrorBoundary>
           </div>
         </div>
 
         {/* Portfolio Tabs */}
         <div className="min-h-0 flex-1">
-          <PortfolioTabs />
+          <ErrorBoundary name="Portfolio Tabs">
+            <PortfolioTabs />
+          </ErrorBoundary>
         </div>
       </main>
     </ProtectedRoute>
   )
 }
+

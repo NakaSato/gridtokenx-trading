@@ -33,7 +33,6 @@ export default function PositionsTable() {
             const refreshEvents = ['TradeExecuted', 'OrderMatched']
 
             if (refreshEvents.includes(message.type)) {
-                console.log('⚡ Futures Positions real-time update:', message.type)
                 queryClient.invalidateQueries({ queryKey: ['futuresPositions'] })
             }
         }

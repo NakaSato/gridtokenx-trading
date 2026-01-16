@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { PRICE_FEEDS } from '../lib/data/price-feed'
 import { HermesClient } from '@pythnetwork/hermes-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -63,7 +63,6 @@ export function usePythPrice(token: string): UsePythPriceResult {
       const message = customEvent.detail
 
       if (message.type === 'PriceUpdated' && message.symbol === token) {
-        console.log(`🏷️ Price real-time update [${token}]:`, message.price)
         queryClient.invalidateQueries({ queryKey: ['pythPrice', token] })
       }
     }
@@ -72,11 +71,13 @@ export function usePythPrice(token: string): UsePythPriceResult {
     return () => window.removeEventListener('ws-message', handleWsMessage)
   }, [queryClient, token])
 
-  return {
+  const result = useMemo(() => ({
     priceData: data || { price: null, confidence: null, timestamp: null },
     loading: isLoading,
     error: error ? (error as Error).message : null
-  }
+  }), [data, isLoading, error])
+
+  return result
 }
 
 export function usePyth24hChange(token: string): PriceChangeState {
@@ -142,7 +143,6 @@ export const getPythPrice = async (token: string, timestamp: number) => {
     // Adjust price and confidence with exponent
     return parseFloat(price.price.price) * Math.pow(10, price.price.expo)
   } else {
-    console.log('No price data available for that time.')
     return 0
   }
 }

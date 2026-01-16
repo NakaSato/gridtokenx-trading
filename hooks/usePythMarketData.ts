@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { PRICE_FEEDS } from '@/lib/data/price-feed'
 
 const API_ENDPOINT = 'https://benchmarks.pyth.network/v1/shims/tradingview'
@@ -156,7 +156,7 @@ export function usePythMarketData(token: string): UsePythMarketDataResult {
     }
   }, [token])
 
-  return { marketData, loading, error }
+  return useMemo(() => ({ marketData, loading, error }), [marketData, loading, error])
 }
 
 export type { MarketDataState }

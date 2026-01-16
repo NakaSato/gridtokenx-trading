@@ -5,11 +5,13 @@ import { initWasm, isWasmLoaded } from './wasm-bridge'
 
 interface WasmContextType {
     isLoaded: boolean
+    isLoading: boolean
     error: Error | null
 }
 
 const WasmContext = createContext<WasmContextType>({
     isLoaded: false,
+    isLoading: true,
     error: null,
 })
 
@@ -73,7 +75,7 @@ export function WasmProvider({ children }: WasmProviderProps) {
     }, [])
 
     return (
-        <WasmContext.Provider value={{ isLoaded, error }}>
+        <WasmContext.Provider value={{ isLoaded, isLoading: !isLoaded && !error, error }}>
             {children}
         </WasmContext.Provider>
     )

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { Badge } from './ui/badge'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import PositionOverview from './PositionOverview'
@@ -28,7 +28,7 @@ interface OpenPositionProps {
   onExercise: () => void
 }
 
-export default function OpenPositions({
+export default memo(function OpenPositions({
   token,
   logo,
   symbol,
@@ -143,4 +143,4 @@ export default function OpenPositions({
       )}
     </div>
   )
-}
+})

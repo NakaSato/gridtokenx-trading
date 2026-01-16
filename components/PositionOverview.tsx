@@ -11,7 +11,7 @@ import { Calendar, SquarePen } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 import { Label } from './ui/label'
 import { Calendar as CalendarComponent } from './ui/calendar'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Button } from './ui/button'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -25,7 +25,7 @@ interface PositionOverviewProps {
   strikePrice: number
 }
 
-export default function PositionOverview({
+export default memo(function PositionOverview({
   type,
   expiry,
   size,
@@ -192,4 +192,4 @@ export default function PositionOverview({
       </div>
     </div>
   )
-}
+})

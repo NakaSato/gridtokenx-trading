@@ -15,6 +15,12 @@ import type {
   ResendVerificationResponse,
 } from '../types/auth'
 import type {
+  GridStatus,
+  GridTopologyResponse,
+  GridHistoryStatus
+} from '../types/grid'
+import type { PublicMeterResponse } from '../types/meter'
+import type {
   CarbonBalanceResponse,
   CarbonCredit,
   CarbonTransaction,
@@ -66,7 +72,6 @@ export async function apiRequest<T = any>(
 
   try {
     if (path.includes('analytics/my-stats')) {
-      console.log('API Request:', method, url, 'Token present:', !!token, 'Headers:', requestHeaders)
     }
 
     const response = await fetch(url, {
@@ -811,6 +816,23 @@ export class ApiClient {
     } catch (e) {
       return { error: e instanceof Error ? e.message : 'Export failed', status: 500 }
     }
+  }
+
+  // Grid
+  async getGridStatus(): Promise<ApiResponse<GridStatus>> {
+    return apiRequest<GridStatus>('/api/v1/public/grid-status', { method: 'GET' })
+  }
+
+  async getGridTopology(): Promise<ApiResponse<GridTopologyResponse>> {
+    return apiRequest<GridTopologyResponse>('/api/zones', { method: 'GET' })
+  }
+
+  async getPublicMeters(): Promise<ApiResponse<PublicMeterResponse[]>> {
+    return apiRequest<PublicMeterResponse[]>('/api/v1/public/meters', { method: 'GET' })
+  }
+
+  async getGridHistory(limit = 30): Promise<ApiResponse<GridHistoryStatus[]>> {
+    return apiRequest<GridHistoryStatus[]>(`/api/v1/public/grid-status/history?limit=${limit}`, { method: 'GET' })
   }
 }
 
