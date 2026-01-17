@@ -4,6 +4,7 @@ import { PortfolioChart } from '@/components/portfolio/portfolio-chart'
 import { PortfolioSummary } from '@/components/portfolio/portfolio-summary'
 import { PortfolioTabs } from '@/components/portfolio/portfolio-tabs'
 import { VolumeCard } from '@/components/portfolio/volume-card'
+import { TradingHistoryChart } from '@/components/charts/TradingHistoryChart'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
@@ -38,6 +39,13 @@ export default function Portfolio() {
           </div>
         </div>
 
+        {/* Trading History Chart */}
+        <div className="mb-4">
+          <ErrorBoundary name="Trading History Chart">
+            <TradingHistoryChart />
+          </ErrorBoundary>
+        </div>
+
         {/* Portfolio Tabs */}
         <div className="min-h-0 flex-1">
           <ErrorBoundary name="Portfolio Tabs">
@@ -48,4 +56,3 @@ export default function Portfolio() {
     </ProtectedRoute>
   )
 }
-
