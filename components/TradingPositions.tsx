@@ -1,26 +1,21 @@
+'use client'
+
 import { useCallback, useContext, useEffect, useState, memo } from 'react'
 import { cn } from '@/lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Card, CardContent, CardHeader } from './ui/card'
 import { Skeleton } from './ui/skeleton'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { Activity, History, BookOpen, Clock, TrendingUp, RotateCw, Ban, EllipsisVertical, Bell, Repeat } from 'lucide-react'
+import { Activity, History, BookOpen, Clock, RotateCw, Ban, Bell, Repeat, AlertCircle, type LucideIcon } from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
-import { orders, Position, positions } from '@/lib/data/Positions'
+import { Position } from '@/lib/data/Positions'
 import ExpiredOptions from './ExpiredOptions'
 import PriceAlerts from './trading/PriceAlerts'
 import RecurringOrdersList from './trading/RecurringOrdersList'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import { ContractContext, ExpiredOption } from '@/contexts/contractProvider'
+import { ContractContext } from '@/contexts/contractProvider'
 import { Transaction } from '@/lib/data/WalletActivity'
-import { BN } from '@coral-xyz/anchor'
 import Pagination from './Pagination'
 import OpenOptionOrders from './OpenOptionOrders'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -30,57 +25,140 @@ import { format } from 'date-fns'
 import { useOptionPositions } from '@/hooks/useOptions'
 import { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+
+type TabValue = 'Positions' | 'OpenOrders' | 'History' | 'Alerts' | 'Expired' | 'DCA'
+
+interface TabConfig {
+  value: TabValue
+  label: string
+  icon: LucideIcon
+  showBadge?: boolean
+}
+
+const TABS: TabConfig[] = [
+  { value: 'Positions', label: 'Positions', icon: Activity, showBadge: true },
+  { value: 'OpenOrders', label: 'Orders', icon: BookOpen },
+  { value: 'History', label: 'History', icon: History },
+  { value: 'Alerts', label: 'Alerts', icon: Bell },
+  { value: 'Expired', label: 'Expired', icon: Ban },
+  { value: 'DCA', label: 'DCA', icon: Repeat },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmptyState Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface EmptyStateProps {
+  icon: LucideIcon
+  title: string
+  description: string
+  actionLabel?: string
+  onAction?: () => void
+}
+
+function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      {actionLabel && onAction && (
+        <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ErrorState Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ErrorStateProps {
+  message: string
+  onRetry: () => void
+}
+
+function ErrorState({ message, onRetry }: ErrorStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+        <AlertCircle className="h-6 w-6 text-destructive" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium">Failed to load data</p>
+        <p className="text-xs text-muted-foreground">{message}</p>
+      </div>
+      <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={onRetry}>
+        <RotateCw className="h-3 w-3 mr-1" />
+        Retry
+      </Button>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default memo(function TradingPositions() {
   const { token } = useAuth()
-  const [activeTab, setActiveTab] = useState<string>('Positions')
+  const [activeTab, setActiveTab] = useState<TabValue>('Positions')
   const [optioninfos, setOptionInfos] = useState<Position[]>([])
   const [orderInfos, setOrderInfos] = useState<Order[]>([])
   const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
-  const { program, pub, onClaimOption, onExerciseOption } =
-    useContext(ContractContext)
+  const { program, pub, onClaimOption, onExerciseOption } = useContext(ContractContext)
 
-  const { data: blockchainPositions, isLoading: blockchainLoading } = useOptionPositions(program, pub || null)
+  const { data: blockchainPositions } = useOptionPositions(program, pub || null)
 
-  const handleClickTab = (state: string) => {
-    if (activeTab !== state) {
-      setActiveTab(state)
-    }
-  }
-  const onClaim = (optionindex: number, solPrice: number) => {
+  // Reset pagination when switching tabs
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as TabValue)
+    setCurrentPage(1)
+  }, [])
+
+  const onClaim = useCallback((optionindex: number, solPrice: number) => {
     onClaimOption(optionindex, solPrice)
-  }
-  const onExercise = (index: number) => {
+  }, [onClaimOption])
+
+  const onExercise = useCallback((index: number) => {
     onExerciseOption(index)
-  }
+  }, [onExerciseOption])
+
   const fetchData = useCallback(async () => {
     if (!token) return
     setLoading(true)
+    setError(null)
     try {
       const apiClient = createApiClient(token)
 
       // 1. Fetch Futures Positions
       const positionsRes = await apiClient.getFuturesPositions() as unknown as { data: { data: ApiFuturesPosition[] } }
-      if (positionsRes.data && positionsRes.data.data) {
+      if (positionsRes.data?.data) {
         const mappedPositions: Position[] = positionsRes.data.data.map(
           (pos: ApiFuturesPosition) => ({
             index: pos.id,
             token: pos.product_symbol || 'Unknown',
-            logo: '/images/solana.png', // Default logo
+            logo: '/images/solana.png',
             symbol: pos.product_symbol || 'GRX',
             type: pos.side === 'long' ? 'Call' : 'Put',
             strikePrice: parseFloat(pos.entry_price),
-            expiry: 'Perpetual', // Futures don't have fixed expiry in this context
+            expiry: 'Perpetual',
             size: parseFloat(pos.quantity),
             pnl: parseFloat(pos.unrealized_pnl || '0'),
-            greeks: {
-              delta: 0,
-              gamma: 0,
-              theta: 0,
-              vega: 0,
-            },
+            greeks: { delta: 0, gamma: 0, theta: 0, vega: 0 },
           })
         )
         setOptionInfos(mappedPositions)
@@ -88,7 +166,7 @@ export default memo(function TradingPositions() {
 
       // 2. Fetch Trading Orders
       const ordersRes = await apiClient.getOrders({ status: 'active' }) as unknown as { data: { data: ApiOrder[] } }
-      if (ordersRes.data && ordersRes.data.data) {
+      if (ordersRes.data?.data) {
         const mappedOrders: Order[] = ordersRes.data.data.map(
           (order: ApiOrder) => ({
             index: order.id,
@@ -99,26 +177,21 @@ export default memo(function TradingPositions() {
             transaction: order.side.toLowerCase(),
             limitPrice: parseFloat(order.price_per_kwh),
             strikePrice: 0,
-            expiry: order.expires_at
-              ? format(new Date(order.expires_at), 'MM/dd/yyyy')
-              : 'N/A',
+            expiry: order.expires_at ? format(new Date(order.expires_at), 'MM/dd/yyyy') : 'N/A',
             orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
             size: parseFloat(order.energy_amount),
-          }))
+          })
+        )
         setOrderInfos(mappedOrders)
       }
 
       // 3. Fetch Trade History
       const tradesRes = await apiClient.getTrades({ limit: 50 }) as unknown as { data: { trades: TradeRecord[] } }
-      if (tradesRes.data && tradesRes.data.trades) {
+      if (tradesRes.data?.trades) {
         const mappedHistory: Transaction[] = tradesRes.data.trades.map(
           (trade: TradeRecord) => ({
             transactionID: trade.id,
-            token: {
-              name: 'GridToken',
-              symbol: 'GRX',
-              logo: '/images/grid.png',
-            },
+            token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
             transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
             optionType: 'Spot',
             strikePrice: parseFloat(trade.price),
@@ -130,6 +203,7 @@ export default memo(function TradingPositions() {
       setLastRefreshed(new Date())
     } catch (err) {
       console.error('Error fetching trading data:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -137,7 +211,7 @@ export default memo(function TradingPositions() {
 
   useEffect(() => {
     fetchData()
-    const interval = setInterval(fetchData, 60000) // Refresh every minute
+    const interval = setInterval(fetchData, 60000)
     return () => clearInterval(interval)
   }, [fetchData])
 
@@ -149,86 +223,45 @@ export default memo(function TradingPositions() {
   const itemsPerPage = 5
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const dummyPositions = positions
-  const dummyOrders = orders
 
-  const actionTextMap: Record<string, string> = {
-    Positions: 'Close all',
-    OpenOrders: 'Cancel all',
-    Expired: 'Claim all',
+  // Get badge count for tabs
+  const getBadgeCount = (tabValue: TabValue): number | null => {
+    switch (tabValue) {
+      case 'Positions':
+        return allPositions.length > 0 ? allPositions.length : null
+      case 'OpenOrders':
+        return orderInfos.length > 0 ? orderInfos.length : null
+      default:
+        return null
+    }
   }
 
   return (
-    <Card className="flex h-[200px] w-full flex-col rounded-sm border border-border bg-card overflow-hidden">
-      <CardHeader className="border-b bg-muted/20 px-3 py-2 md:px-4">
+    <Card className="flex h-full w-full flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm">
+      <CardHeader className="border-b bg-muted/20 p-0">
         <div className="flex w-full items-center justify-between">
-          <Tabs defaultValue={activeTab} className="h-6">
-            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5">
-              <TabsTrigger
-                value="Positions"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('Positions')}
-              >
-                <div className="flex items-center gap-1">
-                  <Activity className="h-3 w-3" />
-                  <span>Positions</span>
-                  {allPositions.length > 0 && (
-                    <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">
-                      {allPositions.length}
-                    </Badge>
-                  )}
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="OpenOrders"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('OpenOrders')}
-              >
-                <div className="flex items-center gap-1">
-                  <BookOpen className="h-3 w-3" />
-                  <span>Orders</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="History"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('History')}
-              >
-                <div className="flex items-center gap-1">
-                  <History className="h-3 w-3" />
-                  <span>History</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="Alerts"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('Alerts')}
-              >
-                <div className="flex items-center gap-1">
-                  <Bell className="h-3 w-3" />
-                  <span>Alerts</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="Expired"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('Expired')}
-              >
-                <div className="flex items-center gap-1">
-                  <Ban className="h-3 w-3" />
-                  <span>Expired</span>
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                value="DCA"
-                className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                onClick={() => handleClickTab('DCA')}
-              >
-                <div className="flex items-center gap-1">
-                  <Repeat className="h-3 w-3" />
-                  <span>DCA</span>
-                </div>
-              </TabsTrigger>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="h-6">
+            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5 rounded-md">
+              {TABS.map(({ value, label, icon: Icon, showBadge }) => {
+                const badgeCount = showBadge ? getBadgeCount(value) : null
+                return (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                  >
+                    <div className="flex items-center gap-1">
+                      <Icon className="h-3 w-3" />
+                      <span>{label}</span>
+                      {badgeCount !== null && (
+                        <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">
+                          {badgeCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </TabsTrigger>
+                )
+              })}
             </TabsList>
           </Tabs>
 
@@ -237,27 +270,17 @@ export default memo(function TradingPositions() {
               <Clock className="h-3 w-3" />
               <span>{lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[10px] font-medium leading-none"
-            >
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] font-medium leading-none">
               Liq
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[10px] font-medium leading-none"
-            >
+            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] font-medium leading-none">
               TP/SL
             </Button>
             <Button
               variant="ghost"
               size="icon"
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                fetchData()
-              }}
+              onClick={fetchData}
             >
               <RotateCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
             </Button>
@@ -265,10 +288,10 @@ export default memo(function TradingPositions() {
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="animate-in fade-in duration-500 h-full flex flex-col">
+      <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
+        <div className="h-full flex flex-col">
           {loading ? (
-            <div className="flex flex-col space-y-3 p-4">
+            <div className="flex flex-col space-y-3 p-4 flex-1">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
@@ -279,34 +302,37 @@ export default memo(function TradingPositions() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <div className="flex-1 flex items-center justify-center">
+              <ErrorState message={error} onRetry={fetchData} />
+            </div>
           ) : (
-            <>
+            <div className="flex-1 min-h-0 overflow-hidden">
               {activeTab === 'Positions' && (
-                <div className={cn(
-                  "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
-                  allPositions.length > 0 ? "space-y-4" : "justify-center items-center"
-                )}>
+                <div className="flex h-full flex-col">
                   {allPositions.length > 0 ? (
                     <>
-                      <div className="flex flex-col space-y-3">
-                        {allPositions.map((position, index) => (
-                          <OpenPositions
-                            key={index}
-                            index={position.index}
-                            token={position.token}
-                            logo={position.logo}
-                            symbol={position.symbol}
-                            type={position.type}
-                            strikePrice={position.strikePrice}
-                            expiry={position.expiry}
-                            size={position.size}
-                            pnl={position.pnl}
-                            greeks={position.greeks}
-                            onExercise={() => onExercise(position.index)}
-                          />
-                        ))}
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <div className="flex flex-col space-y-3">
+                          {allPositions.slice(indexOfFirstItem, indexOfLastItem).map((position, index) => (
+                            <OpenPositions
+                              key={position.index ?? index}
+                              index={position.index}
+                              token={position.token}
+                              logo={position.logo}
+                              symbol={position.symbol}
+                              type={position.type}
+                              strikePrice={position.strikePrice}
+                              expiry={position.expiry}
+                              size={position.size}
+                              pnl={position.pnl}
+                              greeks={position.greeks}
+                              onExercise={() => onExercise(position.index)}
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="pt-2">
+                      <div className="flex-shrink-0 border-t border-border">
                         <Pagination
                           currentPage={currentPage}
                           totalItems={allPositions.length}
@@ -316,35 +342,28 @@ export default memo(function TradingPositions() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-                        <Activity className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">No Positions Open</p>
-                        <p className="text-xs text-muted-foreground">Your active futures and options will appear here.</p>
-                      </div>
-                      <Button variant="outline" size="sm" className="mt-2 text-xs">
-                        Start Trading
-                      </Button>
+                    <div className="flex-1 flex items-center justify-center">
+                      <EmptyState
+                        icon={Activity}
+                        title="No Positions Open"
+                        description="Your active futures and options will appear here."
+                        actionLabel="Start Trading"
+                        onAction={() => { }}
+                      />
                     </div>
                   )}
                 </div>
               )}
 
               {activeTab === 'OpenOrders' && (
-                <div className={cn(
-                  "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
-                  orderInfos && orderInfos.length > 0 ? "space-y-4" : "justify-center items-center"
-                )}>
+                <div className="flex h-full flex-col">
                   {orderInfos.length > 0 ? (
                     <>
-                      <div className="flex flex-col space-y-3">
-                        {orderInfos
-                          .slice(indexOfFirstItem, indexOfLastItem)
-                          .map((pos, idx) => (
+                      <div className="flex-1 min-h-0 overflow-y-auto">
+                        <div className="flex flex-col space-y-3">
+                          {orderInfos.slice(indexOfFirstItem, indexOfLastItem).map((pos, idx) => (
                             <OpenOptionOrders
-                              key={idx}
+                              key={pos.index ?? idx}
                               logo={pos.logo}
                               token={pos.token}
                               symbol={pos.symbol}
@@ -357,8 +376,9 @@ export default memo(function TradingPositions() {
                               orderDate={pos.orderDate}
                             />
                           ))}
+                        </div>
                       </div>
-                      <div className="pt-2">
+                      <div className="flex-shrink-0 border-t border-border">
                         <Pagination
                           currentPage={currentPage}
                           totalItems={orderInfos.length}
@@ -368,14 +388,12 @@ export default memo(function TradingPositions() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-                        <BookOpen className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">No Orders Open</p>
-                        <p className="text-xs text-muted-foreground">Your pending limit orders will be listed here.</p>
-                      </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <EmptyState
+                        icon={BookOpen}
+                        title="No Orders Open"
+                        description="Your pending limit orders will be listed here."
+                      />
                     </div>
                   )}
                 </div>
@@ -383,58 +401,50 @@ export default memo(function TradingPositions() {
 
               {activeTab === 'History' && (
                 <div className={cn(
-                  "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
-                  doneInfo.length > 0 ? "space-y-4" : "justify-center items-center"
+                  "flex h-full overflow-y-auto flex-col",
+                  doneInfo.length > 0 ? "" : "justify-center items-center"
                 )}>
                   {doneInfo.length > 0 ? (
                     <OrderHistory doneOptioninfos={doneInfo} />
                   ) : (
-                    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-                        <History className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">No History Available</p>
-                        <p className="text-xs text-muted-foreground">Your trade history will be compiled once you start trading.</p>
-                      </div>
-                    </div>
+                    <EmptyState
+                      icon={History}
+                      title="No History Available"
+                      description="Your trade history will be compiled once you start trading."
+                    />
                   )}
                 </div>
               )}
 
               {activeTab === 'Alerts' && (
-                <div className="flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6">
+                <div className="flex h-full overflow-y-auto flex-col">
                   <PriceAlerts />
                 </div>
               )}
 
               {activeTab === 'Expired' && (
                 <div className={cn(
-                  "flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6",
-                  expiredInfos.length > 0 ? "space-y-4" : "justify-center items-center"
+                  "flex h-full overflow-y-auto flex-col",
+                  expiredInfos.length > 0 ? "" : "justify-center items-center"
                 )}>
                   {expiredInfos.length > 0 ? (
                     <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
                   ) : (
-                    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-                        <Ban className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">No Expired Positions</p>
-                        <p className="text-xs text-muted-foreground">Your expired options and claims will appear here.</p>
-                      </div>
-                    </div>
+                    <EmptyState
+                      icon={Ban}
+                      title="No Expired Positions"
+                      description="Your expired options and claims will appear here."
+                    />
                   )}
                 </div>
               )}
 
               {activeTab === 'DCA' && (
-                <div className="flex h-full overflow-y-auto flex-col px-3 py-4 md:px-6">
+                <div className="flex h-full overflow-y-auto flex-col">
                   <RecurringOrdersList />
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </CardContent>

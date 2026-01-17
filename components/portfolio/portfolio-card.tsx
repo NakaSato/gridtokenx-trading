@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronDown, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { ChevronDown, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
 import {
@@ -10,85 +11,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { defaultApiClient } from '@/lib/api-client'
+import { createApiClient } from '@/lib/api-client'
 import { Skeleton } from '../ui/skeleton'
 
-interface PortfolioStats {
-  pnl: number
-  pnlPercent: number
-  volume: number
-}
-
 export function PortfolioCard() {
-  const { user } = useAuth()
+  const { user, token, isAuthenticated } = useAuth()
   const { publicKey } = useWallet()
   const [selectedTimeframe, setSelectedTimeframe] = useState('30D')
   const [selectedAssets, setSelectedAssets] = useState('All Assets')
-  const [stats, setStats] = useState<PortfolioStats>({ pnl: 0, pnlPercent: 0, volume: 0 })
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const walletAddress = user?.wallet_address || publicKey?.toString()
+  const walletAddress = user?.wallet_address || publicKey?.toString()
+  const apiClient = createApiClient(token || '')
 
-      if (!walletAddress) {
-        setLoading(false)
-        return
+  // Map UI timeframe to API timeframe
+  const apiTimeframe = selectedTimeframe === '24H' ? '24h'
+    : selectedTimeframe === '7D' ? '7d'
+      : selectedTimeframe === '30D' ? '30d'
+        : '30d'
+
+  const { data, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['portfolio-stats', token, walletAddress, apiTimeframe],
+    queryFn: async () => {
+      if (!token) throw new Error('Not authenticated')
+
+      // Fetch user analytics for PnL stats
+      const analyticsResponse = await apiClient.getUserAnalytics({ timeframe: apiTimeframe })
+      const analytics = analyticsResponse.data
+
+      // Fetch trades for volume and count
+      const tradesResponse = await apiClient.getTrades({ limit: 100 })
+      const trades = tradesResponse.data?.trades || []
+
+      // Calculate stats from trades
+      let totalBuyValue = 0
+      let totalSellValue = 0
+      let totalVolume = 0
+      let tradeCount = 0
+
+      // Filter trades by timeframe
+      const now = new Date()
+      const cutoff = new Date()
+      if (selectedTimeframe === '24H') {
+        cutoff.setHours(cutoff.getHours() - 24)
+      } else if (selectedTimeframe === '7D') {
+        cutoff.setDate(cutoff.getDate() - 7)
+      } else if (selectedTimeframe === '30D') {
+        cutoff.setDate(cutoff.getDate() - 30)
+      } else {
+        cutoff.setFullYear(2000) // All time
       }
 
-      try {
-        // Fetch trades to calculate PnL
-        const tradesResponse = await defaultApiClient.getTrades({ limit: 100 })
+      trades.forEach((trade: any) => {
+        const tradeDate = new Date(trade.executed_at || trade.created_at)
+        if (tradeDate < cutoff) return
 
-        if (tradesResponse.data?.trades) {
-          const trades = tradesResponse.data.trades
+        const value = parseFloat(trade.total_value || trade.price || '0')
+        totalVolume += value
+        tradeCount++
 
-          // Calculate volume
-          const totalVolume = trades.reduce((sum: number, trade: any) => {
-            return sum + parseFloat(trade.total_value || trade.price || '0')
-          }, 0)
-
-          // Calculate PnL (mock - based on buy/sell difference)
-          let totalBuyValue = 0
-          let totalSellValue = 0
-
-          trades.forEach((trade: any) => {
-            const value = parseFloat(trade.total_value || trade.price || '0')
-            if (trade.role === 'buyer' || trade.side === 'buy') {
-              totalBuyValue += value
-            } else {
-              totalSellValue += value
-            }
-          })
-
-          const pnl = totalSellValue - totalBuyValue
-          const pnlPercent = totalBuyValue > 0 ? (pnl / totalBuyValue) * 100 : 0
-
-          setStats({
-            pnl,
-            pnlPercent,
-            volume: totalVolume,
-          })
+        if (trade.role === 'buyer' || trade.side === 'buy') {
+          totalBuyValue += value
+        } else {
+          totalSellValue += value
         }
-      } catch (error) {
-        console.error('Failed to fetch portfolio stats:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+      })
 
-    fetchStats()
-  }, [user?.wallet_address, publicKey, selectedTimeframe])
+      const pnl = totalSellValue - totalBuyValue
+      const pnlPercent = totalBuyValue > 0 ? (pnl / totalBuyValue) * 100 : 0
+
+      return {
+        pnl,
+        pnlPercent,
+        volume: totalVolume,
+        tradeCount,
+        // Use analytics data if available
+        totalVolumeKwh: analytics?.overall?.total_volume_kwh ?? 0,
+        avgPrice: analytics?.overall?.avg_price ?? 0,
+      }
+    },
+    enabled: !!token && isAuthenticated,
+    staleTime: 30000,
+    refetchInterval: 60000,
+  })
+
+  const stats = data ?? { pnl: 0, pnlPercent: 0, volume: 0, tradeCount: 0 }
+  const isProfitable = stats.pnl >= 0
 
   const formatCurrency = (value: number): string => {
-    const prefix = value >= 0 ? '+$' : '-$'
+    const prefix = value >= 0 ? '+฿' : '-฿'
     return `${prefix}${Math.abs(value).toFixed(2)}`
   }
 
-  const isProfitable = stats.pnl >= 0
+  if (!isAuthenticated) {
+    return (
+      <Card className="col-span-3 h-full w-full rounded-sm">
+        <CardContent className="p-6 flex items-center justify-center h-full">
+          <div className="text-center text-muted-foreground">
+            <p className="font-medium">Portfolio Stats</p>
+            <p className="text-sm">Sign in to view your P&L</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="col-span-3 h-full w-full rounded-sm">
@@ -110,6 +138,15 @@ export function PortfolioCard() {
             </Select>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => refetch()}
+              disabled={isLoading || isRefetching}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+            </Button>
             <Select
               value={selectedTimeframe}
               onValueChange={setSelectedTimeframe}
@@ -134,7 +171,7 @@ export function PortfolioCard() {
           {/* PNL */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">P&L</span>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-5 w-24" />
             ) : (
               <div className="flex items-center gap-1">
@@ -156,22 +193,30 @@ export function PortfolioCard() {
           {/* Volume */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Volume</span>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-5 w-20" />
             ) : (
-              <span className="font-medium">${stats.volume.toFixed(2)}</span>
+              <span className="font-medium">฿{stats.volume.toFixed(2)}</span>
             )}
           </div>
 
           {/* Trade Count */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Trades</span>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-5 w-16" />
             ) : (
-              <span className="font-medium">--</span>
+              <span className="font-medium">{stats.tradeCount}</span>
             )}
           </div>
+
+          {/* Average Price (if available) */}
+          {data?.avgPrice ? (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Avg Price</span>
+              <span className="font-medium">฿{data.avgPrice.toFixed(2)}/kWh</span>
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>

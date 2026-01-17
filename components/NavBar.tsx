@@ -15,6 +15,7 @@ import {
   MessagesSquare,
   TableColumnsSplit,
   ShieldCheck,
+  BarChart3,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -34,6 +35,8 @@ import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Logo } from './Logo'
 import dynamic from 'next/dynamic'
 import NavBarMobile from './NavBarMobile'
+import { NetworkStatus } from './NetworkStatus'
+
 
 // Dynamic Imports for Header Performance
 const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
@@ -99,17 +102,17 @@ const NAV_ITEMS: NavItem[] = [
     requiresAuth: true,
   },
   {
+    name: 'Energy Profiles',
+    href: '/energy-profiles',
+    icon: <BarChart3 size={16} />,
+    badge: { text: 'BETA', variant: 'beta' },
+    requiresAuth: true,
+  },
+  {
     name: 'Futures',
     href: '/futures',
     icon: <ChartLine size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
-  },
-  {
-    name: 'Earn',
-    href: '/earn',
-    icon: <EarnIcon />,
-    badge: { text: '48% APY', variant: 'apy' },
-    hideOnMobile: true,
   },
   {
     name: 'Portfolio',
@@ -270,6 +273,8 @@ export default function NavBar() {
           <Logo width={24} height={28} className="mb-1" />
         </div>
 
+
+
         <nav className="hidden items-center justify-evenly gap-3 md:flex md:gap-4 lg:gap-8" aria-label="Main navigation">
           {NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated).map((item) => (
             <NavLink
@@ -369,6 +374,8 @@ export default function NavBar() {
       </div>
 
       <div className="flex items-center justify-between gap-1 py-2 sm:gap-2 md:gap-3">
+        <NetworkStatus />
+
         {isAuthenticated && (
           <div className="hidden xs:block">
             <PointsDropDown setActive={setActiveItem} />

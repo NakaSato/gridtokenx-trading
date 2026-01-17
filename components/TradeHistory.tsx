@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { History, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 
 interface Trade {
     id: string
@@ -79,7 +78,7 @@ const TradeHistory = React.memo(function TradeHistory() {
 
     if (loading) {
         return (
-            <Card className="h-full border border-border">
+            <Card className="h-full border-0 shadow-none">
                 <CardHeader className="pb-2 border-b border-border/50">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <History className="h-4 w-4 text-primary" />
@@ -110,7 +109,7 @@ const TradeHistory = React.memo(function TradeHistory() {
     }
 
     return (
-        <Card className="flex h-full flex-col border border-border shadow-none">
+        <Card className="flex h-full flex-col border-0 shadow-none">
             <CardHeader className="py-3 px-4 border-b border-border/40">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                     <span className="flex items-center gap-2">

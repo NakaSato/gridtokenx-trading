@@ -1,6 +1,7 @@
 import {
   Activity,
   ArrowUpDown,
+  BarChart3,
   BookOpenText,
   ChartLine,
   ChevronDown,
@@ -18,7 +19,7 @@ import Image from 'next/image'
 import { Button, buttonVariants } from './ui/button'
 import { AuthButton } from './auth'
 import { useState } from 'react'
-import { EarnIcon, MoreIcon } from '@/public/svgs/icons'
+import { MoreIcon } from '@/public/svgs/icons'
 import { Badge } from './ui/badge'
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
@@ -155,20 +156,27 @@ export default function NavBarMobile() {
             <Button
               className={cn(
                 buttonVariants({
-                  variant: active === 'Earn' ? 'active' : 'inactive',
+                  variant: active === 'EnergyProfiles' ? 'active' : 'inactive',
                 }),
                 'flex justify-start rounded-sm bg-accent px-5 py-3'
               )}
               onClick={() => {
-                handleClick('Earn')
-                router.push('/earn')
+                handleClick('EnergyProfiles')
+                router.push('/energy-profiles')
                 setIsOpen(false)
               }}
             >
-              <EarnIcon />
-              <h1 className="text-sm font-medium">Earn</h1>
-              <Badge className="h-4 rounded-sm border-none bg-gradient-primary px-1 py-[3px] text-[8px] text-background">
-                48% APY
+              <BarChart3 size={16} />
+              <h1 className="text-sm font-medium text-nowrap">Energy Profiles</h1>
+              <Badge
+                className={cn(
+                  active === 'EnergyProfiles'
+                    ? 'text-gradient-primary border-primary'
+                    : 'border-secondary-foreground text-secondary-foreground',
+                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
+                )}
+              >
+                BETA
               </Badge>
             </Button>
             <Button

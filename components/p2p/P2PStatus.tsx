@@ -172,7 +172,7 @@ const P2PStatus = React.memo(function P2PStatus() {
                             Settlements (24h)
                         </div>
                         <span className="text-[10px] text-secondary-foreground font-normal flex items-center gap-1">
-                            <RefreshCw className="h-3 w-3 animate-spin duration-[5000ms]" />
+                            <RefreshCw className="h-3 w-3 animate-spin" style={{ animationDuration: '5000ms' }} />
                             {lastUpdated.toLocaleTimeString()}
                         </span>
                     </CardTitle>

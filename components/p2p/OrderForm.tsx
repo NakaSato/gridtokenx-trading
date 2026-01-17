@@ -50,7 +50,8 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
         data: balanceData,
         isLoading: balanceLoading
     } = useWalletBalance()
-    const balance = balanceData?.token_balance ?? null
+    const rawBalance = balanceData?.token_balance
+    const balance = rawBalance != null ? Number(rawBalance) : null
 
     // Pre-fill amount and zone when a node is selected from the map
     useEffect(() => {

@@ -88,6 +88,23 @@ export const tokenList: Token[] = [
     },
   },
   {
+    id: 'gridx-thb',
+    name: 'GridTokenX / THB',
+    symbol: 'GRX/THB',
+    iconPath: '/svgs/gridx.svg',
+    pythSymbol: 'Crypto.GRX/THB',
+    category: {
+      crypto: true,
+      memes: false,
+      forex: true,
+      ai: false,
+      metals: false,
+      commodities: false,
+      equities: false,
+      fixed: false,
+    },
+  },
+  {
     id: 'solana',
     name: 'Solana',
     symbol: 'SOL',
