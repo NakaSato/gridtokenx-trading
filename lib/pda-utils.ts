@@ -73,3 +73,24 @@ export const getLpTokenMintPDA = (poolName: string, programId: PublicKey) => {
         programId
     )[0]
 }
+
+export const getPrivateBalancePDA = (owner: PublicKey, mint: PublicKey, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('private_balance'), owner.toBuffer(), mint.toBuffer()],
+        programId
+    )[0]
+}
+
+export const getNullifierSetPDA = (mint: PublicKey, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('nullifier_set'), mint.toBuffer()],
+        programId
+    )[0]
+}
+
+export const getMintAuthorityPDA = (mint: PublicKey, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('mint_authority'), mint.toBuffer()],
+        programId
+    )[0]
+}

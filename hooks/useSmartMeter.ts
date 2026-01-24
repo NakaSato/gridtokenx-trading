@@ -2,6 +2,8 @@ import { useCallback, useMemo, useEffect } from 'react'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import toast from 'react-hot-toast'
+import { useContext } from 'react'
+import { EnergyContext } from '@/contexts/EnergyProvider'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export function useSmartMeter() {
@@ -42,10 +44,20 @@ export function useSmartMeter() {
 
     const { meters, readings, fetchedStats } = meterData
 
+    const { onMintFromMeter } = useContext(EnergyContext)
+
     // Mint tokens mutation
     const mintMutation = useMutation({
-        mutationFn: async (readingId: string) => {
+        mutationFn: async ({ readingId, kwh, meterId }: { readingId: string; kwh: number; meterId: string }) => {
             if (!token) throw new Error('No token')
+
+            // Try On-Chain Minting first
+            const success = await onMintFromMeter(readingId, kwh, meterId)
+            if (success) {
+                return { kwh_amount: kwh }
+            }
+
+            // Fallback to API if on-chain fails (or logic dictates)
             const client = createApiClient(token)
             const result = await client.mintReading(readingId)
             if (result.error) throw new Error(result.error)
@@ -60,8 +72,8 @@ export function useSmartMeter() {
         }
     })
 
-    const handleMintTokens = (readingId: string) => {
-        mintMutation.mutate(readingId)
+    const handleMintTokens = (readingId: string, kwh: number, meterId: string) => {
+        mintMutation.mutate({ readingId, kwh, meterId })
     }
 
     const copyToClipboard = async (text: string) => {
@@ -120,12 +132,25 @@ export function useSmartMeter() {
         }
     }, [readings, fetchedStats])
 
+    // On-Chain Data Fetching
+    // We can fetch the MeterAccount from Registry to compare with DB
+    /*
+    useEffect(() => {
+        if (registryProgram && meters.length > 0) {
+            // Fetch meter account
+            // const meterId = meters[0].id
+            // Derive PDA...
+            // registryProgram.account.meterAccount.fetch(pda).then(...)
+        }
+    }, [registryProgram, meters])
+    */
+
     return {
         meters,
         readings,
         loading,
         refreshing: refreshing && !loading, // Show refreshing only if not initial loading
-        mintingReadingId: mintMutation.isPending ? (mintMutation.variables as string) : null,
+        mintingReadingId: mintMutation.isPending ? (mintMutation.variables as unknown as { readingId: string }).readingId : null,
         fetchData: () => fetchData(),
         handleMintTokens,
         copyToClipboard,

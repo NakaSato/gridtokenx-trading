@@ -20,25 +20,30 @@ import { useAuth } from '../contexts/AuthProvider'
 export function useWebSocket(
   channel: string,
   token?: string,
-  autoConnect: boolean = true
+  autoConnect: boolean = true,
+  publicOnly: boolean = false
 ) {
   const { token: authToken } = useAuth()
   const [connected, setConnected] = useState(false)
   const clientRef = useRef<WebSocketClient | null>(null)
 
-  // Use token from auth context if not provided explicitly
-  const effectiveToken = token || authToken || undefined
+  // Use token from auth context if not provided explicitly, unless publicOnly is requested
+  const effectiveToken = publicOnly ? undefined : (token || authToken || undefined)
+
+  // Track whether we're using the public client for this instance
+  const isUsingPublicRef = useRef(false)
 
   useEffect(() => {
     if (!autoConnect) return
 
+    // Determine if we'll use public client
+    isUsingPublicRef.current = !effectiveToken
+
     const client = defaultWSManager.getOrCreate(channel, effectiveToken)
     clientRef.current = client
 
-    // Only connect if we have a token (required for /ws/ paths)
-    if (effectiveToken) {
-      client.connect()
-    }
+    // Always connect - manager handles fallback to public endpoint if no token
+    client.connect()
 
     const checkConnection = setInterval(() => {
       setConnected(client.isConnected())
@@ -46,7 +51,11 @@ export function useWebSocket(
 
     return () => {
       clearInterval(checkConnection)
-      defaultWSManager.disconnect(channel)
+      if (isUsingPublicRef.current) {
+        defaultWSManager.disconnectPublic()
+      } else {
+        defaultWSManager.disconnect(channel)
+      }
     }
   }, [channel, effectiveToken, autoConnect])
 
@@ -84,9 +93,10 @@ export function useWebSocketMessage<T = any>(
   channel: string,
   messageType: WebSocketMessageType,
   handler: (data: T) => void,
-  token?: string
+  token?: string,
+  publicOnly: boolean = false
 ) {
-  const { connected, client } = useWebSocket(channel, token)
+  const { connected, client } = useWebSocket(channel, token, true, publicOnly)
   const [latestMessage, setLatestMessage] = useState<T | null>(null)
 
   useEffect(() => {
@@ -124,7 +134,8 @@ export function useOrderBookWebSocket(token?: string) {
     useCallback((data: any) => {
       setOrderBook(data)
     }, []),
-    token
+    token,
+    true // publicOnly
   )
 
   return {
@@ -145,7 +156,8 @@ export function useTradesWebSocket(token?: string) {
     useCallback((data: any) => {
       setTrades((prev) => [data, ...prev].slice(0, 100)) // Keep last 100 trades
     }, []),
-    token
+    token,
+    true // publicOnly
   )
 
   return {
@@ -168,7 +180,8 @@ export function useEpochWebSocket(token?: string) {
       setCurrentEpoch(data.current_epoch)
       setLastTransition(data)
     }, []),
-    token
+    token,
+    true // publicOnly
   )
 
   return {

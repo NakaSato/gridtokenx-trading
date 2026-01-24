@@ -15,6 +15,13 @@ import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { WasmProvider } from '@/lib/wasm-provider'
 import QueryProvider from '@/components/QueryProvider'
 import Footer from '@/components/Footer'
+import { EnergyProvider } from '@/contexts/EnergyProvider'
+import { PrivacyProvider } from '@/contexts/PrivacyProvider'
+import ClaimStealthModal from '@/components/ClaimStealthModal'
+import FulfillTradeModal from '@/components/FulfillTradeModal'
+import { GovernanceProvider } from '@/contexts/GovernanceProvider'
+import { LendingProvider } from '@/contexts/LendingProvider'
+import { MarketplaceProvider } from '@/contexts/MarketplaceProvider'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -155,16 +162,29 @@ export default function RootLayout({
             <Connectionprovider>
               <AuthProvider>
                 <SocketProvider>
-                  <WasmProvider>
-                    <AuthModalManager />
-                    <DevFaucet />
-                    <EmailVerificationBanner />
-                    <div className="mx-auto flex h-screen flex-col px-6">
-                      <NavBar></NavBar>
-                      <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
-                      <Footer />
-                    </div>
-                  </WasmProvider>
+                  <EnergyProvider>
+                    <PrivacyProvider>
+                      <WasmProvider>
+                        <GovernanceProvider>
+                          <LendingProvider>
+                            <MarketplaceProvider>
+                              <AuthModalManager />
+                              <DevFaucet />
+                              <EmailVerificationBanner />
+                              <ClaimStealthModal />
+                              <FulfillTradeModal />
+                              <div className="mx-auto flex h-screen flex-col px-6">
+                                <NavBar></NavBar>
+                                <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+                                <Footer />
+                              </div>
+                            </MarketplaceProvider>
+                          </LendingProvider>
+                        </GovernanceProvider>
+                      </WasmProvider>
+                    </PrivacyProvider>
+                  </EnergyProvider>
+
                 </SocketProvider>
               </AuthProvider>
             </Connectionprovider>

@@ -123,7 +123,7 @@ export default function P2PCostBreakdown({
 
     if (loading) {
         return (
-            <Card className="border-border/50 bg-card/50">
+            <Card className="border-border/50 bg-card/50 rounded-sm">
                 <CardContent className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                     <span className="ml-2 text-sm text-muted-foreground">Calculating...</span>
@@ -134,7 +134,7 @@ export default function P2PCostBreakdown({
 
     if (error) {
         return (
-            <Card className="border-destructive/50 bg-destructive/5">
+            <Card className="border-destructive/50 bg-destructive/5 rounded-sm">
                 <CardContent className="flex items-center py-4">
                     <AlertCircle className="h-5 w-5 text-destructive" />
                     <span className="ml-2 text-sm text-destructive">{error}</span>
@@ -145,7 +145,7 @@ export default function P2PCostBreakdown({
 
     if (!cost || energyAmount <= 0) {
         return (
-            <Card className="border-border/50 bg-card/50">
+            <Card className="border-border/50 bg-card/50 rounded-sm">
                 <CardContent className="py-6 text-center">
                     <Activity className="mx-auto h-8 w-8 text-muted-foreground/50" />
                     <p className="mt-2 text-sm text-muted-foreground">
@@ -169,7 +169,7 @@ export default function P2PCostBreakdown({
             : 'Cross-Grid Transmission'
 
     return (
-        <Card className="border-border/50 bg-card/50">
+        <Card className="border-border/50 bg-card/50 rounded-sm shadow-sm">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center text-sm font-medium">
@@ -178,7 +178,7 @@ export default function P2PCostBreakdown({
                     </CardTitle>
                     <Badge
                         variant={cost.is_grid_compliant ? "default" : "destructive"}
-                        className="text-xs"
+                        className="text-xs rounded-sm"
                     >
                         {cost.is_grid_compliant ? (
                             <><CheckCircle className="mr-1 h-3 w-3" /> Grid OK</>
@@ -191,11 +191,11 @@ export default function P2PCostBreakdown({
 
             <CardContent className="space-y-4">
                 {/* Zone Info */}
-                <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                <div className="flex items-center justify-between rounded-sm bg-muted/50 p-3">
                     <div className="flex items-center gap-2">
-                        <Badge variant="outline">Zone {cost.seller_zone}</Badge>
+                        <Badge variant="outline" className="rounded-sm">Zone {cost.seller_zone}</Badge>
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <Badge variant="outline">Zone {cost.buyer_zone}</Badge>
+                        <Badge variant="outline" className="rounded-sm">Zone {cost.buyer_zone}</Badge>
                     </div>
                     <div className="text-right">
                         <span className="text-xs text-muted-foreground">{zoneLabel}</span>
@@ -228,7 +228,7 @@ export default function P2PCostBreakdown({
                 </div>
 
                 {/* Effective Energy */}
-                <div className="rounded-lg bg-primary/10 p-3">
+                <div className="rounded-sm bg-primary/10 p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Zap className="h-4 w-4 text-primary" />
@@ -244,7 +244,7 @@ export default function P2PCostBreakdown({
                 </div>
 
                 {/* P2P vs Grid Comparison */}
-                <div className="space-y-2 rounded-lg border border-border/50 p-3">
+                <div className="space-y-2 rounded-sm border border-border/50 p-3">
                     <h4 className="text-xs font-medium uppercase text-muted-foreground">
                         P2P vs Grid Comparison
                     </h4>
@@ -253,7 +253,7 @@ export default function P2PCostBreakdown({
                         <div>
                             <div className="flex items-center gap-1">
                                 {buyerSavings > 0 ? (
-                                    <TrendingDown className="h-4 w-4 text-green-500" />
+                                    <TrendingDown className="h-4 w-4 text-emerald-500" />
                                 ) : (
                                     <TrendingUp className="h-4 w-4 text-destructive" />
                                 )}
@@ -261,7 +261,7 @@ export default function P2PCostBreakdown({
                             </div>
                             <span className={cn(
                                 "font-mono text-sm font-medium",
-                                buyerSavings > 0 ? "text-green-500" : "text-destructive"
+                                buyerSavings > 0 ? "text-emerald-500" : "text-destructive"
                             )}>
                                 {buyerSavings > 0 ? '+' : ''}฿{buyerSavings.toFixed(2)}
                             </span>
@@ -270,7 +270,7 @@ export default function P2PCostBreakdown({
                         <div>
                             <div className="flex items-center gap-1">
                                 {sellerPremium > 0 ? (
-                                    <TrendingUp className="h-4 w-4 text-green-500" />
+                                    <TrendingUp className="h-4 w-4 text-emerald-500" />
                                 ) : (
                                     <TrendingDown className="h-4 w-4 text-destructive" />
                                 )}
@@ -278,7 +278,7 @@ export default function P2PCostBreakdown({
                             </div>
                             <span className={cn(
                                 "font-mono text-sm font-medium",
-                                sellerPremium > 0 ? "text-green-500" : "text-destructive"
+                                sellerPremium > 0 ? "text-emerald-500" : "text-destructive"
                             )}>
                                 {sellerPremium > 0 ? '+' : ''}฿{sellerPremium.toFixed(2)}
                             </span>

@@ -29,6 +29,8 @@ export interface WebSocketClientOptions {
   reconnectDelay?: number
   maxReconnectAttempts?: number
   token?: string
+  /** If true, this is a public endpoint that doesn't require authentication */
+  isPublic?: boolean
 }
 
 export type WebSocketEventHandler = (message: WebSocketMessage) => void
@@ -52,6 +54,7 @@ export class WebSocketClient {
       reconnectDelay: options.reconnectDelay ?? 3000,
       maxReconnectAttempts: options.maxReconnectAttempts ?? 5,
       token: options.token ?? '',
+      isPublic: options.isPublic ?? false,
     }
   }
 
@@ -70,8 +73,10 @@ export class WebSocketClient {
         ? `${this.url}?token=${this.options.token}`
         : this.url
 
-      // Guard: Don't connect to /ws/ paths without a token
-      if (this.url.includes('/ws/') && !this.options.token) {
+      // Guard: Don't connect to authenticated /ws/* paths without a token
+      // The path /api/market/ws is public and doesn't require auth
+      const isAuthenticatedWsPath = this.url.match(/\/ws\/\w+/) && !this.url.includes('/api/market/ws')
+      if (isAuthenticatedWsPath && !this.options.token && !this.options.isPublic) {
         console.warn(`WebSocket connection deferred for ${this.url}: Token required.`)
         return
       }
@@ -92,7 +97,13 @@ export class WebSocketClient {
       }
 
       this.ws.onerror = (error) => {
-        console.error(`WebSocket error [${this.url}]:`, error)
+        // Use debug level for connection errors on auth-required paths when not authenticated
+        // This is expected behavior when user hasn't logged in yet
+        if (!this.options.token && !this.options.isPublic) {
+          console.debug(`WebSocket connection failed (auth required) [${this.url}]`)
+        } else {
+          console.error(`WebSocket error [${this.url}]:`, error)
+        }
       }
 
       this.ws.onclose = () => {
@@ -220,13 +231,32 @@ export function createEpochsWS(token?: string): WebSocketClient {
 }
 
 /**
+ * Create a public market WebSocket (no auth required)
+ * Falls back to this when user is not authenticated
+ */
+export function createPublicMarketWS(): WebSocketClient {
+  return new WebSocketClient('/api/market/ws', { isPublic: true })
+}
+
+/**
  * Hook-friendly WebSocket manager for React components
  */
 export class WebSocketManager {
   private clients: Map<string, WebSocketClient> = new Map()
   private refCounts: Map<string, number> = new Map()
+  private publicClient: WebSocketClient | null = null
+  private publicRefCount: number = 0
 
+  /**
+   * Get or create a WebSocket client for the given channel.
+   * If no token is provided, returns a public market WebSocket instead.
+   */
   getOrCreate(channel: string, token?: string): WebSocketClient {
+    // If no token, use public market WebSocket as fallback
+    if (!token) {
+      return this.getOrCreatePublic()
+    }
+
     let client = this.clients.get(channel)
     const path = `/ws/${channel}`
 
@@ -248,6 +278,17 @@ export class WebSocketManager {
     return client
   }
 
+  /**
+   * Get or create a public market WebSocket (no auth required)
+   */
+  getOrCreatePublic(): WebSocketClient {
+    if (!this.publicClient) {
+      this.publicClient = new WebSocketClient('/api/market/ws', { isPublic: true })
+    }
+    this.publicRefCount++
+    return this.publicClient
+  }
+
   disconnect(channel: string): void {
     const count = this.refCounts.get(channel) || 0
     if (count <= 1) {
@@ -262,10 +303,24 @@ export class WebSocketManager {
     }
   }
 
+  disconnectPublic(): void {
+    this.publicRefCount--
+    if (this.publicRefCount <= 0 && this.publicClient) {
+      this.publicClient.disconnect()
+      this.publicClient = null
+      this.publicRefCount = 0
+    }
+  }
+
   disconnectAll(): void {
     this.clients.forEach((client) => client.disconnect())
     this.clients.clear()
     this.refCounts.clear()
+    if (this.publicClient) {
+      this.publicClient.disconnect()
+      this.publicClient = null
+      this.publicRefCount = 0
+    }
   }
 
   setToken(token: string): void {
@@ -274,3 +329,4 @@ export class WebSocketManager {
 }
 
 export const defaultWSManager = new WebSocketManager()
+

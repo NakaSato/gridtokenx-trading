@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { Loader2, CheckCircle2, AlertCircle, Calendar, Repeat } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Calendar, Repeat, ArrowRight, Zap, TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
     Select,
@@ -15,6 +15,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export function RecurringOrderForm() {
     const { token } = useAuth()
@@ -46,7 +48,7 @@ export function RecurringOrderForm() {
             if (response.error) {
                 setMessage(response.error)
             } else {
-                setMessage(`Started ${frequency} DCA for ${amount} GRX`)
+                setMessage(`Successfully started ${frequency} strategy`)
                 setIsSuccess(true)
                 setAmount('')
             }
@@ -58,89 +60,147 @@ export function RecurringOrderForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-4 pt-2">
-            <div className="flex gap-2 p-1 bg-secondary/50 rounded-sm">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                        "flex-1 h-8 rounded-sm text-xs",
-                        side === 'buy' ? "bg-green-500 text-white shadow-sm" : "text-muted-foreground"
+        <Card className="rounded-sm border-border bg-card shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 pt-4 px-4 border-b border-border bg-muted/20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-sm bg-primary/10 text-primary">
+                            <Repeat className="h-4 w-4" />
+                        </div>
+                        <CardTitle className="text-sm font-semibold">DCA Strategy</CardTitle>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-normal h-5 rounded-sm border-primary/20 text-primary bg-primary/5">
+                        Automated
+                    </Badge>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Buy/Sell/Toggle */}
+                    <div className="grid grid-cols-2 gap-1 p-1 bg-secondary rounded-sm">
+                        <button
+                            type="button"
+                            onClick={() => setSide('buy')}
+                            className={cn(
+                                "flex items-center justify-center gap-2 py-2 rounded-sm text-sm font-medium transition-all duration-300",
+                                side === 'buy'
+                                    ? "bg-emerald-500 text-white shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                            )}
+                        >
+                            <TrendingUp size={14} /> Buy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSide('sell')}
+                            className={cn(
+                                "flex items-center justify-center gap-2 py-2 rounded-sm text-sm font-medium transition-all duration-300",
+                                side === 'sell'
+                                    ? "bg-destructive text-destructive-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                            )}
+                        >
+                            <TrendingDown size={14} /> Sell
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-medium text-secondary-foreground flex items-center justify-between">
+                                <span>Amount per {frequency}</span>
+                            </Label>
+                            <div className="relative group">
+                                <Zap className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                <Input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    className="pl-9 h-10 font-mono text-sm bg-secondary/30 border-secondary rounded-sm group-focus-within:border-primary group-focus-within:ring-1 group-focus-within:ring-primary/20 transition-all"
+                                />
+                                <div className="absolute right-3 top-2.5 text-xs font-bold text-muted-foreground">
+                                    kWh
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-xs font-medium text-secondary-foreground">Frequency</Label>
+                            <Select value={frequency} onValueChange={(v: any) => setFrequency(v)}>
+                                <SelectTrigger className="h-10 text-sm bg-secondary/30 border-secondary rounded-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                        <SelectValue />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="daily">Daily (24h)</SelectItem>
+                                    <SelectItem value="weekly">Weekly (7d)</SelectItem>
+                                    <SelectItem value="monthly">Monthly (30d)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {/* Simple Summary */}
+                    <div className="rounded-sm bg-primary/5 border border-primary/10 p-3">
+                        <h4 className="text-[11px] font-semibold text-primary mb-1 flex items-center gap-1.5">
+                            <Repeat className="h-3 w-3" /> Strategy Summary
+                        </h4>
+                        <div className="text-[11px] text-muted-foreground flex flex-col gap-1">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className={cn(
+                                    "font-bold",
+                                    side === 'buy' ? "text-emerald-500" : "text-destructive"
+                                )}>
+                                    {side === 'buy' ? "Buy" : "Sell"}
+                                </span>
+                                <span className="font-mono font-medium text-foreground">{amount || "0"} kWh</span>
+                                <span>every</span>
+                                <span className="font-medium text-foreground capitalize">{frequency}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <Button
+                        type="submit"
+                        className={cn(
+                            "w-full h-10 font-semibold shadow-sm transition-all duration-300 rounded-sm",
+                            side === 'buy'
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                : "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        )}
+                        disabled={loading || !token || !amount}
+                    >
+                        {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <span>Start Strategy</span>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                            </div>
+                        )}
+                    </Button>
+
+                    {message && (
+                        <div className={cn(
+                            "flex items-start gap-2.5 rounded-sm p-3 text-xs animate-in fade-in zoom-in-95",
+                            isSuccess
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                : "bg-destructive/10 text-destructive dark:text-destructive-foreground border border-destructive/20"
+                        )}>
+                            {isSuccess ? (
+                                <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                            ) : (
+                                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                            )}
+                            <div className="flex-1 leading-snug">
+                                {message}
+                            </div>
+                        </div>
                     )}
-                    onClick={() => setSide('buy')}
-                >
-                    Buy
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                        "flex-1 h-8 rounded-sm text-xs",
-                        side === 'sell' ? "bg-red-500 text-white shadow-sm" : "text-muted-foreground"
-                    )}
-                    onClick={() => setSide('sell')}
-                >
-                    Sell
-                </Button>
-            </div>
-
-            <div className="space-y-2">
-                <Label className="text-xs text-secondary-foreground">Amount per interval (kWh)</Label>
-                <div className="flex h-10 w-full items-center space-x-2 rounded-sm bg-secondary px-3 py-2">
-                    <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="number"
-                        placeholder="0.00"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="h-fit border-none bg-transparent p-0 font-mono text-sm shadow-none focus-visible:ring-0"
-                    />
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <Label className="text-xs text-secondary-foreground">Frequency</Label>
-                <Select value={frequency} onValueChange={(v: any) => setFrequency(v)}>
-                    <SelectTrigger className="h-10 text-sm">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="daily">Every Day</SelectItem>
-                        <SelectItem value="weekly">Every Week</SelectItem>
-                        <SelectItem value="monthly">Every Month</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <div className="rounded-sm bg-primary/5 border border-primary/20 p-3">
-                <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-medium">Auto-Schedule DCA</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                    Recurring orders will execute at the best market price during each interval. Ensure you have enough balance to cover the trades.
-                </p>
-            </div>
-
-            <Button
-                type="submit"
-                className="w-full rounded-sm"
-                disabled={loading || !token || !amount}
-            >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Start ${frequency} DCA`}
-            </Button>
-
-            {message && (
-                <div className={cn(
-                    "flex items-center gap-2 rounded-sm p-3 text-[11px]",
-                    isSuccess ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                )}>
-                    {isSuccess ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                    {message}
-                </div>
-            )}
-        </form>
+                </form>
+            </CardContent>
+        </Card>
     )
 }

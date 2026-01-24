@@ -22,6 +22,27 @@ export interface PnLData {
     maxPnL: number;
 }
 
+export interface ZkCommitment {
+    point: number[];
+}
+
+export interface ZkRangeProof {
+    proof_data: number[];
+    commitment: ZkCommitment;
+}
+
+export interface ZkEqualityProof {
+    challenge: number[];
+    response: number[];
+}
+
+export interface ZkTransferProof {
+    amount_commitment: ZkCommitment;
+    amount_range_proof: ZkRangeProof;
+    remaining_range_proof: ZkRangeProof;
+    balance_proof: ZkEqualityProof;
+}
+
 export interface WasmExports {
     memory: WebAssembly.Memory;
     get_buffer_ptr: () => number;
@@ -81,8 +102,13 @@ export interface WasmExports {
     init_simulation_nodes: (ptr: number, count: number) => void;
     init_simulation_flows: (ptr: number, count: number) => void;
     update_simulation: (hour: number, minute: number) => void;
-    get_node_output_ptr: () => number;
     get_flow_output_ptr: () => number;
+    // ZK Privacy
+    create_commitment: (retptr: number, value: bigint, ptr: number, len: number) => void;
+    create_range_proof: (retptr: number, amount: bigint, ptr: number, len: number) => void;
+    create_transfer_proof: (retptr: number, amount: bigint, balance: bigint, sPtr: number, sLen: number, aPtr: number, aLen: number) => void;
+    __wbindgen_add_to_stack_pointer: (delta: number) => number;
+    __wbindgen_export: (size: number, align: number) => number;
 }
 
 let wasmInstance: WebAssembly.Instance | null = null;
@@ -692,3 +718,43 @@ export function hmacVerify(key: string, message: string, signature: Uint8Array):
 
     return wasmExports.crypto_verify(keyPtr, keyBytes.length, msgPtr, msgBytes.length, sigPtr) === 1;
 }
+
+// =============================================================================
+// ZK PRIVACY FUNCTIONS
+// =============================================================================
+
+/**
+ * Generate a Pedersen Commitment
+ */
+export async function createCommitment(value: number, blinding: Uint8Array): Promise<ZkCommitment> {
+    if (!wasmExports) throw new Error('WASM module not loaded');
+
+    // In a real scenario, we'd use the generated JS wrapper. 
+    // For now, we'll implement a minimal helper that matches the wasm-bindgen pattern
+    // or just re-import from the pkg-web if we can.
+    // However, to keep it simple and consistent with existing bridge:
+    const zk = await import('./zk-utils');
+    return zk.createCommitment(value, blinding);
+}
+
+/**
+ * Generate a ZK Range Proof
+ */
+export async function createRangeProof(amount: number, blinding: Uint8Array): Promise<ZkRangeProof> {
+    const zk = await import('./zk-utils');
+    return zk.createRangeProof(amount, blinding);
+}
+
+/**
+ * Generate a ZK Transfer Proof
+ */
+export async function createTransferProof(
+    amount: number,
+    balance: number,
+    senderBlinding: Uint8Array,
+    amountBlinding: Uint8Array
+): Promise<ZkTransferProof> {
+    const zk = await import('./zk-utils');
+    return zk.createTransferProof(amount, balance, senderBlinding, amountBlinding);
+}
+

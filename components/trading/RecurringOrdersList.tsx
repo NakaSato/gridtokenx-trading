@@ -6,7 +6,7 @@ import { createApiClient } from '@/lib/api-client'
 import type { RecurringOrder } from '@/types/phase3'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Repeat, Play, Pause, Trash2, Calendar } from 'lucide-react'
+import { Loader2, Repeat, Play, Pause, Trash2, Calendar, TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -68,88 +68,131 @@ export default function RecurringOrdersList() {
 
     if (loading && orders.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 space-y-2 opacity-50">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-sm">Loading DCA strategy...</span>
+            <div className="flex flex-col items-center justify-center py-10 space-y-3 opacity-50">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                    <Loader2 className="h-6 w-6 animate-spin text-primary relative z-10" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Loading strategies...</span>
             </div>
         )
     }
 
     return (
-        <div className="flex flex-col space-y-3">
-            <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active DCA Strategies</h3>
+        <div className="flex flex-col space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <div className="flex items-center justify-between px-1">
+                <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="h-3 w-3" /> Active Strategies
+                </h3>
+                <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal bg-secondary rounded-sm">
+                    {orders.length} Active
+                </Badge>
             </div>
 
             {orders.length > 0 ? (
-                <div className="grid gap-2">
+                <div className="grid gap-2.5">
                     {orders.map((order) => (
-                        <div key={order.id} className="flex items-center justify-between p-3 rounded-sm border bg-muted/10 group transition-all hover:bg-muted/20">
-                            <div className="flex items-center gap-3">
-                                <div className={cn(
-                                    "p-2 rounded-full",
-                                    order.side === 'buy' ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                                )}>
-                                    <Repeat size={14} className={cn(order.status === 'active' && "animate-spin-slow")} />
-                                </div>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold">{order.symbol}</span>
-                                        <Badge variant="outline" className="text-[8px] h-3 px-1 uppercase opacity-70">
-                                            {order.frequency}
-                                        </Badge>
+                        <div
+                            key={order.id}
+                            className="group relative flex flex-col gap-2 p-3 rounded-sm border border-border bg-card hover:border-primary/20 transition-all duration-300 shadow-sm"
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "p-2 rounded-sm transition-colors",
+                                        order.side === 'buy'
+                                            ? "bg-emerald-500/10 text-emerald-500"
+                                            : "bg-destructive/10 text-destructive"
+                                    )}>
+                                        {order.side === 'buy' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground">
-                                        {order.side === 'buy' ? 'Buying' : 'Selling'} {order.amount} units per interval
-                                    </span>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-semibold tracking-tight">{order.symbol}</span>
+                                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 uppercase opacity-70 border-primary/20 text-primary rounded-sm">
+                                                {order.frequency}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <span className={cn(
+                                                "font-medium",
+                                                order.side === 'buy' ? "text-emerald-500" : "text-destructive"
+                                            )}>
+                                                {order.side === 'buy' ? 'Buy' : 'Sell'}
+                                            </span>
+                                            <span className="font-mono font-medium text-foreground">{order.amount} kWh</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center gap-4">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[10px] text-muted-foreground uppercase">Last run</span>
-                                    <span className="text-[10px] font-mono">
-                                        {order.last_run_at ? format(new Date(order.last_run_at), 'MMM dd, HH:mm') : 'Never'}
-                                    </span>
-                                </div>
-
-                                <Badge variant={order.status === 'active' ? "secondary" : "outline"} className={cn(
-                                    "text-[8px] h-4 px-1",
-                                    order.status === 'active' ? "bg-green-500/10 text-green-500 border-green-500/20" : ""
+                                <Badge variant="outline" className={cn(
+                                    "text-[9px] h-5 px-2 font-medium border-0 ring-1 ring-inset rounded-sm",
+                                    order.status === 'active'
+                                        ? "bg-emerald-500/5 text-emerald-500 ring-emerald-500/20"
+                                        : "bg-amber-500/5 text-amber-500 ring-amber-500/20"
                                 )}>
+                                    <span className={cn(
+                                        "mr-1.5 h-1.5 w-1.5 rounded-full inline-block",
+                                        order.status === 'active' ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                                    )} />
                                     {order.status}
                                 </Badge>
+                            </div>
 
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-1">
+                                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Last run:</span>
+                                    <span className="font-mono text-foreground">
+                                        {order.last_run_at ? format(new Date(order.last_run_at), 'MMM dd, HH:mm') : 'Pending'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
                                     {order.status === 'active' ? (
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/5"
+                                            className="h-6 w-6 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 rounded-sm"
                                             onClick={() => handleAction(order.id, 'pause')}
                                             disabled={!!actionLoading}
+                                            title="Pause Strategy"
                                         >
-                                            <Pause size={12} />
+                                            {actionLoading === `pause-${order.id}` ? (
+                                                <Loader2 size={10} className="animate-spin" />
+                                            ) : (
+                                                <Pause size={12} />
+                                            )}
                                         </Button>
                                     ) : (
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 text-green-500 hover:bg-green-500/5"
+                                            className="h-6 w-6 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 rounded-sm"
                                             onClick={() => handleAction(order.id, 'resume')}
                                             disabled={!!actionLoading}
+                                            title="Resume Strategy"
                                         >
-                                            <Play size={12} />
+                                            {actionLoading === `resume-${order.id}` ? (
+                                                <Loader2 size={10} className="animate-spin" />
+                                            ) : (
+                                                <Play size={12} />
+                                            )}
                                         </Button>
                                     )}
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 text-muted-foreground hover:text-red-500 hover:bg-red-500/5"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-sm"
                                         onClick={() => handleAction(order.id, 'cancel')}
                                         disabled={!!actionLoading}
+                                        title="Cancel Strategy"
                                     >
-                                        <Trash2 size={12} />
+                                        {actionLoading === `cancel-${order.id}` ? (
+                                            <Loader2 size={10} className="animate-spin" />
+                                        ) : (
+                                            <Trash2 size={12} />
+                                        )}
                                     </Button>
                                 </div>
                             </div>
@@ -157,13 +200,15 @@ export default function RecurringOrdersList() {
                     ))}
                 </div>
             ) : (
-                <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center border border-dashed rounded-sm bg-muted/5">
-                    <div className="p-3 rounded-full bg-muted/10">
-                        <Calendar size={24} className="text-muted-foreground/50" />
+                <div className="flex flex-col items-center justify-center py-8 space-y-3 text-center border border-dashed border-border rounded-sm bg-muted/5">
+                    <div className="p-3 rounded-full bg-primary/5">
+                        <Repeat size={20} className="text-primary/50" />
                     </div>
-                    <div className="space-y-1">
-                        <p className="text-sm font-medium">No DCA Strategy</p>
-                        <p className="text-xs text-muted-foreground">Automate your trades by setting up a recurring order.</p>
+                    <div className="space-y-1 px-4">
+                        <p className="text-xs font-semibold">No Active Strategies</p>
+                        <p className="text-[10px] text-muted-foreground">
+                            Create a DCA strategy above to automate your trading and mitigate volatility.
+                        </p>
                     </div>
                 </div>
             )}

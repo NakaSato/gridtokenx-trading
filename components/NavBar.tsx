@@ -123,29 +123,6 @@ const NAV_ITEMS: NavItem[] = [
   },
 ]
 
-const DROPDOWN_NAV_ITEMS: DropdownItem[] = [
-  {
-    name: 'Options Chain',
-    icon: <TableColumnsSplit />,
-    link: '/options-chain',
-  },
-  {
-    name: 'MoonRekt',
-    icon: <ArrowUpDown />,
-    link: '/moonrekt',
-  },
-  {
-    name: 'Borrow',
-    icon: <ConciergeBell />,
-    link: '/borrow',
-  },
-  {
-    name: 'Analytics',
-    icon: <FileChartColumn />,
-    link: '/analytics',
-  },
-]
-
 const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
   {
     name: 'Docs',
@@ -251,7 +228,7 @@ export default function NavBar() {
     if (exactMatch) return exactMatch.name
 
     // Check dropdown items
-    const dropdownMatch = [...DROPDOWN_NAV_ITEMS, ...DROPDOWN_EXTERNAL_ITEMS].find(
+    const dropdownMatch = [...DROPDOWN_EXTERNAL_ITEMS].find(
       (item) => item.link === pathname
     )
     if (dropdownMatch) return dropdownMatch.name
@@ -261,7 +238,7 @@ export default function NavBar() {
   }, [pathname])
 
   const isDropdownItemActive = useMemo(() => {
-    return [...DROPDOWN_NAV_ITEMS, ...DROPDOWN_EXTERNAL_ITEMS].some(
+    return [...DROPDOWN_EXTERNAL_ITEMS].some(
       (item) => item.name === activeRoute
     )
   }, [activeRoute])
@@ -272,8 +249,6 @@ export default function NavBar() {
         <div className="flex items-center justify-center gap-2 px-1">
           <Logo width={24} height={28} className="mb-1" />
         </div>
-
-
 
         <nav className="hidden items-center justify-evenly gap-3 md:flex md:gap-4 lg:gap-8" aria-label="Main navigation">
           {NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated).map((item) => (
@@ -316,21 +291,6 @@ export default function NavBar() {
               align="start"
               className="w-44 rounded-sm text-secondary-foreground"
             >
-              {DROPDOWN_NAV_ITEMS.map((item) => (
-                <Link
-                  href={item.link}
-                  key={item.name}
-                  className="w-full"
-                  onClick={() => setActiveItem(item.name)}
-                >
-                  <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
-                    {item.name} {item.icon}
-                  </DropdownMenuItem>
-                </Link>
-              ))}
-
-              <DropdownMenuSeparator />
-
               {DROPDOWN_EXTERNAL_ITEMS.map((item) => (
                 <Link
                   href={item.link}

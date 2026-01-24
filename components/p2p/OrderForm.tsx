@@ -162,13 +162,13 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     return (
         <div className="flex w-full flex-col space-y-0">
             {/* Header - Buy/Sell Tabs */}
-            <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1">
+            <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border px-4 py-1 border-border bg-card">
                 <div className="flex gap-4">
                     <Button
                         className={cn(
-                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary',
+                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary transition-colors',
                             orderType === 'buy'
-                                ? 'border-green-500 text-green-500'
+                                ? 'border-emerald-500 text-emerald-500 font-medium'
                                 : 'border-transparent text-secondary-foreground'
                         )}
                         onClick={() => setOrderType('buy')}
@@ -177,9 +177,9 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                     </Button>
                     <Button
                         className={cn(
-                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary',
+                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary transition-colors',
                             orderType === 'sell'
-                                ? 'border-red-500 text-red-500'
+                                ? 'border-destructive text-destructive font-medium'
                                 : 'border-transparent text-secondary-foreground'
                         )}
                         onClick={() => setOrderType('sell')}
@@ -188,9 +188,9 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                     </Button>
                     <Button
                         className={cn(
-                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary',
+                            'h-[42px] w-full rounded-none border-b bg-inherit shadow-none hover:text-primary transition-colors',
                             orderType === 'recurring'
-                                ? 'border-primary text-primary'
+                                ? 'border-primary text-primary font-medium'
                                 : 'border-transparent text-secondary-foreground'
                         )}
                         onClick={() => setOrderType('recurring')}
@@ -207,9 +207,8 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                             }
                         }}
                     >
-                        <SelectTrigger className="h-[42px] w-fit gap-3 bg-inherit px-3 text-secondary-foreground focus:border-primary">
+                        <SelectTrigger className="h-[32px] w-fit gap-2 bg-inherit px-2 text-xs text-secondary-foreground focus:border-primary border-transparent hover:bg-muted/50 rounded-sm">
                             <SelectValue />
-                            <ChevronDown size={12} />
                         </SelectTrigger>
                         <SelectContent align="end">
                             <SelectItem value="market">Market</SelectItem>
@@ -220,7 +219,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
             </div>
 
             {/* Form Content */}
-            <div className="flex flex-col rounded-sm rounded-t-none border border-t-0 p-4">
+            <div className="flex flex-col rounded-sm rounded-t-none border border-t-0 p-4 bg-card">
                 {/* Balance Display */}
                 {token && (
                     <div className="flex items-center justify-between pb-4">
@@ -244,7 +243,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                     <>
                         {/* Selected Node Context */}
                         {selectedNode && (
-                            <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                            <div className="mb-4 rounded-sm border border-primary/30 bg-primary/5 p-3">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
                                         <Zap className="h-4 w-4 text-primary" />
@@ -256,7 +255,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                             variant="ghost"
                                             size="sm"
                                             onClick={onClearNode}
-                                            className="h-6 w-6 p-0 text-secondary-foreground hover:text-foreground"
+                                            className="h-6 w-6 p-0 text-secondary-foreground hover:text-foreground rounded-sm"
                                         >
                                             <X className="h-3 w-3" />
                                         </Button>
@@ -288,7 +287,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 text-xs">
+                                        <SelectTrigger className="h-9 text-xs rounded-sm">
                                             <SelectValue placeholder="Select zone" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -316,7 +315,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 text-xs">
+                                        <SelectTrigger className="h-9 text-xs rounded-sm">
                                             <SelectValue placeholder="Select zone" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -356,7 +355,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => handleQuickAmount(percent)}
-                                            className="h-6 flex-1 text-xs text-secondary-foreground hover:text-primary"
+                                            className="h-6 flex-1 text-xs text-secondary-foreground hover:text-primary rounded-sm"
                                         >
                                             {percent}%
                                         </Button>
@@ -391,7 +390,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => setShowCostBreakdown(!showCostBreakdown)}
-                                        className="h-6 text-xs"
+                                        className="h-6 text-xs rounded-sm"
                                     >
                                         {showCostBreakdown ? 'Hide' : 'Show'}
                                     </Button>
@@ -427,10 +426,10 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                 <Button
                                     type="submit"
                                     className={cn(
-                                        'h-[42px] w-full rounded-sm font-medium',
+                                        'h-[42px] w-full rounded-sm font-medium transition-all shadow-sm',
                                         orderType === 'buy'
-                                            ? 'bg-green-500 text-white hover:bg-green-600'
-                                            : 'bg-red-500 text-white hover:bg-red-600'
+                                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                                            : 'bg-destructive hover:bg-destructive/90 text-white shadow-destructive/20'
                                     )}
                                     disabled={loading}
                                 >
@@ -453,8 +452,8 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                 <div className={cn(
                                     'flex items-center gap-2 rounded-sm p-3 text-xs',
                                     isSuccess
-                                        ? 'bg-green-500/10 text-green-500'
-                                        : 'bg-red-500/10 text-red-500'
+                                        ? 'bg-emerald-500/10 text-emerald-500'
+                                        : 'bg-destructive/10 text-destructive'
                                 )}>
                                     {isSuccess ? (
                                         <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
