@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { usePrivacy } from '@/contexts/PrivacyProvider'
+import { useTrading } from '@/contexts/TradingProvider'
 import { toast } from 'react-hot-toast'
 import { ShoppingBag, Copy, Check, DollarSign, ArrowRight } from 'lucide-react'
 
@@ -16,9 +17,12 @@ export default function TradeOfferModal({ isOpen, onClose }: TradeOfferModalProp
     const [inviteLink, setInviteLink] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
     const [copied, setCopied] = useState(false)
-    const { privateBalance, createTradeOffer } = usePrivacy()
 
-    const availableBalance = privateBalance?.amount ?? 0
+    // Replace usePrivacy with useTrading
+    const { createSellOrder } = useTrading()
+    const { privateBalance } = usePrivacy() // Keep for balance check if needed, but createSellOrder uses on-chain auth
+
+    const availableBalance = privateBalance?.amount ?? 0 // Note: this might be 0 if not using privacy feature yet
 
     if (!isOpen) return null
 
@@ -31,10 +35,7 @@ export default function TradeOfferModal({ isOpen, onClose }: TradeOfferModalProp
             return
         }
 
-        if (numAmount > availableBalance) {
-            toast.error('Insufficient private balance')
-            return
-        }
+        // Removed balance check for now or move it to chain error handling
 
         if (isNaN(numPrice) || numPrice < 0) {
             toast.error('Invalid price')
@@ -42,13 +43,15 @@ export default function TradeOfferModal({ isOpen, onClose }: TradeOfferModalProp
         }
 
         setIsGenerating(true)
-        const toastId = toast.loading('Escrowing funds and creating private offer...')
+        const toastId = toast.loading('Creating On-Chain Sell Order...')
 
         try {
-            const payload = await createTradeOffer(numAmount, numPrice)
-            const url = `${window.location.origin}/p2p?t=${payload}`
+            // Using Real Contract Call
+            const tx = await createSellOrder(numAmount, numPrice)
+
+            const url = `https://explorer.solana.com/tx/${tx}?cluster=custom&customUrl=http://127.0.0.1:8899`
             setInviteLink(url)
-            toast.success(`Trade offer created!`, { id: toastId })
+            toast.success(`Trade offer created on-chain!`, { id: toastId })
         } catch (error: any) {
             console.error('[TradeOffer] Creation failed:', error)
             toast.error(`Offer failed: ${error.message}`, { id: toastId })

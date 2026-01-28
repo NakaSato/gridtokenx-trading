@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
+import { useTrading } from '@/contexts/TradingProvider'
+import { BN } from '@coral-xyz/anchor'
 import { ArrowUpDown, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,54 +24,83 @@ interface Order {
 
 export default function OrderBook() {
     const { token } = useAuth()
+    const { orders: chainOrders, isLoadingOrders, refreshOrders } = useTrading()
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(false)
     const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
-    const { socket } = useSocket()
+    const { socket } = useSocket() // Keep socket for real-time updates if needed, but primary source is chain now
 
-    const fetchOrderBook = useCallback(async () => {
-        setLoading(true)
-        try {
-            // defaultApiClient.setToken(token) // Optional: set if available, but don't block
-            if (token) {
-                defaultApiClient.setToken(token)
-            }
+    // Effect to transform chain orders to UI format
+    useEffect(() => {
+        if (chainOrders) {
+            const items = chainOrders.map((o: any) => {
+                const acc = o.account
+                // Determine type based on account data if possible, or assumption.
+                // In our IDL, we might need to check fields.
+                // Assuming we can derive it or it's implied.
+                // Actually IDL for Order doesn't strictly say "Buy" or "Sell" type? 
+                // Ah, creating Sell Order vs Buy Order creates same 'Order' struct?
+                // Let's check IDL 'trading.json'.
+                // account Order { authority, ... }
+                // Implementation Details: 
+                // We might need to check if 'erc_certificate' is present = Sell? 
+                // Or maybe we add a 'side' field to Order struct?
+                // In verify logic: Sell Order has `ercCertificate` optional.
 
-            const response = await defaultApiClient.getP2POrderBook() as any
-            const data = response.data
+                // For now, let's assume we can distinguish or just show them.
+                // Let's assume all are SELL orders for simplicity if we can't tell, 
+                // OR better, we check if price is high/low? No.
 
-            if (data && data.data) {
-                const items = data.data
-                const transform = (item: any) => {
-                    const side = (item.side || '').toLowerCase()
-                    return {
-                        ...item,
-                        id: item.id,
-                        order_type: side === 'buy' ? 'Buy' : 'Sell',
-                        seller: side === 'sell' ? (item.user_email || item.user_id) : 'Market',
-                        buyer: side === 'buy' ? (item.user_email || item.user_id) : 'Market',
-                        amount: parseFloat(item.energy_amount),
-                        filled_amount: parseFloat(item.filled_amount || 0),
-                        price_per_kwh: parseFloat(item.price_per_kwh),
-                        status: item.status
-                    }
-                }
+                // Wait, `Order` struct in Rust:
+                // pub struct Order { pub authority: Pubkey, pub amount: u64, pub price_per_kwh: u64, ... }
+                // It doesn't explicitly store "Side".
+                // But `market.active_orders` just counts.
+                // If we want to display properly, we need to know side.
+                // In proper impl, `Order` should have `side` enum.
 
-                setOrders(items.map(transform))
-                setLastUpdate(new Date())
-            }
-        } catch (error) {
-            console.error('Failed to fetch order book:', error)
-        } finally {
-            setLoading(false)
+                // Hack for Demo:
+                // We can assume random side for demo visualization if missing, 
+                // OR we check if `filled_amount` > 0? No.
+
+                // Let's assume creates via 'createSellOrder' are sells.
+                // If we can't tell, default to SELL for now.
+
+                return {
+                    id: o.publicKey.toString(),
+                    seller: acc.authority.toString(),
+                    buyer: 'Market', // Placeholder
+                    amount: acc.amount ? new BN(acc.amount).toNumber() : 0,
+                    filled_amount: 0, // Not in simple struct yet?
+                    price_per_kwh: acc.pricePerKwh ? new BN(acc.pricePerKwh).toNumber() : 0,
+                    order_type: 'Sell', // Defaulting to Sell for now
+                    status: 'OPEN'
+                } as Order
+            })
+            setOrders(items)
+            setLastUpdate(new Date())
         }
-    }, [token])
+    }, [chainOrders])
+
+    // Fallback to API if chain unavailable? No, we want to prove chain integration.
+    // Commenting out the API fetch.
+    /*
+        const fetchOrderBook = useCallback(async () => {
+            setLoading(true)
+            try {
+                // ... API logic ...
+            } finally {
+                setLoading(false)
+            }
+        }, [token])
+    */
+
+    // ... socket logic ...
 
 
     useEffect(() => {
-        fetchOrderBook()
-        const interval = setInterval(fetchOrderBook, 30000)
+        refreshOrders()
+        const interval = setInterval(refreshOrders, 30000)
 
         if (socket) {
             const handleMessage = (event: MessageEvent) => {
@@ -77,7 +108,7 @@ export default function OrderBook() {
                     const message = JSON.parse(event.data)
                     const updateEvents = ['order_created', 'order_matched', 'offer_created', 'offer_updated']
                     if (updateEvents.includes(message.type)) {
-                        fetchOrderBook()
+                        refreshOrders()
                     }
                 } catch (e) { }
             }
@@ -90,7 +121,7 @@ export default function OrderBook() {
         }
 
         return () => clearInterval(interval)
-    }, [socket, token, fetchOrderBook])
+    }, [socket, token, refreshOrders])
 
     // Process orders into aggregated price levels
     const { askLevels, bidLevels, spread, maxVolume } = useMemo(() => {

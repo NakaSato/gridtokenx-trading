@@ -22,6 +22,7 @@ import FulfillTradeModal from '@/components/FulfillTradeModal'
 import { GovernanceProvider } from '@/contexts/GovernanceProvider'
 import { LendingProvider } from '@/contexts/LendingProvider'
 import { MarketplaceProvider } from '@/contexts/MarketplaceProvider'
+import { TradingProvider } from '@/contexts/TradingProvider'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -168,16 +169,18 @@ export default function RootLayout({
                         <GovernanceProvider>
                           <LendingProvider>
                             <MarketplaceProvider>
-                              <AuthModalManager />
-                              <DevFaucet />
-                              <EmailVerificationBanner />
-                              <ClaimStealthModal />
-                              <FulfillTradeModal />
-                              <div className="mx-auto flex h-screen flex-col px-6">
-                                <NavBar></NavBar>
-                                <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
-                                <Footer />
-                              </div>
+                              <TradingProvider>
+                                <AuthModalManager />
+                                <DevFaucet />
+                                <EmailVerificationBanner />
+                                <ClaimStealthModal />
+                                <FulfillTradeModal />
+                                <div className="mx-auto flex h-screen flex-col px-6">
+                                  <NavBar></NavBar>
+                                  <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+                                  <Footer />
+                                </div>
+                              </TradingProvider>
                             </MarketplaceProvider>
                           </LendingProvider>
                         </GovernanceProvider>

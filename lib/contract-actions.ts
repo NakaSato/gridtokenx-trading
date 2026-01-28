@@ -324,3 +324,204 @@ export const removeLiquidity = async (
     })
     return true
 }
+
+// =============================================================================
+// AUCTION ACTIONS
+// =============================================================================
+
+export const initializeAuction = async (
+    program: Program<any>,
+    connection: Connection,
+    publicKey: PublicKey,
+    sendTransaction: any,
+    batchId: BN,
+    duration: BN
+) => {
+    // Placeholder - requires market key
+    console.warn("initializeAuction: Market key handling not fully implemented in UI demo");
+    return false;
+}
+
+export const submitAuctionOrder = async (
+    program: Program<any>,
+    connection: Connection,
+    publicKey: PublicKey,
+    sendTransaction: any,
+    params: {
+        batch: PublicKey,
+        price: number,
+        amount: number,
+        isBid: boolean,
+        tokenMint: PublicKey,
+        userTokenAccount: PublicKey
+    }
+) => {
+    const { batch, price, amount, isBid, tokenMint, userTokenAccount } = params;
+
+    // Derive Vault PDA: [b"batch_vault", batch, mint]
+    const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("batch_vault"), batch.toBuffer(), tokenMint.toBuffer()],
+        program.programId
+    );
+
+    const transaction = await program.methods
+        .submitAuctionOrder(
+            new BN(price),
+            new BN(amount),
+            isBid
+        )
+        .accounts({
+            batch: batch,
+            userTokenAccount: userTokenAccount,
+            vault: vaultPda,
+            tokenMint: tokenMint,
+            authority: publicKey,
+            tokenProgram: require("@solana/spl-token").TOKEN_PROGRAM_ID,
+            systemProgram: require("@solana/web3.js").SystemProgram.programId,
+        })
+        .transaction();
+
+    const latestBlockHash = await connection.getLatestBlockhash()
+    const signature = await sendTransaction(transaction, connection)
+    await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: signature,
+    })
+    return true
+}
+
+export const cancelAuctionOrder = async (
+    program: Program<any>,
+    connection: Connection,
+    publicKey: PublicKey,
+    sendTransaction: any,
+    params: {
+        batch: PublicKey,
+        orderIndex: number,
+        tokenMint: PublicKey,
+        userTokenAccount: PublicKey
+    }
+) => {
+    const { batch, orderIndex, tokenMint, userTokenAccount } = params;
+
+    const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("batch_vault"), batch.toBuffer(), tokenMint.toBuffer()],
+        program.programId
+    );
+
+    const transaction = await program.methods
+        .cancelAuctionOrder(orderIndex)
+        .accounts({
+            batch: batch,
+            userTokenAccount: userTokenAccount,
+            vault: vaultPda,
+            tokenMint: tokenMint,
+            authority: publicKey,
+            tokenProgram: require("@solana/spl-token").TOKEN_PROGRAM_ID,
+        })
+        .transaction();
+
+    const latestBlockHash = await connection.getLatestBlockhash()
+    const signature = await sendTransaction(transaction, connection)
+    await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: signature,
+    })
+    return true
+}
+
+export const executeSettlement = async (
+    program: Program<any>,
+    connection: Connection,
+    publicKey: PublicKey,
+    sendTransaction: any,
+    params: {
+        batch: PublicKey,
+        bidIndex: number,
+        askIndex: number,
+        amount: number,
+        buyerCurrency: PublicKey,
+        sellerCurrency: PublicKey,
+        sellerEnergy: PublicKey,
+        buyerEnergy: PublicKey,
+        currencyMint: PublicKey,
+        energyMint: PublicKey,
+        tokenProgram: PublicKey,
+        buyerAuthority: PublicKey,
+        sellerAuthority: PublicKey
+    }
+) => {
+    const { batch, bidIndex, askIndex, amount, ...accounts } = params;
+
+    if (!program.methods.executeSettlement) {
+        console.error("IDL outdated: executeSettlement not found");
+        return false;
+    }
+
+    const transaction = await program.methods
+        .executeSettlement(
+            bidIndex,
+            askIndex,
+            new BN(amount)
+        )
+        .accounts({
+            batch: batch,
+            ...accounts
+        })
+        .transaction();
+
+    const latestBlockHash = await connection.getLatestBlockhash()
+    const signature = await sendTransaction(transaction, connection)
+    await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: signature,
+    })
+    return true
+}
+
+// =============================================================================
+// DASHBOARD ACTIONS
+// =============================================================================
+
+export const fetchMeterHistory = async (
+    program: Program<any>,
+    publicKey: PublicKey
+) => {
+    try {
+        // Derive Meter History PDA using [b"meter_history", user_key]
+        // Assuming the user IS the meter for MVP, or we can fetch a specific meter if known.
+        // For Dashboard, we show the connected user's meter history.
+        const [historyPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("meter_history"), publicKey.toBuffer()],
+            program.programId
+        );
+
+        const account = await program.account.meterHistory.fetch(historyPda);
+
+        // Format for Recharts
+        // Data in account: readings [u64; 24], timestamps [i64; 24], current_index u8
+        // We need to unroll the circular buffer or just map them.
+        // Simpler: Just map all non-zero entries and sort by timestamp.
+
+        const data = account.readings
+            .map((reading: any, index: number) => ({
+                reading: reading.toNumber(),
+                timestamp: account.timestamps[index].toNumber(),
+            }))
+            .filter((d: any) => d.timestamp > 0)
+            .sort((a: any, b: any) => a.timestamp - b.timestamp)
+            .map((d: any) => ({
+                time: new Date(d.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                value: d.reading // Cumulative, maybe we want delta? For now show cumulative.
+            }));
+
+        return data;
+
+    } catch (e) {
+        console.warn("fetchMeterHistory failed:", e);
+        return [];
+    }
+}

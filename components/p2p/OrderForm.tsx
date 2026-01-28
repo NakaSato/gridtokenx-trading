@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { defaultApiClient, createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
+import { useTrading } from '@/contexts/TradingProvider'
 import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin, X, Zap, Shield } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     const [isSigning, setIsSigning] = useState(false)
     const { signOrder, isLoaded: cryptoLoaded } = useCrypto()
     const queryClient = useQueryClient()
+    const { createBuyOrder, createSellOrder } = useTrading()
 
     const {
         data: balanceData,
@@ -105,19 +107,12 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
         mutationFn: async (orderPayload: { side: 'buy' | 'sell', amount: string, price_per_kwh: string }) => {
             if (!token) throw new Error('Please log in to create orders')
 
-            setIsSigning(true)
-            const signedOrder = signOrder(orderPayload, token)
-            setIsSigning(false)
-
-            defaultApiClient.setToken(token)
-            const response = await defaultApiClient.createP2POrder({
-                side: signedOrder.side,
-                amount: signedOrder.amount,
-                price_per_kwh: signedOrder.price_per_kwh,
-            })
-
-            if (response.error) throw new Error(response.error)
-            return response.data
+            // Direct Blockchain Transaction
+            if (orderPayload.side === 'buy') {
+                return await createBuyOrder(parseFloat(orderPayload.amount), parseFloat(orderPayload.price_per_kwh))
+            } else {
+                return await createSellOrder(parseFloat(orderPayload.amount), parseFloat(orderPayload.price_per_kwh))
+            }
         },
         onSuccess: () => {
             setMessage('Order placed successfully!')

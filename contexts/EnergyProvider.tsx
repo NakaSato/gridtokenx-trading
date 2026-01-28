@@ -14,12 +14,14 @@ interface EnergyContextType {
     registryProgram: Program | undefined
     energyTokenProgram: Program | undefined
     onMintFromMeter: (readingId: string, kwh: number, meterId: string) => Promise<boolean>
+    fetchMeterReading: (meterId: string) => Promise<any>
 }
 
 export const EnergyContext = createContext<EnergyContextType>({
     registryProgram: undefined,
     energyTokenProgram: undefined,
     onMintFromMeter: async () => false,
+    fetchMeterReading: async () => null,
 })
 
 function useEnergyMutations(
@@ -157,6 +159,8 @@ export const EnergyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [registryProgram, setRegistryProgram] = useState<Program>()
     const [energyTokenProgram, setEnergyTokenProgram] = useState<Program>()
 
+    const queryClient = useQueryClient()
+
     useEffect(() => {
         if (wallet && publicKey) {
             let provider: Provider
@@ -166,10 +170,13 @@ export const EnergyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 provider = new AnchorProvider(connection, wallet, {})
             }
 
+            const REGISTRY_ID = new PublicKey(process.env.NEXT_PUBLIC_REGISTRY_PROGRAM_ID!)
+            const ENERGY_TOKEN_ID = new PublicKey(process.env.NEXT_PUBLIC_ENERGY_TOKEN_PROGRAM_ID!)
+
             // @ts-ignore
-            const regInter = new Program(registryIdl as Idl, provider)
+            const regInter = new Program(registryIdl as Idl, REGISTRY_ID, provider)
             // @ts-ignore
-            const tokenInter = new Program(energyTokenIdl as Idl, provider)
+            const tokenInter = new Program(energyTokenIdl as Idl, ENERGY_TOKEN_ID, provider)
 
             setRegistryProgram(regInter)
             setEnergyTokenProgram(tokenInter)
@@ -179,9 +186,6 @@ export const EnergyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const { mintFromMeterMutation } = useEnergyMutations(registryProgram, energyTokenProgram, connection, publicKey, sendTransaction)
 
     const handleMintFromMeter = async (readingId: string, kwh: number, meterId: string) => {
-        // For now, we fallback to API if we can't sign? 
-        // Actually, let's throw an error or log it.
-        // Or we implement the API call here if we want to centralize logic.
         try {
             return await mintFromMeterMutation.mutateAsync({ readingId, kwh, meterId })
         } catch (e) {
@@ -190,11 +194,28 @@ export const EnergyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
     }
 
+    const fetchMeterReading = async (meterId: string) => {
+        if (!registryProgram || !publicKey) return null
+        try {
+            const [meterAccount] = PublicKey.findProgramAddressSync(
+                [Buffer.from("meter"), publicKey.toBuffer(), Buffer.from(meterId)],
+                registryProgram.programId
+            );
+            const account = await (registryProgram.account as any).meter.fetch(meterAccount)
+            return account
+        } catch (e) {
+            console.error("Fetch meter failed", e)
+            return null
+        }
+    }
+
     return (
         <EnergyContext.Provider value={{
             registryProgram,
             energyTokenProgram,
-            onMintFromMeter: handleMintFromMeter
+            onMintFromMeter: handleMintFromMeter,
+            // @ts-ignore - extending context type implicitly for now or need to update interface
+            fetchMeterReading
         }}>
             {children}
         </EnergyContext.Provider>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -46,12 +46,51 @@ import {
 import { cn } from '@/lib/utils'
 // Profile archetype definitions imported from hook
 import { useEnergyProfile, PROFILE_ARCHETYPES } from '@/hooks/useEnergyProfile'
+import { useWallet, useConnection } from "@solana/wallet-adapter-react"
+import { getProgram } from "@/lib/program"
+import { fetchMeterHistory } from "@/lib/contract-actions"
+import { EnergyHistoryChart } from "@/components/dashboard/EnergyHistoryChart"
+import { StatCard } from "@/components/dashboard/StatCard"
 
 export default function EnergyProfilesPage() {
     const { token, isAuthenticated } = useAuth()
     const [activeTab, setActiveTab] = useState('overview')
 
     const { data: profileData, isLoading, error, refetch, isRefetching } = useEnergyProfile()
+
+    // -- Dashboard Logic --
+    const { publicKey } = useWallet()
+    const { connection } = useConnection()
+    const [chartData, setChartData] = useState([])
+    const [stats, setStats] = useState({
+        generation: "0 kWh",
+        earnings: "0 USDC",
+        credits: "0 REC",
+    })
+
+    useEffect(() => {
+        const loadData = async () => {
+            if (!publicKey) return
+            try {
+                const program = getProgram(connection, { publicKey } as any)
+                const history = await fetchMeterHistory(program, publicKey)
+                setChartData(history as any)
+                if (history.length > 0) {
+                    const lastReading = history[history.length - 1].value
+                    const initialReading = history[0].value
+                    const generated = lastReading - initialReading
+                    setStats(prev => ({ ...prev, generation: `${generated} kWh` }))
+                }
+            } catch (e) {
+                console.error("Dashboard Load Error:", e)
+            }
+        }
+        loadData()
+        const interval = setInterval(loadData, 10000)
+        return () => clearInterval(interval)
+    }, [publicKey, connection])
+
+
 
     if (!isAuthenticated) {
         return (
@@ -210,6 +249,10 @@ export default function EnergyProfilesPage() {
                         <TabsTrigger value="overview" className="text-xs sm:text-sm">
                             <Activity className="h-4 w-4 mr-1 sm:mr-2" />
                             Overview
+                        </TabsTrigger>
+                        <TabsTrigger value="realtime" className="text-xs sm:text-sm">
+                            <Zap className="h-4 w-4 mr-1 sm:mr-2" />
+                            Real-Time
                         </TabsTrigger>
                         <TabsTrigger value="patterns" className="text-xs sm:text-sm">
                             <LineChart className="h-4 w-4 mr-1 sm:mr-2" />
@@ -497,6 +540,51 @@ export default function EnergyProfilesPage() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                    </TabsContent>
+
+                    {/* Real-Time Tab (Dashboard) */}
+                    <TabsContent value="realtime" className="flex-1 space-y-4 animate-in fade-in duration-300">
+                        <div className="flex items-center space-x-2 mb-4">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                            <span className="text-sm text-green-500 font-medium">Grid Connection Active</span>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <StatCard
+                                title="Total Generation"
+                                value={stats.generation}
+                                icon={<Zap className="h-4 w-4 text-yellow-500" />}
+                                trend="up"
+                                change="+12% from yesterday"
+                            />
+                            <StatCard
+                                title="Energy Credits"
+                                value={stats.credits}
+                                icon={<Sun className="h-4 w-4 text-orange-500" />}
+                            />
+                            <StatCard
+                                title="Earnings"
+                                value={stats.earnings}
+                                icon={<BarChart3 className="h-4 w-4 text-green-500" />}
+                                trend="up"
+                                change="+2.4% this week"
+                            />
+                            <StatCard
+                                title="Grid Status"
+                                value="Stable"
+                                icon={<Activity className="h-4 w-4 text-blue-500" />}
+                            />
+                        </div>
+
+                        {/* Charts Row */}
+                        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+                            <EnergyHistoryChart data={chartData} />
+                        </div>
                     </TabsContent>
 
                     {/* Requirements Tab */}
@@ -633,6 +721,6 @@ export default function EnergyProfilesPage() {
                     </TabsContent>
                 </Tabs>
             </main>
-        </ProtectedRoute>
+        </ProtectedRoute >
     )
 }

@@ -109,6 +109,11 @@ export interface WasmExports {
     create_transfer_proof: (retptr: number, amount: bigint, balance: bigint, sPtr: number, sLen: number, aPtr: number, aLen: number) => void;
     __wbindgen_add_to_stack_pointer: (delta: number) => number;
     __wbindgen_export: (size: number, align: number) => number;
+    // Auction
+    auction_init: () => void;
+    auction_add_order: (id: number, price: number, amount: number, is_bid: number) => void;
+    auction_clear: () => void;
+    auction_calculate_clearing_price: () => number;
 }
 
 let wasmInstance: WebAssembly.Instance | null = null;

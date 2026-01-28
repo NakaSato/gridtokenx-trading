@@ -8,6 +8,116 @@
   },
   "instructions": [
     {
+      "name": "authorize_oracle",
+      "docs": [
+        "Authorize a new oracle for meter verification"
+      ],
+      "discriminator": [
+        160,
+        242,
+        137,
+        241,
+        147,
+        184,
+        241,
+        64
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "oracle",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "cancel_auction_order",
+      "docs": [
+        "Cancel an order in an Open auction batch and refund assets"
+      ],
+      "discriminator": [
+        34,
+        217,
+        2,
+        121,
+        49,
+        136,
+        43,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  116,
+                  99,
+                  104,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "batch"
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_idx",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "cancel_order",
       "docs": [
         "Cancel an active order"
@@ -37,6 +147,157 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "complete_bridge_transfer",
+      "docs": [
+        "Complete a bridge transfer from another chain"
+      ],
+      "discriminator": [
+        92,
+        186,
+        3,
+        87,
+        117,
+        124,
+        209,
+        142
+      ],
+      "accounts": [
+        {
+          "name": "market"
+        },
+        {
+          "name": "bridge_config"
+        },
+        {
+          "name": "bridge_transfer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  116,
+                  114,
+                  97,
+                  110,
+                  115,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "bridge_transfer.initiated_at",
+                "account": "BridgeTransfer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "wrapped_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  114,
+                  97,
+                  112,
+                  112,
+                  101,
+                  100,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "bridge_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  114,
+                  105,
+                  100,
+                  103,
+                  101,
+                  95,
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "vaa_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "configure_payment_token",
@@ -130,8 +391,8 @@
                 "path": "authority"
               },
               {
-                "kind": "account",
-                "path": "market"
+                "kind": "arg",
+                "path": "order_id"
               }
             ]
           }
@@ -148,12 +409,125 @@
       ],
       "args": [
         {
+          "name": "order_id",
+          "type": "u64"
+        },
+        {
           "name": "energy_amount",
           "type": "u64"
         },
         {
           "name": "max_price_per_kwh",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_cross_chain_order",
+      "docs": [
+        "Create a cross-chain order record"
+      ],
+      "discriminator": [
+        194,
+        177,
+        97,
+        108,
+        138,
+        86,
+        192,
+        172
+      ],
+      "accounts": [
+        {
+          "name": "cross_chain_order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  111,
+                  115,
+                  115,
+                  95,
+                  99,
+                  104,
+                  97,
+                  105,
+                  110,
+                  95,
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "origin_chain"
+              },
+              {
+                "kind": "arg",
+                "path": "origin_order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "solana_order"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "origin_chain",
+          "type": "u16"
+        },
+        {
+          "name": "origin_order_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "origin_user",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "energy_amount",
+          "type": "u64"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "payment_token",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -270,8 +644,8 @@
                 "path": "authority"
               },
               {
-                "kind": "account",
-                "path": "market"
+                "kind": "arg",
+                "path": "order_id"
               }
             ]
           }
@@ -295,12 +669,119 @@
       ],
       "args": [
         {
+          "name": "order_id",
+          "type": "u64"
+        },
+        {
           "name": "energy_amount",
           "type": "u64"
         },
         {
           "name": "price_per_kwh",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_stablecoin_buy_order",
+      "docs": [
+        "Create a buy order with stablecoin payment option"
+      ],
+      "discriminator": [
+        18,
+        128,
+        231,
+        63,
+        85,
+        14,
+        89,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  121,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  105,
+                  110,
+                  102,
+                  111
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_config"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "energy_amount",
+          "type": "u64"
+        },
+        {
+          "name": "max_price_per_kwh",
+          "type": "u64"
+        },
+        {
+          "name": "payment_token",
+          "type": "u8"
         }
       ]
     },
@@ -503,9 +984,11 @@
     {
       "name": "execute_batch",
       "docs": [
-        "Create and execute a batch of orders",
+        "Create and execute a batch of orders with physical token transfers",
         "Optimized: Aggregates multiple matches in a single transaction",
-        "This reduces per-match overhead by ~40% compared to individual match_orders calls"
+        "This implementation uses remaining_accounts to pass all required ATAs:",
+        "For each match i, accounts are expected at indices [2 + i*6..2 + i*6 + 5]:",
+        "0: Buyer Currency Escrow, 1: Seller Energy Escrow, 2: Seller Currency, 3: Buyer Energy, 4: Fee Collector, 5: Wheeling Collector"
       ],
       "discriminator": [
         112,
@@ -530,10 +1013,147 @@
       ],
       "args": [
         {
-          "name": "order_ids",
+          "name": "amount",
           "type": {
-            "vec": "pubkey"
+            "vec": "u64"
           }
+        },
+        {
+          "name": "price",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "wheeling_charge",
+          "type": {
+            "vec": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "execute_settlement",
+      "docs": [
+        "Execute settlement for specific orders in a cleared auction",
+        "This is a permissionless crank instruction.",
+        "It matches a Bid (buyer) and an Ask (seller) at the Uniform Clearing Price."
+      ],
+      "discriminator": [
+        237,
+        120,
+        82,
+        62,
+        224,
+        193,
+        147,
+        137
+      ],
+      "accounts": [
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "buyer_currency_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  116,
+                  99,
+                  104,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "batch"
+              },
+              {
+                "kind": "account",
+                "path": "currency_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller_energy_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  116,
+                  99,
+                  104,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "batch"
+              },
+              {
+                "kind": "account",
+                "path": "energy_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller_currency",
+          "writable": true
+        },
+        {
+          "name": "buyer_energy",
+          "writable": true
+        },
+        {
+          "name": "currency_mint"
+        },
+        {
+          "name": "energy_mint"
+        },
+        {
+          "name": "buyer_authority"
+        },
+        {
+          "name": "seller_authority"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "bid_order_idx",
+          "type": "u32"
+        },
+        {
+          "name": "ask_order_idx",
+          "type": "u32"
+        },
+        {
+          "name": "settle_amount",
+          "type": "u64"
         }
       ]
     },
@@ -648,6 +1268,136 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "initialize_amm_pool",
+      "docs": [
+        "Initialize the Energy AMM pool"
+      ],
+      "discriminator": [
+        20,
+        58,
+        19,
+        89,
+        14,
+        193,
+        139,
+        31
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "market"
+        },
+        {
+          "name": "energy_mint"
+        },
+        {
+          "name": "currency_mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "curve_type",
+          "type": {
+            "defined": {
+              "name": "CurveType"
+            }
+          }
+        },
+        {
+          "name": "slope",
+          "type": "u64"
+        },
+        {
+          "name": "base",
+          "type": "u64"
+        },
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "initialize_auction",
+      "docs": [
+        "Initialize a new auction batch"
+      ],
+      "discriminator": [
+        37,
+        10,
+        117,
+        197,
+        208,
+        88,
+        117,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "batch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              },
+              {
+                "kind": "arg",
+                "path": "batch_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "market"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "batch_id",
+          "type": "u64"
+        },
+        {
+          "name": "duration",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "initialize_bridge",
@@ -818,6 +1568,78 @@
           "type": "u32"
         }
       ]
+    },
+    {
+      "name": "initialize_confidential_balance",
+      "docs": [
+        "Initialize a confidential balance account for confidential trading"
+      ],
+      "discriminator": [
+        1,
+        102,
+        22,
+        142,
+        241,
+        31,
+        99,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "confidential_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize_market",
@@ -994,67 +1816,6 @@
       "args": []
     },
     {
-      "name": "initialize_nullifier_set",
-      "docs": [
-        "Initialize the nullifier set for a token"
-      ],
-      "discriminator": [
-        4,
-        69,
-        182,
-        124,
-        72,
-        234,
-        7,
-        140
-      ],
-      "accounts": [
-        {
-          "name": "nullifier_set",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  110,
-                  117,
-                  108,
-                  108,
-                  105,
-                  102,
-                  105,
-                  101,
-                  114,
-                  95,
-                  115,
-                  101,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initialize_pricing_config",
       "docs": [
         "Initialize dynamic pricing configuration"
@@ -1130,100 +1891,6 @@
         {
           "name": "timezone_offset",
           "type": "i16"
-        }
-      ]
-    },
-    {
-      "name": "initialize_private_balance",
-      "docs": [
-        "Initialize a private balance account for confidential trading"
-      ],
-      "discriminator": [
-        168,
-        131,
-        243,
-        118,
-        163,
-        78,
-        34,
-        245
-      ],
-      "accounts": [
-        {
-          "name": "private_balance",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  114,
-                  105,
-                  118,
-                  97,
-                  116,
-                  101,
-                  95,
-                  98,
-                  97,
-                  108,
-                  97,
-                  110,
-                  99,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "owner"
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "initial_commitment",
-          "type": {
-            "defined": {
-              "name": "Commitment"
-            }
-          }
-        },
-        {
-          "name": "encrypted_balance",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "encryption_nonce",
-          "type": {
-            "array": [
-              "u8",
-              24
-            ]
-          }
         }
       ]
     },
@@ -1326,6 +1993,42 @@
         },
         {
           "name": "timestamp",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "match_cross_chain_order",
+      "docs": [
+        "Match a local order with a cross-chain order"
+      ],
+      "discriminator": [
+        170,
+        147,
+        117,
+        60,
+        205,
+        21,
+        60,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "solana_order",
+          "writable": true
+        },
+        {
+          "name": "cross_chain_order",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
           "type": "u64"
         }
       ]
@@ -1457,7 +2160,10 @@
           "signer": true
         },
         {
-          "name": "meter"
+          "name": "verified_reading",
+          "docs": [
+            "The verified reading that justifies this REC issuance"
+          ]
         },
         {
           "name": "authority",
@@ -1469,10 +2175,6 @@
         }
       ],
       "args": [
-        {
-          "name": "energy_amount",
-          "type": "u64"
-        },
         {
           "name": "generation_start",
           "type": "i64"
@@ -1486,7 +2188,7 @@
     {
       "name": "private_transfer",
       "docs": [
-        "Private transfer between two confidential balances"
+        "Private Transfer - Send encrypted tokens between confidential accounts"
       ],
       "discriminator": [
         107,
@@ -1501,104 +2203,184 @@
       "accounts": [
         {
           "name": "sender_balance",
-          "writable": true
-        },
-        {
-          "name": "recipient_balance",
-          "writable": true
-        },
-        {
-          "name": "nullifier_set",
-          "writable": true
-        },
-        {
-          "name": "transfer_record",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "sender",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "owner",
-          "relations": [
-            "sender_balance"
-          ]
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "sender_new_commitment",
-          "type": {
-            "defined": {
-              "name": "Commitment"
-            }
-          }
-        },
-        {
-          "name": "recipient_new_commitment",
-          "type": {
-            "defined": {
-              "name": "Commitment"
-            }
-          }
-        },
-        {
-          "name": "transfer_proof",
-          "type": {
-            "defined": {
-              "name": "TransferProof"
-            }
-          }
-        },
-        {
-          "name": "nullifier",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "shield_tokens",
-      "docs": [
-        "Shield tokens - convert public tokens to private balance"
-      ],
-      "discriminator": [
-        43,
-        77,
-        69,
-        75,
-        38,
-        130,
-        29,
-        188
-      ],
-      "accounts": [
-        {
-          "name": "private_balance",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
+                  99,
+                  111,
+                  110,
+                  102,
                   105,
-                  118,
-                  97,
-                  116,
+                  100,
                   101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108,
+                  95,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "receiver_owner"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "receiver_owner"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "encrypted_amount",
+          "type": {
+            "defined": {
+              "name": "ElGamalCiphertext"
+            }
+          }
+        },
+        {
+          "name": "proof",
+          "type": {
+            "defined": {
+              "name": "TransferProof"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "resolve_auction",
+      "docs": [
+        "Resolve the auction by calculating the uniform clearing price"
+      ],
+      "discriminator": [
+        191,
+        112,
+        64,
+        241,
+        38,
+        232,
+        227,
+        26
+      ],
+      "accounts": [
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "shield_energy",
+      "docs": [
+        "Shield energy - convert public tokens to confidential balance"
+      ],
+      "discriminator": [
+        2,
+        240,
+        24,
+        223,
+        148,
+        177,
+        176,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "confidential_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  100,
+                  101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108,
                   95,
                   98,
                   97,
@@ -1622,10 +2404,7 @@
         },
         {
           "name": "mint",
-          "writable": true,
-          "relations": [
-            "private_balance"
-          ]
+          "writable": true
         },
         {
           "name": "user_token_account",
@@ -1634,10 +2413,7 @@
         {
           "name": "owner",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "private_balance"
-          ]
+          "signer": true
         },
         {
           "name": "token_program"
@@ -1649,29 +2425,168 @@
           "type": "u64"
         },
         {
-          "name": "new_commitment",
+          "name": "encrypted_amount",
           "type": {
             "defined": {
-              "name": "Commitment"
+              "name": "ElGamalCiphertext"
             }
           }
         },
         {
-          "name": "blinding_factor",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "range_proof",
+          "name": "proof",
           "type": {
             "defined": {
               "name": "RangeProof"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "submit_auction_order",
+      "docs": [
+        "Submit an order to the current auction"
+      ],
+      "discriminator": [
+        158,
+        126,
+        157,
+        69,
+        54,
+        69,
+        146,
+        19
+      ],
+      "accounts": [
+        {
+          "name": "batch",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  116,
+                  99,
+                  104,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "batch"
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "is_bid",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "swap_buy_energy",
+      "docs": [
+        "Swap currency for energy via AMM"
+      ],
+      "discriminator": [
+        72,
+        84,
+        79,
+        31,
+        14,
+        54,
+        64,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "pool",
+          "writable": true
+        },
+        {
+          "name": "user_energy_account",
+          "writable": true
+        },
+        {
+          "name": "user_currency_account",
+          "writable": true
+        },
+        {
+          "name": "pool_energy_vault",
+          "writable": true
+        },
+        {
+          "name": "pool_currency_vault",
+          "writable": true
+        },
+        {
+          "name": "energy_mint"
+        },
+        {
+          "name": "currency_mint"
+        },
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_milli_kwh",
+          "type": "u64"
+        },
+        {
+          "name": "max_currency",
+          "type": "u64"
         }
       ]
     },
@@ -1735,36 +2650,41 @@
       ]
     },
     {
-      "name": "unshield_tokens",
+      "name": "unshield_energy",
       "docs": [
-        "Unshield tokens - convert private balance to public tokens"
+        "Unshield energy - convert confidential balance to public tokens"
       ],
       "discriminator": [
-        65,
-        41,
-        210,
-        244,
-        205,
-        191,
-        91,
-        181
+        211,
+        99,
+        73,
+        96,
+        249,
+        157,
+        125,
+        46
       ],
       "accounts": [
         {
-          "name": "private_balance",
+          "name": "confidential_balance",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
+                  99,
+                  111,
+                  110,
+                  102,
                   105,
-                  118,
-                  97,
-                  116,
+                  100,
                   101,
+                  110,
+                  116,
+                  105,
+                  97,
+                  108,
                   95,
                   98,
                   97,
@@ -1787,15 +2707,8 @@
           }
         },
         {
-          "name": "nullifier_set",
-          "writable": true
-        },
-        {
           "name": "mint",
-          "writable": true,
-          "relations": [
-            "private_balance"
-          ]
+          "writable": true
         },
         {
           "name": "user_token_account",
@@ -1834,10 +2747,7 @@
         {
           "name": "owner",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "private_balance"
-          ]
+          "signer": true
         },
         {
           "name": "token_program"
@@ -1849,28 +2759,58 @@
           "type": "u64"
         },
         {
-          "name": "new_commitment",
+          "name": "new_encrypted_amount",
           "type": {
             "defined": {
-              "name": "Commitment"
+              "name": "ElGamalCiphertext"
             }
           }
         },
         {
-          "name": "transfer_proof",
+          "name": "proof",
           "type": {
             "defined": {
               "name": "TransferProof"
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "update_batch_config",
+      "docs": [
+        "Update the batch processing configuration for the market"
+      ],
+      "discriminator": [
+        191,
+        189,
+        236,
+        146,
+        4,
+        221,
+        31,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true
         },
         {
-          "name": "nullifier",
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "market"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "defined": {
+              "name": "BatchConfig"
+            }
           }
         }
       ]
@@ -2002,7 +2942,8 @@
       ],
       "accounts": [
         {
-          "name": "config"
+          "name": "config",
+          "writable": true
         },
         {
           "name": "history",
@@ -2052,6 +2993,17 @@
           "signer": true
         },
         {
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -2073,6 +3025,32 @@
     }
   ],
   "accounts": [
+    {
+      "name": "AmmPool",
+      "discriminator": [
+        54,
+        82,
+        185,
+        138,
+        179,
+        191,
+        211,
+        169
+      ]
+    },
+    {
+      "name": "AuctionBatch",
+      "discriminator": [
+        148,
+        71,
+        225,
+        194,
+        22,
+        87,
+        51,
+        235
+      ]
+    },
     {
       "name": "BridgeConfig",
       "discriminator": [
@@ -2110,6 +3088,32 @@
         79,
         101,
         12
+      ]
+    },
+    {
+      "name": "ConfidentialBalance",
+      "discriminator": [
+        42,
+        231,
+        174,
+        201,
+        132,
+        195,
+        163,
+        181
+      ]
+    },
+    {
+      "name": "CrossChainOrder",
+      "discriminator": [
+        18,
+        190,
+        104,
+        180,
+        20,
+        65,
+        45,
+        17
       ]
     },
     {
@@ -2165,19 +3169,6 @@
       ]
     },
     {
-      "name": "NullifierSet",
-      "discriminator": [
-        251,
-        219,
-        17,
-        100,
-        208,
-        102,
-        127,
-        25
-      ]
-    },
-    {
       "name": "Order",
       "discriminator": [
         134,
@@ -2227,32 +3218,6 @@
         154,
         123,
         85
-      ]
-    },
-    {
-      "name": "PrivateBalance",
-      "discriminator": [
-        194,
-        64,
-        87,
-        185,
-        155,
-        117,
-        109,
-        202
-      ]
-    },
-    {
-      "name": "PrivateTransferRecord",
-      "discriminator": [
-        101,
-        181,
-        170,
-        39,
-        35,
-        204,
-        1,
-        144
       ]
     },
     {
@@ -2306,9 +3271,61 @@
         47,
         206
       ]
+    },
+    {
+      "name": "WrappedTokenRecord",
+      "discriminator": [
+        35,
+        124,
+        224,
+        175,
+        46,
+        231,
+        135,
+        237
+      ]
     }
   ],
   "events": [
+    {
+      "name": "AuctionOrderSubmitted",
+      "discriminator": [
+        7,
+        219,
+        53,
+        215,
+        119,
+        4,
+        253,
+        66
+      ]
+    },
+    {
+      "name": "AuctionResolved",
+      "discriminator": [
+        135,
+        86,
+        129,
+        72,
+        80,
+        120,
+        12,
+        248
+      ]
+    },
+    {
+      "name": "AuctionSettled",
+      "discriminator": [
+        61,
+        151,
+        131,
+        170,
+        95,
+        203,
+        219,
+        147
+      ]
+    },
     {
       "name": "BatchExecuted",
       "discriminator": [
@@ -2518,58 +3535,6 @@
       ]
     },
     {
-      "name": "PrivateBalanceCreated",
-      "discriminator": [
-        176,
-        161,
-        173,
-        58,
-        176,
-        49,
-        15,
-        153
-      ]
-    },
-    {
-      "name": "PrivateBalanceShielded",
-      "discriminator": [
-        132,
-        51,
-        130,
-        132,
-        145,
-        254,
-        150,
-        66
-      ]
-    },
-    {
-      "name": "PrivateBalanceUnshielded",
-      "discriminator": [
-        70,
-        60,
-        69,
-        210,
-        72,
-        30,
-        217,
-        137
-      ]
-    },
-    {
-      "name": "PrivateTransferEvent",
-      "discriminator": [
-        157,
-        106,
-        106,
-        6,
-        146,
-        15,
-        183,
-        251
-      ]
-    },
-    {
       "name": "ReadingVerified",
       "discriminator": [
         166,
@@ -2753,6 +3718,252 @@
     }
   ],
   "types": [
+    {
+      "name": "AmmPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "type": "pubkey"
+          },
+          {
+            "name": "energy_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "currency_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "energy_reserve",
+            "type": "u64"
+          },
+          {
+            "name": "currency_reserve",
+            "type": "u64"
+          },
+          {
+            "name": "curve_type",
+            "type": {
+              "defined": {
+                "name": "CurveType"
+              }
+            }
+          },
+          {
+            "name": "bonding_slope",
+            "type": "u64"
+          },
+          {
+            "name": "bonding_base",
+            "type": "u64"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionBatch",
+      "docs": [
+        "Represents a batch of orders for a specific time window"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "market",
+            "docs": [
+              "Market this batch belongs to"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "batch_id",
+            "docs": [
+              "Batch ID (usually start timestamp)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "state",
+            "docs": [
+              "Current state"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "clearing_price",
+            "docs": [
+              "Clearing Price (MCP) - set when Cleared"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "clearing_volume",
+            "docs": [
+              "Total volume to be traded at clearing price"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "orders",
+            "docs": [
+              "Simplified on-chain storage:",
+              "In a real mainnet impl, we might not store all orders active here due to size limits.",
+              "We would use a separate Orderbook account or a Merkle root.",
+              "For this version, we'll store a capped number of orders for the MVP."
+            ],
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "AuctionOrder"
+                }
+              }
+            }
+          },
+          {
+            "name": "start_time",
+            "type": "i64"
+          },
+          {
+            "name": "end_time",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionOrder",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "is_bid",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionOrderSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "is_bid",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "clearing_price",
+            "type": "u64"
+          },
+          {
+            "name": "clearing_volume",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "total_value",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "BatchConfig",
       "docs": [
@@ -3411,17 +4622,215 @@
     {
       "name": "Commitment",
       "docs": [
-        "Commitment to a private value",
-        "commitment = value * G + blinding * H"
+        "Commitment to a private value: C = v*G + b*H"
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "point",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfidentialBalance",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "encrypted_amount",
+            "type": {
+              "defined": {
+                "name": "ElGamalCiphertext"
+              }
+            }
+          },
+          {
+            "name": "pending_amount",
+            "type": "u64"
+          },
+          {
+            "name": "last_update_slot",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CrossChainOrder",
+      "docs": [
+        "Cross-chain order structure for multi-chain trading"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "solana_order",
             "docs": [
-              "The commitment point (compressed)"
+              "Order on Solana"
             ],
+            "type": "pubkey"
+          },
+          {
+            "name": "origin_chain",
+            "docs": [
+              "Origin chain"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "origin_order_id",
+            "docs": [
+              "Origin order ID (chain-specific format)"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "origin_user",
+            "docs": [
+              "User on origin chain"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "energy_amount",
+            "docs": [
+              "Energy amount"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "docs": [
+              "Price in origin chain token"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "payment_token",
+            "docs": [
+              "Origin chain payment token"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Order status"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "settlement_vaa",
+            "docs": [
+              "Settlement VAA hash"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Created timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "settled_at",
+            "docs": [
+              "Settled timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CurveType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "LinearSolar"
+          },
+          {
+            "name": "SteepWind"
+          },
+          {
+            "name": "FlatBattery"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ElGamalCiphertext",
+      "docs": [
+        "ElGamal Ciphertext: (R, C) = (rG, rPk + vG)"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "r_g",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "c",
             "type": {
               "array": [
                 "u8",
@@ -4154,48 +5563,6 @@
       }
     },
     {
-      "name": "NullifierSet",
-      "docs": [
-        "Nullifier set"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "nullifiers",
-            "type": {
-              "array": [
-                {
-                  "array": [
-                    "u8",
-                    32
-                  ]
-                },
-                32
-              ]
-            }
-          },
-          {
-            "name": "count",
-            "type": "u32"
-          },
-          {
-            "name": "_reserved",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "OracleAuthorized",
       "type": {
         "kind": "struct",
@@ -4234,6 +5601,10 @@
           {
             "name": "buyer",
             "type": "pubkey"
+          },
+          {
+            "name": "order_id",
+            "type": "u64"
           },
           {
             "name": "amount",
@@ -4859,263 +6230,7 @@
       }
     },
     {
-      "name": "PrivateBalance",
-      "docs": [
-        "Private balance account"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "balance_commitment",
-            "type": {
-              "defined": {
-                "name": "Commitment"
-              }
-            }
-          },
-          {
-            "name": "encrypted_balance",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "encryption_nonce",
-            "type": {
-              "array": [
-                "u8",
-                24
-              ]
-            }
-          },
-          {
-            "name": "last_update_slot",
-            "type": "u64"
-          },
-          {
-            "name": "tx_counter",
-            "type": "u64"
-          },
-          {
-            "name": "_reserved",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateBalanceCreated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "commitment",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateBalanceShielded",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "public_amount",
-            "type": "u64"
-          },
-          {
-            "name": "new_commitment",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateBalanceUnshielded",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "public_amount",
-            "type": "u64"
-          },
-          {
-            "name": "proof_hash",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateTransferEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "sender",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipient",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_commitment",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "nullifier",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateTransferRecord",
-      "docs": [
-        "Private transfer record"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "sender",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipient",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_commitment",
-            "type": {
-              "defined": {
-                "name": "Commitment"
-              }
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "slot",
-            "type": "u64"
-          },
-          {
-            "name": "proof_hash",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "_reserved",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "RangeProof",
-      "docs": [
-        "Range proof showing value is in [0, 2^64)",
-        "Uses Bulletproofs-style structure"
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -5124,7 +6239,7 @@
             "type": {
               "array": [
                 "u8",
-                32
+                64
               ]
             }
           },
@@ -5903,6 +7018,76 @@
               "Confidence score (0-100)"
             ],
             "type": "u8"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "WrappedTokenRecord",
+      "docs": [
+        "Incoming wrapped token record"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wrapped_mint",
+            "docs": [
+              "Wormhole wrapped token mint"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "origin_chain",
+            "docs": [
+              "Original chain ID"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "origin_address",
+            "docs": [
+              "Original token address"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "trading_approved",
+            "docs": [
+              "Whether this wrapped token is approved for trading"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "total_received",
+            "docs": [
+              "Total received via bridge"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_unwrapped",
+            "docs": [
+              "Total unwrapped (sent back)"
+            ],
+            "type": "u64"
           },
           {
             "name": "_reserved",
