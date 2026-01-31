@@ -1,17 +1,27 @@
 import { useRef, useCallback, useMemo } from 'react'
-import { getWasmExports } from '@/lib/wasm-bridge'
+import {
+    isWasmLoaded,
+    blackScholes,
+    calculateGreeks as calculateGreeksWasmHelper,
+    calculateBezier as calculateBezierWasmHelper,
+    Clusterer,
+    Simulation
+} from '@/lib/wasm-bridge'
 import { useWasm } from '@/lib/wasm-provider'
 
 export function useWasmMath() {
     const { isLoaded, isLoading, error } = useWasm()
-    const wasm = useMemo(() => getWasmExports(), [isLoaded])
-    const bufferPtrRef = useRef<number>(0)
 
-    // Initialize buffer pointer once wasm is loaded
-    if (isLoaded && wasm && bufferPtrRef.current === 0) {
-        if (wasm.get_buffer_ptr) {
-            bufferPtrRef.current = wasm.get_buffer_ptr()
-        }
+    // Instances of WASM classes
+    const clustererRef = useRef<Clusterer | null>(null)
+    const simulationRef = useRef<Simulation | null>(null)
+
+    // Initialize instances once WASM is loaded
+    if (isLoaded && !clustererRef.current) {
+        clustererRef.current = new Clusterer()
+    }
+    if (isLoaded && !simulationRef.current) {
+        simulationRef.current = new Simulation()
     }
 
     const generateCurvedLineWasm = useCallback((
@@ -20,141 +30,67 @@ export function useWasmMath() {
         curveIntensity: number = 0.2,
         segments: number = 20
     ): [number, number][] | null => {
-        if (!isLoaded || !wasm || !wasm.memory) return null
-
-        const [x1, y1] = from
-        const [x2, y2] = to
-        const ptr = bufferPtrRef.current
-
-        // Call Wasm function
-        const numPoints = wasm.calculate_bezier(x1, y1, x2, y2, curveIntensity, segments, ptr)
-
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = ptr / 8
-
-        const result: [number, number][] = []
-        for (let i = 0; i < numPoints; i++) {
-            const x = memoryArray[offset + i * 2]
-            const y = memoryArray[offset + i * 2 + 1]
-            result.push([x, y])
-        }
-
-        return result
-    }, [isLoaded, wasm])
+        if (!isLoaded) return null
+        return calculateBezierWasmHelper(from[0], from[1], to[0], to[1], curveIntensity, segments)
+    }, [isLoaded])
 
     const loadPointsWasm = useCallback((points: Array<{ lat: number, lng: number, id: number }>) => {
-        if (!isLoaded || !wasm || !wasm.memory) return
+        if (!isLoaded || !clustererRef.current) return
 
-        const ptr = bufferPtrRef.current
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = ptr / 8
-
-        points.forEach((p, i) => {
-            memoryArray[offset + i * 3] = p.lat
-            memoryArray[offset + i * 3 + 1] = p.lng
-            memoryArray[offset + i * 3 + 2] = p.id
-        })
-
-        wasm.load_points(ptr, points.length)
-    }, [isLoaded, wasm])
+        // Pass JSON-like object to wasm-bindgen
+        clustererRef.current.load_points(points)
+    }, [isLoaded])
 
     const getClustersWasm = useCallback((
         bounds: [number, number, number, number],
         zoom: number
     ): Array<{ lat: number, lng: number, count: number, id: number }> => {
-        if (!isLoaded || !wasm || !wasm.memory) return []
+        if (!isLoaded || !clustererRef.current) return []
 
         const [minLng, minLat, maxLng, maxLat] = bounds
-        const numClusters = wasm.get_clusters(minLng, minLat, maxLng, maxLat, zoom)
-
-        const outputPtr = wasm.get_output_buffer_ptr()
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = outputPtr / 8
-
-        const clusters: Array<{ lat: number, lng: number, count: number, id: number }> = []
-
-        for (let i = 0; i < numClusters; i++) {
-            const lat = memoryArray[offset + i * 4]
-            const lng = memoryArray[offset + i * 4 + 1]
-            const count = memoryArray[offset + i * 4 + 2]
-            const id = memoryArray[offset + i * 4 + 3]
-            clusters.push({ lat, lng, count, id })
+        try {
+            const clusters = clustererRef.current.get_clusters(minLng, minLat, maxLng, maxLat, zoom)
+            // wasm-bindgen handles the conversion back to JS objects
+            return clusters as Array<{ lat: number, lng: number, count: number, id: number }>
+        } catch (err) {
+            console.error('[WASM] Clustering error:', err)
+            return []
         }
-
-        return clusters
-    }, [isLoaded, wasm])
+    }, [isLoaded])
 
     const initSimulationNodesWasm = useCallback((nodes: any[]) => {
-        if (!isLoaded || !wasm || !wasm.memory) return
-
-        const ptr = bufferPtrRef.current
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = ptr / 8
-
-        nodes.forEach((n, i) => {
-            memoryArray[offset + i * 5] = n.type
-            memoryArray[offset + i * 5 + 1] = n.base
-            memoryArray[offset + i * 5 + 2] = n.current
-            memoryArray[offset + i * 5 + 3] = n.status
-            memoryArray[offset + i * 5 + 4] = n.isReal ? 1 : 0
-        })
-
-        wasm.init_simulation_nodes(ptr, nodes.length)
-    }, [isLoaded, wasm])
+        if (!isLoaded || !simulationRef.current) return
+        simulationRef.current.set_nodes(nodes)
+    }, [isLoaded])
 
     const initSimulationFlowsWasm = useCallback((flows: any[]) => {
-        if (!isLoaded || !wasm || !wasm.memory) return
-
-        const ptr = bufferPtrRef.current
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = ptr / 8
-
-        flows.forEach((f, i) => {
-            memoryArray[offset + i * 2] = f.base
-            memoryArray[offset + i * 2 + 1] = f.current
-        })
-
-        wasm.init_simulation_flows(ptr, flows.length)
-    }, [isLoaded, wasm])
+        if (!isLoaded || !simulationRef.current) return
+        simulationRef.current.set_flows(flows)
+    }, [isLoaded])
 
     const updateSimulationWasm = useCallback((hour: number, minute: number, nodeCount: number, flowCount: number) => {
-        if (!isLoaded || !wasm || !wasm.memory) return null
+        if (!isLoaded || !simulationRef.current) return null
 
-        wasm.update_simulation(hour, minute)
+        simulationRef.current.update(hour, minute)
 
-        // Read Nodes
-        const nodePtr = wasm.get_node_output_ptr()
-        const nodesSlice = new Float64Array(wasm.memory.buffer, nodePtr, nodeCount * 2)
+        const nodes = simulationRef.current.get_nodes()
+        const flows = simulationRef.current.get_flows()
 
-        // Read Flows
-        const flowPtr = wasm.get_flow_output_ptr()
-        const flowsSlice = new Float64Array(wasm.memory.buffer, flowPtr, flowCount)
-
-        return { nodes: nodesSlice, flows: flowsSlice }
-    }, [isLoaded, wasm])
+        // Match the legacy return format if possible, or update callers
+        // The legacy format used Float64Array slices
+        return {
+            nodes: new Float64Array(nodes.flatMap((n: any) => [n.current || 0, n.status || 0])),
+            flows: new Float64Array(flows.map((f: any) => f.current || 0))
+        }
+    }, [isLoaded])
 
     const calculateOptionsPrice = useCallback((s: number, k: number, t: number, isCall: boolean) => {
-        if (!isLoaded || !wasm) return 0
-        return wasm.black_scholes(s, k, t, isCall ? 1 : 0)
-    }, [isLoaded, wasm])
+        return blackScholes(s, k, t, isCall)
+    }, [])
 
     const calculateGreeks = useCallback((s: number, k: number, t: number, isCall: boolean) => {
-        if (!isLoaded || !wasm || !wasm.memory) return null
-
-        const outPtr = bufferPtrRef.current
-        wasm.calc_all_greeks(s, k, t, isCall ? 1 : 0, outPtr)
-
-        const memoryArray = new Float64Array(wasm.memory.buffer)
-        const offset = outPtr / 8
-
-        return {
-            delta: memoryArray[offset],
-            gamma: memoryArray[offset + 1],
-            vega: memoryArray[offset + 2],
-            theta: memoryArray[offset + 3],
-            rho: memoryArray[offset + 4]
-        }
-    }, [isLoaded, wasm])
+        return calculateGreeksWasmHelper(s, k, t, isCall)
+    }, [])
 
     return {
         isLoaded,

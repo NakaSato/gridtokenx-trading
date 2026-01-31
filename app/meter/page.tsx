@@ -112,7 +112,7 @@ export default function SmartMeterPage() {
                                     readings={readings}
                                     meters={meters}
                                     loading={loading}
-                                    onMint={async (id) => handleMintTokens(id)}
+                                    onMint={async (id, kwh, meterId) => handleMintTokens(id, kwh, meterId)}
                                     onCopy={copyToClipboard}
                                     mintingId={mintingReadingId}
                                 />

@@ -88,8 +88,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   } | null>(null)
   // Track map bounds for clustering
   const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
-  // Highlighted path state (array of 1-indexed node IDs for topology)
-  const [highlightedPath, setHighlightedPath] = useState<number[] | undefined>(undefined)
+  // Highlighted path state (array of node IDs for topology)
+  const [highlightedPath, setHighlightedPath] = useState<string[] | undefined>(undefined)
 
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -158,18 +158,14 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       return
     }
 
-    // Find the index of the selected node
-    const selectedIdx = energyNodes.findIndex(n => n.id === selectedNode.id)
-    if (selectedIdx === -1) return
-
     // For consumers, find path to nearest generator
     // For generators, find path to first consumer
     const targetType = selectedNode.type === 'generator' ? 'consumer' : 'generator'
-    const targetIdx = energyNodes.findIndex(n => n.type === targetType)
+    const targetNode = energyNodes.find(n => n.type === targetType)
 
-    if (targetIdx === -1) return
+    if (!targetNode) return
 
-    const result = findPath(selectedIdx + 1, targetIdx + 1) // 1-indexed
+    const result = findPath(selectedNode.id, targetNode.id)
     if (result && result.nodeIds.length > 1) {
       setHighlightedPath(result.nodeIds)
     } else {

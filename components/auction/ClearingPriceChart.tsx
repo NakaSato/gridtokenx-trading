@@ -137,6 +137,10 @@ export function ClearingPriceChart({ orders = [] }: ClearingPriceChartProps) {
         }
     }
 
+    // Helper for annotation index finding
+    const activeOrders = orders.length > 0 ? orders : generateMockOrders()
+    const allPrices = Array.from(new Set(activeOrders.map(o => o.price))).sort((a, b) => a - b)
+
     const options = {
         responsive: true,
         plugins: {
@@ -165,10 +169,6 @@ export function ClearingPriceChart({ orders = [] }: ClearingPriceChartProps) {
             x: { title: { display: true, text: 'Price' } }
         }
     }
-
-    // Helper for annotation index finding
-    const activeOrders = orders.length > 0 ? orders : generateMockOrders()
-    const allPrices = Array.from(new Set(activeOrders.map(o => o.price))).sort((a, b) => a - b)
 
 
     return (

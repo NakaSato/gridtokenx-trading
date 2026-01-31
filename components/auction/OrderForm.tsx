@@ -64,9 +64,9 @@ export function OrderForm({ batchPda, program }: OrderFormProps) {
             } else {
                 toast.error("Transaction failed")
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast.error(`Error submitting order: ${error.message}`)
+            toast.error(`Error submitting order: ${error.message || 'Unknown error'}`)
         } finally {
             setIsLoading(false)
         }

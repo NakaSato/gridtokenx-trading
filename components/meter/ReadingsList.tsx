@@ -17,7 +17,7 @@ interface ReadingsListProps {
     readings: MeterReading[]
     meters: MeterResponse[]
     loading: boolean
-    onMint: (readingId: string) => Promise<void>
+    onMint: (readingId: string, kwh: number, meterSerial: string) => Promise<void>
     onCopy: (text: string) => Promise<void>
     mintingId: string | null
 }
@@ -197,7 +197,7 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"
-                                                                onClick={() => onMint(reading.id)}
+                                                                onClick={() => onMint(reading.id, reading.kwh, reading.meter_serial)}
                                                                 disabled={mintingId === reading.id}
                                                                 className="h-7 px-3 text-xs"
                                                             >

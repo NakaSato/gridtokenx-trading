@@ -73,11 +73,21 @@ export class WebSocketClient {
         ? `${this.url}?token=${this.options.token}`
         : this.url
 
-      // Guard: Don't connect to authenticated /ws/* paths without a token
+      // Guard: Don't connect to authenticated /ws/* paths without a valid-looking token
       // The path /api/market/ws is public and doesn't require auth
       const isAuthenticatedWsPath = this.url.match(/\/ws\/\w+/) && !this.url.includes('/api/market/ws')
-      if (isAuthenticatedWsPath && !this.options.token && !this.options.isPublic) {
-        console.warn(`WebSocket connection deferred for ${this.url}: Token required.`)
+
+      // Basic token validation (JWTs are typically long and have 3 parts)
+      const isValidToken = this.options.token &&
+        this.options.token.length > 20 &&
+        this.options.token.split('.').length === 3;
+
+      if (isAuthenticatedWsPath && !isValidToken && !this.options.isPublic) {
+        if (this.options.token) {
+          console.warn(`WebSocket connection deferred for ${this.url}: Invalid token format.`)
+        } else {
+          console.debug(`WebSocket connection deferred for ${this.url}: Token required.`)
+        }
         return
       }
 

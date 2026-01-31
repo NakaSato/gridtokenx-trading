@@ -25,7 +25,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const socketRef = useRef<WebSocket | null>(null);
 
     const connect = useCallback(() => {
-        if (!token) return;
+        // Basic JWT validation: must be a string, at least 20 chars, and have 3 parts
+        const isValidToken = token &&
+            typeof token === 'string' &&
+            token.length > 20 &&
+            token.split('.').length === 3;
+
+        if (!isValidToken) return;
 
         const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://127.0.0.1:4000';
         const wsUrl = `${wsBaseUrl}/ws`;

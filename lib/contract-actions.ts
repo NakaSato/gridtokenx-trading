@@ -364,7 +364,7 @@ export const submitAuctionOrder = async (
         program.programId
     );
 
-    const transaction = await program.methods
+    const transaction = await (program.methods as any)
         .submitAuctionOrder(
             new BN(price),
             new BN(amount),
@@ -410,7 +410,7 @@ export const cancelAuctionOrder = async (
         program.programId
     );
 
-    const transaction = await program.methods
+    const transaction = await (program.methods as any)
         .cancelAuctionOrder(orderIndex)
         .accounts({
             batch: batch,
@@ -455,12 +455,12 @@ export const executeSettlement = async (
 ) => {
     const { batch, bidIndex, askIndex, amount, ...accounts } = params;
 
-    if (!program.methods.executeSettlement) {
+    if (!(program.methods as any).executeSettlement) {
         console.error("IDL outdated: executeSettlement not found");
         return false;
     }
 
-    const transaction = await program.methods
+    const transaction = await (program.methods as any)
         .executeSettlement(
             bidIndex,
             askIndex,
@@ -499,7 +499,7 @@ export const fetchMeterHistory = async (
             program.programId
         );
 
-        const account = await program.account.meterHistory.fetch(historyPda);
+        const account = await (program.account as any).meterHistory.fetch(historyPda);
 
         // Format for Recharts
         // Data in account: readings [u64; 24], timestamps [i64; 24], current_index u8

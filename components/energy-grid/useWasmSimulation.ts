@@ -53,19 +53,27 @@ export function useWasmSimulation({
 
             return {
                 type,
+                node_type: type, // Provide both for compatibility
                 base,
-                current: base, // Initial value
+                base_value: base,
+                current: base,
+                current_value: base,
                 status,
-                isReal: n.id.startsWith('meter-')
+                isReal: n.id.startsWith('meter-') ? 1 : 0,
+                is_real: n.id.startsWith('meter-') ? 1 : 0
             }
         })
 
         initSimulationNodesWasm(nodesFlat)
 
         // Map flows
-        const flowsFlat = energyTransfers.map(t => ({
+        const flowsFlat = energyTransfers.map((t, i) => ({
+            index: i,
+            flow_index: i,
             base: t.power,
-            current: t.power
+            base_power: t.power,
+            current: t.power,
+            current_power: t.power
         }))
 
         initSimulationFlowsWasm(flowsFlat)

@@ -20,7 +20,7 @@ interface EnergyFlowLayersProps {
     liveTransferData: Record<string, LiveTransferData>
     dashOffset: number
     visible: boolean
-    highlightedPath?: number[] // Array of node IDs forming the highlighted path
+    highlightedPath?: string[] // Array of node IDs forming the highlighted path
 }
 
 // Generate smooth curved line with multiple points using quadratic Bezier
@@ -225,11 +225,11 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
 
         // Find transfers that are part of the path
         for (let i = 0; i < highlightedPath.length - 1; i++) {
-            const fromIdx = highlightedPath[i] - 1 // Convert 1-indexed to 0-indexed
-            const toIdx = highlightedPath[i + 1] - 1
+            const fromId = highlightedPath[i]
+            const toId = highlightedPath[i + 1]
 
-            const fromNode = energyNodes[fromIdx]
-            const toNode = energyNodes[toIdx]
+            const fromNode = energyNodes.find(n => n.id === fromId)
+            const toNode = energyNodes.find(n => n.id === toId)
 
             if (!fromNode || !toNode) continue
 

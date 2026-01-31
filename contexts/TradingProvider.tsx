@@ -127,7 +127,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
             const priceBn = new BN(price)
 
             // 4. Call Contract
-            const tx = await program.methods.createSellOrder(
+            const tx = await (program.methods as any).createSellOrder(
                 orderId,
                 amountBn,
                 priceBn
@@ -169,7 +169,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
             const priceBn = new BN(price)
 
             // 4. Call Contract
-            const tx = await program.methods.createBuyOrder(
+            const tx = await (program.methods as any).createBuyOrder(
                 orderId,
                 amountBn,
                 priceBn
