@@ -104,24 +104,52 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     }
 
     const orderMutation = useMutation({
-        mutationFn: async (orderPayload: { side: 'buy' | 'sell', amount: string, price_per_kwh: string }) => {
+        mutationFn: async (orderPayload: { side: 'buy' | 'sell', amount: string, price_per_kwh: string, zone_id: number }) => {
             if (!token) throw new Error('Please log in to create orders')
 
-            // Direct Blockchain Transaction
-            if (orderPayload.side === 'buy') {
-                return await createBuyOrder(parseFloat(orderPayload.amount), parseFloat(orderPayload.price_per_kwh))
-            } else {
-                return await createSellOrder(parseFloat(orderPayload.amount), parseFloat(orderPayload.price_per_kwh))
+            // 1. Register order with the backend API for matching engine + settlement
+            const apiClient = createApiClient(token)
+            const apiResult = await apiClient.createP2POrder({
+                side: orderPayload.side,
+                amount: orderPayload.amount,
+                price_per_kwh: orderPayload.price_per_kwh,
+                zone_id: orderPayload.zone_id || undefined,
+            })
+
+            if (apiResult.error) {
+                throw new Error(apiResult.error)
             }
+
+            // 2. Also submit on-chain for transparent order book (best-effort)
+            try {
+                if (orderPayload.side === 'buy') {
+                    await createBuyOrder(
+                        parseFloat(orderPayload.amount) * 1e6,  // Scale to micro-kWh for BN precision
+                        parseFloat(orderPayload.price_per_kwh) * 1e6
+                    )
+                } else {
+                    await createSellOrder(
+                        parseFloat(orderPayload.amount) * 1e6,
+                        parseFloat(orderPayload.price_per_kwh) * 1e6
+                    )
+                }
+            } catch (onChainError) {
+                // On-chain submission is best-effort — backend handles matching/settlement
+                console.warn('On-chain order submission failed (backend order is active):', onChainError)
+            }
+
+            return apiResult.data
         },
         onSuccess: () => {
-            setMessage('Order placed successfully!')
+            setMessage('Order placed successfully! The matching engine will find the best counterparty.')
             setIsSuccess(true)
             setAmount('')
             setPrice('')
             // Invalidate balance and other relevant queries
             queryClient.invalidateQueries({ queryKey: ['wallet-balance'] })
             queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+            queryClient.invalidateQueries({ queryKey: ['p2p-orders'] })
+            queryClient.invalidateQueries({ queryKey: ['orderbook'] })
             onOrderPlaced?.()
         },
         onError: (error) => {
@@ -135,15 +163,28 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
             setMessage('Please enter a valid amount')
             return
         }
+        if (parseFloat(amount) < 0.1) {
+            setMessage('Minimum order amount is 0.1 kWh')
+            return
+        }
         if (!price || parseFloat(price) <= 0) {
             setMessage('Please enter a valid price')
             return
         }
 
+        // Balance pre-check for sell orders
+        if (orderType === 'sell' && balance !== null && parseFloat(amount) > balance) {
+            setMessage(`Insufficient balance. You have ${balance.toFixed(2)} GRX available.`)
+            return
+        }
+
+        const zone_id = orderType === 'buy' ? buyerZone : sellerZone
+
         orderMutation.mutate({
             side: orderType as 'buy' | 'sell',
             amount,
-            price_per_kwh: price
+            price_per_kwh: price,
+            zone_id,
         })
     }
 

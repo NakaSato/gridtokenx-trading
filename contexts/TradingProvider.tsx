@@ -49,6 +49,8 @@ export const useTrading = () => useContext(TradingContext)
 // Constants
 const TRADING_PROGRAM_ID = new PublicKey(process.env.NEXT_PUBLIC_TRADING_PROGRAM_ID!)
 const MARKET_SEED = "market"
+// On-chain precision: amounts are in micro-kWh (1e6) to avoid BN float truncation
+const PRECISION_FACTOR = 1_000_000
 
 export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { connected, publicKey, sendTransaction } = useWallet()
@@ -122,9 +124,9 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
                 program.programId
             )
 
-            // 3. Prepare Arguments
-            const amountBn = new BN(amount)
-            const priceBn = new BN(price)
+            // 3. Prepare Arguments — amount is already scaled by caller (micro-kWh)
+            const amountBn = new BN(Math.round(amount))
+            const priceBn = new BN(Math.round(price))
 
             // 4. Call Contract
             const tx = await (program.methods as any).createSellOrder(
@@ -164,9 +166,9 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
                 program.programId
             )
 
-            // 3. Prepare Arguments
-            const amountBn = new BN(amount)
-            const priceBn = new BN(price)
+            // 3. Prepare Arguments — amount is already scaled by caller (micro-kWh)
+            const amountBn = new BN(Math.round(amount))
+            const priceBn = new BN(Math.round(price))
 
             // 4. Call Contract
             const tx = await (program.methods as any).createBuyOrder(

@@ -432,6 +432,43 @@ export const cancelAuctionOrder = async (
     return true
 }
 
+export const submitEncryptedBid = async (
+    program: Program<any>,
+    connection: Connection,
+    publicKey: PublicKey,
+    sendTransaction: any,
+    params: {
+        batch: PublicKey,
+        encryptedPrice: number[], // 64 bytes
+        encryptedAmount: number[], // 64 bytes
+        isBid: boolean
+    }
+) => {
+    const { batch, encryptedPrice, encryptedAmount, isBid } = params;
+
+    const transaction = await (program.methods as any)
+        .submitEncryptedBid(
+            encryptedPrice,
+            encryptedAmount,
+            isBid
+        )
+        .accounts({
+            batch: batch,
+            authority: publicKey,
+            systemProgram: PublicKey.default, // Will be resolved by Anchor if using .accounts()
+        })
+        .transaction();
+
+    const latestBlockHash = await connection.getLatestBlockhash()
+    const signature = await sendTransaction(transaction, connection)
+    await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: signature,
+    })
+    return true
+}
+
 export const executeSettlement = async (
     program: Program<any>,
     connection: Connection,

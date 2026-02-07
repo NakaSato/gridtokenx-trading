@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { submitAuctionOrder, cancelAuctionOrder } from "@/lib/contract-actions"
+import { submitAuctionOrder, cancelAuctionOrder, submitEncryptedBid } from "@/lib/contract-actions"
 import { toast } from "react-hot-toast"
+import { Switch } from "@/components/ui/switch"
 import { USDC_MINT, ENERGY_TOKEN_MINT } from "@/utils/const"
 
 interface OrderFormProps {
@@ -25,6 +26,7 @@ export function OrderForm({ batchPda, program }: OrderFormProps) {
 
     const [price, setPrice] = useState("")
     const [amount, setAmount] = useState("")
+    const [isConfidential, setIsConfidential] = useState(false)
     const [cancelIndex, setCancelIndex] = useState("")
     const [isLoading, setIsLoading] = useState(false)
 
@@ -43,22 +45,44 @@ export function OrderForm({ batchPda, program }: OrderFormProps) {
                 wallet.publicKey
             )
 
-            const success = await submitAuctionOrder(
-                program,
-                connection,
-                wallet.publicKey,
-                wallet.sendTransaction,
-                {
-                    batch: batchPda,
-                    price: parseFloat(price),
-                    amount: parseFloat(amount),
-                    isBid,
-                    tokenMint,
-                    userTokenAccount
-                }
-            )
+            let success = false;
+
+            if (isConfidential) {
+                // Mock ElGamal Encrypted Ciphertext (64 bytes)
+                // In Phase 6, replace with real client-side encryption logic
+                const encryptedPrice = Array(64).fill(1)
+                const encryptedAmount = Array(64).fill(2)
+
+                success = await submitEncryptedBid(
+                    program,
+                    connection,
+                    wallet.publicKey,
+                    wallet.sendTransaction,
+                    {
+                        batch: batchPda,
+                        encryptedPrice,
+                        encryptedAmount,
+                        isBid
+                    }
+                )
+            } else {
+                success = await submitAuctionOrder(
+                    program,
+                    connection,
+                    wallet.publicKey,
+                    wallet.sendTransaction,
+                    {
+                        batch: batchPda,
+                        price: parseFloat(price),
+                        amount: parseFloat(amount),
+                        isBid,
+                        tokenMint,
+                        userTokenAccount
+                    }
+                )
+            }
             if (success) {
-                toast.success(`${isBid ? "Bid" : "Ask"} submitted successfully!`)
+                toast.success(`${isBid ? "Bid" : "Ask"} submitted ${isConfidential ? "confidentially " : ""}successfully!`)
                 setPrice("")
                 setAmount("")
             } else {
@@ -157,6 +181,14 @@ export function OrderForm({ batchPda, program }: OrderFormProps) {
                                         onChange={(e) => setAmount(e.target.value)}
                                     />
                                 </div>
+                                <div className="flex items-center space-x-2 py-2">
+                                    <Switch
+                                        id="confidential-buy"
+                                        checked={isConfidential}
+                                        onCheckedChange={setIsConfidential}
+                                    />
+                                    <Label htmlFor="confidential-buy">Confidential Bid (Hide Price/Amount)</Label>
+                                </div>
                                 <Button
                                     className="w-full bg-green-600 hover:bg-green-700"
                                     onClick={() => handleSubmit(true)}
@@ -187,6 +219,14 @@ export function OrderForm({ batchPda, program }: OrderFormProps) {
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                     />
+                                </div>
+                                <div className="flex items-center space-x-2 py-2">
+                                    <Switch
+                                        id="confidential-sell"
+                                        checked={isConfidential}
+                                        onCheckedChange={setIsConfidential}
+                                    />
+                                    <Label htmlFor="confidential-sell">Confidential Ask (Hide Price/Amount)</Label>
                                 </div>
                                 <Button
                                     className="w-full bg-red-600 hover:bg-red-700"

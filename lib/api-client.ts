@@ -408,6 +408,47 @@ export class ApiClient {
     })
   }
 
+  // P2P Trade & Settlement History
+  async getTradeHistory(filters?: { limit?: number; offset?: number }) {
+    const params = new URLSearchParams()
+    if (filters?.limit) params.set('limit', String(filters.limit))
+    if (filters?.offset) params.set('offset', String(filters.offset))
+    return apiRequest<{
+      trades: Array<{
+        id: string
+        buyer_id: string
+        seller_id: string
+        energy_amount: number
+        price_per_kwh: number
+        total_value: number
+        fee_amount: number
+        wheeling_charge: number
+        effective_energy: number
+        status: string
+        transaction_hash?: string
+        created_at: string
+      }>
+      total: number
+    }>(`/api/v1/trading/trades?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getTransactionDetails(txHash: string) {
+    return apiRequest<{
+      signature: string
+      slot: number
+      block_time: string
+      status: string
+      fee: number
+      instructions: Array<{ program: string; type: string }>
+    }>(`/api/v1/analytics/transactions/${txHash}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
   // User
   async getProfile() {
     return apiRequest('/api/v1/users/me', {
