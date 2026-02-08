@@ -28,13 +28,13 @@ function passArrayToWasm(array: Uint8Array, malloc: Function, memory: WebAssembl
 export async function createCommitment(value: number, blinding: Uint8Array): Promise<ZkCommitment> {
     // For now, let's dynamically import the generated JS to avoid duplicating logic
     // This is the cleanest way to handle complex types.
-    const pkg = await import('../../gridtokenx-wasm/pkg-web/gridtokenx_wasm.js');
+    const pkg = await import('./wasm-generated/gridtokenx_wasm.js');
     await pkg.default(); // Ensure init
     return pkg.create_commitment(BigInt(value), blinding);
 }
 
 export async function createRangeProof(amount: number, blinding: Uint8Array): Promise<ZkRangeProof> {
-    const pkg = await import('../../gridtokenx-wasm/pkg-web/gridtokenx_wasm.js');
+    const pkg = await import('./wasm-generated/gridtokenx_wasm.js');
     await pkg.default();
     const proof = pkg.create_range_proof(BigInt(amount), blinding);
     return {
@@ -49,7 +49,7 @@ export async function createTransferProof(
     senderBlinding: Uint8Array,
     amountBlinding: Uint8Array
 ): Promise<ZkTransferProof> {
-    const pkg = await import('../../gridtokenx-wasm/pkg-web/gridtokenx_wasm.js');
+    const pkg = await import('./wasm-generated/gridtokenx_wasm.js');
     await pkg.default();
     const proof = pkg.create_transfer_proof(BigInt(amount), BigInt(balance), senderBlinding, amountBlinding);
     return {

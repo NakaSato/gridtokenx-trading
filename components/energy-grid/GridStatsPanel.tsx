@@ -186,7 +186,7 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                 </div>
 
                 {/* Zone Breakdown */}
-                {Object.keys(zones).length > 0 && (
+                {zones && Object.keys(zones).length > 0 && (
                     <div className="mt-4 pt-3 border-t border-white/10">
                         <div className="text-[10px] text-white/40 mb-2 uppercase tracking-widest font-bold">Zone Breakdown</div>
                         <div className="space-y-2">
