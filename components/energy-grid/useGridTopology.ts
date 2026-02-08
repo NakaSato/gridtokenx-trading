@@ -44,32 +44,36 @@ export function useGridTopology(): UseGridTopologyResult {
         const newTransformers: EnergyNode[] = []
         const newTransfers: EnergyTransfer[] = []
 
-        // Process Zones (Transformers)
-        Object.values(data.zones).forEach((zone) => {
-            const transformerId = `transformer-${zone.zone_id}`
-            newTransformers.push({
-                id: transformerId,
-                name: zone.transformer_name || `Transformer Zone ${zone.zone_id}`,
-                type: 'transformer',
-                latitude: zone.centroid_lat,
-                longitude: zone.centroid_lon,
-                capacity: '500 kVA',
-                status: 'active',
-                buildingCode: `TR-${zone.zone_id}`,
+        // Process Zones (Transformers) - Add safety check for data.zones
+        if (data.zones) {
+            Object.values(data.zones).forEach((zone) => {
+                const transformerId = `transformer-${zone.zone_id}`
+                newTransformers.push({
+                    id: transformerId,
+                    name: zone.transformer_name || `Transformer Zone ${zone.zone_id}`,
+                    type: 'transformer',
+                    latitude: zone.centroid_lat,
+                    longitude: zone.centroid_lon,
+                    capacity: '500 kVA',
+                    status: 'active',
+                    buildingCode: `TR-${zone.zone_id}`,
+                })
             })
-        })
+        }
 
-        // Process Meters connections
-        data.meters.forEach((meter) => {
-            if (meter.zone_id === null) return
-            const transformerId = `transformer-${meter.zone_id}`
-            newTransfers.push({
-                from: transformerId,
-                to: meter.meter_id,
-                power: 0,
-                description: 'Service Line'
+        // Process Meters connections - Add safety check for data.meters
+        if (data.meters) {
+            data.meters.forEach((meter) => {
+                if (meter.zone_id === null) return
+                const transformerId = `transformer-${meter.zone_id}`
+                newTransfers.push({
+                    from: transformerId,
+                    to: meter.meter_id,
+                    power: 0,
+                    description: 'Service Line'
+                })
             })
-        })
+        }
 
         return { transformers: newTransformers, transfers: newTransfers }
     }, [data])

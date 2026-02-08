@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import type { NotificationPreferences } from '@/types/phase3'
+import type { NotificationPreferences } from '@/types/features'
 import { Button } from './ui/button'
 import { Loader2, Settings2, Bell, Mail, Smartphone, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'

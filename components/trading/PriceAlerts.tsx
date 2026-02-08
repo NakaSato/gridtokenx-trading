@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import type { PriceAlert } from '@/types/phase3'
+import type { PriceAlert } from '@/types/features'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Bell, BellOff, Trash2, TrendingUp, TrendingDown, Plus } from 'lucide-react'

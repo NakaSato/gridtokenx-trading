@@ -31,7 +31,7 @@ import type {
   PriceAlert,
   RecurringOrder,
   CreateRecurringOrderRequest,
-} from '../types/phase3'
+} from '../types/features'
 
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'

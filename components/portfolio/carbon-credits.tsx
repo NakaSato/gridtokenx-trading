@@ -6,7 +6,7 @@ import { Leaf, Award, Recycle, Send, History, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { CarbonBalanceResponse, CarbonCredit, CarbonTransaction } from '@/types/phase3'
+import { CarbonBalanceResponse, CarbonCredit, CarbonTransaction } from '@/types/features'
 import { format } from 'date-fns'
 
 export function CarbonCredits() {

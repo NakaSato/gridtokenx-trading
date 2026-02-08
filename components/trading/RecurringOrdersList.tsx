@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import type { RecurringOrder } from '@/types/phase3'
+import type { RecurringOrder } from '@/types/features'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Repeat, Play, Pause, Trash2, Calendar, TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react'

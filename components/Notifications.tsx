@@ -11,7 +11,7 @@ import { XIcon, BellOff, CheckCheck, Loader2, Settings2, Bell } from 'lucide-rea
 import { Separator } from './ui/separator'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import type { Notification } from '@/types/phase3'
+import type { Notification } from '@/types/features'
 import { formatDistanceToNow } from 'date-fns'
 import NotificationPreferences from './NotificationPreferences'
 import { cn } from '@/lib/utils'

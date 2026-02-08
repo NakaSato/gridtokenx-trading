@@ -95,6 +95,7 @@ export class WebSocketClient {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0
+        console.debug(`WebSocket connected [${this.url}]`)
       }
 
       this.ws.onmessage = (event) => {
@@ -106,17 +107,28 @@ export class WebSocketClient {
         }
       }
 
-      this.ws.onerror = (error) => {
-        // Use debug level for connection errors on auth-required paths when not authenticated
-        // This is expected behavior when user hasn't logged in yet
-        if (!this.options.token && !this.options.isPublic) {
-          console.debug(`WebSocket connection failed (auth required) [${this.url}]`)
-        } else {
-          console.error(`WebSocket error [${this.url}]:`, error)
-        }
+      this.ws.onerror = () => {
+        // WebSocket onerror provides no useful detail (browser security restriction).
+        // The subsequent onclose event carries the close code/reason, so we only
+        // log at debug level here to avoid noisy console errors on expected
+        // failures such as token expiry or server restarts.
+        console.debug(`WebSocket connection error [${this.url}]`)
       }
 
-      this.ws.onclose = () => {
+      this.ws.onclose = (event) => {
+        // 1008 = Policy Violation (often auth), 1006 = Abnormal Closure (upgrade rejected / network)
+        const isAuthFailure = event.code === 1008 ||
+          (event.code === 1006 && this.options.token && !this.options.isPublic)
+
+        if (isAuthFailure) {
+          // Don't reconnect for auth failures — token is likely expired/invalid
+          // and retrying will just produce the same error.
+          console.debug(
+            `WebSocket auth failure [${this.url}] (code: ${event.code}). Not reconnecting.`
+          )
+          return
+        }
+
         this.attemptReconnect()
       }
     } catch (error) {

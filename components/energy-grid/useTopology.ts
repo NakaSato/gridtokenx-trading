@@ -51,6 +51,9 @@ export function useTopology(): UseTopologyResult {
     const loadNetwork = useCallback((nodes: EnergyNode[], transfers: EnergyTransfer[]) => {
         if (!topologyInstance) return
 
+        // Build a set of valid node IDs for fast lookup
+        const nodeIdSet = new Set(nodes.map(n => n.id))
+
         // Format nodes for WASM
         const wasmNodes = nodes.map(node => ({
             id: node.id,
@@ -59,8 +62,12 @@ export function useTopology(): UseTopologyResult {
             node_type: node.type
         }))
 
+        // Filter out edges that reference nodes not in the graph
+        // (topology API meter_ids may not match client-generated node IDs)
+        const validTransfers = transfers.filter(t => nodeIdSet.has(t.from) && nodeIdSet.has(t.to))
+
         // Format edges/transfers for WASM
-        const wasmEdges = transfers.map(transfer => ({
+        const wasmEdges = validTransfers.map(transfer => ({
             from: transfer.from,
             to: transfer.to,
             capacity: transfer.power || 500,
@@ -71,7 +78,7 @@ export function useTopology(): UseTopologyResult {
             topologyInstance.set_graph(wasmNodes, wasmEdges)
             setStats({
                 nodeCount: nodes.length,
-                lineCount: transfers.length,
+                lineCount: validTransfers.length,
                 totalLoss: 0 // Logic for loss calculation moved/changed in WASM
             })
         } catch (error) {

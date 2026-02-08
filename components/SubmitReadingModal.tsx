@@ -59,16 +59,24 @@ export function SubmitReadingModal({ isOpen, onClose, onSuccess, meterSerial }: 
                 return;
             }
 
-            // Check if minting succeeded
+            const msg = response.data?.message || '';
+
             if (response.data?.minted) {
+                // Synchronous mint completed
                 toast.success(
                     `Reading submitted and ${kwh > 0 ? 'minted' : 'burned'} successfully!`,
                     { duration: 5000 }
                 );
+            } else if (msg.toLowerCase().includes('queued') || msg.toLowerCase().includes('processing')) {
+                // Async queue accepted – this is the normal happy path
+                toast.success(
+                    `Reading submitted! Minting is being processed in the background.`,
+                    { duration: 5000 }
+                );
             } else {
-                const message = response.data?.message || 'is pending';
+                // Genuine failure (e.g. Oracle validation, queue push error)
                 toast.error(
-                    `Reading submitted, but minting ${message}. You can retry from the dashboard.`,
+                    `Reading submitted, but minting failed: ${msg || 'unknown error'}. You can retry from the dashboard.`,
                     { duration: 6000 }
                 );
             }
