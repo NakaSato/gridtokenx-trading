@@ -59,6 +59,21 @@ const EnergyGridMapWrapper = dynamic(
   }
 )
 
+const PriceChart = dynamic(
+  () => import('@/components/trading/PriceChart'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full animate-pulse bg-secondary/20 rounded-lg flex flex-col items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-3" />
+        <p className="text-secondary-foreground text-sm font-medium">Loading chart...</p>
+      </div>
+    )
+  }
+)
+
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+
 import {
   ResizableHandle,
   ResizablePanel,
@@ -73,6 +88,11 @@ const P2POrderForm = dynamic(
 const P2PStatus = dynamic(
   () => import('@/components/p2p/P2PStatus'),
   { ssr: false, loading: () => <div className="h-32 animate-pulse bg-secondary/50 rounded-lg mb-4" /> }
+)
+
+const ConfidentialWallet = dynamic(
+  () => import('@/components/ConfidentialWallet').then(m => m.ConfidentialWallet),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse bg-secondary/50 rounded-lg mb-4" /> }
 )
 
 import type { EnergyNode } from '@/components/energy-grid/types'
@@ -150,13 +170,26 @@ export default function Homepage() {
                 {/* MAP */}
                 <ResizablePanel id="center-map" defaultSize={75} minSize={30}>
                   <div className="flex flex-col h-full overflow-hidden">
-                    <div className="flex-1 min-h-0 border border-border rounded-lg bg-card overflow-hidden shadow-sm">
-                      <EnergyGridMapWrapper
-                        onTradeFromNode={handleTradeFromNode}
-                        viewState={viewState}
-                        onViewStateChange={handleViewStateChange}
-                      />
-                    </div>
+                    <Tabs defaultValue="map" className="h-full flex flex-col">
+                      <div className="px-1 pt-1 pb-0">
+                        <TabsList className="h-7 bg-muted/50 p-0.5 w-full justify-start rounded-md">
+                          <TabsTrigger value="map" className="h-6 text-xs px-3">Energy Map</TabsTrigger>
+                          <TabsTrigger value="chart" className="h-6 text-xs px-3">Price Chart</TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <div className="flex-1 min-h-0 border border-border rounded-lg bg-card overflow-hidden shadow-sm mt-1 relative">
+                        <TabsContent value="map" className="h-full m-0 p-0 data-[state=active]:flex flex-col">
+                          <EnergyGridMapWrapper
+                            onTradeFromNode={handleTradeFromNode}
+                            viewState={viewState}
+                            onViewStateChange={handleViewStateChange}
+                          />
+                        </TabsContent>
+                        <TabsContent value="chart" className="h-full m-0 p-0 data-[state=active]:flex flex-col">
+                          <PriceChart />
+                        </TabsContent>
+                      </div>
+                    </Tabs>
                   </div>
                 </ResizablePanel>
 
@@ -182,10 +215,10 @@ export default function Homepage() {
                     onClearNode={handleClearNode}
                   />
                   {token && (
-                    <>
-                      <div className="py-2"></div>
+                    <div className="flex flex-col gap-3 mt-3">
                       <P2PStatus />
-                    </>
+                      <ConfidentialWallet />
+                    </div>
                   )}
                 </div>
               </div>

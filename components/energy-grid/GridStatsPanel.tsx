@@ -1,9 +1,14 @@
 'use client'
 
 import { useState, useEffect, memo } from 'react'
-import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, AlertCircle, RefreshCw } from 'lucide-react'
+import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, AlertCircle, RefreshCw, ShieldAlert, Globe, WifiOff } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
+import { GridFrequencyChart } from './GridFrequencyChart'
+import { GridForecastChart } from './GridForecastChart'
+import { EVManagementPanel } from './EVManagementPanel'
+import { FrequencyStatus, IslandStatus, ZoneGridStatus, TariffStatus, ADREvent, LoadForecast, EVFleetStatus } from '@/types/grid'
+import { useGridHistory } from '@/hooks/useGridHistory'
 
 interface GridHistoryPoint {
     timestamp: string
@@ -11,8 +16,6 @@ interface GridHistoryPoint {
     total_consumption: number
 }
 
-import { useGridHistory } from '@/hooks/useGridHistory'
-import { ZoneGridStatus } from '@/types/grid'
 
 interface GridStatsPanelProps {
     totalGeneration: number
@@ -21,6 +24,14 @@ interface GridStatsPanelProps {
     co2Saved?: number
     activeMeters?: number
     zones?: Record<string, ZoneGridStatus>
+    frequency?: FrequencyStatus
+    islandStatus?: IslandStatus
+    healthScore?: number
+    isUnderAttack?: boolean
+    tariff?: TariffStatus
+    adrEvent?: ADREvent
+    loadForecast?: LoadForecast
+    evFleet?: EVFleetStatus
 }
 
 export const GridStatsPanel = memo(function GridStatsPanel({
@@ -29,7 +40,15 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     avgStorage,
     co2Saved = 0,
     activeMeters = 0,
-    zones = {}
+    zones = {},
+    frequency,
+    islandStatus,
+    healthScore,
+    isUnderAttack = false,
+    tariff,
+    adrEvent,
+    loadForecast,
+    evFleet,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const { history, error: historyError, refresh: fetchHistory } = useGridHistory(30, 30000)
@@ -70,7 +89,61 @@ export const GridStatsPanel = memo(function GridStatsPanel({
             </button>
 
             {/* Metrics Content */}
-            <div className={`space-y-2 sm:space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[800px] opacity-100'}`}>
+            <div className={`space-y-2 sm:space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[1000px] opacity-100'}`}>
+
+                {/* Frequency & Islanding Section (New) */}
+                <div className="space-y-2 mb-3">
+                    <GridFrequencyChart currentFrequency={frequency} />
+                    <GridForecastChart forecast={loadForecast} />
+
+                    <div className="flex flex-wrap items-center gap-1.5 px-1">
+                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${islandStatus?.is_islanded
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
+                            {islandStatus?.is_islanded ? <WifiOff size={8} /> : <Globe size={8} />}
+                            <span className="text-[8px] font-bold uppercase tracking-wider">
+                                {islandStatus?.is_islanded ? 'Microgrid' : 'Grid-Tied'}
+                            </span>
+                        </div>
+
+                        {tariff && (
+                            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${tariff.is_peak
+                                ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
+                                : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
+                                <Zap size={8} className={tariff.is_peak ? 'animate-pulse' : ''} />
+                                <span className="text-[8px] font-bold uppercase tracking-wider">
+                                    {tariff.tariff_type}: {tariff.import_rate.toFixed(2)}
+                                </span>
+                            </div>
+                        )}
+
+                        {adrEvent?.active && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full border bg-red-500/20 border-red-500/50 text-red-400 animate-pulse">
+                                <ShieldAlert size={8} />
+                                <span className="text-[8px] font-bold uppercase tracking-wider">DR Alert</span>
+                            </div>
+                        )}
+
+                        {isUnderAttack && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full border bg-red-500/10 border-red-500/30 text-red-400 animate-pulse">
+                                <ShieldAlert size={8} />
+                                <span className="text-[8px] font-bold uppercase tracking-wider">Attack</span>
+                            </div>
+                        )}
+
+                        {!isUnderAttack && healthScore !== undefined && (
+                            <div className="flex items-center gap-1 ml-auto">
+                                <span className="text-[7px] text-white/30 uppercase font-black tracking-tighter">Health</span>
+                                <span className={`text-[9px] font-mono font-bold ${healthScore > 80 ? 'text-emerald-400' : healthScore > 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                    {Math.round(healthScore)}%
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <EVManagementPanel fleet={evFleet} />
+
                 {/* Visual Chart - Historical Trends */}
                 <div className="h-16 sm:h-24 w-full bg-white/5 rounded-lg p-1 border border-white/5 mb-2 relative">
                     {historyError ? (

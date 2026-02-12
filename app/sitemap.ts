@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://trading.gridtokenx.com'
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
   const currentDate = new Date()
 
   // Main pages
@@ -10,13 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '',
     '/portfolio',
     '/futures',
-    '/options-chain',
-    '/earn',
-    '/borrow',
-    '/analytics',
-    '/leaderboards',
-    '/moonrekt',
-    '/create-options-pool',
+    '/energy-profiles',
+    '/meter',
+    '/privacy-policy',
+    '/terms-and-conditions',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: currentDate,

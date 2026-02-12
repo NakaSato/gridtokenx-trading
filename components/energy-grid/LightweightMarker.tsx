@@ -55,9 +55,8 @@ function LightweightMarkerComponent({
 }: LightweightMarkerProps) {
     const status = liveData?.status ?? node.status
     const liveValue = liveData?.currentValue ?? 0
-
-    // Generate accessible label based on node type and status
-    const ariaLabel = `${node.name}, ${node.type}, ${status}, ${node.type === 'storage' ? `${liveValue.toFixed(0)}% charged` : `${liveValue.toFixed(1)} kilowatts`}`
+    const isCompromised = liveData?.isCompromised ?? false
+    const anomalyScore = liveData?.anomalyScore ?? 0
 
     const handleClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation()
@@ -74,6 +73,9 @@ function LightweightMarkerComponent({
         onTradeClick?.(node)
     }, [node, onTradeClick])
 
+    // Generate accessible label based on node type and status
+    const ariaLabel = `${node.name}, ${node.type}, ${status}, ${node.type === 'storage' ? `${liveValue.toFixed(0)}% charged` : `${liveValue.toFixed(1)} kilowatts`}`
+
     return (
         <Marker longitude={node.longitude} latitude={node.latitude}>
             <div
@@ -81,16 +83,24 @@ function LightweightMarkerComponent({
                 style={{
                     contain: 'layout style',
                 }}
-                title={node.name}
+                title={isCompromised ? `${node.name} - COMPROMISED (Anomaly: ${anomalyScore.toFixed(2)})` : node.name}
+                onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
             >
                 {/* Status dot - top right */}
                 <div
-                    className={`absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full ${getStatusColor(status)} z-10 border border-background/50`}
+                    className={`absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full ${isCompromised ? 'bg-red-500 animate-pulse' : getStatusColor(status)} z-10 border border-background/50`}
                     aria-hidden="true"
                 />
+
+                {/* Pulsing Alert Ring for Compromised Nodes */}
+                {isCompromised && (
+                    <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" aria-hidden="true" />
+                )}
+
                 {/* Main marker - simplified */}
-                <div className="rounded-full p-1.5 shadow-md backdrop-blur-sm bg-background/80 border border-primary/40" aria-hidden="true">
-                    <MarkerIcon type={node.type} />
+                <div className={`rounded-full p-1.5 shadow-md backdrop-blur-sm bg-background/80 border ${isCompromised ? 'border-red-500 shadow-red-500/40' : 'border-primary/40'}`} aria-hidden="true">
+                    <MarkerIcon type={isCompromised ? 'critical' : node.type} />
                 </div>
             </div>
         </Marker>
@@ -103,7 +113,8 @@ export const LightweightMarker = memo(LightweightMarkerComponent, (prev, next) =
         prev.node.id === next.node.id &&
         prev.isSelected === next.isSelected &&
         prev.liveData?.status === next.liveData?.status &&
-        prev.liveData?.currentValue === next.liveData?.currentValue
+        prev.liveData?.currentValue === next.liveData?.currentValue &&
+        prev.liveData?.isCompromised === next.liveData?.isCompromised
     )
 })
 

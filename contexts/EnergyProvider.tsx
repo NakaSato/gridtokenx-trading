@@ -35,7 +35,8 @@ function useEnergyMutations(
 
     const mintFromMeterMutation = useMutation({
         mutationFn: async ({ readingId, kwh, meterId }: { readingId: string; kwh: number; meterId: string }) => {
-            if (!registryProgram || !energyTokenProgram || !publicKey) throw new Error('Not connected')
+            if (!publicKey) throw new Error('Wallet not connected')
+            if (!registryProgram || !energyTokenProgram) throw new Error('Programs not initialized')
 
             // Logic:
             // 1. In a real scenario, the Oracle (not user) calls updateMeterReading. 
@@ -186,10 +187,17 @@ export const EnergyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const { mintFromMeterMutation } = useEnergyMutations(registryProgram, energyTokenProgram, connection, publicKey, sendTransaction)
 
     const handleMintFromMeter = async (readingId: string, kwh: number, meterId: string) => {
+        // Gracefully handle missing connection for on-chain fallback
+        if (!registryProgram || !energyTokenProgram || !publicKey) {
+            console.debug("On-chain minting initialization incomplete - falling back to API path")
+            return false
+        }
+
         try {
             return await mintFromMeterMutation.mutateAsync({ readingId, kwh, meterId })
-        } catch (e) {
-            console.error("Mint failed", e)
+        } catch (e: any) {
+            // Only log if it's an actual transaction error, not a connection check
+            console.error("On-chain minting error:", e.message || e)
             return false
         }
     }

@@ -126,7 +126,7 @@ export function PortfolioTabs() {
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {loading ? renderLoading() : (
             history.length > 0 ? (
-              <OrderHistory doneOptioninfos={history} />
+              <OrderHistory doneOptioninfos={history.filter((t: any) => t.transactionType === 'Buy' || t.transactionType === 'Sell')} />
             ) : renderEmptyState("No trade history", "Your completed trades will appear here")
           )}
         </ProtectedRoute>

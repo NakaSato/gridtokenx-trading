@@ -49,3 +49,18 @@ export interface TradeHistory {
     trades: TradeRecord[];
     total_count: number;
 }
+
+import { PublicKey } from '@solana/web3.js';
+import { BN } from '@coral-xyz/anchor';
+
+export interface OnChainTradeRecord {
+    sellOrder: PublicKey;
+    buyOrder: PublicKey;
+    seller: PublicKey;
+    buyer: PublicKey;
+    amount: BN;
+    pricePerKwh: BN;
+    totalValue: BN;
+    feeAmount: BN;
+    executedAt: BN;
+}

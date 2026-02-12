@@ -2,7 +2,7 @@
   "address": "EkcPD2YEXhpo1J73UX9EJNnjV2uuFS8KXMVLx9ybqnhU",
   "metadata": {
     "name": "oracle",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "Oracle program for P2P Energy Trading - AMI data bridge"
   },
@@ -54,27 +54,7 @@
       "accounts": [
         {
           "name": "oracle_data",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  97,
-                  99,
-                  108,
-                  101,
-                  95,
-                  100,
-                  97,
-                  116,
-                  97
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -82,8 +62,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -142,8 +121,7 @@
       ],
       "accounts": [
         {
-          "name": "oracle_data",
-          "writable": true
+          "name": "oracle_data"
         },
         {
           "name": "authority",
@@ -257,6 +235,39 @@
         {
           "name": "active",
           "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "update_production_ratio_config",
+      "docs": [
+        "Update production/consumption ratio validation threshold (admin only)",
+        "Allows adjustment for different deployment scenarios (residential vs. large solar farms)"
+      ],
+      "discriminator": [
+        108,
+        248,
+        120,
+        134,
+        247,
+        198,
+        43,
+        171
+      ],
+      "accounts": [
+        {
+          "name": "oracle_data",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "max_production_consumption_ratio",
+          "type": "u16"
         }
       ]
     },
@@ -417,6 +428,19 @@
       ]
     },
     {
+      "name": "ProductionRatioConfigUpdated",
+      "discriminator": [
+        165,
+        227,
+        103,
+        211,
+        140,
+        244,
+        96,
+        108
+      ]
+    },
+    {
       "name": "ValidationConfigUpdated",
       "discriminator": [
         125,
@@ -495,6 +519,11 @@
       "code": 6012,
       "name": "BackupOracleNotFound",
       "msg": "Backup oracle not found"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidConfiguration",
+      "msg": "Invalid configuration parameter"
     }
   ],
   "types": [
@@ -726,6 +755,10 @@
             "type": "u16"
           },
           {
+            "name": "max_production_consumption_ratio",
+            "type": "u16"
+          },
+          {
             "name": "active",
             "type": "u8"
           },
@@ -754,7 +787,7 @@
             "type": {
               "array": [
                 "u8",
-                4
+                2
               ]
             }
           }
@@ -773,6 +806,26 @@
           {
             "name": "active",
             "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProductionRatioConfigUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_production_consumption_ratio",
+            "type": "u16"
           },
           {
             "name": "timestamp",

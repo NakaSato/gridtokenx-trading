@@ -530,6 +530,14 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         co2Saved={apiGridStatus?.co2_saved_kg ?? gridTotals.co2Saved}
         activeMeters={apiGridStatus?.active_meters ?? gridTotals.activeMeters}
         zones={apiGridStatus?.zones}
+        frequency={apiGridStatus?.frequency}
+        islandStatus={apiGridStatus?.island_status}
+        healthScore={apiGridStatus?.health_score}
+        isUnderAttack={apiGridStatus?.is_under_attack}
+        tariff={apiGridStatus?.tariff}
+        adrEvent={apiGridStatus?.adr_event}
+        loadForecast={apiGridStatus?.load_forecast}
+        evFleet={apiGridStatus?.ev_fleet}
       />
 
       {/* Flow Line Hover Tooltip */}

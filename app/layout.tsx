@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     'energy derivatives',
     'green energy',
     'sustainable trading',
-    'carbon credits',
+
   ],
   referrer: 'origin-when-cross-origin',
   creator: 'GridTokenX',

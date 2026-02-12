@@ -7,10 +7,11 @@ import { Skeleton } from './ui/skeleton'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { Activity, History, BookOpen, Clock, RotateCw, Ban, Bell, Repeat, AlertCircle, type LucideIcon } from 'lucide-react'
+import { Activity, History, BookOpen, Clock, RotateCw, Ban, Bell, Repeat, AlertCircle, Zap, type LucideIcon } from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
 import { Position } from '@/lib/data/Positions'
+import LiveGridStats from './LiveGridStats'
 import ExpiredOptions from './ExpiredOptions'
 import PriceAlerts from './trading/PriceAlerts'
 import RecurringOrdersList from './trading/RecurringOrdersList'
@@ -23,13 +24,15 @@ import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
 import { useOptionPositions } from '@/hooks/useOptions'
-import { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
+import { ApiFuturesPosition, ApiOrder, TradeRecord, OnChainTradeRecord } from '@/types/trading'
+
+import { PublicKey } from '@solana/web3.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab Configuration
 // ─────────────────────────────────────────────────────────────────────────────
 
-type TabValue = 'Positions' | 'OpenOrders' | 'History' | 'Alerts' | 'Expired' | 'DCA'
+type TabValue = 'Positions' | 'OpenOrders' | 'History' | 'Alerts' | 'Expired' | 'DCA' | 'LiveGrid' | 'OrderBook'
 
 interface TabConfig {
   value: TabValue
@@ -40,7 +43,9 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   { value: 'Positions', label: 'Positions', icon: Activity, showBadge: true },
-  { value: 'OpenOrders', label: 'Orders', icon: BookOpen },
+  { value: 'LiveGrid', label: 'Live Grid', icon: Zap },
+
+  { value: 'OpenOrders', label: 'My Orders', icon: BookOpen },
   { value: 'History', label: 'History', icon: History },
   { value: 'Alerts', label: 'Alerts', icon: Bell },
   { value: 'Expired', label: 'Expired', icon: Ban },
@@ -185,20 +190,51 @@ export default memo(function TradingPositions() {
         setOrderInfos(mappedOrders)
       }
 
-      // 3. Fetch Trade History
-      const tradesRes = await apiClient.getTrades({ limit: 50 }) as unknown as { data: { trades: TradeRecord[] } }
-      if (tradesRes.data?.trades) {
-        const mappedHistory: Transaction[] = tradesRes.data.trades.map(
-          (trade: TradeRecord) => ({
-            transactionID: trade.id,
-            token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
-            transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
-            optionType: 'Spot',
-            strikePrice: parseFloat(trade.price),
-            expiry: format(new Date(trade.executed_at), 'dd MMM, yyy HH:mm:ss'),
-          })
-        )
-        setDoneInfo(mappedHistory)
+      // 3. Fetch Trade History from Blockchain
+      if (program && pub) {
+        try {
+          // @ts-ignore
+          const tradeRecordsRaw = await program.account.tradeRecord.all();
+          const userTrades = tradeRecordsRaw
+            .map((r: any) => r.account as OnChainTradeRecord)
+            .filter((t: OnChainTradeRecord) =>
+              t.buyer.toBase58() === pub.toBase58() ||
+              t.seller.toBase58() === pub.toBase58()
+            )
+            .sort((a: OnChainTradeRecord, b: OnChainTradeRecord) => b.executedAt.toNumber() - a.executedAt.toNumber());
+
+          const mappedHistory: Transaction[] = userTrades.map(
+            (trade: OnChainTradeRecord) => ({
+              transactionID: trade.executedAt.toString(), // Using timestamp as ID for now
+              token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
+              transactionType: trade.buyer.toBase58() === pub.toBase58() ? 'Buy' : 'Sell',
+              optionType: 'Spot',
+              strikePrice: trade.pricePerKwh.toNumber() / 1000000, // micro-units to standard
+              quantity: trade.amount.toNumber() / 1000, // Wh to kWh
+              totalValue: trade.totalValue.toNumber() / 1000000, // micro-units
+              expiry: format(new Date(trade.executedAt.toNumber() * 1000), 'dd MMM, yyy HH:mm:ss'),
+            })
+          )
+          setDoneInfo(mappedHistory)
+        } catch (e) {
+          console.error("Failed to fetch on-chain trade history", e)
+        }
+      } else {
+        // Fallback to API if program not ready (or keep existing logic)
+        const tradesRes = await apiClient.getTrades({ limit: 50 }) as unknown as { data: { trades: TradeRecord[] } }
+        if (tradesRes.data?.trades) {
+          const mappedHistory: Transaction[] = tradesRes.data.trades.map(
+            (trade: TradeRecord) => ({
+              transactionID: trade.id,
+              token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
+              transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
+              optionType: 'Spot',
+              strikePrice: parseFloat(trade.price),
+              expiry: format(new Date(trade.executed_at), 'dd MMM, yyy HH:mm:ss'),
+            })
+          )
+          setDoneInfo(mappedHistory)
+        }
       }
       setLastRefreshed(new Date())
     } catch (err) {
@@ -207,7 +243,7 @@ export default memo(function TradingPositions() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, program, pub])
 
   useEffect(() => {
     fetchData()
@@ -444,6 +480,12 @@ export default memo(function TradingPositions() {
                   <RecurringOrdersList />
                 </div>
               )}
+
+              {activeTab === 'LiveGrid' && (
+                <LiveGridStats />
+              )}
+
+
             </div>
           )}
         </div>

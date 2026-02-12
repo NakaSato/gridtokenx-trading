@@ -96,12 +96,7 @@ export default function PointsDropDown({ setActive }: PointsDropDownProps) {
               </div>
             </div>
           </div>
-          <Button
-            className="w-full rounded-sm border bg-inherit px-4 py-2 text-xs font-medium text-primary shadow-none hover:border-primary"
-            onClick={() => handleClickPoints()}
-          >
-            Go to leaderboard
-          </Button>
+
         </DropdownMenuContent>
       </DropdownMenu>
       <Dialog open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -173,12 +168,7 @@ export default function PointsDropDown({ setActive }: PointsDropDownProps) {
             </div>
           </div>
           <div className="w-full pb-10">
-            <Button
-              className="w-full rounded-[12px] border bg-inherit px-4 py-2 text-xs font-medium text-primary shadow-none hover:border-primary"
-              onClick={() => handleClickPoints()}
-            >
-              Go to leaderboard
-            </Button>
+
           </div>
         </DialogContent>
       </Dialog>

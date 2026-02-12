@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { defaultApiClient, createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useTrading } from '@/contexts/TradingProvider'
-import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin, X, Zap, Shield } from 'lucide-react'
+import { useTrading, OrderAccount } from '@/contexts/TradingProvider'
+import { Loader2, CheckCircle2, AlertCircle, Wallet, ChevronDown, MapPin, X, Zap, Shield, Link } from 'lucide-react'
+import { PublicKey } from '@solana/web3.js'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { useCrypto } from '@/hooks/useCrypto'
@@ -44,9 +45,49 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
     const [isSuccess, setIsSuccess] = useState(false)
     const [showCostBreakdown, setShowCostBreakdown] = useState(true)
     const [isSigning, setIsSigning] = useState(false)
+    const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(null)
+    const [currency, setCurrency] = useState<'GRX' | 'USDC'>('GRX')
+    const [isConfidential, setIsConfidential] = useState(false)
     const { signOrder, isLoaded: cryptoLoaded } = useCrypto()
     const queryClient = useQueryClient()
-    const { createBuyOrder, createSellOrder } = useTrading()
+    const {
+        createBuyOrder,
+        createSellOrder,
+        createStablecoinBuyOrder,
+        createStablecoinSellOrder,
+        activeOrderFill,
+        setActiveOrderFill
+    } = useTrading()
+
+    // Consume activeOrderFill if present
+    useEffect(() => {
+        if (activeOrderFill) {
+            // Determine side based on target order
+            // If target is a Sell Order (has seller), we want to BUY.
+            // If target is a Buy Order (has buyer), we want to SELL.
+            let side: 'buy' | 'sell' = 'buy';
+
+            if (activeOrderFill.targetOrder) {
+                const target = activeOrderFill.targetOrder;
+                // Simple check: default Pubkey check
+                const isSellerSet = target.account.seller.toString() !== '11111111111111111111111111111111';
+                if (isSellerSet) {
+                    side = 'buy'; // Target is selling, we buy
+                } else {
+                    side = 'sell'; // Target is buying, we sell
+                }
+                setTargetMatchOrder(target);
+            }
+
+            setOrderType(side)
+            setAmount(activeOrderFill.amount.toFixed(2))
+            if (activeOrderFill.price) {
+                setPrice(activeOrderFill.price.toFixed(2))
+            }
+            // Clear it so it doesn't persist if user changes manually
+            setActiveOrderFill(null)
+        }
+    }, [activeOrderFill, setActiveOrderFill])
 
     const {
         data: balanceData,
@@ -122,15 +163,27 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
 
             // 2. Also submit on-chain for transparent order book (best-effort)
             try {
-                if (orderPayload.side === 'buy') {
+                const amountValue = parseFloat(orderPayload.amount) * 1e6;
+                const priceValue = parseFloat(orderPayload.price_per_kwh) * 1e6;
+
+                if (currency === 'USDC') {
+                    // Constant 0 for USDC in this demo
+                    if (orderPayload.side === 'buy') {
+                        await createStablecoinBuyOrder(amountValue, priceValue, 0);
+                    } else {
+                        await createStablecoinSellOrder(amountValue, priceValue, 0);
+                    }
+                } else if (orderPayload.side === 'buy') {
                     await createBuyOrder(
-                        parseFloat(orderPayload.amount) * 1e6,  // Scale to micro-kWh for BN precision
-                        parseFloat(orderPayload.price_per_kwh) * 1e6
+                        amountValue,
+                        priceValue,
+                        targetMatchOrder || undefined
                     )
                 } else {
                     await createSellOrder(
-                        parseFloat(orderPayload.amount) * 1e6,
-                        parseFloat(orderPayload.price_per_kwh) * 1e6
+                        amountValue,
+                        priceValue,
+                        targetMatchOrder || undefined
                     )
                 }
             } catch (onChainError) {
@@ -145,6 +198,7 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
             setIsSuccess(true)
             setAmount('')
             setPrice('')
+            setTargetMatchOrder(null)
             // Invalidate balance and other relevant queries
             queryClient.invalidateQueries({ queryKey: ['wallet-balance'] })
             queryClient.invalidateQueries({ queryKey: ['user-stats'] })
@@ -256,6 +310,24 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
 
             {/* Form Content */}
             <div className="flex flex-col rounded-sm rounded-t-none border border-t-0 p-4 bg-card">
+                {/* Match Target Indicator */}
+                {targetMatchOrder && (
+                    <div className="mb-4 flex items-center justify-between rounded-sm border border-blue-200 bg-blue-50 p-2 text-xs text-blue-700">
+                        <div className="flex items-center gap-2">
+                            <Link className="h-3 w-3" />
+                            <span>Matching Order...</span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 hover:bg-blue-100"
+                            onClick={() => setTargetMatchOrder(null)}
+                        >
+                            <X className="h-3 w-3" />
+                        </Button>
+                    </div>
+                )}
+
                 {/* Balance Display */}
                 {token && (
                     <div className="flex items-center justify-between pb-4">
@@ -416,6 +488,56 @@ const OrderForm = React.memo(function OrderForm({ onOrderPlaced, selectedNode, o
                                     <span className="text-xs text-secondary-foreground">THB</span>
                                 </div>
                             </div>
+
+                            {/* Phase 9: Premium Options */}
+                            <Separator />
+                            <div className="flex flex-col space-y-3">
+                                <Label className="text-xs font-semibold text-primary/80">Premium Options</Label>
+
+                                {/* Currency Selection */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-medium">Payment Currency</span>
+                                        <span className="text-[10px] text-secondary-foreground">Select settlement asset</span>
+                                    </div>
+                                    <Select
+                                        value={currency}
+                                        onValueChange={(val: any) => setCurrency(val)}
+                                    >
+                                        <SelectTrigger className="h-8 w-24 text-xs rounded-sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="GRX">Grid (GRX)</SelectItem>
+                                            <SelectItem value="USDC">USDC</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Confidential Toggle */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-xs font-medium">Confidential Trade</span>
+                                            <Shield className="h-3 w-3 text-emerald-500" />
+                                        </div>
+                                        <span className="text-[10px] text-secondary-foreground">Hide balance changes via ZK</span>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant={isConfidential ? "secondary" : "ghost"}
+                                        size="sm"
+                                        onClick={() => setIsConfidential(!isConfidential)}
+                                        className={cn(
+                                            "h-7 px-2 text-[10px] rounded-sm border",
+                                            isConfidential ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600" : "border-transparent"
+                                        )}
+                                    >
+                                        {isConfidential ? "Enabled" : "Disabled"}
+                                    </Button>
+                                </div>
+                            </div>
+                            <Separator />
 
                             {/* P2P Cost Breakdown Toggle */}
                             {energyAmount > 0 && (

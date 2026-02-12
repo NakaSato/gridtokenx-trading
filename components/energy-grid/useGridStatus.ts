@@ -54,7 +54,15 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                             active_meters: data.active_meters,
                             co2_saved_kg: data.co2_saved_kg,
                             timestamp: data.timestamp,
-                            zones: data.zones
+                            zones: data.zones,
+                            frequency: data.frequency,
+                            island_status: data.island_status,
+                            health_score: data.health_score,
+                            is_under_attack: data.is_under_attack,
+                            tariff: data.tariff,
+                            adr_event: data.adr_event,
+                            load_forecast: data.load_forecast,
+                            ev_fleet: data.ev_fleet
                         }
                         // Update cache immediately on WS message
                         queryClient.setQueryData(['grid-status'], updatedStatus)

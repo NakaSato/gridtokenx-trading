@@ -107,10 +107,10 @@ export interface UserProfile {
   first_name?: string;
   last_name?: string;
   blockchain_registered?: boolean;
-  // Financial fields
-  balance?: number;
-  locked_amount?: number;
-  locked_energy?: number;
+  // Financial fields — backend Decimal serializes as string
+  balance?: number | string;
+  locked_amount?: number | string;
+  locked_energy?: number | string;
 }
 
 export interface ProfileUpdateRequest {

@@ -118,12 +118,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Set token in API client
         apiClient.setToken(storedToken)
 
-        // Validate token with backend
+        // Validate token with backend and update user state with latest profile
         try {
           const response = await apiClient.getProfile()
           if (response.error || !response.data) {
             await logout()
             return
+          }
+          // Update user state with latest profile data (includes wallet_address)
+          const profileData = response.data as User
+          const updatedUser = { ...JSON.parse(storedUser), ...profileData }
+          setUser(updatedUser)
+          // Persist updated user data
+          if (localStorage.getItem('user')) {
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+          }
+          if (sessionStorage.getItem('user')) {
+            sessionStorage.setItem('user', JSON.stringify(updatedUser))
           }
         } catch (error) {
           console.error('Token validation failed:', error)

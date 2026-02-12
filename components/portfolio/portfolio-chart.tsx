@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { TrendingUp, RefreshCw, BarChart2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import {
@@ -13,7 +13,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import { useAuth } from '@/contexts/AuthProvider'
-import { defaultApiClient } from '@/lib/api-client'
+import { createApiClient } from '@/lib/api-client'
 import { Skeleton } from '../ui/skeleton'
 import { Button } from '../ui/button'
 
@@ -24,7 +24,7 @@ export function PortfolioChart() {
   const [error, setError] = useState<string | null>(null)
   const [timeframe, setTimeframe] = useState('24h')
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!isAuthenticated || !token) {
       setLoading(false)
       return
@@ -33,8 +33,7 @@ export function PortfolioChart() {
     setLoading(true)
     setError(null)
     try {
-      const apiClient = defaultApiClient
-      apiClient.setToken(token)
+      const apiClient = createApiClient(token)
       const response = await apiClient.getUserHistory({ timeframe })
 
       if (response.data && response.data.history) {
@@ -54,11 +53,11 @@ export function PortfolioChart() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAuthenticated, token, timeframe])
 
   useEffect(() => {
     fetchData()
-  }, [isAuthenticated, timeframe, token])
+  }, [fetchData])
 
   if (!isAuthenticated) {
     return (

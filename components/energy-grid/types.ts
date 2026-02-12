@@ -64,6 +64,8 @@ export interface LiveNodeData {
     currentValue: number // kW for generator/consumer, % for storage
     status: 'active' | 'idle' | 'maintenance'
     lastUpdate: Date
+    isCompromised?: boolean
+    anomalyScore?: number
 }
 
 export interface LiveTransferData {

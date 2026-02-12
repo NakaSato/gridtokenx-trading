@@ -2,11 +2,11 @@
 
 import { useGovernance } from '@/contexts/GovernanceProvider'
 import { usePrivacy } from '@/contexts/PrivacyProvider'
-import { FileText, ThumbsUp, ThumbsDown, Vote, Calendar, Lock } from 'lucide-react'
+import { FileText, ThumbsUp, ThumbsDown, Vote, Calendar, Lock, Shield, Zap, Activity } from 'lucide-react'
 import { useState } from 'react'
 
 export default function GovernanceDashboard() {
-    const { proposals, votePrivate } = useGovernance()
+    const { proposals, votePrivate, poaConfig, isConnected } = useGovernance()
     const { isUnlocked } = usePrivacy()
     const [view, setView] = useState<'ACTIVE' | 'PASSED'>('ACTIVE')
 
@@ -24,6 +24,46 @@ export default function GovernanceDashboard() {
                         <Lock size={10} className="mr-2" /> PRIVACY LOCKED
                     </div>
                 )}
+            </div>
+
+            {/* Network Parameters Section - NEW */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="p-3 bg-muted/20 border border-border rounded-lg">
+                    <p className="text-[9px] uppercase font-bold text-muted-foreground mb-2 flex items-center">
+                        <Shield size={10} className="mr-1" /> Network Authority
+                    </p>
+                    <p className="text-[10px] font-mono truncate text-foreground">
+                        {isConnected ? poaConfig?.authority || 'Loading...' : 'Connecting...'}
+                    </p>
+                </div>
+                <div className="p-3 bg-muted/20 border border-border rounded-lg">
+                    <p className="text-[9px] uppercase font-bold text-muted-foreground mb-2 flex items-center">
+                        <Zap size={10} className="mr-1" /> Min Energy / Max ERC
+                    </p>
+                    <div className="flex justify-between items-end">
+                        <span className="text-xs font-bold">{poaConfig?.minEnergyAmount ?? '-'} Wh</span>
+                        <span className="text-[10px] text-muted-foreground">Max {poaConfig?.maxErcAmount ? (poaConfig.maxErcAmount / 1000).toFixed(0) + 'k' : '-'}</span>
+                    </div>
+                </div>
+                <div className="col-span-2 p-3 bg-muted/20 border border-border rounded-lg flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center">
+                            <Activity size={12} className={`mr-2 ${poaConfig?.emergencyPaused ? 'text-red-500' : 'text-green-500'}`} />
+                            <span className="text-[10px] font-bold uppercase">
+                                {poaConfig?.emergencyPaused ? 'EMERGENCY PAUSE' : 'SYSTEM ACTIVE'}
+                            </span>
+                        </div>
+                        <div className="flex items-center">
+                            <span className={`h-1.5 w-1.5 rounded-full mr-2 ${poaConfig?.ercValidationEnabled ? 'bg-green-500' : 'bg-gray-500'}`} />
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">
+                                ERC Validation {poaConfig?.ercValidationEnabled ? 'ON' : 'OFF'}
+                            </span>
+                        </div>
+                    </div>
+                    <span className="text-[9px] font-mono text-muted-foreground">
+                        Valid: {poaConfig?.ercValidityPeriod ? (poaConfig.ercValidityPeriod / 86400).toFixed(0) : '-'} days
+                    </span>
+                </div>
             </div>
 
             <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">

@@ -1,9 +1,15 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { Program, AnchorProvider, Idl, setProvider, BN } from '@coral-xyz/anchor'
+import { Connection, PublicKey } from '@solana/web3.js'
 import { usePrivacy } from './PrivacyProvider'
 import { toast } from 'react-hot-toast'
-import * as zk from '@/lib/zk-utils'
+import governanceIdl from '@/lib/idl/governance.json'
+
+// Hardcoded for localnet dev - same as in Anchor.toml
+const GOVERNANCE_PROGRAM_ID = new PublicKey("8bNpJqZoqqUWKu55VWhR8LWS66BX7NPpwgYBAKhBzu2L")
+const SOLANA_RPC_URL = "http://127.0.0.1:8899"
 
 interface Proposal {
     id: string
@@ -16,10 +22,21 @@ interface Proposal {
     hasVoted: boolean
 }
 
+export interface PoAConfig {
+    authority: string
+    emergencyPaused: boolean
+    ercValidationEnabled: boolean
+    minEnergyAmount: number
+    maxErcAmount: number
+    ercValidityPeriod: number
+}
+
 interface GovernanceContextType {
     proposals: Proposal[]
+    poaConfig: PoAConfig | null
     votePrivate: (proposalId: string, support: boolean) => Promise<string>
     createProposal: (title: string, description: string) => void
+    isConnected: boolean
 }
 
 const GovernanceContext = createContext<GovernanceContextType | undefined>(undefined)
@@ -32,6 +49,11 @@ export const useGovernance = () => {
 
 export const GovernanceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { privateBalance, rootSeed } = usePrivacy()
+    const [program, setProgram] = useState<Program<Idl> | null>(null)
+    const [isConnected, setIsConnected] = useState(false)
+    const [poaConfig, setPoaConfig] = useState<PoAConfig | null>(null)
+
+    // Mock proposals for now
     const [proposals, setProposals] = useState<Proposal[]>([
         {
             id: 'PROP-001',
@@ -55,6 +77,59 @@ export const GovernanceProvider: React.FC<{ children: ReactNode }> = ({ children
         }
     ])
 
+    // Initialize Anchor Program
+    useEffect(() => {
+        try {
+            const connection = new Connection(SOLANA_RPC_URL, "confirmed")
+            const provider = new AnchorProvider(
+                connection,
+                {
+                    publicKey: PublicKey.default,
+                    signTransaction: async (tx: any) => tx,
+                    signAllTransactions: async (txs: any[]) => txs
+                },
+                { commitment: "confirmed" }
+            )
+            setProvider(provider)
+            const prog = new Program(governanceIdl as Idl, provider)
+            setProgram(prog)
+            setIsConnected(true)
+        } catch (err) {
+            console.error("Failed to init Governance program:", err)
+            setIsConnected(false)
+        }
+    }, [])
+
+    // Fetch PoA Config
+    useEffect(() => {
+        if (!program || !isConnected) return
+
+        const fetchConfig = async () => {
+            try {
+                const [poaConfigPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("poa_config")],
+                    GOVERNANCE_PROGRAM_ID
+                )
+
+                // @ts-ignore
+                const account = await program.account.poAConfig.fetch(poaConfigPda)
+
+                setPoaConfig({
+                    authority: account.authority.toBase58(),
+                    emergencyPaused: account.emergencyPaused,
+                    ercValidationEnabled: account.ercValidationEnabled,
+                    minEnergyAmount: account.minEnergyAmount.toNumber(),
+                    maxErcAmount: account.maxErcAmount.toNumber(),
+                    ercValidityPeriod: account.ercValidityPeriod.toNumber()
+                })
+            } catch (err) {
+                console.error("Error fetching PoA Config:", err)
+            }
+        }
+
+        fetchConfig()
+    }, [program, isConnected])
+
     const votePrivate = async (proposalId: string, support: boolean) => {
         if (!privateBalance || !rootSeed) throw new Error('Privacy module locked')
         if (privateBalance.amount === null) throw new Error('Private balance unknown')
@@ -62,12 +137,8 @@ export const GovernanceProvider: React.FC<{ children: ReactNode }> = ({ children
         const toastId = toast.loading('Generating ZK Stake Weight Proof...')
 
         try {
-            // In a real system:
-            // 1. User generates a ZK proof that their commitment C hides weight W.
-            // 2. The vote itself is submitted as a nullifier to prevent double-voting.
-            // For this demo, we simulate the cryptographic work.
+            // Simulation
             await new Promise(r => setTimeout(r, 1200))
-
             const weight = privateBalance.amount
 
             setProposals(prev => prev.map(p => {
@@ -105,7 +176,7 @@ export const GovernanceProvider: React.FC<{ children: ReactNode }> = ({ children
     }
 
     return (
-        <GovernanceContext.Provider value={{ proposals, votePrivate, createProposal }}>
+        <GovernanceContext.Provider value={{ proposals, poaConfig, isConnected, votePrivate, createProposal }}>
             {children}
         </GovernanceContext.Provider>
     )

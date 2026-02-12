@@ -2,7 +2,7 @@
   "address": "8bNpJqZoqqUWKu55VWhR8LWS66BX7NPpwgYBAKhBzu2L",
   "metadata": {
     "name": "governance",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "Governance program for P2P Energy Trading - Engineering Department administration"
   },
@@ -22,26 +22,7 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "new_authority",
@@ -68,33 +49,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": []
@@ -114,33 +73,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": []
@@ -160,33 +97,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": []
@@ -205,26 +120,7 @@
       ],
       "accounts": [
         {
-          "name": "poa_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "poa_config"
         }
       ],
       "args": [],
@@ -249,26 +145,7 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -276,8 +153,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": []
@@ -296,58 +172,11 @@
       ],
       "accounts": [
         {
-          "name": "poa_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "poa_config"
         },
         {
           "name": "erc_certificate",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  114,
-                  99,
-                  95,
-                  99,
-                  101,
-                  114,
-                  116,
-                  105,
-                  102,
-                  105,
-                  99,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "certificate_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "meter_account",
@@ -358,14 +187,10 @@
         {
           "name": "authority",
           "writable": true,
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -402,33 +227,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -453,66 +256,15 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "erc_certificate",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  114,
-                  99,
-                  95,
-                  99,
-                  101,
-                  114,
-                  116,
-                  105,
-                  102,
-                  105,
-                  99,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "erc_certificate.certificate_id",
-                "account": "ErcCertificate"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -537,33 +289,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -588,33 +318,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -646,59 +354,11 @@
       ],
       "accounts": [
         {
-          "name": "poa_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "poa_config"
         },
         {
           "name": "erc_certificate",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  114,
-                  99,
-                  95,
-                  99,
-                  101,
-                  114,
-                  116,
-                  105,
-                  102,
-                  105,
-                  99,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "erc_certificate.certificate_id",
-                "account": "ErcCertificate"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "current_owner",
@@ -731,33 +391,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -782,33 +420,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -841,33 +457,11 @@
       "accounts": [
         {
           "name": "poa_config",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -891,66 +485,15 @@
       ],
       "accounts": [
         {
-          "name": "poa_config",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  97,
-                  95,
-                  99,
-                  111,
-                  110,
-                  102,
-                  105,
-                  103
-                ]
-              }
-            ]
-          }
+          "name": "poa_config"
         },
         {
           "name": "erc_certificate",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  114,
-                  99,
-                  95,
-                  99,
-                  101,
-                  114,
-                  116,
-                  105,
-                  102,
-                  105,
-                  99,
-                  97,
-                  116,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "erc_certificate.certificate_id",
-                "account": "ErcCertificate"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "poa_config"
-          ]
+          "signer": true
         }
       ],
       "args": []
@@ -1341,6 +884,16 @@
       "code": 6031,
       "name": "InvalidOracleAuthority",
       "msg": "Invalid oracle authority"
+    },
+    {
+      "code": 6032,
+      "name": "ValidationDataTooLong",
+      "msg": "Validation data too long"
+    },
+    {
+      "code": 6033,
+      "name": "InvalidMeterAccount",
+      "msg": "Invalid meter account"
     }
   ],
   "types": [

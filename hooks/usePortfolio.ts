@@ -23,7 +23,8 @@ export function useProfile() {
             if (!token) throw new Error('Authentication required')
             const response = await apiClient.getProfile()
             if (response.error) throw new Error(response.error)
-            return response.data?.user || null
+            // API returns flat UserResponse (not wrapped in { user: ... })
+            return (response.data as UserProfile) || null
         },
         enabled: !!token && isAuthenticated,
     })
@@ -40,11 +41,12 @@ export function useWalletBalance(walletAddress?: string) {
         queryKey: ['wallet-balance', token, walletAddress],
         queryFn: async () => {
             if (!token) throw new Error('Authentication required')
+            if (!walletAddress) throw new Error('Wallet address required')
             const response = await apiClient.getBalance(walletAddress)
             if (response.error) throw new Error(response.error)
             return response.data
         },
-        enabled: !!token,
+        enabled: !!token && !!walletAddress,
         refetchInterval: 10000,
     })
 }

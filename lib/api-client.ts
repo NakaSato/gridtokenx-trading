@@ -471,11 +471,23 @@ export class ApiClient {
   }
 
   async getBalance(walletAddress?: string) {
-    const endpoint = walletAddress
-      ? `/api/v1/wallets/${walletAddress}/balance`
-      : '/api/v1/wallets/unknown/balance'
+    if (!walletAddress) {
+      // Return empty balance instead of querying with 'unknown'
+      return {
+        data: {
+          wallet_address: '',
+          token_balance: '0.00',
+          token_balance_raw: 0,
+          balance_sol: 0,
+          decimals: 9,
+          token_mint: '',
+          token_account: '',
+        },
+        status: 200,
+      }
+    }
 
-    return apiRequest(endpoint, {
+    return apiRequest(`/api/v1/wallets/${walletAddress}/balance`, {
       method: 'GET',
       token: this.token,
     })

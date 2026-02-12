@@ -16,6 +16,7 @@ import {
   TableColumnsSplit,
   ShieldCheck,
   BarChart3,
+  Leaf,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -114,6 +115,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <ChartLine size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
   },
+
   {
     name: 'Portfolio',
     href: '/portfolio',
