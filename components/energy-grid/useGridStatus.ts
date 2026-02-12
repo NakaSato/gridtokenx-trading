@@ -62,7 +62,9 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                             tariff: data.tariff,
                             adr_event: data.adr_event,
                             load_forecast: data.load_forecast,
-                            ev_fleet: data.ev_fleet
+                            ev_fleet: data.ev_fleet,
+                            avg_nodal_price: data.avg_nodal_price,
+                            carbon_intensity: data.carbon_intensity
                         }
                         // Update cache immediately on WS message
                         queryClient.setQueryData(['grid-status'], updatedStatus)

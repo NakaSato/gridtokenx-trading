@@ -63,6 +63,8 @@ export interface GridStatus {
     adr_event?: ADREvent
     load_forecast?: LoadForecast
     ev_fleet?: EVFleetStatus
+    avg_nodal_price?: number
+    carbon_intensity?: number
 }
 
 export interface ZoneTopologyData {

@@ -538,6 +538,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         adrEvent={apiGridStatus?.adr_event}
         loadForecast={apiGridStatus?.load_forecast}
         evFleet={apiGridStatus?.ev_fleet}
+        carbonIntensity={apiGridStatus?.carbon_intensity}
+        avgNodalPrice={apiGridStatus?.avg_nodal_price}
       />
 
       {/* Flow Line Hover Tooltip */}

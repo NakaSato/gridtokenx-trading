@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 import { GridFrequencyChart } from './GridFrequencyChart'
 import { GridForecastChart } from './GridForecastChart'
+import { CarbonGauge } from './CarbonGauge'
 import { EVManagementPanel } from './EVManagementPanel'
 import { FrequencyStatus, IslandStatus, ZoneGridStatus, TariffStatus, ADREvent, LoadForecast, EVFleetStatus } from '@/types/grid'
 import { useGridHistory } from '@/hooks/useGridHistory'
@@ -32,6 +33,8 @@ interface GridStatsPanelProps {
     adrEvent?: ADREvent
     loadForecast?: LoadForecast
     evFleet?: EVFleetStatus
+    carbonIntensity?: number
+    avgNodalPrice?: number
 }
 
 export const GridStatsPanel = memo(function GridStatsPanel({
@@ -49,6 +52,8 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     adrEvent,
     loadForecast,
     evFleet,
+    carbonIntensity = 450,
+    avgNodalPrice = 0.25,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const { history, error: historyError, refresh: fetchHistory } = useGridHistory(30, 30000)
@@ -141,6 +146,8 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                         )}
                     </div>
                 </div>
+
+                <CarbonGauge intensity={carbonIntensity} />
 
                 <EVManagementPanel fleet={evFleet} />
 
@@ -302,6 +309,19 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                             <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-tighter">CO₂ Saved</span>
                         </div>
                         <span className="text-[10px] sm:text-xs font-bold text-white/90">~{co2Saved.toFixed(2)} <span className="text-[7px] sm:text-[8px] text-white/40 font-normal">kg</span></span>
+                    </div>
+                </div>
+
+                {/* Nodal Pricing Metric */}
+                <div className="p-2 rounded-lg bg-blue-500/5 border border-blue-500/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-blue-500/10">
+                            <Zap className="h-3 w-3 text-blue-400" />
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Avg Nodal Price</span>
+                    </div>
+                    <div className="text-sm font-mono font-black text-blue-400">
+                        ฿{avgNodalPrice.toFixed(2)}<span className="text-[8px] text-blue-400/50 ml-0.5">/kWh</span>
                     </div>
                 </div>
 
