@@ -6,17 +6,12 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import Image, { type StaticImageData } from 'next/image'
 import {
   Activity,
-  ArrowUpDown,
   BookOpenText,
   ChartLine,
-  ConciergeBell,
   ExternalLink,
-  FileChartColumn,
   MessagesSquare,
-  TableColumnsSplit,
   ShieldCheck,
   BarChart3,
-  Leaf,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -32,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { AuthButton } from './auth'
-import { ArrowDown, EarnIcon, MoreIcon, WalletIcon } from '@/public/svgs/icons'
+import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Logo } from './Logo'
 import dynamic from 'next/dynamic'
 import NavBarMobile from './NavBarMobile'
@@ -108,12 +103,6 @@ const NAV_ITEMS: NavItem[] = [
     icon: <BarChart3 size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
     requiresAuth: true,
-  },
-  {
-    name: 'Futures',
-    href: '/futures',
-    icon: <ChartLine size={16} />,
-    badge: { text: 'BETA', variant: 'beta' },
   },
 
   {

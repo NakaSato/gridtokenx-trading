@@ -59,18 +59,6 @@ const EnergyGridMapWrapper = dynamic(
   }
 )
 
-const PriceChart = dynamic(
-  () => import('@/components/trading/PriceChart'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full animate-pulse bg-secondary/20 rounded-lg flex flex-col items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-3" />
-        <p className="text-secondary-foreground text-sm font-medium">Loading chart...</p>
-      </div>
-    )
-  }
-)
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
@@ -172,9 +160,8 @@ export default function Homepage() {
                   <div className="flex flex-col h-full overflow-hidden">
                     <Tabs defaultValue="map" className="h-full flex flex-col">
                       <div className="px-1 pt-1 pb-0">
-                        <TabsList className="h-7 bg-muted/50 p-0.5 w-full justify-start rounded-md">
+                        <TabsList className="h-7 bg-muted/50 p-0.5 w-max justify-start rounded-md">
                           <TabsTrigger value="map" className="h-6 text-xs px-3">Energy Map</TabsTrigger>
-                          <TabsTrigger value="chart" className="h-6 text-xs px-3">Price Chart</TabsTrigger>
                         </TabsList>
                       </div>
                       <div className="flex-1 min-h-0 border border-border rounded-lg bg-card overflow-hidden shadow-sm mt-1 relative">
@@ -184,9 +171,6 @@ export default function Homepage() {
                             viewState={viewState}
                             onViewStateChange={handleViewStateChange}
                           />
-                        </TabsContent>
-                        <TabsContent value="chart" className="h-full m-0 p-0 data-[state=active]:flex flex-col">
-                          <PriceChart />
                         </TabsContent>
                       </div>
                     </Tabs>

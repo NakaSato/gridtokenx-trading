@@ -23,7 +23,6 @@ interface User {
   blockchain_registered: boolean
   email_verified?: boolean
   wallet_address?: string
-  // Financial fields from API
   balance?: number
   locked_amount?: number
   locked_energy?: number
@@ -78,7 +77,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     checkAuth()
   }, [])
-
 
   const checkAuth = async () => {
     setIsLoading(true)
@@ -363,7 +361,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return false
     }
   }
-
 
   const value: AuthContextType = {
     user,

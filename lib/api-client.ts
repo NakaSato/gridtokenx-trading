@@ -847,7 +847,96 @@ export class ApiClient {
     })
   }
 
+  // --- Revenue (Admin) ---
+  async getRevenueSummary(): Promise<ApiResponse<import('../types/trading').PlatformRevenueSummary>> {
+    return apiRequest<import('../types/trading').PlatformRevenueSummary>('/api/v1/trading/revenue/summary', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
 
+  async getRevenueRecords(limit = 50, offset = 0): Promise<ApiResponse<import('../types/trading').RevenueRecord[]>> {
+    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
+    return apiRequest<import('../types/trading').RevenueRecord[]>(`/api/v1/trading/revenue/records?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  // --- VPP Orchestration (Admin) ---
+  async getVppClusters(): Promise<ApiResponse<import('../types/grid').VppClusterStatus[]>> {
+    return apiRequest<import('../types/grid').VppClusterStatus[]>('/api/v1/vpp/clusters', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async dispatchVppCluster(clusterId: string, targetKw: number): Promise<ApiResponse<import('../types/grid').VppDispatchResponse>> {
+    return apiRequest<import('../types/grid').VppDispatchResponse>('/api/v1/vpp/dispatch', {
+      method: 'POST',
+      body: { cluster_id: clusterId, target_kw: targetKw },
+      token: this.token,
+    })
+  }
+
+  // --- Admin Analytics & Health ---
+  async getAdminStats(): Promise<ApiResponse<import('../types/trading').AdminStatsResponse>> {
+    return apiRequest<import('../types/trading').AdminStatsResponse>('/api/v1/analytics/admin/stats', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getSystemHealth(): Promise<ApiResponse<import('../types/trading').DetailedHealthStatus>> {
+    return apiRequest<import('../types/trading').DetailedHealthStatus>('/api/v1/analytics/admin/health', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getAdminActivity(): Promise<ApiResponse<import('../types/trading').AuditEventRecord[]>> {
+    return apiRequest<import('../types/trading').AuditEventRecord[]>('/api/v1/analytics/admin/activity', {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getZoneEconomicInsights(timeframe: string = '24h'): Promise<ApiResponse<import('../types/trading').ZoneEconomicInsights>> {
+    return apiRequest<import('../types/trading').ZoneEconomicInsights>(`/api/v1/analytics/admin/zones/economic?timeframe=${timeframe}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async getAdminUsers(filters?: any): Promise<ApiResponse<import('../types/trading').AdminUsersResponse>> {
+    const params = new URLSearchParams(filters)
+    return apiRequest<import('../types/trading').AdminUsersResponse>(`/api/v1/admin/users?${params.toString()}`, {
+      method: 'GET',
+      token: this.token,
+    })
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
+    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/role`, {
+      method: 'PUT',
+      token: this.token,
+      body: JSON.stringify({ role }),
+    })
+  }
+
+  async deactivateUser(userId: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
+    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/deactivate`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
+
+  async reactivateUser(userId: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
+    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/reactivate`, {
+      method: 'POST',
+      token: this.token,
+    })
+  }
 
   // --- Export ---
   async exportTradingHistory(format: 'csv' | 'json', filters?: any): Promise<ApiResponse<Blob>> {

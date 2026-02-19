@@ -1,22 +1,10 @@
 'use client'
 
-import { useState, useEffect, memo } from 'react'
-import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, AlertCircle, RefreshCw, ShieldAlert, Globe, WifiOff } from 'lucide-react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useState, memo } from 'react'
+import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, ShieldAlert, Globe, WifiOff } from 'lucide-react'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
-import { GridFrequencyChart } from './GridFrequencyChart'
-import { GridForecastChart } from './GridForecastChart'
-import { CarbonGauge } from './CarbonGauge'
 import { EVManagementPanel } from './EVManagementPanel'
 import { FrequencyStatus, IslandStatus, ZoneGridStatus, TariffStatus, ADREvent, LoadForecast, EVFleetStatus } from '@/types/grid'
-import { useGridHistory } from '@/hooks/useGridHistory'
-
-interface GridHistoryPoint {
-    timestamp: string
-    total_generation: number
-    total_consumption: number
-}
-
 
 interface GridStatsPanelProps {
     totalGeneration: number
@@ -33,8 +21,6 @@ interface GridStatsPanelProps {
     adrEvent?: ADREvent
     loadForecast?: LoadForecast
     evFleet?: EVFleetStatus
-    carbonIntensity?: number
-    avgNodalPrice?: number
 }
 
 export const GridStatsPanel = memo(function GridStatsPanel({
@@ -52,11 +38,8 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     adrEvent,
     loadForecast,
     evFleet,
-    carbonIntensity = 450,
-    avgNodalPrice = 0.25,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
-    const { history, error: historyError, refresh: fetchHistory } = useGridHistory(30, 30000)
 
     const netBalance = totalGeneration - totalConsumption
     const totalLoad = totalGeneration + totalConsumption
@@ -95,22 +78,9 @@ export const GridStatsPanel = memo(function GridStatsPanel({
 
             {/* Metrics Content */}
             <div className={`space-y-2 sm:space-y-3 transition-all duration-500 ${isCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-[1000px] opacity-100'}`}>
-
                 {/* Frequency & Islanding Section (New) */}
                 <div className="space-y-2 mb-3">
-                    <GridFrequencyChart currentFrequency={frequency} />
-                    <GridForecastChart forecast={loadForecast} />
-
                     <div className="flex flex-wrap items-center gap-1.5 px-1">
-                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${islandStatus?.is_islanded
-                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                            : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'}`}>
-                            {islandStatus?.is_islanded ? <WifiOff size={8} /> : <Globe size={8} />}
-                            <span className="text-[8px] font-bold uppercase tracking-wider">
-                                {islandStatus?.is_islanded ? 'Microgrid' : 'Grid-Tied'}
-                            </span>
-                        </div>
-
                         {tariff && (
                             <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border ${tariff.is_peak
                                 ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
@@ -147,64 +117,8 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                     </div>
                 </div>
 
-                <CarbonGauge intensity={carbonIntensity} />
-
                 <EVManagementPanel fleet={evFleet} />
 
-                {/* Visual Chart - Historical Trends */}
-                <div className="h-16 sm:h-24 w-full bg-white/5 rounded-lg p-1 border border-white/5 mb-2 relative">
-                    {historyError ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                            <AlertCircle className="h-4 w-4 text-red-400/60" />
-                            <span className="text-[10px] text-red-400/60">{historyError}</span>
-                            <button
-                                onClick={fetchHistory}
-                                className="flex items-center gap-1 px-2 py-0.5 text-[9px] rounded bg-white/5 hover:bg-white/10 text-white/50 transition-colors"
-                            >
-                                <RefreshCw className="h-2.5 w-2.5" />
-                                Retry
-                            </button>
-                        </div>
-                    ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={history.length > 0 ? history : []}>
-                                <defs>
-                                    <linearGradient id="genGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="consGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <Area
-                                    type="monotone"
-                                    dataKey="total_generation"
-                                    stroke="#facc15"
-                                    fillOpacity={1}
-                                    fill="url(#genGradient)"
-                                    strokeWidth={1}
-                                    isAnimationActive={false}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="total_consumption"
-                                    stroke="#60a5fa"
-                                    fillOpacity={1}
-                                    fill="url(#consGradient)"
-                                    strokeWidth={1}
-                                    isAnimationActive={false}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '10px' }}
-                                    itemStyle={{ padding: '0px' }}
-                                    labelStyle={{ display: 'none' }}
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    )}
-                </div>
 
                 {/* Generation */}
                 <div>
@@ -266,33 +180,35 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                 </div>
 
                 {/* Zone Breakdown */}
-                {zones && Object.keys(zones).length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-white/10">
-                        <div className="text-[10px] text-white/40 mb-2 uppercase tracking-widest font-bold">Zone Breakdown</div>
-                        <div className="space-y-2">
-                            {Object.entries(zones).map(([id, zone]) => (
-                                <div key={id} className="bg-white/5 rounded p-2 border border-white/5">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-[10px] font-bold text-white/80">Zone {id}</span>
-                                        <span className="text-[9px] text-white/40">{zone.active_meters} meters</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-                                            <span className="text-white/60">Gen:</span>
-                                            <span className="font-mono text-yellow-400">{Math.round(zone.generation)}</span>
+                {
+                    zones && Object.keys(zones).length > 0 && (
+                        <div className="mt-4 pt-3 border-t border-white/10">
+                            <div className="text-[10px] text-white/40 mb-2 uppercase tracking-widest font-bold">Zone Breakdown</div>
+                            <div className="space-y-2">
+                                {Object.entries(zones).map(([id, zone]) => (
+                                    <div key={id} className="bg-white/5 rounded p-2 border border-white/5">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[10px] font-bold text-white/80">Zone {id}</span>
+                                            <span className="text-[9px] text-white/40">{zone.active_meters} meters</span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                            <span className="text-white/60">Cons:</span>
-                                            <span className="font-mono text-blue-400">{Math.round(zone.consumption)}</span>
+                                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                                                <span className="text-white/60">Gen:</span>
+                                                <span className="font-mono text-yellow-400">{Math.round(zone.generation)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                                <span className="text-white/60">Cons:</span>
+                                                <span className="font-mono text-blue-400">{Math.round(zone.consumption)}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Secondary Metrics */}
                 <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 pt-2 border-t border-white/5">
@@ -312,44 +228,34 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                     </div>
                 </div>
 
-                {/* Nodal Pricing Metric */}
-                <div className="p-2 rounded-lg bg-blue-500/5 border border-blue-500/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1 rounded bg-blue-500/10">
-                            <Zap className="h-3 w-3 text-blue-400" />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Avg Nodal Price</span>
-                    </div>
-                    <div className="text-sm font-mono font-black text-blue-400">
-                        ฿{avgNodalPrice.toFixed(2)}<span className="text-[8px] text-blue-400/50 ml-0.5">/kWh</span>
-                    </div>
-                </div>
 
                 {/* Footer Info */}
                 <div className="flex items-center justify-between pt-1 text-[8px] sm:text-[9px] text-white/30 italic">
                     <span>{activeMeters} Active Meters</span>
-                    <span className="hidden sm:inline">v2.2.0-analytics</span>
+                    <span className="hidden sm:inline">v2.2.0-dev</span>
                 </div>
-            </div>
+            </div >
 
             {/* Collapsed Mini-Stats (visible only when collapsed) */}
-            {isCollapsed && (
-                <div
-                    className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top-1 duration-300"
-                    onClick={(e) => { e.stopPropagation(); setIsCollapsed(false); }}
-                >
-                    <div className="flex flex-col">
-                        <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Net</span>
-                        <span className={`text-[10px] font-mono font-bold ${netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {netBalance >= 0 ? '+' : ''}{Math.round(netBalance)} <span className="text-[8px] opacity-50">kW</span>
-                        </span>
+            {
+                isCollapsed && (
+                    <div
+                        className="mt-2 flex items-center justify-between border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top-1 duration-300"
+                        onClick={(e) => { e.stopPropagation(); setIsCollapsed(false); }}
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Net</span>
+                            <span className={`text-[10px] font-mono font-bold ${netBalance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {netBalance >= 0 ? '+' : ''}{Math.round(netBalance)} <span className="text-[8px] opacity-50">kW</span>
+                            </span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Active</span>
+                            <span className="text-[10px] font-mono font-bold text-white/80">{activeMeters}</span>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                        <span className="text-[8px] uppercase tracking-tighter text-white/30 font-bold">Active</span>
-                        <span className="text-[10px] font-mono font-bold text-white/80">{activeMeters}</span>
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 })

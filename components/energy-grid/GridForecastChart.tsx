@@ -77,15 +77,7 @@ export function GridForecastChart({ forecast }: GridForecastChartProps) {
                 </div>
             </div>
 
-            <div className="absolute top-1 left-2 flex flex-col pointer-events-none">
-                <span className="text-[8px] uppercase font-bold tracking-widest text-white/20">24h Predictive Analytics</span>
-            </div>
 
-            {!forecast && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                    <span className="text-[9px] text-white/30 animate-pulse font-mono">Initializing Neural Forecast...</span>
-                </div>
-            )}
         </div>
     )
 }

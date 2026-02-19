@@ -1,5 +1,5 @@
 {
-  "address": "8bNpJqZoqqUWKu55VWhR8LWS66BX7NPpwgYBAKhBzu2L",
+  "address": "4xXr6TM6YP6SiTeBcfBXC5dZep5PMhBCUN8uG4VUmQJk",
   "metadata": {
     "name": "governance",
     "version": "0.1.1",
@@ -45,54 +45,6 @@
         87,
         30,
         194
-      ],
-      "accounts": [
-        {
-          "name": "poa_config",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "emergency_pause",
-      "discriminator": [
-        21,
-        143,
-        27,
-        142,
-        200,
-        181,
-        210,
-        255
-      ],
-      "accounts": [
-        {
-          "name": "poa_config",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "emergency_unpause",
-      "discriminator": [
-        83,
-        249,
-        195,
-        57,
-        206,
-        189,
-        31,
-        85
       ],
       "accounts": [
         {
@@ -468,6 +420,10 @@
         {
           "name": "erc_validation_enabled",
           "type": "bool"
+        },
+        {
+          "name": "allow_certificate_transfers",
+          "type": "bool"
         }
       ]
     },
@@ -502,16 +458,131 @@
   "accounts": [
     {
       "name": "ErcCertificate",
-      "discriminator": [
-        83,
-        161,
-        134,
-        16,
-        240,
-        92,
-        186,
-        157
-      ]
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "certificate_id",
+            "docs": [
+              "Unique certificate ID - FIXED: 32 bytes"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "id_len",
+            "type": "u8"
+          },
+          {
+            "name": "energy_amount",
+            "docs": [
+              "Energy amount in kWh"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "renewable_source",
+            "docs": [
+              "Source type (e.g., \"SOLAR\") - FIXED: 32 bytes"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "source_len",
+            "type": "u8"
+          },
+          {
+            "name": "validation_data",
+            "docs": [
+              "Validation data/hash - FIXED: 64 bytes"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "validation_len",
+            "type": "u8"
+          },
+          {
+            "name": "revocation_reason",
+            "docs": [
+              "Reason for revocation - FIXED: 64 bytes"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "reason_len",
+            "type": "u8"
+          },
+          {
+            "name": "owner",
+            "docs": [
+              "Current owner"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "issuer",
+            "docs": [
+              "Issuing authority"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "meter_account",
+            "docs": [
+              "Meter account that generated this energy"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "Expiration timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current status (0=Active, 1=Revoked, 2=Expired)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "validated_for_trading",
+            "docs": [
+              "Whether validated for secondary market"
+            ],
+            "type": "bool"
+          }
+        ]
+      }
     },
     {
       "name": "PoAConfig",
@@ -578,32 +649,6 @@
         130,
         77,
         145
-      ]
-    },
-    {
-      "name": "EmergencyPauseActivated",
-      "discriminator": [
-        27,
-        50,
-        161,
-        55,
-        240,
-        51,
-        173,
-        218
-      ]
-    },
-    {
-      "name": "EmergencyPauseDeactivated",
-      "discriminator": [
-        90,
-        52,
-        28,
-        232,
-        69,
-        75,
-        68,
-        124
       ]
     },
     {
@@ -732,166 +777,151 @@
     },
     {
       "code": 6001,
-      "name": "AlreadyPaused",
-      "msg": "System is already paused"
-    },
-    {
-      "code": 6002,
-      "name": "NotPaused",
-      "msg": "System is not paused"
-    },
-    {
-      "code": 6003,
-      "name": "SystemPaused",
-      "msg": "System is currently paused"
-    },
-    {
-      "code": 6004,
       "name": "MaintenanceMode",
       "msg": "System is in maintenance mode"
     },
     {
-      "code": 6005,
+      "code": 6002,
       "name": "ErcValidationDisabled",
       "msg": "ERC validation is disabled"
     },
     {
-      "code": 6006,
+      "code": 6003,
       "name": "InvalidErcStatus",
       "msg": "Invalid ERC status"
     },
     {
-      "code": 6007,
+      "code": 6004,
       "name": "AlreadyValidated",
       "msg": "ERC already validated"
     },
     {
-      "code": 6008,
+      "code": 6005,
       "name": "BelowMinimumEnergy",
       "msg": "Energy amount below minimum required"
     },
     {
-      "code": 6009,
+      "code": 6006,
       "name": "ExceedsMaximumEnergy",
       "msg": "Energy amount exceeds maximum allowed"
     },
     {
-      "code": 6010,
+      "code": 6007,
       "name": "CertificateIdTooLong",
       "msg": "Certificate ID too long"
     },
     {
-      "code": 6011,
+      "code": 6008,
       "name": "SourceNameTooLong",
       "msg": "Renewable source name too long"
     },
     {
-      "code": 6012,
+      "code": 6009,
       "name": "ErcExpired",
       "msg": "ERC certificate has expired"
     },
     {
-      "code": 6013,
+      "code": 6010,
       "name": "InvalidMinimumEnergy",
       "msg": "Invalid minimum energy amount"
     },
     {
-      "code": 6014,
+      "code": 6011,
       "name": "InvalidMaximumEnergy",
       "msg": "Invalid maximum energy amount"
     },
     {
-      "code": 6015,
+      "code": 6012,
       "name": "InvalidValidityPeriod",
       "msg": "Invalid validity period"
     },
     {
-      "code": 6016,
+      "code": 6013,
       "name": "ContactInfoTooLong",
       "msg": "Contact information too long"
     },
     {
-      "code": 6017,
+      "code": 6014,
       "name": "InvalidOracleConfidence",
       "msg": "Invalid oracle confidence score (must be 0-100)"
     },
     {
-      "code": 6018,
+      "code": 6015,
       "name": "OracleValidationRequired",
       "msg": "Oracle validation required but not configured"
     },
     {
-      "code": 6019,
+      "code": 6016,
       "name": "TransfersNotAllowed",
       "msg": "Certificate transfers not allowed"
     },
     {
-      "code": 6020,
+      "code": 6017,
       "name": "InsufficientUnclaimedGeneration",
       "msg": "Insufficient unclaimed generation for ERC issuance"
     },
     {
-      "code": 6021,
+      "code": 6018,
       "name": "AlreadyRevoked",
       "msg": "Certificate already revoked"
     },
     {
-      "code": 6022,
+      "code": 6019,
       "name": "RevocationReasonRequired",
       "msg": "Revocation reason required"
     },
     {
-      "code": 6023,
+      "code": 6020,
       "name": "InvalidRecipient",
       "msg": "Invalid transfer recipient"
     },
     {
-      "code": 6024,
+      "code": 6021,
       "name": "CannotTransferToSelf",
       "msg": "Cannot transfer to self"
     },
     {
-      "code": 6025,
+      "code": 6022,
       "name": "NotValidatedForTrading",
       "msg": "Certificate not validated for trading"
     },
     {
-      "code": 6026,
+      "code": 6023,
       "name": "AuthorityChangePending",
       "msg": "Authority change already pending"
     },
     {
-      "code": 6027,
+      "code": 6024,
       "name": "NoAuthorityChangePending",
       "msg": "No authority change pending"
     },
     {
-      "code": 6028,
+      "code": 6025,
       "name": "InvalidPendingAuthority",
       "msg": "Invalid pending authority"
     },
     {
-      "code": 6029,
+      "code": 6026,
       "name": "AuthorityChangeExpired",
       "msg": "Authority change expired"
     },
     {
-      "code": 6030,
+      "code": 6027,
       "name": "OracleConfidenceTooLow",
       "msg": "Oracle confidence below minimum threshold"
     },
     {
-      "code": 6031,
+      "code": 6028,
       "name": "InvalidOracleAuthority",
       "msg": "Invalid oracle authority"
     },
     {
-      "code": 6032,
+      "code": 6029,
       "name": "ValidationDataTooLong",
       "msg": "Validation data too long"
     },
     {
-      "code": 6033,
+      "code": 6030,
       "name": "InvalidMeterAccount",
       "msg": "Invalid meter account"
     }
@@ -986,38 +1016,6 @@
       }
     },
     {
-      "name": "EmergencyPauseActivated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "EmergencyPauseDeactivated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "ErcCertificate",
       "type": {
         "kind": "struct",
@@ -1025,9 +1023,18 @@
           {
             "name": "certificate_id",
             "docs": [
-              "Unique certificate identifier"
+              "Unique certificate identifier - FIXED: 64 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "id_len",
+            "type": "u8"
           },
           {
             "name": "authority",
@@ -1053,16 +1060,34 @@
           {
             "name": "renewable_source",
             "docs": [
-              "Source of renewable energy (solar, wind, etc.)"
+              "Source of renewable energy (solar, wind, etc.) - FIXED: 64 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "source_len",
+            "type": "u8"
           },
           {
             "name": "validation_data",
             "docs": [
-              "Additional validation data"
+              "Additional validation data - FIXED: 256 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          },
+          {
+            "name": "data_len",
+            "type": "u16"
           },
           {
             "name": "issued_at",
@@ -1110,11 +1135,18 @@
           {
             "name": "revocation_reason",
             "docs": [
-              "Revocation reason (if revoked)"
+              "Revocation reason (if revoked) - FIXED: 128 bytes"
             ],
             "type": {
-              "option": "string"
+              "array": [
+                "u8",
+                128
+              ]
             }
+          },
+          {
+            "name": "reason_len",
+            "type": "u8"
           },
           {
             "name": "revoked_at",
@@ -1322,7 +1354,7 @@
             "type": "bool"
           },
           {
-            "name": "old_enabled",
+            "name": "allow_certificate_transfers",
             "type": "bool"
           },
           {
@@ -1354,11 +1386,15 @@
             "type": "u64"
           },
           {
-            "name": "erc_validation_enabled",
-            "type": "bool"
+            "name": "authority_name",
+            "type": "string"
           },
           {
-            "name": "emergency_paused",
+            "name": "contact_info",
+            "type": "string"
+          },
+          {
+            "name": "erc_validation_enabled",
             "type": "bool"
           },
           {
@@ -1491,16 +1527,34 @@
           {
             "name": "authority_name",
             "docs": [
-              "Authority name (e.g., \"REC\")"
+              "Authority name (e.g., \"REC\") - FIXED: 64 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "name_len",
+            "type": "u8"
           },
           {
             "name": "contact_info",
             "docs": [
-              "Authority contact information"
+              "Authority contact information - FIXED: 128 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          },
+          {
+            "name": "contact_len",
+            "type": "u8"
           },
           {
             "name": "version",
@@ -1508,31 +1562,6 @@
               "Governance version for upgrades"
             ],
             "type": "u8"
-          },
-          {
-            "name": "emergency_paused",
-            "docs": [
-              "Emergency pause status"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "emergency_timestamp",
-            "docs": [
-              "Emergency pause timestamp"
-            ],
-            "type": {
-              "option": "i64"
-            }
-          },
-          {
-            "name": "emergency_reason",
-            "docs": [
-              "Emergency pause reason"
-            ],
-            "type": {
-              "option": "string"
-            }
           },
           {
             "name": "maintenance_mode",

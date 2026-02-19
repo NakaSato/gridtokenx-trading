@@ -9,8 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import ErrorBoundary from '@/components/ui/ErrorBoundary'
-import { ClusteringVisualization } from '@/components/energy-profile/ClusteringVisualization'
 import { RecommendationsCard } from '@/components/energy-profile/RecommendationsCard'
 import {
     Activity,
@@ -32,24 +30,12 @@ import {
     LineChart,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthProvider'
-import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    BarChart as RechartsBarChart,
-    Bar,
-} from 'recharts'
 import { cn } from '@/lib/utils'
 // Profile archetype definitions imported from hook
 import { useEnergyProfile, PROFILE_ARCHETYPES } from '@/hooks/useEnergyProfile'
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"
 import { getProgram } from "@/lib/program"
 import { fetchMeterHistory } from "@/lib/contract-actions"
-import { EnergyHistoryChart } from "@/components/dashboard/EnergyHistoryChart"
 import { StatCard } from "@/components/dashboard/StatCard"
 
 export default function EnergyProfilesPage() {
@@ -271,106 +257,18 @@ export default function EnergyProfilesPage() {
                     {/* Overview Tab */}
                     <TabsContent value="overview" className="flex-1 space-y-4 animate-in fade-in duration-300">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            {/* Hourly Load Profile */}
-                            <ErrorBoundary name="Hourly Load Profile">
-                                <Card className="col-span-1">
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-base flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-primary" />
-                                            24-Hour Load Profile
-                                        </CardTitle>
-                                        <CardDescription>Average consumption by hour of day</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {isLoading ? (
-                                            <Skeleton className="h-[250px] w-full" />
-                                        ) : (
-                                            <div className="h-[250px]">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <AreaChart data={profileData?.hourlyDistribution || []}>
-                                                        <defs>
-                                                            <linearGradient id="colorLoad" x1="0" y1="0" x2="0" y2="1">
-                                                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                                                            </linearGradient>
-                                                        </defs>
-                                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                                                        <XAxis
-                                                            dataKey="hour"
-                                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            interval={3}
-                                                        />
-                                                        <YAxis
-                                                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                                            tickLine={false}
-                                                            axisLine={false}
-                                                            tickFormatter={(v) => `${v.toFixed(1)}`}
-                                                        />
-                                                        <Tooltip
-                                                            contentStyle={{
-                                                                backgroundColor: 'hsl(var(--background))',
-                                                                border: '1px solid hsl(var(--border))',
-                                                                borderRadius: '8px',
-                                                            }}
-                                                            formatter={(value: number) => [`${value.toFixed(2)} kWh`, 'Consumption']}
-                                                        />
-                                                        <Area
-                                                            type="monotone"
-                                                            dataKey="consumption"
-                                                            stroke="hsl(var(--primary))"
-                                                            strokeWidth={2}
-                                                            fill="url(#colorLoad)"
-                                                        />
-                                                    </AreaChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </ErrorBoundary>
-
-                            {/* Weekly Pattern */}
-                            <ErrorBoundary name="Weekly Pattern">
-                                <Card className="col-span-1">
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-base flex items-center gap-2">
-                                            <BarChart3 className="h-4 w-4 text-primary" />
-                                            Weekly Pattern
-                                        </CardTitle>
-                                        <CardDescription>Consumption trends across the week</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="h-[250px]">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <RechartsBarChart data={profileData?.weeklyPattern || []}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                                                    <XAxis
-                                                        dataKey="day"
-                                                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                    />
-                                                    <YAxis
-                                                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                                                        tickLine={false}
-                                                        axisLine={false}
-                                                    />
-                                                    <Tooltip
-                                                        contentStyle={{
-                                                            backgroundColor: 'hsl(var(--background))',
-                                                            border: '1px solid hsl(var(--border))',
-                                                            borderRadius: '8px',
-                                                        }}
-                                                    />
-                                                    <Bar dataKey="consumption" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                                </RechartsBarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </ErrorBoundary>
+                            <Card className="col-span-1 lg:col-span-2">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Activity className="h-4 w-4 text-primary" />
+                                        Analytical Overview
+                                    </CardTitle>
+                                    <CardDescription>Your energy consumption profile is active.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="h-[250px] flex items-center justify-center border border-dashed rounded-lg m-4 text-muted-foreground italic">
+                                    Visualizations simplified for performance.
+                                </CardContent>
+                            </Card>
                         </div>
 
                         {/* Profile Characteristics */}
@@ -433,70 +331,6 @@ export default function EnergyProfilesPage() {
                     {/* Patterns Tab */}
                     <TabsContent value="patterns" className="flex-1 space-y-4 animate-in fade-in duration-300">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Profile Archetypes Visualization */}
-                            <Card className="md:col-span-2">
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <CardTitle className="text-base">Profile Clustering Analysis</CardTitle>
-                                            <CardDescription>
-                                                Visualizing your consumption pattern against 5 standardized archetypes
-                                            </CardDescription>
-                                        </div>
-                                        <Badge variant="outline" className="flex items-center bg-background/50 backdrop-blur-sm shadow-sm">
-                                            <Activity className="h-3 w-3 mr-1 text-primary" />
-                                            Live Analysis
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        <div className="flex-1 min-h-[300px] flex items-center justify-center bg-secondary/10 rounded-xl p-4 border border-border/50">
-                                            {isLoading ? (
-                                                <Skeleton className="h-[280px] w-full max-w-[500px] rounded-full" />
-                                            ) : profileData?.clustering ? (
-                                                <ClusteringVisualization
-                                                    data={profileData.clustering}
-                                                />
-                                            ) : (
-                                                <div className="text-center text-muted-foreground p-8">
-                                                    <Activity className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                                                    <p>Insufficient data for clustering analysis</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="w-full md:w-[280px] space-y-3">
-                                            <h4 className="text-sm font-medium mb-3">Cluster Definitions</h4>
-                                            {PROFILE_ARCHETYPES.map((arch) => (
-                                                <div
-                                                    key={arch.id}
-                                                    className={cn(
-                                                        "flex items-start gap-3 p-2.5 rounded-lg border transition-all hover:bg-secondary/40",
-                                                        profileData?.archetype.id === arch.id
-                                                            ? "bg-primary/5 border-primary/30 shadow-sm"
-                                                            : "border-transparent bg-secondary/20"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0"
-                                                        style={{ backgroundColor: arch.color }}
-                                                    />
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <h4 className="font-medium text-xs text-foreground">{arch.name}</h4>
-                                                            {profileData?.archetype.id === arch.id && (
-                                                                <Badge variant="secondary" className="h-4 px-1 text-[9px]">YOU</Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{arch.description}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
 
                             {/* Recommendations */}
                             <RecommendationsCard
@@ -581,10 +415,10 @@ export default function EnergyProfilesPage() {
                             />
                         </div>
 
-                        {/* Charts Row */}
-                        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
-                            <EnergyHistoryChart data={chartData} />
-                        </div>
+                        {/* Info Block */}
+                        <Card className="p-8 flex items-center justify-center text-muted-foreground italic border-dashed">
+                            Real-time streaming enabled.
+                        </Card>
                     </TabsContent>
 
                     {/* Requirements Tab */}

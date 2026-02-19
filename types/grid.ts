@@ -88,3 +88,21 @@ export interface GridTopologyResponse {
 export interface GridHistoryStatus extends GridStatus {
     id?: string
 }
+
+export interface VppClusterStatus {
+    cluster_id: string;
+    resource_count: number;
+    controllable_count: number;
+    total_capacity_kwh: number;
+    current_stored_kwh: number;
+    flex_up_kw: number;
+    flex_down_kw: number;
+    soc_percentage: number;
+    health_score: number;
+}
+
+export interface VppDispatchResponse {
+    success: boolean;
+    message: string;
+    details?: any;
+}

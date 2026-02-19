@@ -48,17 +48,18 @@ export default function GovernanceDashboard() {
                 <div className="col-span-2 p-3 bg-muted/20 border border-border rounded-lg flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center">
-                            <Activity size={12} className={`mr-2 ${poaConfig?.emergencyPaused ? 'text-red-500' : 'text-green-500'}`} />
+                            <Activity size={12} className={`mr-2 ${poaConfig?.ercValidationEnabled ? 'text-green-500' : 'text-gray-500'}`} />
                             <span className="text-[10px] font-bold uppercase">
-                                {poaConfig?.emergencyPaused ? 'EMERGENCY PAUSE' : 'SYSTEM ACTIVE'}
+                                {poaConfig?.ercValidationEnabled ? 'VALIDATION ACTIVE' : 'VALIDATION OFF'}
                             </span>
                         </div>
                         <div className="flex items-center">
-                            <span className={`h-1.5 w-1.5 rounded-full mr-2 ${poaConfig?.ercValidationEnabled ? 'bg-green-500' : 'bg-gray-500'}`} />
+                            <span className={`h-1.5 w-1.5 rounded-full mr-2 ${poaConfig?.allowCertificateTransfers ? 'bg-green-500' : 'bg-orange-500'}`} />
                             <span className="text-[10px] font-bold uppercase text-muted-foreground">
-                                ERC Validation {poaConfig?.ercValidationEnabled ? 'ON' : 'OFF'}
+                                Transfers {poaConfig?.allowCertificateTransfers ? 'OPEN' : 'LOCKED'}
                             </span>
                         </div>
+
                     </div>
                     <span className="text-[9px] font-mono text-muted-foreground">
                         Valid: {poaConfig?.ercValidityPeriod ? (poaConfig.ercValidityPeriod / 86400).toFixed(0) : '-'} days
