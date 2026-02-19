@@ -127,17 +127,26 @@ export const GovernanceProvider: React.FC<{ children: ReactNode }> = ({
         return
       }
 
-      // Ensure all instructions have valid discriminators (Buffer-compatible arrays)
+      // Helper to ensure discriminators are valid Buffer-compatible arrays
+      const ensureValidDiscriminator = (item: any): any => ({
+        ...item,
+        discriminator:
+          item.discriminator && Array.isArray(item.discriminator)
+            ? item.discriminator
+            : [],
+      })
+
+      // Ensure all instructions, accounts, and events have valid discriminators
       const processedIdl = {
         ...baseIdl,
         address: GOVERNANCE_PROGRAM_ID.toBase58(),
-        instructions: baseIdl.instructions.map((ix: any) => ({
-          ...ix,
-          discriminator:
-            ix.discriminator && Array.isArray(ix.discriminator)
-              ? ix.discriminator
-              : [],
-        })),
+        instructions: baseIdl.instructions.map(ensureValidDiscriminator),
+        accounts: baseIdl.accounts
+          ? baseIdl.accounts.map(ensureValidDiscriminator)
+          : [],
+        events: baseIdl.events
+          ? baseIdl.events.map(ensureValidDiscriminator)
+          : [],
       }
 
       // Anchor 0.32.1 Program constructor: (idl, provider)

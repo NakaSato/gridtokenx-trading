@@ -192,15 +192,16 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
             toast.success('Signed in successfully')
             // Add a small delay for state update
-            await new Promise(resolve => setTimeout(resolve, 500))
+            await new Promise((resolve) => setTimeout(resolve, 500))
             router.refresh()
           } catch (error: unknown) {
             toast.dismiss('signing-message')
             console.error('Wallet login failed:', error)
 
-            // If user rejected signature, we should probably disconnect to reset state 
+            // If user rejected signature, we should probably disconnect to reset state
             // or just let them be "connected" but not "signed in"
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            const errorMessage =
+              error instanceof Error ? error.message : 'Unknown error'
             if (errorMessage.includes('User rejected')) {
               toast.error('Login cancelled: Signature rejected')
             } else {
@@ -266,7 +267,8 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       }, 100)
     } catch (error: unknown) {
       console.error('Sign in error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Sign in failed: ${errorMessage}`)
     }
   }
@@ -391,7 +393,8 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
           // Handle error object or string
           if (typeof response.error === 'object' && response.error !== null) {
             errorMessage =
-              (response.error as { message?: string }).message || JSON.stringify(response.error)
+              (response.error as { message?: string }).message ||
+              JSON.stringify(response.error)
           } else {
             errorMessage = String(response.error)
           }
@@ -403,24 +406,19 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
       const registerData: RegisterResponse = response.data
 
-      if (registerData.email_verification_sent) {
-        toast.success(
+      toast.success(
+        registerData.message ||
           'Registration successful! Please check your email to verify your account.'
-        )
-        onClose()
-        // Redirect to verification page with email parameter
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
-      } else {
-        toast.success(registerData.message || 'Registration successful!')
-        onClose()
-        // Redirect to home page after successful registration
-        setTimeout(() => {
-          router.push('/')
-        }, 100)
-      }
+      )
+      onClose()
+      // Redirect to home page after successful registration
+      setTimeout(() => {
+        router.push('/')
+      }, 100)
     } catch (error: unknown) {
       console.error('Sign up error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Sign up failed: ${errorMessage}`)
     } finally {
       setIsLoading(false)
@@ -603,7 +601,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 noValidate
                 className="space-y-3"
               >
-
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
                   <Input

@@ -7,7 +7,19 @@ import { Skeleton } from './ui/skeleton'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
-import { Activity, History, BookOpen, Clock, RotateCw, Ban, Bell, Repeat, AlertCircle, Zap, type LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  History,
+  BookOpen,
+  Clock,
+  RotateCw,
+  Ban,
+  Bell,
+  Repeat,
+  AlertCircle,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
 import { Position } from '@/lib/data/Positions'
@@ -15,6 +27,7 @@ import LiveGridStats from './LiveGridStats'
 import ExpiredOptions from './ExpiredOptions'
 import PriceAlerts from './trading/PriceAlerts'
 import RecurringOrdersList from './trading/RecurringOrdersList'
+import { RecurringOrderForm } from './trading/RecurringOrderForm'
 import { ContractContext } from '@/contexts/contractProvider'
 import { Transaction } from '@/lib/data/WalletActivity'
 import Pagination from './Pagination'
@@ -24,7 +37,12 @@ import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
 import { useOptionPositions } from '@/hooks/useOptions'
-import { ApiFuturesPosition, ApiOrder, TradeRecord, OnChainTradeRecord } from '@/types/trading'
+import {
+  ApiFuturesPosition,
+  ApiOrder,
+  TradeRecord,
+  OnChainTradeRecord,
+} from '@/types/trading'
 
 import { PublicKey } from '@solana/web3.js'
 
@@ -32,7 +50,15 @@ import { PublicKey } from '@solana/web3.js'
 // Tab Configuration
 // ─────────────────────────────────────────────────────────────────────────────
 
-type TabValue = 'Positions' | 'OpenOrders' | 'History' | 'Alerts' | 'Expired' | 'DCA' | 'LiveGrid' | 'OrderBook'
+type TabValue =
+  | 'Positions'
+  | 'OpenOrders'
+  | 'History'
+  | 'Alerts'
+  | 'Expired'
+  | 'DCA'
+  | 'LiveGrid'
+  | 'OrderBook'
 
 interface TabConfig {
   value: TabValue
@@ -64,10 +90,16 @@ interface EmptyStateProps {
   onAction?: () => void
 }
 
-function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+      <div className="bg-muted/50 flex h-12 w-12 items-center justify-center rounded-full">
         <Icon className="h-6 w-6 text-muted-foreground" />
       </div>
       <div className="space-y-1">
@@ -75,7 +107,12 @@ function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: E
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       {actionLabel && onAction && (
-        <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={onAction}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 text-xs"
+          onClick={onAction}
+        >
           {actionLabel}
         </Button>
       )}
@@ -95,15 +132,20 @@ interface ErrorStateProps {
 function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+      <div className="bg-destructive/10 flex h-12 w-12 items-center justify-center rounded-full">
         <AlertCircle className="h-6 w-6 text-destructive" />
       </div>
       <div className="space-y-1">
         <p className="text-sm font-medium">Failed to load data</p>
         <p className="text-xs text-muted-foreground">{message}</p>
       </div>
-      <Button variant="outline" size="sm" className="mt-2 text-xs" onClick={onRetry}>
-        <RotateCw className="h-3 w-3 mr-1" />
+      <Button
+        variant="outline"
+        size="sm"
+        className="mt-2 text-xs"
+        onClick={onRetry}
+      >
+        <RotateCw className="mr-1 h-3 w-3" />
         Retry
       </Button>
     </div>
@@ -124,7 +166,8 @@ export default memo(function TradingPositions() {
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
-  const { program, pub, onClaimOption, onExerciseOption } = useContext(ContractContext)
+  const { program, pub, onClaimOption, onExerciseOption } =
+    useContext(ContractContext)
 
   const { data: blockchainPositions } = useOptionPositions(program, pub || null)
 
@@ -134,13 +177,19 @@ export default memo(function TradingPositions() {
     setCurrentPage(1)
   }, [])
 
-  const onClaim = useCallback((optionindex: number, solPrice: number) => {
-    onClaimOption(optionindex, solPrice)
-  }, [onClaimOption])
+  const onClaim = useCallback(
+    (optionindex: number, solPrice: number) => {
+      onClaimOption(optionindex, solPrice)
+    },
+    [onClaimOption]
+  )
 
-  const onExercise = useCallback((index: number) => {
-    onExerciseOption(index)
-  }, [onExerciseOption])
+  const onExercise = useCallback(
+    (index: number) => {
+      onExerciseOption(index)
+    },
+    [onExerciseOption]
+  )
 
   const fetchData = useCallback(async () => {
     if (!token) return
@@ -150,7 +199,10 @@ export default memo(function TradingPositions() {
       const apiClient = createApiClient(token)
 
       // 1. Fetch Futures Positions
-      const positionsRes = await apiClient.getFuturesPositions() as unknown as { data: { data: ApiFuturesPosition[] } }
+      const positionsRes =
+        (await apiClient.getFuturesPositions()) as unknown as {
+          data: { data: ApiFuturesPosition[] }
+        }
       if (positionsRes.data?.data) {
         const mappedPositions: Position[] = positionsRes.data.data.map(
           (pos: ApiFuturesPosition) => ({
@@ -170,7 +222,9 @@ export default memo(function TradingPositions() {
       }
 
       // 2. Fetch Trading Orders
-      const ordersRes = await apiClient.getOrders({ status: 'active' }) as unknown as { data: { data: ApiOrder[] } }
+      const ordersRes = (await apiClient.getOrders({
+        status: 'active',
+      })) as unknown as { data: { data: ApiOrder[] } }
       if (ordersRes.data?.data) {
         const mappedOrders: Order[] = ordersRes.data.data.map(
           (order: ApiOrder) => ({
@@ -182,7 +236,9 @@ export default memo(function TradingPositions() {
             transaction: order.side.toLowerCase(),
             limitPrice: parseFloat(order.price_per_kwh),
             strikePrice: 0,
-            expiry: order.expires_at ? format(new Date(order.expires_at), 'MM/dd/yyyy') : 'N/A',
+            expiry: order.expires_at
+              ? format(new Date(order.expires_at), 'MM/dd/yyyy')
+              : 'N/A',
             orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
             size: parseFloat(order.energy_amount),
           })
@@ -194,43 +250,64 @@ export default memo(function TradingPositions() {
       if (program && pub) {
         try {
           // @ts-ignore
-          const tradeRecordsRaw = await program.account.tradeRecord.all();
+          const tradeRecordsRaw = await program.account.tradeRecord.all()
           const userTrades = tradeRecordsRaw
             .map((r: any) => r.account as OnChainTradeRecord)
-            .filter((t: OnChainTradeRecord) =>
-              t.buyer.toBase58() === pub.toBase58() ||
-              t.seller.toBase58() === pub.toBase58()
+            .filter(
+              (t: OnChainTradeRecord) =>
+                t.buyer.toBase58() === pub.toBase58() ||
+                t.seller.toBase58() === pub.toBase58()
             )
-            .sort((a: OnChainTradeRecord, b: OnChainTradeRecord) => b.executedAt.toNumber() - a.executedAt.toNumber());
+            .sort(
+              (a: OnChainTradeRecord, b: OnChainTradeRecord) =>
+                b.executedAt.toNumber() - a.executedAt.toNumber()
+            )
 
           const mappedHistory: Transaction[] = userTrades.map(
             (trade: OnChainTradeRecord) => ({
               transactionID: trade.executedAt.toString(), // Using timestamp as ID for now
-              token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
-              transactionType: trade.buyer.toBase58() === pub.toBase58() ? 'Buy' : 'Sell',
+              token: {
+                name: 'GridToken',
+                symbol: 'GRX',
+                logo: '/images/grid.png',
+              },
+              transactionType:
+                trade.buyer.toBase58() === pub.toBase58() ? 'Buy' : 'Sell',
               optionType: 'Spot',
               strikePrice: trade.pricePerKwh.toNumber() / 1000000, // micro-units to standard
               quantity: trade.amount.toNumber() / 1000, // Wh to kWh
               totalValue: trade.totalValue.toNumber() / 1000000, // micro-units
-              expiry: format(new Date(trade.executedAt.toNumber() * 1000), 'dd MMM, yyy HH:mm:ss'),
+              expiry: format(
+                new Date(trade.executedAt.toNumber() * 1000),
+                'dd MMM, yyy HH:mm:ss'
+              ),
             })
           )
           setDoneInfo(mappedHistory)
         } catch (e) {
-          console.error("Failed to fetch on-chain trade history", e)
+          console.error('Failed to fetch on-chain trade history', e)
         }
       } else {
         // Fallback to API if program not ready (or keep existing logic)
-        const tradesRes = await apiClient.getTrades({ limit: 50 }) as unknown as { data: { trades: TradeRecord[] } }
+        const tradesRes = (await apiClient.getTrades({
+          limit: 50,
+        })) as unknown as { data: { trades: TradeRecord[] } }
         if (tradesRes.data?.trades) {
           const mappedHistory: Transaction[] = tradesRes.data.trades.map(
             (trade: TradeRecord) => ({
               transactionID: trade.id,
-              token: { name: 'GridToken', symbol: 'GRX', logo: '/images/grid.png' },
+              token: {
+                name: 'GridToken',
+                symbol: 'GRX',
+                logo: '/images/grid.png',
+              },
               transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
               optionType: 'Spot',
               strikePrice: parseFloat(trade.price),
-              expiry: format(new Date(trade.executed_at), 'dd MMM, yyy HH:mm:ss'),
+              expiry: format(
+                new Date(trade.executed_at),
+                'dd MMM, yyy HH:mm:ss'
+              ),
             })
           )
           setDoneInfo(mappedHistory)
@@ -239,7 +316,9 @@ export default memo(function TradingPositions() {
       setLastRefreshed(new Date())
     } catch (err) {
       console.error('Error fetching trading data:', err)
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      setError(
+        err instanceof Error ? err.message : 'An unexpected error occurred'
+      )
     } finally {
       setLoading(false)
     }
@@ -273,11 +352,15 @@ export default memo(function TradingPositions() {
   }
 
   return (
-    <Card className="flex h-full w-full flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm">
-      <CardHeader className="border-b bg-muted/20 p-0">
+    <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <CardHeader className="bg-muted/20 border-b p-0">
         <div className="flex w-full items-center justify-between">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="h-6">
-            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5 rounded-md">
+          <Tabs
+            value={activeTab}
+            onValueChange={handleTabChange}
+            className="h-6"
+          >
+            <TabsList className="bg-secondary/50 h-full gap-0.5 rounded-md p-0.5">
               {TABS.map(({ value, label, icon: Icon, showBadge }) => {
                 const badgeCount = showBadge ? getBadgeCount(value) : null
                 return (
@@ -290,7 +373,10 @@ export default memo(function TradingPositions() {
                       <Icon className="h-3 w-3" />
                       <span>{label}</span>
                       {badgeCount !== null && (
-                        <Badge variant="secondary" className="h-3.5 px-1 text-[8px]">
+                        <Badge
+                          variant="secondary"
+                          className="h-3.5 px-1 text-[8px]"
+                        >
                           {badgeCount}
                         </Badge>
                       )}
@@ -301,15 +387,28 @@ export default memo(function TradingPositions() {
             </TabsList>
           </Tabs>
 
-          <div className="flex items-center gap-1.5 h-6">
+          <div className="flex h-6 items-center gap-1.5">
             <div className="hidden items-center gap-1 text-[10px] text-muted-foreground md:flex">
               <Clock className="h-3 w-3" />
-              <span>{lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>
+                {lastRefreshed.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
             </div>
-            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] font-medium leading-none">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px] font-medium leading-none"
+            >
               Liq
             </Button>
-            <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] font-medium leading-none">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px] font-medium leading-none"
+            >
               TP/SL
             </Button>
             <Button
@@ -318,16 +417,18 @@ export default memo(function TradingPositions() {
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={fetchData}
             >
-              <RotateCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+              <RotateCw
+                className={cn('h-3.5 w-3.5', loading && 'animate-spin')}
+              />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 min-h-0 overflow-hidden p-0">
-        <div className="h-full flex flex-col">
+      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
+        <div className="flex h-full flex-col">
           {loading ? (
-            <div className="flex flex-col space-y-3 p-4 flex-1">
+            <div className="flex flex-1 flex-col space-y-3 p-4">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
@@ -339,33 +440,35 @@ export default memo(function TradingPositions() {
               ))}
             </div>
           ) : error ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-1 items-center justify-center">
               <ErrorState message={error} onRetry={fetchData} />
             </div>
           ) : (
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-hidden">
               {activeTab === 'Positions' && (
                 <div className="flex h-full flex-col">
                   {allPositions.length > 0 ? (
                     <>
-                      <div className="flex-1 min-h-0 overflow-y-auto">
+                      <div className="min-h-0 flex-1 overflow-y-auto">
                         <div className="flex flex-col space-y-3">
-                          {allPositions.slice(indexOfFirstItem, indexOfLastItem).map((position, index) => (
-                            <OpenPositions
-                              key={position.index ?? index}
-                              index={position.index}
-                              token={position.token}
-                              logo={position.logo}
-                              symbol={position.symbol}
-                              type={position.type}
-                              strikePrice={position.strikePrice}
-                              expiry={position.expiry}
-                              size={position.size}
-                              pnl={position.pnl}
-                              greeks={position.greeks}
-                              onExercise={() => onExercise(position.index)}
-                            />
-                          ))}
+                          {allPositions
+                            .slice(indexOfFirstItem, indexOfLastItem)
+                            .map((position, index) => (
+                              <OpenPositions
+                                key={position.index ?? index}
+                                index={position.index}
+                                token={position.token}
+                                logo={position.logo}
+                                symbol={position.symbol}
+                                type={position.type}
+                                strikePrice={position.strikePrice}
+                                expiry={position.expiry}
+                                size={position.size}
+                                pnl={position.pnl}
+                                greeks={position.greeks}
+                                onExercise={() => onExercise(position.index)}
+                              />
+                            ))}
                         </div>
                       </div>
                       <div className="flex-shrink-0 border-t border-border">
@@ -378,13 +481,13 @@ export default memo(function TradingPositions() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex flex-1 items-center justify-center">
                       <EmptyState
                         icon={Activity}
                         title="No Positions Open"
                         description="Your active futures and options will appear here."
                         actionLabel="Start Trading"
-                        onAction={() => { }}
+                        onAction={() => {}}
                       />
                     </div>
                   )}
@@ -395,23 +498,25 @@ export default memo(function TradingPositions() {
                 <div className="flex h-full flex-col">
                   {orderInfos.length > 0 ? (
                     <>
-                      <div className="flex-1 min-h-0 overflow-y-auto">
+                      <div className="min-h-0 flex-1 overflow-y-auto">
                         <div className="flex flex-col space-y-3">
-                          {orderInfos.slice(indexOfFirstItem, indexOfLastItem).map((pos, idx) => (
-                            <OpenOptionOrders
-                              key={pos.index ?? idx}
-                              logo={pos.logo}
-                              token={pos.token}
-                              symbol={pos.symbol}
-                              type={pos.type}
-                              limitPrice={pos.limitPrice}
-                              transaction={pos.transaction}
-                              strikePrice={pos.strikePrice}
-                              expiry={pos.expiry}
-                              size={pos.size}
-                              orderDate={pos.orderDate}
-                            />
-                          ))}
+                          {orderInfos
+                            .slice(indexOfFirstItem, indexOfLastItem)
+                            .map((pos, idx) => (
+                              <OpenOptionOrders
+                                key={pos.index ?? idx}
+                                logo={pos.logo}
+                                token={pos.token}
+                                symbol={pos.symbol}
+                                type={pos.type}
+                                limitPrice={pos.limitPrice}
+                                transaction={pos.transaction}
+                                strikePrice={pos.strikePrice}
+                                expiry={pos.expiry}
+                                size={pos.size}
+                                orderDate={pos.orderDate}
+                              />
+                            ))}
                         </div>
                       </div>
                       <div className="flex-shrink-0 border-t border-border">
@@ -424,7 +529,7 @@ export default memo(function TradingPositions() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex flex-1 items-center justify-center">
                       <EmptyState
                         icon={BookOpen}
                         title="No Orders Open"
@@ -436,10 +541,12 @@ export default memo(function TradingPositions() {
               )}
 
               {activeTab === 'History' && (
-                <div className={cn(
-                  "flex h-full overflow-y-auto flex-col",
-                  doneInfo.length > 0 ? "" : "justify-center items-center"
-                )}>
+                <div
+                  className={cn(
+                    'flex h-full flex-col overflow-y-auto',
+                    doneInfo.length > 0 ? '' : 'items-center justify-center'
+                  )}
+                >
                   {doneInfo.length > 0 ? (
                     <OrderHistory doneOptioninfos={doneInfo} />
                   ) : (
@@ -453,16 +560,18 @@ export default memo(function TradingPositions() {
               )}
 
               {activeTab === 'Alerts' && (
-                <div className="flex h-full overflow-y-auto flex-col">
+                <div className="flex h-full flex-col overflow-y-auto">
                   <PriceAlerts />
                 </div>
               )}
 
               {activeTab === 'Expired' && (
-                <div className={cn(
-                  "flex h-full overflow-y-auto flex-col",
-                  expiredInfos.length > 0 ? "" : "justify-center items-center"
-                )}>
+                <div
+                  className={cn(
+                    'flex h-full flex-col overflow-y-auto',
+                    expiredInfos.length > 0 ? '' : 'items-center justify-center'
+                  )}
+                >
                   {expiredInfos.length > 0 ? (
                     <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
                   ) : (
@@ -476,16 +585,13 @@ export default memo(function TradingPositions() {
               )}
 
               {activeTab === 'DCA' && (
-                <div className="flex h-full overflow-y-auto flex-col">
+                <div className="flex h-full flex-col gap-4 overflow-y-auto">
+                  <RecurringOrderForm />
                   <RecurringOrdersList />
                 </div>
               )}
 
-              {activeTab === 'LiveGrid' && (
-                <LiveGridStats />
-              )}
-
-
+              {activeTab === 'LiveGrid' && <LiveGridStats />}
             </div>
           )}
         </div>

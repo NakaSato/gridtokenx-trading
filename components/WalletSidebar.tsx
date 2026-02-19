@@ -47,7 +47,13 @@ export default function WalletSideBar() {
       const apiClient = createApiClient(token)
       const response = await apiClient.getMyP2POrders()
       if (response.data) {
-        const orders = response.data as any[]
+        // response.data may be an array directly or a nested object like { orders: [...] }
+        const raw = response.data as any
+        const orders: any[] = Array.isArray(raw)
+          ? raw
+          : Array.isArray(raw.orders)
+            ? raw.orders
+            : []
         const openOrders = orders.filter((o) => o.status === 'open')
         setOrderCounts({
           buy: openOrders.filter((o) => o.side === 'buy').length,
