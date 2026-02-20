@@ -60,24 +60,9 @@ export function AdminAnalytics() {
     const COLORS = ['#3b82f6', '#8b5cf6']
 
     return (
-        <div className="space-y-8 p-8 max-w-7xl mx-auto">
-            <header className="flex justify-between items-center bg-card p-8 rounded-2xl border shadow-lg backdrop-blur-xl bg-opacity-80">
-                <div className="flex items-center gap-6">
-                    <div className="p-4 bg-green-500/10 rounded-2xl">
-                        <BarChart3 className="h-10 w-10 text-green-500" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-extrabold tracking-tight">Platform Analytics</h1>
-                        <p className="text-muted-foreground mt-2 text-lg">Comprehensive economic insights and distribution metrics.</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Badge className="bg-primary/10 text-primary border-primary/20">Live Intelligence</Badge>
-                </div>
-            </header>
-
+        <div className="space-y-6">
             {/* Global Highlights */}
-            <div className="grid gap-6 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-4">
                 <MetricCard
                     title="Global Users"
                     value={stats?.total_users.toString() ?? '0'}
@@ -106,7 +91,7 @@ export function AdminAnalytics() {
 
             <div className="grid gap-6 md:grid-cols-3">
                 {/* Zone Revenue Chart */}
-                <Card className="md:col-span-2 border-none shadow-xl bg-card/60 backdrop-blur-md">
+                <Card className="md:col-span-2 border-none shadow-lg bg-card/60 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-xl font-bold flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-primary" />
@@ -115,23 +100,29 @@ export function AdminAnalytics() {
                         <CardDescription>Platform fees and wheeling charges across grid sectors.</CardDescription>
                     </CardHeader>
                     <CardContent className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={chartData}>
-                                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <RechartsTooltip
-                                    contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.8)', borderColor: '#333', borderRadius: '8px' }}
-                                />
-                                <Bar dataKey="fees" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Platform Fees" />
-                                <Bar dataKey="wheeling" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Wheeling Charges" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {chartData.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-muted-foreground">
+                                No revenue data available yet
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: 'rgba(23, 23, 23, 0.8)', borderColor: '#333', borderRadius: '8px' }}
+                                    />
+                                    <Bar dataKey="fees" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Platform Fees" />
+                                    <Bar dataKey="wheeling" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Wheeling Charges" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
 
                 {/* Trade Distribution */}
-                <Card className="border-none shadow-xl bg-card/60 backdrop-blur-md">
+                <Card className="border-none shadow-lg bg-card/60 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-xl font-bold flex items-center gap-2">
                             <Map className="h-5 w-5 text-primary" />

@@ -1,10 +1,9 @@
-import { useRef, useCallback, useMemo } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import {
     isWasmLoaded,
     blackScholes,
     calculateGreeks as calculateGreeksWasmHelper,
     calculateBezier as calculateBezierWasmHelper,
-    Clusterer,
     Simulation
 } from '@/lib/wasm-bridge'
 import { useWasm } from '@/lib/wasm-provider'
@@ -12,17 +11,20 @@ import { useWasm } from '@/lib/wasm-provider'
 export function useWasmMath() {
     const { isLoaded, isLoading, error } = useWasm()
 
-    // Instances of WASM classes
-    const clustererRef = useRef<Clusterer | null>(null)
+    // Instance of WASM Simulation class
     const simulationRef = useRef<Simulation | null>(null)
 
-    // Initialize instances once WASM is loaded
-    if (isLoaded && !clustererRef.current) {
-        clustererRef.current = new Clusterer()
-    }
-    if (isLoaded && !simulationRef.current) {
-        simulationRef.current = new Simulation()
-    }
+    // Initialize instance once WASM is loaded (using useEffect to ensure WASM is ready)
+    useEffect(() => {
+        if (isLoaded && isWasmLoaded() && !simulationRef.current) {
+            try {
+                simulationRef.current = new Simulation()
+                console.log('[useWasmMath] Simulation initialized')
+            } catch (err) {
+                console.error('[useWasmMath] Failed to initialize Simulation:', err)
+            }
+        }
+    }, [isLoaded])
 
     const generateCurvedLineWasm = useCallback((
         from: [number, number],
@@ -32,30 +34,6 @@ export function useWasmMath() {
     ): [number, number][] | null => {
         if (!isLoaded) return null
         return calculateBezierWasmHelper(from[0], from[1], to[0], to[1], curveIntensity, segments)
-    }, [isLoaded])
-
-    const loadPointsWasm = useCallback((points: Array<{ lat: number, lng: number, id: number }>) => {
-        if (!isLoaded || !clustererRef.current) return
-
-        // Pass JSON-like object to wasm-bindgen
-        clustererRef.current.load_points(points)
-    }, [isLoaded])
-
-    const getClustersWasm = useCallback((
-        bounds: [number, number, number, number],
-        zoom: number
-    ): Array<{ lat: number, lng: number, count: number, id: number }> => {
-        if (!isLoaded || !clustererRef.current) return []
-
-        const [minLng, minLat, maxLng, maxLat] = bounds
-        try {
-            const clusters = clustererRef.current.get_clusters(minLng, minLat, maxLng, maxLat, zoom)
-            // wasm-bindgen handles the conversion back to JS objects
-            return clusters as Array<{ lat: number, lng: number, count: number, id: number }>
-        } catch (err) {
-            console.error('[WASM] Clustering error:', err)
-            return []
-        }
     }, [isLoaded])
 
     const initSimulationNodesWasm = useCallback((nodes: any[]) => {
@@ -97,8 +75,6 @@ export function useWasmMath() {
         isLoading,
         error: error?.message || null,
         generateCurvedLineWasm,
-        loadPointsWasm,
-        getClustersWasm,
         initSimulationNodesWasm,
         initSimulationFlowsWasm,
         updateSimulationWasm,

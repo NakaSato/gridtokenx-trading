@@ -2,14 +2,18 @@
 
 import React from 'react'
 import { UserManagement } from '@/components/admin/UserManagement'
+import { AdminLayout } from '@/components/admin/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function AdminUsersPage() {
     return (
         <ProtectedRoute allowedRoles={['admin']}>
-            <main className="min-h-screen bg-background pb-20">
+            <AdminLayout
+                title="User Management"
+                description="Manage platform identities, roles, and on-chain linkages."
+            >
                 <UserManagement />
-            </main>
+            </AdminLayout>
         </ProtectedRoute>
     )
 }

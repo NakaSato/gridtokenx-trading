@@ -16,9 +16,18 @@ import {
   ChevronDown,
   MapPin,
   X,
-  Zap,
-  Shield,
+  ArrowRightLeft,
+  ChevronRight,
+  Info,
   Link,
+  Shield,
+  Wallet2,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  BatteryCharging,
+  Battery,
+  Repeat,
 } from 'lucide-react'
 import { PublicKey } from '@solana/web3.js'
 import toast from 'react-hot-toast'
@@ -33,7 +42,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import P2PCostBreakdown from './P2PCostBreakdown'
+import OrderBookDepth from './OrderBookDepth'
 import type { EnergyNode } from '@/components/energy-grid/types'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
 import { P2P_CONFIG } from '@/lib/constants'
@@ -288,115 +310,153 @@ const OrderForm = React.memo(function OrderForm({
   const agreedPrice = parseFloat(price) || undefined
 
   return (
-    <div className="flex w-full flex-col space-y-0">
-      {/* Header - Buy/Sell Tabs */}
-      <div className="flex h-[42px] w-full items-center justify-between rounded-sm rounded-b-none border border-border bg-card px-4 py-1">
-        <div className="flex gap-4">
-          <Button
-            className={cn(
-              'h-[42px] w-full rounded-none border-b bg-inherit shadow-none transition-colors hover:text-primary',
-              orderType === 'buy'
-                ? 'border-emerald-500 font-medium text-emerald-500'
-                : 'border-transparent text-secondary-foreground'
-            )}
+    <div className="flex w-full flex-col space-y-0 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      {/* Header - Buy/Sell/DCA System UI Tabs */}
+      <div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2">
+        <div className="flex p-0.5 bg-muted rounded-md">
+          {/* Buy Tab */}
+          <button
+            type="button"
             onClick={() => setOrderType('buy')}
-          >
-            Buy
-          </Button>
-          <Button
             className={cn(
-              'h-[42px] w-full rounded-none border-b bg-inherit shadow-none transition-colors hover:text-primary',
-              orderType === 'sell'
-                ? 'border-destructive font-medium text-destructive'
-                : 'border-transparent text-secondary-foreground'
+              'relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-all duration-150',
+              orderType === 'buy'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10'
             )}
+          >
+            <BatteryCharging className="h-3.5 w-3.5" />
+            <span>Buy</span>
+          </button>
+
+          {/* Sell Tab */}
+          <button
+            type="button"
             onClick={() => setOrderType('sell')}
-          >
-            Sell
-          </Button>
-          <Button
             className={cn(
-              'h-[42px] w-full rounded-none border-b bg-inherit shadow-none transition-colors hover:text-primary',
-              orderType === 'recurring'
-                ? 'border-primary font-medium text-primary'
-                : 'border-transparent text-secondary-foreground'
+              'relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-all duration-150',
+              orderType === 'sell'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10'
             )}
-            onClick={() => setOrderType('recurring')}
           >
-            DCA
-          </Button>
+            <Battery className="h-3.5 w-3.5" />
+            <span>Sell</span>
+          </button>
+
+          {/* DCA Tab */}
+          <button
+            type="button"
+            onClick={() => setOrderType('recurring')}
+            className={cn(
+              'relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-sm transition-all duration-150',
+              orderType === 'recurring'
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-blue-600 hover:bg-blue-500/10'
+            )}
+          >
+            <Repeat className="h-3.5 w-3.5" />
+            <span>DCA</span>
+          </button>
         </div>
         {orderType !== 'recurring' && (
-          <Select
-            defaultValue="limit"
-            onValueChange={(value) => {
-              if (value === 'market' || value === 'limit') {
-                setPriceType(value)
-              }
-            }}
-          >
-            <SelectTrigger className="hover:bg-muted/50 h-[32px] w-fit gap-2 rounded-sm border-transparent bg-inherit px-2 text-xs text-secondary-foreground focus:border-primary">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="market">Market</SelectItem>
-              <SelectItem value="limit">Limit</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex p-0.5 bg-background rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => setPriceType('market')}
+              className={cn(
+                'px-2.5 py-1 text-[10px] font-medium rounded-sm transition-all',
+                priceType === 'market'
+                  ? 'bg-muted text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+            >
+              Market
+            </button>
+            <button
+              type="button"
+              onClick={() => setPriceType('limit')}
+              className={cn(
+                'px-2.5 py-1 text-[10px] font-medium rounded-sm transition-all',
+                priceType === 'limit'
+                  ? 'bg-muted text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+            >
+              Limit
+            </button>
+          </div>
         )}
       </div>
 
       {/* Form Content */}
-      <div className="flex flex-col rounded-sm rounded-t-none border border-t-0 bg-card p-4">
-        {/* Match Target Indicator */}
+      <div className="flex flex-col space-y-4 p-4">
+        {/* Match Target Indicator - Design System */}
         {targetMatchOrder && (
-          <div className="mb-4 flex items-center justify-between rounded-sm border border-blue-200 bg-blue-50 p-2 text-xs text-blue-700">
-            <div className="flex items-center gap-2">
-              <Link className="h-3 w-3" />
-              <span>Matching Order...</span>
+          <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Link className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-foreground">Matching Order</span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  #{targetMatchOrder.publicKey.toString().slice(0, 8)}...
+                </span>
+              </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="h-4 w-4 p-0 hover:bg-blue-100"
+              className="h-8 w-8 rounded-full p-0 hover:bg-rose-500/10 hover:text-rose-500 focus-visible:ring-2 focus-visible:ring-rose-500/50"
               onClick={() => setTargetMatchOrder(null)}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         )}
 
-        {/* Balance Display */}
+        {/* Balance Display - Design System Card */}
         {token && (
-          <div className="flex items-center justify-between pb-4">
-            <span className="text-xs text-secondary-foreground">
-              Available Balance
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <Wallet className="h-3 w-3 text-secondary-foreground" />
-                <span className="font-mono text-sm font-medium">
-                  {balanceLoading ? '...' : balance?.toFixed(2) || '0.00'} GRX
-                </span>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <Wallet2 className="h-4 w-4 text-primary" />
               </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Available Balance
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-base font-semibold text-foreground">
+                {balanceLoading ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ...
+                  </span>
+                ) : (
+                  balance?.toFixed(2) || '0.00'
+                )}
+              </span>
+              <span className="text-sm font-medium text-muted-foreground">GRX</span>
             </div>
           </div>
         )}
-
-        <Separator className="mb-4" />
 
         {orderType === 'recurring' ? (
           <RecurringOrderForm />
         ) : (
           <>
-            {/* Selected Node Context */}
+            {/* Selected Node Context - Design System Card */}
             {selectedNode && (
-              <div className="mb-4 rounded-sm border border-primary/30 bg-primary/5 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">
-                      Trading from meter
+              <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                      <Zap className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">
+                      {selectedNode.name}
                     </span>
                   </div>
                   {onClearNode && (
@@ -405,90 +465,173 @@ const OrderForm = React.memo(function OrderForm({
                       variant="ghost"
                       size="sm"
                       onClick={onClearNode}
-                      className="h-6 w-6 rounded-sm p-0 text-secondary-foreground hover:text-foreground"
+                      className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
-                <p className="truncate text-xs font-medium text-foreground">
-                  {selectedNode.name}
-                </p>
-                <p className="text-[10px] text-secondary-foreground">
-                  {selectedNode.type} • {selectedNode.capacity}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-md bg-muted px-2 py-1 font-medium">{selectedNode.type}</span>
+                  <span>•</span>
+                  <span>{selectedNode.capacity}</span>
+                  {selectedNode.zoneId && (
+                    <>
+                      <span>•</span>
+                      <span className="rounded-md bg-primary/10 px-2 py-1 font-medium text-primary">Zone {selectedNode.zoneId}</span>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-              {/* Zone Selection */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col space-y-2">
-                  <Label className="flex items-center gap-1 text-xs text-secondary-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {orderType === 'buy' ? 'Your Zone' : 'Seller Zone'}
+              {/* Zone Selection - Design System Visual Flow */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    Zone Routing
                   </Label>
-                  <Select
-                    value={String(orderType === 'buy' ? buyerZone : sellerZone)}
-                    onValueChange={(value) => {
-                      const zoneId = parseInt(value)
-                      if (orderType === 'buy') {
-                        setBuyerZone(zoneId)
-                      } else {
-                        setSellerZone(zoneId)
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-9 rounded-sm text-xs">
-                      <SelectValue placeholder="Select zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {zones.map((zone) => (
-                        <SelectItem key={zone.id} value={String(zone.id)}>
-                          {zone.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    {/* Auto-Select Zone Button */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedNode?.zoneId) {
+                          // Use zone from selected meter node
+                          if (orderType === 'buy') {
+                            setBuyerZone(selectedNode.zoneId)
+                            setSellerZone(selectedNode.zoneId)
+                          } else {
+                            setSellerZone(selectedNode.zoneId)
+                            setBuyerZone(selectedNode.zoneId)
+                          }
+                          toast.success(`Zones set to ${zones.find(z => z.id === selectedNode.zoneId)?.name || 'Zone ' + selectedNode.zoneId}`)
+                        } else {
+                          // Default to zone 1 if no node selected
+                          if (orderType === 'buy') {
+                            setBuyerZone(1)
+                            setSellerZone(1)
+                          } else {
+                            setSellerZone(1)
+                            setBuyerZone(1)
+                          }
+                          toast.success('Zones set to ' + (zones.find(z => z.id === 1)?.name || 'Zone 1'))
+                        }
+                      }}
+                      className="h-7 px-2.5 rounded-lg text-xs font-medium text-primary hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/50"
+                    >
+                      <Zap className="h-3.5 w-3.5 mr-1.5" />
+                      Auto-Select
+                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 rounded-full p-0 hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/50">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[240px] text-sm">
+                          <p>Select your zone and the counterparty zone. Different zones may incur transfer fees. Use Auto-Select to use your meter's zone.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
-                <div className="flex flex-col space-y-2">
-                  <Label className="flex items-center gap-1 text-xs text-secondary-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {orderType === 'buy' ? 'Seller Zone' : 'Your Zone'}
-                  </Label>
-                  <Select
-                    value={String(orderType === 'buy' ? sellerZone : buyerZone)}
-                    onValueChange={(value) => {
-                      const zoneId = parseInt(value)
-                      if (orderType === 'buy') {
-                        setSellerZone(zoneId)
-                      } else {
-                        setBuyerZone(zoneId)
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-9 rounded-sm text-xs">
-                      <SelectValue placeholder="Select zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {zones.map((zone) => (
-                        <SelectItem key={zone.id} value={String(zone.id)}>
-                          {zone.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center gap-2">
+                  {/* Your Zone Card - Small */}
+                  <div className="flex-1">
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {orderType === 'buy' ? 'Your Zone' : 'Buyer Zone'}
+                    </span>
+                    <Select
+                      value={String(orderType === 'buy' ? buyerZone : sellerZone)}
+                      onValueChange={(value) => {
+                        const zoneId = parseInt(value)
+                        if (orderType === 'buy') {
+                          setBuyerZone(zoneId)
+                        } else {
+                          setSellerZone(zoneId)
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-9 rounded-lg border-border bg-muted/50 text-xs font-medium transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-lg">
+                        {zones.map((zone) => (
+                          <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                                {zone.id}
+                              </span>
+                              <span className="font-medium">{zone.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Arrow Connector - Small */}
+                  <div className="flex flex-col items-center pt-4">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted shadow-sm">
+                      <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  {/* Counterparty Zone Card - Small */}
+                  <div className="flex-1">
+                    <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {orderType === 'buy' ? 'Seller Zone' : 'Your Zone'}
+                    </span>
+                    <Select
+                      value={String(orderType === 'buy' ? sellerZone : buyerZone)}
+                      onValueChange={(value) => {
+                        const zoneId = parseInt(value)
+                        if (orderType === 'buy') {
+                          setSellerZone(zoneId)
+                        } else {
+                          setBuyerZone(zoneId)
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-9 rounded-lg border-border bg-muted/50 text-xs font-medium transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-lg">
+                        {zones.map((zone) => (
+                          <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
+                            <div className="flex items-center gap-2">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                                {zone.id}
+                              </span>
+                              <span className="font-medium">{zone.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              {/* Amount Input */}
-              <div className="flex flex-col space-y-2">
+              {/* Amount Input - Design System */}
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-secondary-foreground">
-                    Amount (kWh)
+                  <Label className="text-sm font-medium text-foreground">
+                    Amount
                   </Label>
+                  <span className="text-xs text-muted-foreground">
+                    Min: 0.1 kWh
+                  </span>
                 </div>
-                <div className="flex h-fit w-full items-center space-x-2 rounded-sm bg-secondary px-3 py-2">
+                <div className="relative">
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -496,20 +639,22 @@ const OrderForm = React.memo(function OrderForm({
                     onChange={(e) => setAmount(e.target.value)}
                     min="0.01"
                     step="0.01"
-                    className="h-fit border-none bg-transparent p-0 font-mono text-foreground shadow-none placeholder:text-secondary-foreground focus-visible:ring-0"
+                    className="h-14 rounded-xl border-border bg-muted/30 pr-14 text-right font-mono text-xl font-semibold text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
                   />
-                  <span className="text-xs text-secondary-foreground">kWh</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                    kWh
+                  </span>
                 </div>
-                {/* Quick Amount Buttons */}
-                <div className="flex gap-1">
+                {/* Quick Amount Pills - Design System */}
+                <div className="flex gap-2">
                   {P2P_CONFIG.quickAmountPercentages.map((percent) => (
                     <Button
                       key={percent}
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => handleQuickAmount(percent)}
-                      className="h-6 flex-1 rounded-sm text-xs text-secondary-foreground hover:text-primary"
+                      className="h-8 flex-1 rounded-lg border-border bg-transparent text-xs font-medium text-muted-foreground transition-all hover:border-primary hover:text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary/50"
                     >
                       {percent}%
                     </Button>
@@ -517,12 +662,19 @@ const OrderForm = React.memo(function OrderForm({
                 </div>
               </div>
 
-              {/* Price Input */}
-              <div className="flex flex-col space-y-2">
-                <Label className="text-xs text-secondary-foreground">
-                  Price per kWh (THB)
-                </Label>
-                <div className="flex h-fit w-full items-center space-x-2 rounded-sm bg-secondary px-3 py-2">
+              {/* Price Input - Design System */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-foreground">
+                    Price per kWh
+                  </Label>
+                  {priceType === 'market' && (
+                    <span className="rounded-lg bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-600">
+                      Market Price
+                    </span>
+                  )}
+                </div>
+                <div className="relative">
                   <Input
                     type="number"
                     placeholder="4.00"
@@ -531,98 +683,139 @@ const OrderForm = React.memo(function OrderForm({
                     min="0.01"
                     step="0.01"
                     disabled={priceType === 'market'}
-                    className="h-fit border-none bg-transparent p-0 font-mono text-foreground shadow-none placeholder:text-secondary-foreground focus-visible:ring-0"
+                    className={cn(
+                      "h-14 rounded-xl border-border bg-muted/30 pr-16 text-right font-mono text-xl font-semibold text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
+                      priceType === 'market' && "cursor-not-allowed bg-muted/50 text-muted-foreground"
+                    )}
                   />
-                  <span className="text-xs text-secondary-foreground">THB</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                    THB
+                  </span>
                 </div>
+                {priceType === 'limit' && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    Spread: 4.20 - 4.80 THB
+                  </p>
+                )}
               </div>
 
-              {/* P2P Cost Breakdown Toggle */}
+              {/* Cost Breakdown - Design System Accordion */}
               {energyAmount > 0 && (
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs text-secondary-foreground">
-                    Show Cost Breakdown
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCostBreakdown(!showCostBreakdown)}
-                    className="h-6 rounded-sm text-xs"
-                  >
-                    {showCostBreakdown ? 'Hide' : 'Show'}
-                  </Button>
-                </div>
+                <Accordion type="single" collapsible defaultValue={showCostBreakdown ? "breakdown" : undefined}>
+                  <AccordionItem value="breakdown" className="border-0">
+                    <AccordionTrigger
+                      onClick={() => setShowCostBreakdown(!showCostBreakdown)}
+                      className="flex h-12 items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-0 text-sm font-semibold text-foreground hover:bg-muted hover:text-foreground hover:no-underline [&[data-state=open]>svg]:rotate-180 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:rounded-xl"
+                    >
+                      <span>Cost Breakdown</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-bold text-foreground">฿{totalValue}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-3">
+                      <div className="rounded-xl border border-border bg-muted/20 p-4">
+                        <P2PCostBreakdown
+                          buyerZone={buyerZone}
+                          sellerZone={sellerZone}
+                          energyAmount={energyAmount}
+                          agreedPrice={agreedPrice}
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               )}
 
-              {/* P2P Cost Breakdown Component */}
-              {showCostBreakdown && energyAmount > 0 && (
-                <P2PCostBreakdown
-                  buyerZone={buyerZone}
-                  sellerZone={sellerZone}
-                  energyAmount={energyAmount}
-                  agreedPrice={agreedPrice}
+              {/* Market Depth Preview - System Design Informed */}
+              {token && energyAmount > 0 && (
+                <OrderBookDepth
+                  side={orderType as 'buy' | 'sell'}
+                  amount={energyAmount}
+                  currentPrice={agreedPrice}
                 />
               )}
 
               <Separator />
 
-              {/* Total Display */}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-xs text-secondary-foreground">
-                  Base Total
-                </span>
-                <span className="font-mono text-lg font-medium text-foreground">
-                  ฿{totalValue}
-                </span>
+              {/* Order Summary - Design System Card */}
+              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Amount</span>
+                  <span className="font-mono font-semibold">{amount || '0'} kWh</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Price</span>
+                  <span className="font-mono font-semibold">฿{price || '0'}/kWh</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-semibold text-foreground">Total</span>
+                  <span className="font-mono text-2xl font-bold text-foreground">
+                    ฿{totalValue}
+                  </span>
+                </div>
               </div>
 
-              {/* Submit Button or Connect Wallet */}
+              {/* Submit Button - Design System */}
               {!token ? (
-                <div className="rounded-sm bg-secondary p-3 text-center text-xs text-secondary-foreground">
-                  Connect wallet to place orders
+                <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border bg-muted/10 p-6 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <Wallet2 className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Connect your wallet to start trading energy
+                  </span>
                 </div>
               ) : (
                 <Button
                   type="submit"
+                  size="lg"
                   className={cn(
-                    'h-[42px] w-full rounded-sm font-medium shadow-sm transition-all',
+                    'h-14 w-full rounded-xl font-semibold text-base shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2',
                     orderType === 'buy'
-                      ? 'bg-emerald-600 text-white shadow-emerald-500/20 hover:bg-emerald-700'
-                      : 'hover:bg-destructive/90 shadow-destructive/20 bg-destructive text-white'
+                      ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/50'
+                      : 'bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-rose-500/25 hover:from-rose-400 hover:to-rose-500 hover:shadow-rose-500/30 focus-visible:ring-rose-500/50'
                   )}
-                  disabled={loading}
+                  disabled={loading || !amount || parseFloat(amount) <= 0}
                 >
                   {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isSigning ? 'Signing...' : 'Processing...'}
-                    </>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>{isSigning ? 'Signing Transaction...' : 'Processing...'}</span>
+                    </div>
                   ) : (
-                    <>
-                      {cryptoLoaded && <Shield className="mr-2 h-4 w-4" />}
-                      {`${orderType === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} kWh`}
-                    </>
+                    <div className="flex items-center gap-2">
+                      {cryptoLoaded && <Shield className="h-5 w-5" />}
+                      <span>
+                        {orderType === 'buy' ? 'Buy' : 'Sell'} {amount || '0'} kWh
+                      </span>
+                      {amount && price && (
+                        <span className="ml-1 text-white/80 font-mono">
+                          · ฿{totalValue}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </Button>
               )}
 
-              {/* Feedback Message */}
+              {/* Feedback Message - Design System */}
               {message && (
                 <div
                   className={cn(
-                    'flex items-center gap-2 rounded-sm p-3 text-xs',
+                    'flex items-start gap-3 rounded-xl p-4 text-sm',
                     isSuccess
-                      ? 'bg-emerald-500/10 text-emerald-500'
-                      : 'bg-destructive/10 text-destructive'
+                      ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-700'
+                      : 'border border-rose-500/20 bg-rose-500/10 text-rose-700'
                   )}
                 >
                   {isSuccess ? (
-                    <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
                   ) : (
-                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-500" />
                   )}
-                  {message}
+                  <span className="leading-relaxed">{message}</span>
                 </div>
               )}
             </form>

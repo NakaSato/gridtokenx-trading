@@ -14,7 +14,9 @@ import {
     MoreHorizontal,
     Loader2,
     CheckCircle2,
-    XCircle
+    XCircle,
+    UserCheck,
+    UserX
 } from 'lucide-react'
 import { useAdminUsers, useAuth, useAdminActions } from '@/hooks/useApi'
 import { Input } from '@/components/ui/input'
@@ -29,18 +31,59 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+function UserTableSkeleton() {
+    return (
+        <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-[200px]" />
+                        <Skeleton className="h-3 w-[150px]" />
+                    </div>
+                    <Skeleton className="h-8 w-[100px]" />
+                    <Skeleton className="h-8 w-[80px]" />
+                </div>
+            ))}
+        </div>
+    )
+}
+
+function EmptyState({ message }: { message: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="p-4 bg-muted rounded-full mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium">No users found</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm">{message}</p>
+        </div>
+    )
+}
 
 export function UserManagement() {
     const { token } = useAuth()
     const { users, total, loading, refetch } = useAdminUsers(token ?? undefined)
     const { updateRole, deactivateUser, reactivateUser, loading: actionLoading } = useAdminActions(token ?? undefined)
     const [searchTerm, setSearchTerm] = useState('')
+    const [roleFilter, setRoleFilter] = useState<string>('all')
+    const [statusFilter, setStatusFilter] = useState<string>('all')
 
-    const filteredUsers = users?.filter(user =>
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.wallet_address?.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || []
+    const filteredUsers = users?.filter(user => {
+        const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.wallet_address?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        const matchesRole = roleFilter === 'all' || user.role.toLowerCase() === roleFilter.toLowerCase()
+        const matchesStatus = statusFilter === 'all' ||
+            (statusFilter === 'active' && user.is_active) ||
+            (statusFilter === 'inactive' && !user.is_active)
+
+        return matchesSearch && matchesRole && matchesStatus
+    }) || []
 
     const handleRoleUpdate = async (userId: string, currentRole: string) => {
         const nextRole = currentRole === 'admin' ? 'user' : 'admin'
@@ -80,59 +123,90 @@ export function UserManagement() {
     }
 
     return (
-        <div className="space-y-8 p-8 max-w-7xl mx-auto">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-8 rounded-2xl border shadow-lg">
-                <div className="flex items-center gap-6">
-                    <div className="p-4 bg-blue-500/10 rounded-2xl">
-                        <Users className="h-10 w-10 text-blue-500" />
+        <div className="space-y-6">
+            {/* Filters */}
+            <Card className="border-none shadow-sm">
+                <CardContent className="p-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search users by name, email, or wallet..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Select value={roleFilter} onValueChange={setRoleFilter}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Roles</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="vpp_operator">Operator</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" onClick={() => refetch()} disabled={loading}>
+                                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />}
+                            </Button>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-4xl font-extrabold tracking-tight text-white">User Management</h1>
-                        <p className="text-muted-foreground mt-2 text-lg">Manage platform identities, roles, and on-chain linkages.</p>
-                    </div>
-                </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search users..."
-                            className="pl-10 bg-white/5 border-white/10"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="outline" onClick={() => refetch()}>
-                        Refresh
-                    </Button>
-                </div>
-            </header>
+                </CardContent>
+            </Card>
 
-            <Card className="border-none shadow-2xl overflow-hidden bg-card/60 backdrop-blur-md">
-                <CardHeader className="border-b border-white/5 bg-muted/20 py-4">
-                    <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-primary" />
-                            Registered Identities ({total || 0})
-                        </CardTitle>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
+            {/* Stats */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Showing {filteredUsers.length} of {total || 0} users</span>
+                <div className="flex gap-4">
+                    <span className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        Active
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-red-500" />
+                        Inactive
+                    </span>
+                </div>
+            </div>
+
+            {/* Table */}
+            <Card className="border-none shadow-lg overflow-hidden">
+                {loading && !users ? (
+                    <UserTableSkeleton />
+                ) : filteredUsers.length === 0 ? (
+                    <EmptyState message={searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
+                        ? "No users match your filters. Try adjusting your search criteria."
+                        : "No users registered yet."} />
+                ) : (
                     <Table>
-                        <TableHeader className="bg-muted/30">
-                            <TableRow className="hover:bg-transparent border-white/5">
-                                <TableHead className="font-bold">User</TableHead>
-                                <TableHead className="font-bold">Role</TableHead>
-                                <TableHead className="font-bold">Wallet Address</TableHead>
-                                <TableHead className="font-bold">Status</TableHead>
-                                <TableHead className="font-bold text-right">Actions</TableHead>
+                        <TableHeader className="bg-muted/50">
+                            <TableRow>
+                                <TableHead className="font-semibold">User</TableHead>
+                                <TableHead className="font-semibold">Role</TableHead>
+                                <TableHead className="font-semibold">Wallet Address</TableHead>
+                                <TableHead className="font-semibold">Status</TableHead>
+                                <TableHead className="font-semibold text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredUsers.map((user) => (
-                                <TableRow key={user.id} className="hover:bg-white/5 transition-colors border-white/5 group">
+                                <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-sm uppercase tracking-tight">{user.username}</span>
+                                            <span className="font-medium">{user.username}</span>
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                 <Mail className="h-3 w-3" />
                                                 {user.email}
@@ -145,7 +219,7 @@ export function UserManagement() {
                                     </TableCell>
                                     <TableCell>
                                         {user.is_active ? (
-                                            <div className="flex items-center gap-1.5 text-xs text-green-500">
+                                            <div className="flex items-center gap-1.5 text-xs text-green-600">
                                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                                 Active
                                             </div>
@@ -173,30 +247,27 @@ export function UserManagement() {
                                                     onClick={() => handleRoleUpdate(user.id, user.role)}
                                                     disabled={actionLoading}
                                                 >
-                                                    {user.role === 'admin' ? 'Demote to User' : 'Promote to Admin'}
+                                                    {user.role === 'admin' ? (
+                                                        <><UserX className="h-4 w-4 mr-2" /> Demote to User</>
+                                                    ) : (
+                                                        <><UserCheck className="h-4 w-4 mr-2" /> Promote to Admin</>
+                                                    )}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className={user.is_active ? "text-red-500" : "text-green-500"}
                                                     onClick={() => handleToggleStatus(user.id, user.is_active)}
                                                     disabled={actionLoading}
                                                 >
-                                                    {user.is_active ? 'Deactivate User' : 'Reactivate User'}
+                                                    {user.is_active ? 'Deactivate' : 'Reactivate'}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {filteredUsers.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
-                                        No users matching your search criteria.
-                                    </TableCell>
-                                </TableRow>
-                            )}
                         </TableBody>
                     </Table>
-                </CardContent>
+                )}
             </Card>
         </div>
     )

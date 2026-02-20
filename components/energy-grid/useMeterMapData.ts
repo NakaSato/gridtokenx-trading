@@ -121,9 +121,11 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
         refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     })
 
-    // Convert meters to EnergyNodes with generated unique IDs
+    // Convert meters to EnergyNodes with generated unique IDs - only include active (verified) meters
     const realMeterNodes: EnergyNode[] = useMemo(() =>
-        meters.map((meter, index) => meterToEnergyNode(meter, index)),
+        meters
+            .filter(meter => meter.is_verified) // Only show active/verified meters on map
+            .map((meter, index) => meterToEnergyNode(meter, index)),
         [meters]
     )
 

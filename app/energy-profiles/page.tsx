@@ -32,7 +32,7 @@ import {
 import { useAuth } from '@/contexts/AuthProvider'
 import { cn } from '@/lib/utils'
 // Profile archetype definitions imported from hook
-import { useEnergyProfile, PROFILE_ARCHETYPES } from '@/hooks/useEnergyProfile'
+import { useEnergyProfile } from '@/hooks/useEnergyProfile'
 import { useWallet, useConnection } from "@solana/wallet-adapter-react"
 import { getProgram } from "@/lib/program"
 import { fetchMeterHistory } from "@/lib/contract-actions"
@@ -47,16 +47,21 @@ export default function EnergyProfilesPage() {
     // -- Dashboard Logic --
     const { publicKey } = useWallet()
     const { connection } = useConnection()
-    const [chartData, setChartData] = useState([])
+    const [chartData, setChartData] = useState<[]>([])
     const [stats, setStats] = useState({
         generation: "0 kWh",
         earnings: "0 USDC",
         credits: "0 REC",
     })
+    const [isLoadingStats, setIsLoadingStats] = useState(true)
 
     useEffect(() => {
         const loadData = async () => {
-            if (!publicKey) return
+            if (!publicKey) {
+                setIsLoadingStats(false)
+                return
+            }
+            setIsLoadingStats(true)
             try {
                 const program = getProgram(connection, { publicKey } as any)
                 const history = await fetchMeterHistory(program, publicKey)
@@ -69,6 +74,8 @@ export default function EnergyProfilesPage() {
                 }
             } catch (e) {
                 console.error("Dashboard Load Error:", e)
+            } finally {
+                setIsLoadingStats(false)
             }
         }
         loadData()
@@ -78,6 +85,21 @@ export default function EnergyProfilesPage() {
 
 
 
+    if (error) {
+        return (
+            <main className="flex h-full flex-1 flex-col items-center justify-center p-6">
+                <AlertTriangle className="h-16 w-16 text-destructive/50 mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Failed to Load Profile</h2>
+                <p className="text-muted-foreground text-center max-w-md mb-4">
+                    {error instanceof Error ? error.message : 'Unable to fetch your energy profile data.'}
+                </p>
+                <Button onClick={() => refetch()} variant="outline">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                </Button>
+            </main>
+        )
+    }
     if (!isAuthenticated) {
         return (
             <main className="flex h-full flex-1 flex-col items-center justify-center p-6">
@@ -231,7 +253,7 @@ export default function EnergyProfilesPage() {
 
                 {/* Main Content Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                    <TabsList className="grid w-full max-w-xl grid-cols-4 mb-4">
+                    <TabsList className="grid w-full max-w-2xl grid-cols-5 mb-4">
                         <TabsTrigger value="overview" className="text-xs sm:text-sm">
                             <Activity className="h-4 w-4 mr-1 sm:mr-2" />
                             Overview
@@ -281,48 +303,75 @@ export default function EnergyProfilesPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="p-4 bg-secondary/30 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Sun className="h-4 w-4 text-yellow-500" />
-                                            <span className="text-xs text-muted-foreground">Daytime Ratio</span>
-                                        </div>
-                                        <p className="text-xl font-bold">
-                                            {((profileData?.characteristics.daytimeRatio || 0.5) * 100).toFixed(0)}%
-                                        </p>
-                                        <Progress value={(profileData?.characteristics.daytimeRatio || 0.5) * 100} className="mt-2 h-1.5" />
-                                    </div>
-                                    <div className="p-4 bg-secondary/30 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Moon className="h-4 w-4 text-indigo-500" />
-                                            <span className="text-xs text-muted-foreground">Nighttime Ratio</span>
-                                        </div>
-                                        <p className="text-xl font-bold">
-                                            {((1 - (profileData?.characteristics.daytimeRatio || 0.5)) * 100).toFixed(0)}%
-                                        </p>
-                                        <Progress value={(1 - (profileData?.characteristics.daytimeRatio || 0.5)) * 100} className="mt-2 h-1.5" />
-                                    </div>
-                                    <div className="p-4 bg-secondary/30 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Battery className="h-4 w-4 text-green-500" />
-                                            <span className="text-xs text-muted-foreground">Baseload</span>
-                                        </div>
-                                        <p className="text-xl font-bold">
-                                            {(profileData?.characteristics?.baseload ?? 0).toFixed(2)} kW
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">Standby power</p>
-                                    </div>
-                                    <div className="p-4 bg-secondary/30 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <TrendingUp className="h-4 w-4 text-primary" />
-                                            <span className="text-xs text-muted-foreground">Peak/Avg Ratio</span>
-                                        </div>
-                                        <p className="text-xl font-bold">
-                                            {(profileData?.characteristics?.peakToAvgRatio ?? 1).toFixed(2)}x
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {(profileData?.characteristics.peakToAvgRatio || 1) > 2 ? 'Spiky' : 'Flat'} profile
-                                        </p>
-                                    </div>
+                                    {isLoading ? (
+                                        <>
+                                            <div className="p-4 bg-secondary/30 rounded-lg space-y-3">
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-6 w-16" />
+                                                <Skeleton className="h-1.5 w-full" />
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg space-y-3">
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-6 w-16" />
+                                                <Skeleton className="h-1.5 w-full" />
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg space-y-3">
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-6 w-16" />
+                                                <Skeleton className="h-1.5 w-full" />
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg space-y-3">
+                                                <Skeleton className="h-4 w-20" />
+                                                <Skeleton className="h-6 w-16" />
+                                                <Skeleton className="h-1.5 w-full" />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="p-4 bg-secondary/30 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Sun className="h-4 w-4 text-yellow-500" />
+                                                    <span className="text-xs text-muted-foreground">Daytime Ratio</span>
+                                                </div>
+                                                <p className="text-xl font-bold">
+                                                    {((profileData?.characteristics.daytimeRatio || 0.5) * 100).toFixed(0)}%
+                                                </p>
+                                                <Progress value={(profileData?.characteristics.daytimeRatio || 0.5) * 100} className="mt-2 h-1.5" />
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Moon className="h-4 w-4 text-indigo-500" />
+                                                    <span className="text-xs text-muted-foreground">Nighttime Ratio</span>
+                                                </div>
+                                                <p className="text-xl font-bold">
+                                                    {((1 - (profileData?.characteristics.daytimeRatio || 0.5)) * 100).toFixed(0)}%
+                                                </p>
+                                                <Progress value={(1 - (profileData?.characteristics.daytimeRatio || 0.5)) * 100} className="mt-2 h-1.5" />
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Battery className="h-4 w-4 text-green-500" />
+                                                    <span className="text-xs text-muted-foreground">Baseload</span>
+                                                </div>
+                                                <p className="text-xl font-bold">
+                                                    {(profileData?.characteristics?.baseload ?? 0).toFixed(2)} kW
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">Standby power</p>
+                                            </div>
+                                            <div className="p-4 bg-secondary/30 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <TrendingUp className="h-4 w-4 text-primary" />
+                                                    <span className="text-xs text-muted-foreground">Peak/Avg Ratio</span>
+                                                </div>
+                                                <p className="text-xl font-bold">
+                                                    {(profileData?.characteristics?.peakToAvgRatio ?? 1).toFixed(2)}x
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {(profileData?.characteristics.peakToAvgRatio || 1) > 2 ? 'Spiky' : 'Flat'} profile
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -336,6 +385,7 @@ export default function EnergyProfilesPage() {
                             <RecommendationsCard
                                 recommendations={profileData?.recommendations || []}
                                 archetypeName={profileData?.archetype.name}
+                                isLoading={isLoading}
                                 className="h-full"
                             />
 
@@ -391,26 +441,24 @@ export default function EnergyProfilesPage() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                             <StatCard
                                 title="Total Generation"
-                                value={stats.generation}
+                                value={isLoadingStats ? "--" : stats.generation}
                                 icon={<Zap className="h-4 w-4 text-yellow-500" />}
-                                trend="up"
-                                change="+12% from yesterday"
+                                trend={chartData.length > 1 ? "up" : undefined}
+                                change={chartData.length > 1 ? "Live updating" : undefined}
                             />
                             <StatCard
                                 title="Energy Credits"
-                                value={stats.credits}
+                                value={isLoadingStats ? "--" : stats.credits}
                                 icon={<Sun className="h-4 w-4 text-orange-500" />}
                             />
                             <StatCard
                                 title="Earnings"
-                                value={stats.earnings}
+                                value={isLoadingStats ? "--" : stats.earnings}
                                 icon={<BarChart3 className="h-4 w-4 text-green-500" />}
-                                trend="up"
-                                change="+2.4% this week"
                             />
                             <StatCard
                                 title="Grid Status"
-                                value="Stable"
+                                value={publicKey ? "Stable" : "Disconnected"}
                                 icon={<Activity className="h-4 w-4 text-blue-500" />}
                             />
                         </div>

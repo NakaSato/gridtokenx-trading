@@ -1,7 +1,6 @@
-import { useMemo, useEffect } from 'react'
+import { useMemo } from 'react'
 import Supercluster from 'supercluster'
 import type { EnergyNode } from './types'
-import { useWasmMath } from './useWasmMath'
 
 export interface ClusterProperties {
     cluster: true
@@ -21,34 +20,23 @@ export type PointFeature = GeoJSON.Feature<GeoJSON.Point, PointProperties>
 export type ClusterOrPoint = ClusterFeature | PointFeature
 
 export interface UseMeterClustersOptions {
-    /** Array of energy nodes to cluster */
     nodes: EnergyNode[]
-    /** Current map zoom level */
     zoom: number
-    /** Map bounds [west, south, east, north] */
     bounds?: [number, number, number, number]
-    /** Min zoom for clustering (default: 0) */
     minZoom?: number
-    /** Max zoom for clustering (default: 16) */
     maxZoom?: number
-    /** Cluster radius in pixels (default: 60) */
     radius?: number
 }
 
 export interface UseMeterClustersResult {
-    /** Clusters and individual points for rendering */
     clusters: ClusterOrPoint[]
-    /** Supercluster instance for expansion zoom calculation (legacy support or null) */
     supercluster: Supercluster<PointProperties, ClusterProperties> | null
-    /** Get expansion zoom for a cluster */
     getClusterExpansionZoom: (clusterId: number) => number
-    /** Get leaves (points) of a cluster */
     getClusterLeaves: (clusterId: number, limit?: number) => PointFeature[]
 }
 
 /**
- * Hook to cluster energy nodes using Wasm-based Grid Clustering
- * Falls back to Supercluster if Wasm is not loaded
+ * Hook to cluster energy nodes using Supercluster
  */
 export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClustersResult {
     const {
@@ -60,27 +48,7 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
         radius = 60,
     } = options
 
-    const { isLoaded: wasmLoaded, loadPointsWasm, getClustersWasm } = useWasmMath()
-
-    // Load points into Wasm when they change
-    useEffect(() => {
-        if (wasmLoaded && nodes.length > 0) {
-            // Map nodes to flat structure with numeric ID if possible
-            // Since we need to look them back up, we generate a map index
-            const points = nodes.map((n, i) => ({
-                lat: n.latitude,
-                lng: n.longitude,
-                id: i
-            }))
-            loadPointsWasm(points)
-        }
-    }, [wasmLoaded, nodes, loadPointsWasm])
-
-    // Create Supercluster instance (Fallback)
-    const superclusterFallback = useMemo(() => {
-        // Only create if Wasm IS NOT loaded
-        if (wasmLoaded) return null
-
+    const supercluster = useMemo(() => {
         const points: GeoJSON.Feature<GeoJSON.Point, PointProperties>[] = nodes.map((node) => ({
             type: 'Feature' as const,
             geometry: {
@@ -103,92 +71,44 @@ export function useMeterClusters(options: UseMeterClustersOptions): UseMeterClus
         })
         sc.load(points)
         return sc
-    }, [wasmLoaded, nodes, radius, maxZoom, minZoom])
+    }, [nodes, radius, maxZoom, minZoom])
 
-    // Get clusters
     const clusters = useMemo((): ClusterOrPoint[] => {
-        if (!bounds) return []
+        if (!bounds || !supercluster) return []
 
-        // 1. Try Wasm Clustering
-        if (wasmLoaded) {
-            const rawClusters = getClustersWasm(bounds, zoom)
-
-            return rawClusters.map((c, i) => {
-                if (c.count > 1) {
-                    // Cluster
-                    return {
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-                        properties: {
-                            cluster: true,
-                            cluster_id: Math.floor(c.id), // Use first node ID as cluster ID seed
-                            point_count: c.count,
-                            point_count_abbreviated: c.count > 1000 ? `${(c.count / 1000).toFixed(1)}k` : `${c.count}`,
-                        }
-                    } as ClusterFeature
-                } else {
-                    // Single Point
-                    const nodeIndex = Math.floor(c.id)
-                    const node = nodes[nodeIndex]
-                    if (!node) return null
-
-                    return {
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-                        properties: {
-                            cluster: false,
-                            nodeId: node.id,
-                            node,
-                        }
-                    } as PointFeature
-                }
-            }).filter(Boolean) as ClusterOrPoint[]
+        try {
+            return supercluster.getClusters(bounds, Math.floor(zoom)) as ClusterOrPoint[]
+        } catch (error) {
+            console.error('Error getting clusters:', error)
+            return []
         }
+    }, [supercluster, bounds, zoom])
 
-        // 2. Fallback to Supercluster
-        if (superclusterFallback) {
-            try {
-                const result = superclusterFallback.getClusters(bounds, Math.floor(zoom))
-                return result as ClusterOrPoint[]
-            } catch (error) {
-                console.error('Error getting clusters:', error)
-                return []
-            }
-        }
-
-        return []
-    }, [wasmLoaded, getClustersWasm, superclusterFallback, bounds, zoom, nodes])
-
-    // Get expansion zoom for a cluster - uses Supercluster if available
     const getClusterExpansionZoom = (clusterId: number): number => {
-        if (superclusterFallback) {
+        if (supercluster) {
             try {
-                return superclusterFallback.getClusterExpansionZoom(clusterId)
+                return supercluster.getClusterExpansionZoom(clusterId)
             } catch {
                 return zoom + 2
             }
         }
-        // WASM fallback: simple heuristic
         return Math.min(maxZoom, zoom + 2)
     }
 
-    // Get leaves (individual points) of a cluster
     const getClusterLeaves = (clusterId: number, limit = 10): PointFeature[] => {
-        if (superclusterFallback) {
+        if (supercluster) {
             try {
-                const leaves = superclusterFallback.getLeaves(clusterId, limit)
-                return leaves as PointFeature[]
+                return supercluster.getLeaves(clusterId, limit) as PointFeature[]
             } catch {
                 return []
             }
         }
-        // WASM fallback: return empty (WASM doesn't track cluster membership)
         return []
     }
 
     return {
         clusters,
-        supercluster: superclusterFallback,
+        supercluster,
         getClusterExpansionZoom,
         getClusterLeaves,
     }

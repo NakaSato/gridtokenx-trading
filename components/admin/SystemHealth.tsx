@@ -55,26 +55,10 @@ export function SystemHealth() {
     }
 
     return (
-        <div className="space-y-8 p-8 max-w-7xl mx-auto">
-            <header className="flex justify-between items-center bg-card p-8 rounded-2xl border shadow-lg backdrop-blur-xl bg-opacity-80">
-                <div className="flex items-center gap-6">
-                    <div className="p-4 bg-purple-500/10 rounded-2xl">
-                        <Server className="h-10 w-10 text-purple-500" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-extrabold tracking-tight">System Health</h1>
-                        <p className="text-muted-foreground mt-2 text-lg">Real-time status of platform infrastructure and dependencies.</p>
-                    </div>
-                </div>
-                <Button variant="outline" size="lg" onClick={() => refetch()} className="flex gap-2">
-                    <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh Status
-                </Button>
-            </header>
-
+        <div className="space-y-6">
             <div className="grid gap-6 md:grid-cols-3">
                 {/* Overall Status */}
-                <Card className="md:col-span-2 border-none shadow-xl bg-card/60 backdrop-blur-md">
+                <Card className="md:col-span-2 border-none shadow-lg bg-card/60 backdrop-blur-sm">
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -87,7 +71,7 @@ export function SystemHealth() {
                     <CardContent className="space-y-6">
                         <div className="grid gap-4 sm:grid-cols-2">
                             {health?.dependencies.map((dep) => (
-                                <div key={dep.name} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-white/5 group hover:bg-muted/50 transition-colors">
+                                <div key={dep.name} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border group hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-background rounded-lg shadow-sm">
                                             {dep.name.includes('Postgre') && <Database className="h-4 w-4" />}
@@ -96,9 +80,9 @@ export function SystemHealth() {
                                             {dep.name.includes('Email') && <Mail className="h-4 w-4" />}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-sm">{dep.name}</div>
+                                            <div className="font-medium text-sm">{dep.name}</div>
                                             <div className="text-[10px] text-muted-foreground">
-                                                {dep.response_time_ms ? `${dep.response_time_ms}ms` : 'No latency data'}
+                                                {dep.response_time_ms ? `${dep.response_time_ms}ms` : 'No data'}
                                             </div>
                                         </div>
                                     </div>
@@ -110,7 +94,7 @@ export function SystemHealth() {
                 </Card>
 
                 {/* System Metrics */}
-                <Card className="border-none shadow-xl bg-card/60 backdrop-blur-md">
+                <Card className="border-none shadow-lg bg-card/60 backdrop-blur-sm">
                     <CardHeader>
                         <CardTitle className="text-xl font-bold flex items-center gap-2">
                             <Cpu className="h-5 w-5 text-primary" />
@@ -121,7 +105,7 @@ export function SystemHealth() {
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">CPU Usage</span>
-                                <span className="font-bold">{health?.metrics.cpu_usage?.toFixed(1) ?? 0}%</span>
+                                <span className="font-medium">{health?.metrics.cpu_usage?.toFixed(1) ?? 0}%</span>
                             </div>
                             <Progress value={health?.metrics.cpu_usage ?? 0} className="h-1.5" />
                         </div>
@@ -129,7 +113,7 @@ export function SystemHealth() {
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Memory</span>
-                                <span className="font-bold">
+                                <span className="font-medium">
                                     {Math.round((health?.metrics.memory_used_mb ?? 0) / 1024)} / {Math.round((health?.metrics.memory_total_mb ?? 0) / 1024)} GB
                                 </span>
                             </div>
@@ -139,17 +123,17 @@ export function SystemHealth() {
                             />
                         </div>
 
-                        <div className="pt-4 border-t border-white/5 space-y-3">
+                        <div className="pt-4 border-t space-y-3">
                             <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Uptime:</span>
+                                <span className="text-muted-foreground">Uptime</span>
                                 <span className="font-mono">{Math.floor((health?.uptime_seconds ?? 0) / 3600)}h {Math.floor(((health?.uptime_seconds ?? 0) % 3600) / 60)}m</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Version:</span>
+                                <span className="text-muted-foreground">Version</span>
                                 <span className="font-mono text-primary">{health?.version}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Environment:</span>
+                                <span className="text-muted-foreground">Environment</span>
                                 <Badge variant="outline" className="text-[10px] uppercase">{health?.environment}</Badge>
                             </div>
                         </div>
@@ -157,31 +141,31 @@ export function SystemHealth() {
                 </Card>
             </div>
 
-            {/* Dependency Details Section */}
-            <Card className="border-none shadow-xl bg-card/60 backdrop-blur-md">
+            {/* Dependency Details */}
+            <Card className="border-none shadow-lg bg-card/60 backdrop-blur-sm">
                 <CardHeader>
-                    <CardTitle className="text-xl">Dependency Details</CardTitle>
+                    <CardTitle>Dependency Details</CardTitle>
                     <CardDescription>Full error reporting and subsystem metadata.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-lg overflow-hidden border border-white/5">
+                    <div className="rounded-lg overflow-hidden border">
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
-                                    <TableHead className="w-[200px]">SubSystem</TableHead>
-                                    <TableHead>Details / Error Message</TableHead>
-                                    <TableHead className="text-right">Last Sync</TableHead>
+                                    <TableHead className="w-[200px]">Subsystem</TableHead>
+                                    <TableHead>Details</TableHead>
+                                    <TableHead className="text-right">Last Check</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {health?.dependencies.map((dep) => (
-                                    <TableRow key={dep.name} className="hover:bg-muted/20 border-white/5">
-                                        <TableCell className="font-bold">{dep.name}</TableCell>
+                                    <TableRow key={dep.name} className="hover:bg-muted/30">
+                                        <TableCell className="font-medium">{dep.name}</TableCell>
                                         <TableCell className="font-mono text-xs max-w-xl truncate">
                                             {dep.error_message ? (
                                                 <span className="text-red-500">{dep.error_message}</span>
                                             ) : (
-                                                <span className="text-muted-foreground">{dep.details || 'N/A'}</span>
+                                                <span className="text-muted-foreground">{dep.details || 'Operational'}</span>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right text-xs text-muted-foreground">

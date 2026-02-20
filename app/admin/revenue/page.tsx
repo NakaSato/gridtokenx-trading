@@ -2,14 +2,18 @@
 
 import React from 'react'
 import { RevenueDashboard } from '@/components/admin/RevenueDashboard'
+import { AdminLayout } from '@/components/admin/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function AdminRevenuePage() {
     return (
         <ProtectedRoute allowedRoles={['admin']}>
-            <main className="min-h-screen bg-background">
+            <AdminLayout
+                title="Platform Revenue"
+                description="Real-time overview of on-chain trading fees and platform income."
+            >
                 <RevenueDashboard />
-            </main>
+            </AdminLayout>
         </ProtectedRoute>
     )
 }

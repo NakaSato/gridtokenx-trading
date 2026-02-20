@@ -37,12 +37,14 @@ export const openOption = async (
     }
 ) => {
     const { amount, strike, period, expiredTime, isCall, paySol, quoteToken } = params
-    const poolName = quoteToken === 'USDC' ? 'SOL-USDC' : 'SOL-THB'
-    const quoteMint = quoteToken === 'USDC' ? USDC_MINT : THB_MINT
-    const quoteOracle = quoteToken === 'USDC' ? USDC_ORACLE : THB_ORACLE
+    const poolName = quoteToken === 'USDC' ? 'THB-USDC' : 'THB-SOL'
+    const baseMint = THB_MINT
+    const baseOracle = THB_ORACLE
+    const quoteMint = quoteToken === 'USDC' ? USDC_MINT : WSOL_MINT
+    const quoteOracle = quoteToken === 'USDC' ? USDC_ORACLE : WSOL_ORACLE
 
     const pool = getPoolPDA(poolName, program.programId)
-    const custody = getCustodyPDA(pool, WSOL_MINT, program.programId)
+    const custody = getCustodyPDA(pool, baseMint, program.programId)
     const userPDA = getUserPDA(publicKey, program.programId)
 
     let optionIndex
@@ -55,11 +57,11 @@ export const openOption = async (
 
     const optionDetailAccount = getOptionDetailPDA(publicKey, optionIndex, pool, custody, program.programId)
     const fundingAccount = getAssociatedTokenAddressSync(
-        paySol ? WSOL_MINT : quoteMint,
+        paySol ? baseMint : quoteMint,
         publicKey
     )
 
-    const paycustody = getCustodyPDA(pool, paySol ? WSOL_MINT : quoteMint, program.programId)
+    const paycustody = getCustodyPDA(pool, paySol ? baseMint : quoteMint, program.programId)
     const paycustodyData = await program.account.Custody.fetch(paycustody)
 
     const transaction = await program.methods
@@ -73,11 +75,11 @@ export const openOption = async (
         .accountsPartial({
             owner: publicKey,
             funding_account: fundingAccount,
-            custody_mint: WSOL_MINT,
-            pay_custody_mint: paySol ? WSOL_MINT : quoteMint,
-            custody_oracle_account: WSOL_ORACLE,
-            pay_custody_oracle_account: paySol ? WSOL_ORACLE : quoteOracle,
-            locked_custody_mint: isCall ? WSOL_MINT : quoteMint,
+            custody_mint: baseMint,
+            pay_custody_mint: paySol ? baseMint : quoteMint,
+            custody_oracle_account: baseOracle,
+            pay_custody_oracle_account: paySol ? baseOracle : quoteOracle,
+            locked_custody_mint: isCall ? baseMint : quoteMint,
             option_detail: optionDetailAccount,
             pay_custody_token_account: paycustodyData.token_account,
         })
@@ -101,8 +103,8 @@ export const closeOption = async (
     optionIndex: number
 ) => {
     const poolsToCheck = [
-        { name: 'SOL-USDC', mint: USDC_MINT },
-        { name: 'SOL-THB', mint: THB_MINT }
+        { name: 'THB-USDC', mint: USDC_MINT },
+        { name: 'THB-SOL', mint: WSOL_MINT }
     ]
 
     let foundPool = null
@@ -110,7 +112,7 @@ export const closeOption = async (
 
     for (const p of poolsToCheck) {
         const poolPDA = getPoolPDA(p.name, program.programId)
-        const custodyPDA = getCustodyPDA(poolPDA, WSOL_MINT, program.programId)
+        const custodyPDA = getCustodyPDA(poolPDA, THB_MINT, program.programId)
         const od = getOptionDetailPDA(publicKey, optionIndex, poolPDA, custodyPDA, program.programId)
 
         const exists = await program.account.OptionDetail.fetch(od).catch(() => null)
@@ -125,13 +127,13 @@ export const closeOption = async (
 
     const pool = foundPool
     const custodyToken = poolInfo.mint
-    const custody = getCustodyPDA(pool, WSOL_MINT, program.programId)
-    const payCustodyTokenAccount = getCustodyTokenAccountPDA(pool, WSOL_MINT, program.programId)
+    const custody = getCustodyPDA(pool, THB_MINT, program.programId)
+    const payCustodyTokenAccount = getCustodyTokenAccountPDA(pool, THB_MINT, program.programId)
     const optionDetail = getOptionDetailPDA(publicKey, optionIndex, pool, custody, program.programId)
 
     const optionDetailData = await program.account.OptionDetail.fetch(optionDetail)
     const fundingAccount = getAssociatedTokenAddressSync(
-        optionDetailData.premium_asset.equals(custody) ? WSOL_MINT : custodyToken,
+        optionDetailData.premium_asset.equals(custody) ? THB_MINT : custodyToken,
         publicKey
     )
 
@@ -143,8 +145,8 @@ export const closeOption = async (
         .accountsPartial({
             owner: publicKey,
             funding_account: fundingAccount,
-            custody_mint: WSOL_MINT,
-            pay_custody_mint: WSOL_MINT,
+            custody_mint: THB_MINT,
+            pay_custody_mint: THB_MINT,
             pay_custody_token_account: payCustodyTokenAccount,
             option_detail: optionDetail,
             locked_custody: custody,
@@ -174,7 +176,7 @@ export const claimOption = async (
         .claim_option(new BN(optionIndex), solPrice)
         .accountsPartial({
             owner: publicKey,
-            custody_mint: WSOL_MINT,
+            custody_mint: THB_MINT,
         })
         .transaction()
 
@@ -529,20 +531,21 @@ export const fetchMeterHistory = async (
 ) => {
     try {
         // Derive Meter History PDA using [b"meter_history", user_key]
-        // Assuming the user IS the meter for MVP, or we can fetch a specific meter if known.
-        // For Dashboard, we show the connected user's meter history.
         const [historyPda] = PublicKey.findProgramAddressSync(
             [Buffer.from("meter_history"), publicKey.toBuffer()],
             program.programId
         );
 
+        // Check if account exists before fetching to avoid console errors
+        const accountInfo = await program.provider.connection.getAccountInfo(historyPda);
+        if (!accountInfo) {
+            // Expected for new users - no meter history yet
+            return [];
+        }
+
         const account = await (program.account as any).meterHistory.fetch(historyPda);
 
         // Format for Recharts
-        // Data in account: readings [u64; 24], timestamps [i64; 24], current_index u8
-        // We need to unroll the circular buffer or just map them.
-        // Simpler: Just map all non-zero entries and sort by timestamp.
-
         const data = account.readings
             .map((reading: any, index: number) => ({
                 reading: reading.toNumber(),
@@ -552,13 +555,16 @@ export const fetchMeterHistory = async (
             .sort((a: any, b: any) => a.timestamp - b.timestamp)
             .map((d: any) => ({
                 time: new Date(d.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                value: d.reading // Cumulative, maybe we want delta? For now show cumulative.
+                value: d.reading
             }));
 
         return data;
 
     } catch (e) {
-        console.warn("fetchMeterHistory failed:", e);
+        // Only log actual errors, not "account not found" for new users
+        if (e instanceof Error && !e.message.includes('Account does not exist')) {
+            console.error("fetchMeterHistory failed:", e);
+        }
         return [];
     }
 }

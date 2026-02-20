@@ -7,12 +7,9 @@
 
 import init, {
   InitOutput,
-  Clusterer,
   Simulation,
-  Topology,
   OrderBook as WasmOrderBook,
   AuctionSimulator as WasmAuctionSimulator,
-  calculate_black_scholes,
   calculate_bezier,
   create_commitment as wasm_create_commitment,
   create_range_proof as wasm_create_range_proof,
@@ -61,7 +58,7 @@ export interface ZkTransferProof {
 export type WasmExports = InitOutput
 
 // Export classes for use in other components
-export { Clusterer, Simulation, Topology, WasmOrderBook, WasmAuctionSimulator }
+export { Simulation, WasmOrderBook, WasmAuctionSimulator }
 
 let wasmExports: WasmExports | null = null
 let wasmLoadPromise: Promise<WasmExports | null> | null = null
@@ -142,14 +139,14 @@ export function deferWasmInit(): void {
   if (typeof window === 'undefined') return
 
   if ('requestIdleCallback' in window) {
-    ;(
+    ; (
       window as Window & { requestIdleCallback: (cb: () => void) => void }
     ).requestIdleCallback(() => {
-      initWasm().catch(() => {})
+      initWasm().catch(() => { })
     })
   } else {
     setTimeout(() => {
-      initWasm().catch(() => {})
+      initWasm().catch(() => { })
     }, 100)
   }
 }
@@ -171,11 +168,7 @@ export function blackScholes(
   t: number,
   isCall: boolean
 ): number {
-  if (!isWasmLoaded()) {
-    return blackScholesJS(s, k, t, isCall)
-  }
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return isCall ? result.call_price : result.put_price
+  return blackScholesJS(s, k, t, isCall)
 }
 
 export function deltaCalc(
@@ -184,21 +177,15 @@ export function deltaCalc(
   t: number,
   isCall: boolean
 ): number {
-  if (!isWasmLoaded()) return deltaCalcJS(s, k, t, isCall)
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return isCall ? result.call_delta : result.put_delta
+  return deltaCalcJS(s, k, t, isCall)
 }
 
 export function gammaCalc(s: number, k: number, t: number): number {
-  if (!isWasmLoaded()) return gammaCalcJS(s, k, t)
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return result.gamma
+  return gammaCalcJS(s, k, t)
 }
 
 export function vegaCalc(s: number, k: number, t: number): number {
-  if (!isWasmLoaded()) return vegaCalcJS(s, k, t)
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return result.vega
+  return vegaCalcJS(s, k, t)
 }
 
 export function thetaCalc(
@@ -207,9 +194,7 @@ export function thetaCalc(
   t: number,
   isCall: boolean
 ): number {
-  if (!isWasmLoaded()) return thetaCalcJS(s, k, t, isCall)
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return isCall ? result.call_theta : result.put_theta
+  return thetaCalcJS(s, k, t, isCall)
 }
 
 export function rhoCalc(
@@ -218,9 +203,7 @@ export function rhoCalc(
   t: number,
   isCall: boolean
 ): number {
-  if (!isWasmLoaded()) return rhoCalcJS(s, k, t, isCall)
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
-  return isCall ? result.call_rho : result.put_rho
+  return rhoCalcJS(s, k, t, isCall)
 }
 
 export function calculateGreeks(
@@ -229,23 +212,12 @@ export function calculateGreeks(
   t: number,
   isCall: boolean
 ): Greeks {
-  if (!isWasmLoaded()) {
-    return {
-      delta: deltaCalcJS(s, k, t, isCall),
-      gamma: gammaCalcJS(s, k, t),
-      vega: vegaCalcJS(s, k, t),
-      theta: thetaCalcJS(s, k, t, isCall),
-      rho: rhoCalcJS(s, k, t, isCall),
-    }
-  }
-
-  const result = calculate_black_scholes(s, k, t, 0.0, 0.5)
   return {
-    delta: isCall ? result.call_delta : result.put_delta,
-    gamma: result.gamma,
-    vega: result.vega,
-    theta: isCall ? result.call_theta : result.put_theta,
-    rho: isCall ? result.call_rho : result.put_rho,
+    delta: deltaCalcJS(s, k, t, isCall),
+    gamma: gammaCalcJS(s, k, t),
+    vega: vegaCalcJS(s, k, t),
+    theta: thetaCalcJS(s, k, t, isCall),
+    rho: rhoCalcJS(s, k, t, isCall),
   }
 }
 

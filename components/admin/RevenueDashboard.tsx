@@ -6,10 +6,11 @@ import {
     useRevenueRecords,
     useAuth
 } from '@/hooks/useApi'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2, TrendingUp, DollarSign, Zap, AlertCircle, Download } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -46,9 +47,29 @@ export function RevenueDashboard() {
 
     if (summaryLoading || recordsLoading) {
         return (
-            <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2 text-lg">Loading revenue data...</span>
+            <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i} className="h-32">
+                            <CardContent className="p-6">
+                                <Skeleton className="h-4 w-24 mb-4" />
+                                <Skeleton className="h-8 w-32" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-48" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-3">
+                            {[...Array(5)].map((_, i) => (
+                                <Skeleton key={i} className="h-12 w-full" />
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         )
     }
@@ -66,31 +87,9 @@ export function RevenueDashboard() {
     }
 
     return (
-        <div className="space-y-6 p-6 bg-background">
-            <header className="flex justify-between items-center bg-card p-6 rounded-xl border shadow-sm">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-                        Platform Revenue & Collection
-                    </h1>
-                    <p className="text-muted-foreground mt-1">Real-time overview of on-chain trading fees and platform income.</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExport}
-                        disabled={exporting}
-                        className="flex gap-2"
-                    >
-                        {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Export to CSV
-                    </Button>
-                    <Badge variant="outline" className="text-sm font-medium px-3 py-1 bg-primary/5">Admin View</Badge>
-                </div>
-            </header>
-
+        <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SummaryCard
                     title="Total Revenue"
                     value={summary?.total_revenue ?? '0'}
@@ -119,54 +118,65 @@ export function RevenueDashboard() {
             </div>
 
             {/* Collection Records Table */}
-            <Card className="border shadow-md overflow-hidden bg-card/50 backdrop-blur-sm">
-                <CardHeader className="border-b bg-muted/30">
-                    <CardTitle className="text-xl flex items-center">
-                        <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                        Collection History
-                    </CardTitle>
+            <Card className="border-none shadow-lg overflow-hidden">
+                <CardHeader className="border-b bg-muted/30 flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-xl flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-primary" />
+                            Collection History
+                        </CardTitle>
+                        <CardDescription>Recent revenue collection records</CardDescription>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExport}
+                        disabled={exporting}
+                        className="flex gap-2"
+                    >
+                        {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        Export CSV
+                    </Button>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader className="bg-muted/50">
-                            <TableRow>
-                                <TableHead className="font-semibold">ID</TableHead>
-                                <TableHead className="font-semibold">Type</TableHead>
-                                <TableHead className="font-semibold">Amount</TableHead>
-                                <TableHead className="font-semibold">Description</TableHead>
-                                <TableHead className="font-semibold text-right">Date</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {records?.length === 0 ? (
+                    {records?.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                            <div className="p-4 bg-muted rounded-full mb-4">
+                                <DollarSign className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-lg font-medium">No revenue records</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Revenue data will appear here once trades are processed.</p>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader className="bg-muted/50">
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                        No collection records found.
-                                    </TableCell>
+                                    <TableHead className="font-semibold">Type</TableHead>
+                                    <TableHead className="font-semibold">Amount</TableHead>
+                                    <TableHead className="font-semibold">Description</TableHead>
+                                    <TableHead className="font-semibold text-right">Date</TableHead>
                                 </TableRow>
-                            ) : (
-                                records?.map((record) => (
+                            </TableHeader>
+                            <TableBody>
+                                {records?.map((record) => (
                                     <TableRow key={record.id} className="hover:bg-muted/30 transition-colors">
-                                        <TableCell className="font-mono text-xs text-muted-foreground">
-                                            {record.id.substring(0, 8)}...
-                                        </TableCell>
                                         <TableCell>
                                             <RevenueBadge type={record.revenue_type} />
                                         </TableCell>
-                                        <TableCell className="font-bold text-primary">
+                                        <TableCell className="font-semibold">
                                             {record.amount} GRX
                                         </TableCell>
-                                        <TableCell className="max-w-xs truncate text-sm">
+                                        <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
                                             {record.description || 'System collection'}
                                         </TableCell>
                                         <TableCell className="text-right text-xs text-muted-foreground">
                                             {format(new Date(record.created_at), 'MMM dd, yyyy HH:mm')}
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>
