@@ -44,9 +44,7 @@ export const metadata: Metadata = {
   },
   description: siteDescription,
   applicationName: siteName,
-  authors: [
-    { name: 'GridTokenX', url: 'https://gridtokenx.com' },
-  ],
+  authors: [{ name: 'GridTokenX', url: 'https://gridtokenx.com' }],
   generator: 'Next.js',
   keywords: [
     'GridTokenX',
@@ -68,7 +66,6 @@ export const metadata: Metadata = {
     'energy derivatives',
     'green energy',
     'sustainable trading',
-
   ],
   referrer: 'origin-when-cross-origin',
   creator: 'GridTokenX',
@@ -155,9 +152,16 @@ export default function RootLayout({
         />
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://events.mapbox.com" />
-        <link rel="preconnect" href="https://font.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://font.gstatic.com"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body className={`${poppins.variable} min-h-screen bg-background font-sans antialiased overflow-hidden`} suppressHydrationWarning>
+      <body
+        className={`${poppins.variable} min-h-screen overflow-hidden bg-background font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <QueryProvider>
             <Connectionprovider>
@@ -176,8 +180,10 @@ export default function RootLayout({
                                 <ClaimStealthModal />
                                 <FulfillTradeModal />
                                 <div className="mx-auto flex h-screen flex-col px-6">
-                                  <NavBar></NavBar>
-                                  <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+                                  <NavBar />
+                                  <main className="flex flex-1 flex-col overflow-hidden">
+                                    {children}
+                                  </main>
                                   <Footer />
                                 </div>
                               </TradingProvider>
@@ -187,7 +193,6 @@ export default function RootLayout({
                       </WasmProvider>
                     </PrivacyProvider>
                   </EnergyProvider>
-
                 </SocketProvider>
               </AuthProvider>
             </Connectionprovider>
@@ -207,10 +212,7 @@ export default function RootLayout({
           src="/charting_library/charting_library.standalone.js"
           strategy="lazyOnload"
         />
-        <Script
-          src="/datafeeds/udf/dist/bundle.js"
-          strategy="lazyOnload"
-        />
+        <Script src="/datafeeds/udf/dist/bundle.js" strategy="lazyOnload" />
       </body>
     </html>
   )
