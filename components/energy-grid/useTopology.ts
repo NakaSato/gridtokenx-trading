@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import type { EnergyNode, EnergyTransfer } from './types'
 
 export interface PathResult {
@@ -129,7 +129,7 @@ class SimpleTopology {
 
 export function useTopology(): UseTopologyResult {
     const [isLoaded] = useState(true)
-    const [topologyInstance] = useState(() => new SimpleTopology())
+    const topologyRef = useRef(new SimpleTopology())
     const [stats, setStats] = useState<TopologyInfo>({ nodeCount: 0, lineCount: 0, totalLoss: 0 })
 
     const loadNetwork = useCallback((nodes: EnergyNode[], transfers: EnergyTransfer[]) => {
@@ -137,7 +137,7 @@ export function useTopology(): UseTopologyResult {
         const validTransfers = transfers.filter(t => nodeIdSet.has(t.from) && nodeIdSet.has(t.to))
 
         try {
-            topologyInstance.setGraph(nodes, validTransfers)
+            topologyRef.current.setGraph(nodes, validTransfers)
             setStats({
                 nodeCount: nodes.length,
                 lineCount: validTransfers.length,
@@ -146,16 +146,16 @@ export function useTopology(): UseTopologyResult {
         } catch (error) {
             console.error('Failed to set topology graph:', error)
         }
-    }, [topologyInstance])
+    }, []) // No dependencies - stable function reference
 
     const findPath = useCallback((fromId: string, toId: string): PathResult | null => {
         try {
-            return topologyInstance.findPath(fromId, toId)
+            return topologyRef.current.findPath(fromId, toId)
         } catch (error) {
             console.error('Failed to find path:', error)
             return null
         }
-    }, [topologyInstance])
+    }, []) // No dependencies - stable function reference
 
     const getInfo = useCallback((): TopologyInfo => {
         return stats

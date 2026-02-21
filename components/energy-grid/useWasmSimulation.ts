@@ -80,9 +80,33 @@ export function useWasmSimulation({
 
     }, [wasmLoaded, energyNodes, energyTransfers, initSimulationNodesWasm, initSimulationFlowsWasm])
 
-    // React State for UI
-    const [liveNodeData, setLiveNodeData] = useState<Record<string, LiveNodeData>>({})
-    const [liveTransferData, setLiveTransferData] = useState<Record<string, LiveTransferData>>({})
+    // React State for UI - pre-populated with base values to eliminate cold-start blank markers
+    const [liveNodeData, setLiveNodeData] = useState<Record<string, LiveNodeData>>(() => {
+        const initial: Record<string, LiveNodeData> = {}
+        const now = new Date()
+        energyNodes.forEach((n) => {
+            let status: 'active' | 'idle' | 'maintenance' = 'idle'
+            if (n.status === 'active') status = 'active'
+            if (n.status === 'maintenance') status = 'maintenance'
+            initial[n.id] = {
+                nodeId: n.id,
+                currentValue: getInitialLiveValue(n),
+                status,
+                lastUpdate: now,
+            }
+        })
+        return initial
+    })
+    const [liveTransferData, setLiveTransferData] = useState<Record<string, LiveTransferData>>(() => {
+        const initial: Record<string, LiveTransferData> = {}
+        energyTransfers.forEach((t, i) => {
+            initial[`flow-${i}`] = {
+                transferId: `flow-${i}`,
+                currentPower: t.power,
+            }
+        })
+        return initial
+    })
     const [lastGlobalUpdate, setLastGlobalUpdate] = useState<Date>(new Date())
 
     // Simulation Loop

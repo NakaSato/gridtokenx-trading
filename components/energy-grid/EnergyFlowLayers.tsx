@@ -185,7 +185,14 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                 const cacheKey = `${transfer.from}-${transfer.to}`
                 const curvedCoordinates = cachedCurves.get(cacheKey)
 
-                if (!curvedCoordinates) return null
+                if (!curvedCoordinates) {
+                    console.warn(`[EnergyFlow] No curve for transfer ${index}: ${cacheKey}`, {
+                        from: transfer.from,
+                        to: transfer.to,
+                        availableKeys: Array.from(cachedCurves.keys())
+                    })
+                    return null
+                }
 
                 // Get live power value
                 const liveTransfer = liveTransferData[`flow-${index}`]
@@ -208,6 +215,8 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                 }
             })
             .filter(Boolean)
+
+        console.log(`[EnergyFlow] Generated ${features.length} flow lines from ${energyTransfers.length} transfers`)
 
         return {
             type: 'FeatureCollection' as const,
@@ -293,7 +302,7 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                 />
             </Source>
 
-            {/* Main animated layer */}
+            {/* Main animated layer - dashOffset drives movement on the dashes */}
             <Source
                 id="energy-flows"
                 type="geojson"
@@ -310,7 +319,10 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                         'line-color': ['get', 'color'],
                         'line-width': ['get', 'width'],
                         'line-opacity': pulseOpacity,
-                        'line-dasharray': [2, 3],
+                        'line-dasharray': [
+                            Math.max(0.1, 2 + (dashOffset % 5) * 0.2),
+                            Math.max(0.5, 3 - (dashOffset % 5) * 0.1),
+                        ],
                     }}
                 />
             </Source>
@@ -344,7 +356,7 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                 />
             </Source>
 
-            {/* Directional arrows along the flow */}
+            {/* Directional arrows along the flow - text-only, no icon-image to avoid silent sprite failures */}
             <Source
                 id="energy-flows-arrows"
                 type="geojson"
@@ -356,13 +368,6 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                     layout={{
                         'symbol-placement': 'line',
                         'symbol-spacing': 80,
-                        'icon-image': 'arrow',
-                        'icon-size': 0.5,
-                        'icon-rotate': 90,
-                        'icon-rotation-alignment': 'map',
-                        'icon-allow-overlap': true,
-                        'icon-ignore-placement': true,
-                        // Use text as fallback arrow if icon not available
                         'text-field': '▶',
                         'text-size': 10,
                         'text-rotation-alignment': 'map',
