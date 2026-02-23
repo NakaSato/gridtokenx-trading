@@ -1,142 +1,48 @@
 /**
  * API Client for GridTokenX Platform
- * Uses native fetch API with environment-based configuration
+ * Refactored into a Facade pattern over modular domain APIs
  */
 
-import { API_CONFIG, getApiUrl } from './config'
-import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
-  VerifyEmailResponse,
-  UserProfile,
-  ResendVerificationRequest,
-  ResendVerificationResponse,
-} from '../types/auth'
-import type {
-  GridStatus,
-  GridTopologyResponse,
-  GridHistoryStatus
-} from '../types/grid'
-import type { PublicMeterResponse } from '../types/meter'
-import type {
-  CarbonBalanceResponse,
-  CarbonCredit,
-  CarbonTransaction,
-  UserWallet,
-  LinkWalletRequest,
-  Notification,
-  NotificationPreferences,
-  PriceAlert,
-  RecurringOrder,
-  CreateRecurringOrderRequest,
-} from '../types/features'
-
-export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  headers?: Record<string, string>
-  body?: any
-  token?: string
-}
-
-export interface ApiResponse<T = any> {
-  data?: T
-  error?: string
-  status: number
-}
+import { AuthApi } from './api/auth'
+import { TradingApi } from './api/trading'
+import { UserApi } from './api/user'
+import { MetersApi } from './api/meters'
+import { AdminApi } from './api/admin'
+import { CarbonApi } from './api/carbon'
+import { FuturesApi } from './api/futures'
+// Re-export core types for backward compatibility
+export type { ApiRequestOptions, ApiResponse } from './api/core'
+export { apiRequest } from './api/core'
 
 /**
- * Make an API request using native fetch
- * @param path - API endpoint path (e.g., '/api/orders')
- * @param options - Request options
- */
-export async function apiRequest<T = any>(
-  path: string,
-  options: ApiRequestOptions = {}
-): Promise<ApiResponse<T>> {
-  const { method = 'GET', headers = {}, body, token } = options
-
-  const url = getApiUrl(path)
-
-  // Build headers
-  const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...headers,
-  }
-
-  // Add authorization token if provided
-  if (token) {
-    requestHeaders.Authorization = `Bearer ${token}`
-  }
-
-  try {
-    if (path.includes('analytics/my-stats')) {
-    }
-
-    const response = await fetch(url, {
-      method,
-      headers: requestHeaders,
-      body: body ? JSON.stringify(body) : undefined,
-    })
-
-    // Get the response text first
-    const text = await response.text()
-
-    // Try to parse JSON, but handle empty responses
-    let data: any = {}
-    if (text) {
-      try {
-        data = JSON.parse(text)
-      } catch (parseError) {
-        // If JSON parsing fails, return the text as error
-        return {
-          error: `Invalid JSON response: ${text}`,
-          status: response.status,
-        }
-      }
-    }
-
-    if (!response.ok) {
-      let errorMessage = 'Request failed'
-      if (data.message) {
-        errorMessage = data.message
-      } else if (data.error) {
-        if (typeof data.error === 'string') {
-          errorMessage = data.error
-        } else if (typeof data.error === 'object' && data.error.message) {
-          errorMessage = data.error.message
-        } else {
-          errorMessage = JSON.stringify(data.error)
-        }
-      }
-
-      return {
-        error: errorMessage,
-        status: response.status,
-      }
-    }
-
-    return {
-      data,
-      status: response.status,
-    }
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      status: 500,
-    }
-  }
-}
-
-/**
- * API Client class for organized API calls
+ * Main API Client Facade class
+ * Maintains perfect backward compatibility with existing codebase
  */
 export class ApiClient {
   private token?: string
 
+  // Domain API Modules
+  private authApi: AuthApi
+  private tradingApi: TradingApi
+  private userApi: UserApi
+  private metersApi: MetersApi
+  private adminApi: AdminApi
+  private carbonApi: CarbonApi
+  private futuresApi: FuturesApi
+
   constructor(token?: string) {
     this.token = token
+
+    // Provide a dynamic token getter to the domain modules
+    const getToken = () => this.token
+
+    this.authApi = new AuthApi(getToken)
+    this.tradingApi = new TradingApi(getToken)
+    this.userApi = new UserApi(getToken)
+    this.metersApi = new MetersApi(getToken)
+    this.adminApi = new AdminApi(getToken)
+    this.carbonApi = new CarbonApi(getToken)
+    this.futuresApi = new FuturesApi(getToken)
   }
 
   setToken(token: string): void {
@@ -147,834 +53,141 @@ export class ApiClient {
     this.token = undefined
   }
 
-  // Authentication
-  // V1 RESTful API endpoints
-  async login(
-    username: string,
-    password: string
-  ): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/token', {
-      method: 'POST',
-      body: { username, password },
-    })
-  }
-
-  async register(
-    userData: RegisterRequest
-  ): Promise<ApiResponse<RegisterResponse>> {
-    return apiRequest<RegisterResponse>('/api/v1/users', {
-      method: 'POST',
-      body: userData,
-    })
-  }
-
-  async verifyWalletSignature(data: {
-    wallet_address: string
-    signature: string
-    message: string
-    timestamp: number
-  }): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/wallet/verify', {
-      method: 'POST',
-      body: data,
-    })
-  }
-
-  async logout() {
-    return apiRequest('/api/v1/auth/logout', {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  async updateWallet(
-    walletAddress: string,
-    verifyOwnership?: boolean
-  ): Promise<ApiResponse<UserProfile>> {
-    return apiRequest<UserProfile>('/api/v1/user/wallet', {
-      method: 'POST',
-      body: {
-        wallet_address: walletAddress,
-        verify_ownership: verifyOwnership,
-      },
-      token: this.token || undefined,
-    })
-  }
-
-  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
-    return apiRequest<VerifyEmailResponse>(
-      `/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
-      {
-        method: 'GET',
-      }
-    )
-  }
-
-  async resendVerification(
-    email: string
-  ): Promise<ApiResponse<ResendVerificationResponse>> {
-    return apiRequest<ResendVerificationResponse>(
-      '/api/v1/auth/resend-verification',
-      {
-        method: 'POST',
-        body: { email },
-      }
-    )
-  }
-
-  async forgotPassword(
-    email: string
-  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    return apiRequest<{ success: boolean; message: string }>(
-      '/api/v1/auth/forgot-password',
-      {
-        method: 'POST',
-        body: { email },
-      }
-    )
-  }
-
-  async resetPassword(
-    token: string,
-    newPassword: string
-  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    return apiRequest<{ success: boolean; message: string }>(
-      '/api/v1/auth/reset-password',
-      {
-        method: 'POST',
-        body: { token, new_password: newPassword },
-      }
-    )
-  }
-
-  // Trading
-  async createOrder(orderData: {
-    energy_amount: string
-    price_per_kwh: string
-    order_type?: string
-  }) {
-    return apiRequest('/api/v1/trading/orders', {
-      method: 'POST',
-      body: orderData,
-      token: this.token,
-    })
-  }
-
-  async getOrders(filters?: {
-    status?: string
-    limit?: number
-    offset?: number
-  }) {
-    const params = new URLSearchParams(filters as any)
-    return apiRequest(`/api/v1/trading/orders?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getOrderBook(filters?: { status?: string }) {
-    const params = new URLSearchParams(filters as any)
-    return apiRequest(`/api/v1/trading/orderbook?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getMarketData() {
-    return apiRequest('/api/v1/analytics/market', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getTrades(filters?: { limit?: number; offset?: number }) {
-    const params = new URLSearchParams(filters as any)
-    return apiRequest<import('../types/trading').TradeHistory>(
-      `/api/v1/trading/trades?${params.toString()}`,
-      {
-        method: 'GET',
-        token: this.token,
-      }
-    )
-  }
-
-  async cancelOrder(orderId: string) {
-    return apiRequest(`/api/v1/trading/orders/${orderId}`, {
-      method: 'DELETE',
-      token: this.token,
-    })
-  }
-
-  // P2P Trading
-  async createP2POrder(orderData: {
-    side: 'buy' | 'sell'  // Backend expects lowercase
-    amount: string
-    price_per_kwh: string
-    zone_id?: number
-  }) {
-    return apiRequest<{ id: string }>('/api/v1/trading/orders', {
-      method: 'POST',
-      body: {
-        side: orderData.side, // Backend expects "buy" or "sell" (lowercase)
-        energy_amount: orderData.amount,
-        price_per_kwh: orderData.price_per_kwh,
-        order_type: 'limit', // Use limit order type (lowercase)
-        zone_id: orderData.zone_id
-      },
-      token: this.token,
-    })
-  }
-
-  async getP2POrderBook() {
-    return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/trading/orderbook', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getMyP2POrders() {
-    return apiRequest<any[]>('/api/v1/trading/orders', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getMatchingStatus() {
-    return apiRequest<{
-      pending_buy_orders: number
-      pending_sell_orders: number
-      pending_matches: number
-      buy_price_range: { min: number; max: number }
-      sell_price_range: { min: number; max: number }
-      can_match: boolean
-      match_reason: string
-    }>('/api/v1/trading/matching-status', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getSettlementStats() {
-    return apiRequest<{
-      pending_count: number
-      processing_count: number
-      confirmed_count: number
-      failed_count: number
-      total_settled_value: number
-    }>('/api/v1/trading/settlement-stats', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  // P2P Transaction Cost Calculation
-  async calculateP2PCost(request: {
-    buyer_zone_id: number
-    seller_zone_id: number
-    energy_amount: number
-    agreed_price?: number
-  }) {
-    return apiRequest<{
-      energy_cost: number
-      wheeling_charge: number
-      loss_cost: number
-      total_cost: number
-      effective_energy: number
-      loss_factor: number
-      loss_allocation: string
-      zone_distance_km: number
-      buyer_zone: number
-      seller_zone: number
-      is_grid_compliant: boolean
-      grid_violation_reason?: string
-    }>('/api/v1/trading/p2p/calculate-cost', {
-      method: 'POST',
-      body: request,
-      token: this.token,
-    })
-  }
-
-  async getP2PMarketPrices() {
-    return apiRequest<{
-      base_price_thb_kwh: number
-      grid_import_price_thb_kwh: number
-      grid_export_price_thb_kwh: number
-      loss_allocation_model: string
-      wheeling_charges: Record<string, number>
-      loss_factors: Record<string, number>
-    }>('/api/v1/trading/p2p/market-prices', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  // P2P Trade & Settlement History
-  async getTradeHistory(filters?: { limit?: number; offset?: number }) {
-    const params = new URLSearchParams()
-    if (filters?.limit) params.set('limit', String(filters.limit))
-    if (filters?.offset) params.set('offset', String(filters.offset))
-    return apiRequest<{
-      trades: Array<{
-        id: string
-        buyer_id: string
-        seller_id: string
-        energy_amount: number
-        price_per_kwh: number
-        total_value: number
-        fee_amount: number
-        wheeling_charge: number
-        effective_energy: number
-        status: string
-        transaction_hash?: string
-        created_at: string
-      }>
-      total: number
-    }>(`/api/v1/trading/trades?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getTransactionDetails(txHash: string) {
-    return apiRequest<{
-      signature: string
-      slot: number
-      block_time: string
-      status: string
-      fee: number
-      instructions: Array<{ program: string; type: string }>
-    }>(`/api/v1/analytics/transactions/${txHash}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  // User
-  async getProfile() {
-    return apiRequest('/api/v1/users/me', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async updateProfile(profileData: {
-    email?: string
-    first_name?: string
-    last_name?: string
-    wallet_address?: string
-  }) {
-    return apiRequest('/api/v1/users/me', {
-      method: 'PATCH',
-      body: profileData,
-      token: this.token,
-    })
-  }
-
-  async getBalance(walletAddress?: string) {
-    if (!walletAddress) {
-      // Return empty balance instead of querying with 'unknown'
-      return {
-        data: {
-          wallet_address: '',
-          token_balance: '0.00',
-          token_balance_raw: 0,
-          balance_sol: 0,
-          decimals: 9,
-          token_mint: '',
-          token_account: '',
-        },
-        status: 200,
-      }
-    }
-
-    return apiRequest(`/api/v1/wallets/${walletAddress}/balance`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getPositions() {
-    return apiRequest('/api/v1/futures/positions', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  // Meters
-  async submitMeterData(data: import('../types/meter').SubmitReadingRequest) {
-    // For v1, use serial in path: POST /api/v1/meters/{serial}/readings
-    // Explicitly enable auto_mint for automatic token minting
-    const serial = data.meter_serial || 'unknown'
-    return apiRequest<import('../types/meter').MeterReading>(`/api/v1/meters/${serial}/readings?auto_mint=true`, {
-      method: 'POST',
-      body: { kwh: data.kwh_amount, wallet_address: data.wallet_address, timestamp: data.reading_timestamp },
-      token: this.token,
-    })
-  }
-
-  // Futures
-  async getFuturesProducts() {
-    return apiRequest<import('../types/futures').FuturesProduct[]>('/api/v1/futures/products', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async createFuturesOrder(data: import('../types/futures').CreateFuturesOrderRequest) {
-    return apiRequest<{ order_id: string }>('/api/v1/futures/orders', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  async getFuturesPositions() {
-    return apiRequest<import('../types/futures').FuturesPosition[]>('/api/v1/futures/positions', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getFuturesCandles(productId: string, interval: string = '1m') {
-    const params = new URLSearchParams({ product_id: productId, interval })
-    return apiRequest<import('../types/futures').Candle[]>(`/api/v1/futures/candles?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getFuturesOrderBook(productId: string) {
-    const params = new URLSearchParams({ product_id: productId })
-    return apiRequest<import('../types/futures').OrderBook>(`/api/v1/futures/orderbook?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getFuturesOrders() {
-    return apiRequest<import('../types/futures').FuturesOrder[]>('/api/v1/futures/orders/my', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async closeFuturesPosition(positionId: string) {
-    return apiRequest<{ order_id: string }>(`/api/v1/futures/positions/${positionId}/close`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  // Analytics
-  async getMarketAnalytics(params: { timeframe: string }): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/v1/analytics/market?timeframe=${params.timeframe}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getUserAnalytics(params: { timeframe: string }): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/v1/analytics/my-stats?timeframe=${params.timeframe}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getUserHistory(params: { timeframe: string }): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/api/v1/analytics/my-history?timeframe=${params.timeframe}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getMeterStats() {
-    return apiRequest<import('../types/meter').MeterStats>('/api/v1/meters/stats', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getMyReadings(limit = 10, offset = 0) {
-    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
-    return apiRequest<import('../types/meter').MeterReading[]>(
-      `/api/v1/meters/readings?${params.toString()}`,
-      {
-        method: 'GET',
-        token: this.token,
-      }
-    )
-  }
-
-  async getMyMeters() {
-    return apiRequest<import('../types/meter').MeterResponse[]>('/api/v1/users/me/meters', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async registerMeter(data: { serial_number: string; meter_type: string; location: string; latitude?: number; longitude?: number }) {
-    return apiRequest<import('../types/meter').RegisterMeterResponse>('/api/v1/meters', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  // Minting - Mint tokens from user's unminted readings
-  async mintReading(readingId: string): Promise<ApiResponse<{
-    message: string
-    transaction_signature: string
-    kwh_amount: string
-    wallet_address: string
-  }>> {
-    return apiRequest(`/api/v1/meters/readings/${readingId}/mint`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-
-
-  // Transactions
-  async getUserTransactions(filters?: {
-    transaction_type?: string
-    status?: string
-    date_from?: string
-    date_to?: string
-    limit?: number
-    offset?: number
-    min_attempts?: number
-    has_signature?: boolean
-  }) {
-    const params = new URLSearchParams()
-
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, String(value))
-        }
-      })
-    }
-
-    const queryString = params.toString()
-    const endpoint = queryString
-      ? `/api/v1/analytics/transactions?${queryString}`
-      : '/api/v1/analytics/transactions'
-
-    return apiRequest<import('../types/transactions').UserTransactionsResponse>(
-      endpoint,
-      {
-        method: 'GET',
-        token: this.token,
-      }
-    )
-  }
-
-  // --- Carbon Credits ---
-  async getCarbonBalance(): Promise<ApiResponse<CarbonBalanceResponse>> {
-    return apiRequest<CarbonBalanceResponse>('/api/v1/carbon/balance', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getCarbonHistory(): Promise<ApiResponse<CarbonCredit[]>> {
-    return apiRequest<CarbonCredit[]>('/api/v1/carbon/history', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getCarbonTransactions(): Promise<ApiResponse<CarbonTransaction[]>> {
-    return apiRequest<CarbonTransaction[]>('/api/v1/carbon/transactions', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async transferCarbonCredits(data: {
-    receiver_username: string
-    amount: string
-    notes?: string
-  }): Promise<ApiResponse<{ transaction_id: string }>> {
-    return apiRequest<{ transaction_id: string }>('/api/v1/carbon/transfer', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  // --- Multi-wallet ---
-  async listWallets(): Promise<ApiResponse<UserWallet[]>> {
-    return apiRequest<UserWallet[]>('/api/v1/user-wallets', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async linkWallet(data: LinkWalletRequest): Promise<ApiResponse<UserWallet>> {
-    return apiRequest<UserWallet>('/api/v1/user-wallets', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  async removeWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/user-wallets/${walletId}`, {
-      method: 'DELETE',
-      token: this.token,
-    })
-  }
-
-  async setPrimaryWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/user-wallets/${walletId}/primary`, {
-      method: 'PUT',
-      token: this.token,
-    })
-  }
-
-  // --- Notifications ---
-  async listNotifications(filters?: { limit?: number; offset?: number }): Promise<ApiResponse<{
-    notifications: Notification[]
-    unread_count: number
-    total: number
-  }>> {
-    const params = new URLSearchParams(filters as any)
-    return apiRequest(`/api/v1/notifications?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async markNotificationAsRead(id: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}/read`, {
-      method: 'PUT',
-      token: this.token,
-    })
-  }
-
-  async markAllNotificationsAsRead(): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>('/api/v1/notifications/read-all', {
-      method: 'PUT',
-      token: this.token,
-    })
-  }
-
-  async getNotificationPreferences(): Promise<ApiResponse<NotificationPreferences>> {
-    return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>('/api/v1/notifications/preferences', {
-      method: 'PUT',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  // --- Price Alerts ---
-  async createPriceAlert(data: {
-    symbol: string
-    target_price: string
-    condition: 'above' | 'below'
-  }): Promise<ApiResponse<PriceAlert>> {
-    return apiRequest<PriceAlert>('/api/v1/trading/price-alerts', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  async listPriceAlerts(): Promise<ApiResponse<PriceAlert[]>> {
-    return apiRequest<PriceAlert[]>('/api/v1/trading/price-alerts', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async deletePriceAlert(id: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/trading/price-alerts/${id}`, {
-      method: 'DELETE',
-      token: this.token,
-    })
-  }
-
-  // --- Recurring Orders ---
-  async createRecurringOrder(data: CreateRecurringOrderRequest): Promise<ApiResponse<RecurringOrder>> {
-    return apiRequest<RecurringOrder>('/api/v1/trading/recurring', {
-      method: 'POST',
-      body: data,
-      token: this.token,
-    })
-  }
-
-  async listRecurringOrders(): Promise<ApiResponse<RecurringOrder[]>> {
-    return apiRequest<RecurringOrder[]>('/api/v1/trading/recurring', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getRecurringOrder(id: string): Promise<ApiResponse<RecurringOrder>> {
-    return apiRequest<RecurringOrder>(`/api/v1/trading/recurring/${id}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async cancelRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}`, {
-      method: 'DELETE',
-      token: this.token,
-    })
-  }
-
-  async pauseRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/pause`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  async resumeRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-    return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/resume`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  // --- Revenue (Admin) ---
-  async getRevenueSummary(): Promise<ApiResponse<import('../types/trading').PlatformRevenueSummary>> {
-    return apiRequest<import('../types/trading').PlatformRevenueSummary>('/api/v1/trading/revenue/summary', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getRevenueRecords(limit = 50, offset = 0): Promise<ApiResponse<import('../types/trading').RevenueRecord[]>> {
-    const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
-    return apiRequest<import('../types/trading').RevenueRecord[]>(`/api/v1/trading/revenue/records?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  // --- VPP Orchestration (Admin) ---
-  async getVppClusters(): Promise<ApiResponse<import('../types/grid').VppClusterStatus[]>> {
-    return apiRequest<import('../types/grid').VppClusterStatus[]>('/api/v1/vpp/clusters', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async dispatchVppCluster(clusterId: string, targetKw: number): Promise<ApiResponse<import('../types/grid').VppDispatchResponse>> {
-    return apiRequest<import('../types/grid').VppDispatchResponse>('/api/v1/vpp/dispatch', {
-      method: 'POST',
-      body: { cluster_id: clusterId, target_kw: targetKw },
-      token: this.token,
-    })
-  }
-
-  // --- Admin Analytics & Health ---
-  async getAdminStats(): Promise<ApiResponse<import('../types/trading').AdminStatsResponse>> {
-    return apiRequest<import('../types/trading').AdminStatsResponse>('/api/v1/analytics/admin/stats', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getSystemHealth(): Promise<ApiResponse<import('../types/trading').DetailedHealthStatus>> {
-    return apiRequest<import('../types/trading').DetailedHealthStatus>('/api/v1/analytics/admin/health', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getAdminActivity(): Promise<ApiResponse<import('../types/trading').AuditEventRecord[]>> {
-    return apiRequest<import('../types/trading').AuditEventRecord[]>('/api/v1/analytics/admin/activity', {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getZoneEconomicInsights(timeframe: string = '24h'): Promise<ApiResponse<import('../types/trading').ZoneEconomicInsights>> {
-    return apiRequest<import('../types/trading').ZoneEconomicInsights>(`/api/v1/analytics/admin/zones/economic?timeframe=${timeframe}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async getAdminUsers(filters?: any): Promise<ApiResponse<import('../types/trading').AdminUsersResponse>> {
-    const params = new URLSearchParams(filters)
-    return apiRequest<import('../types/trading').AdminUsersResponse>(`/api/v1/admin/users?${params.toString()}`, {
-      method: 'GET',
-      token: this.token,
-    })
-  }
-
-  async updateUserRole(userId: string, role: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
-    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/role`, {
-      method: 'PUT',
-      token: this.token,
-      body: JSON.stringify({ role }),
-    })
-  }
-
-  async deactivateUser(userId: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
-    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/deactivate`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  async reactivateUser(userId: string): Promise<ApiResponse<import('../types/trading').AdminUser>> {
-    return apiRequest<import('../types/trading').AdminUser>(`/api/v1/admin/users/${userId}/reactivate`, {
-      method: 'POST',
-      token: this.token,
-    })
-  }
-
-  // --- Export ---
-  async exportTradingHistory(format: 'csv' | 'json', filters?: any): Promise<ApiResponse<Blob>> {
-    const params = new URLSearchParams(filters)
-    const url = `/api/v1/trading/export/${format}?${params.toString()}`
-
-    // Using native fetch because we need Blob for downloads
-    const apiUrl = getApiUrl(url)
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-        }
-      })
-      if (!response.ok) throw new Error('Export failed')
-      const blob = await response.blob()
-      return { data: blob as any, status: response.status }
-    } catch (e) {
-      return { error: e instanceof Error ? e.message : 'Export failed', status: 500 }
-    }
-  }
-
-  // Grid
-  async getGridStatus(): Promise<ApiResponse<GridStatus>> {
-    return apiRequest<GridStatus>('/api/v1/public/grid-status', { method: 'GET' })
-  }
-
-  async getGridTopology(): Promise<ApiResponse<GridTopologyResponse>> {
-    return apiRequest<GridTopologyResponse>('/api/zones', { method: 'GET' })
-  }
-
-  async getPublicMeters(): Promise<ApiResponse<PublicMeterResponse[]>> {
-    return apiRequest<PublicMeterResponse[]>('/api/v1/public/meters', { method: 'GET' })
-  }
-
-  async getGridHistory(limit = 30): Promise<ApiResponse<GridHistoryStatus[]>> {
-    return apiRequest<GridHistoryStatus[]>(`/api/v1/public/grid-status/history?limit=${limit}`, { method: 'GET' })
+  // ==========================================
+  // AUTHENTICATION & PROFILE
+  // ==========================================
+
+  async login(username: string, password: string) { return this.authApi.login(username, password) }
+  async register(userData: any) { return this.authApi.register(userData) }
+  async verifyWalletSignature(data: any) { return this.authApi.verifyWalletSignature(data) }
+  async logout() { return this.authApi.logout() }
+  async updateWallet(walletAddress: string, verifyOwnership?: boolean) { return this.authApi.updateWallet(walletAddress, verifyOwnership) }
+  async verifyEmail(token: string) { return this.authApi.verifyEmail(token) }
+  async resendVerification(email: string) { return this.authApi.resendVerification(email) }
+  async forgotPassword(email: string) { return this.authApi.forgotPassword(email) }
+  async resetPassword(token: string, newPassword: string) { return this.authApi.resetPassword(token, newPassword) }
+
+  // ==========================================
+  // TRADING & RECURRING & ALERTS
+  // ==========================================
+
+  async createOrder(orderData: any) { return this.tradingApi.createOrder(orderData) }
+  async getOrders(filters?: any) { return this.tradingApi.getOrders(filters) }
+  async getOrderBook(filters?: any) { return this.tradingApi.getOrderBook(filters) }
+  async getMarketData() { return this.tradingApi.getMarketData() }
+  async getTrades(filters?: any) { return this.tradingApi.getTrades(filters) }
+  async cancelOrder(orderId: string) { return this.tradingApi.cancelOrder(orderId) }
+
+  // P2P 
+  async createP2POrder(orderData: any) { return this.tradingApi.createP2POrder(orderData) }
+  async getP2POrderBook() { return this.tradingApi.getP2POrderBook() }
+  async getMyP2POrders() { return this.tradingApi.getMyP2POrders() }
+  async getMatchingStatus() { return this.tradingApi.getMatchingStatus() }
+  async getSettlementStats() { return this.tradingApi.getSettlementStats() }
+  async calculateP2PCost(request: any) { return this.tradingApi.calculateP2PCost(request) }
+  async getP2PMarketPrices() { return this.tradingApi.getP2PMarketPrices() }
+  async getTradeHistory(filters?: any) { return this.tradingApi.getTradeHistory(filters) }
+
+  // Alerts & Recurring
+  async createPriceAlert(data: any) { return this.tradingApi.createPriceAlert(data) }
+  async listPriceAlerts() { return this.tradingApi.listPriceAlerts() }
+  async deletePriceAlert(id: string) { return this.tradingApi.deletePriceAlert(id) }
+  async createRecurringOrder(data: any) { return this.tradingApi.createRecurringOrder(data) }
+  async listRecurringOrders() { return this.tradingApi.listRecurringOrders() }
+  async getRecurringOrder(id: string) { return this.tradingApi.getRecurringOrder(id) }
+  async cancelRecurringOrder(id: string) { return this.tradingApi.cancelRecurringOrder(id) }
+  async pauseRecurringOrder(id: string) { return this.tradingApi.pauseRecurringOrder(id) }
+  async resumeRecurringOrder(id: string) { return this.tradingApi.resumeRecurringOrder(id) }
+
+  // ==========================================
+  // USER (WALLETS, BALANCE, NOTIFICATIONS)
+  // ==========================================
+
+  async getProfile() { return this.userApi.getProfile() }
+  async updateProfile(profileData: any) { return this.userApi.updateProfile(profileData) }
+  async getBalance(walletAddress?: string) { return this.userApi.getBalance(walletAddress) }
+  async getUserAnalytics(params: any) { return this.userApi.getUserAnalytics(params) }
+  async getUserHistory(params: any) { return this.userApi.getUserHistory(params) }
+  async getUserTransactions(filters?: any) { return this.userApi.getUserTransactions(filters) }
+
+  // Multi-wallet
+  async listWallets() { return this.userApi.listWallets() }
+  async linkWallet(data: any) { return this.userApi.linkWallet(data) }
+  async removeWallet(walletId: string) { return this.userApi.removeWallet(walletId) }
+  async setPrimaryWallet(walletId: string) { return this.userApi.setPrimaryWallet(walletId) }
+
+  // Notifications
+  async listNotifications(filters?: any) { return this.userApi.listNotifications(filters) }
+  async markNotificationAsRead(id: string) { return this.userApi.markNotificationAsRead(id) }
+  async markAllNotificationsAsRead() { return this.userApi.markAllNotificationsAsRead() }
+  async getNotificationPreferences() { return this.userApi.getNotificationPreferences() }
+  async updateNotificationPreferences(data: any) { return this.userApi.updateNotificationPreferences(data) }
+
+  // ==========================================
+  // METERS & GRID
+  // ==========================================
+
+  async submitMeterData(data: any) { return this.metersApi.submitMeterData(data) }
+  async getMeterStats() { return this.metersApi.getMeterStats() }
+  async getMyReadings(limit?: number, offset?: number) { return this.metersApi.getMyReadings(limit, offset) }
+  async getMyMeters() { return this.metersApi.getMyMeters() }
+  async registerMeter(data: any) { return this.metersApi.registerMeter(data) }
+  async mintReading(readingId: string) { return this.metersApi.mintReading(readingId) }
+  async getGridStatus() { return this.metersApi.getGridStatus() }
+  async getGridTopology() { return this.metersApi.getGridTopology() }
+  async getPublicMeters() { return this.metersApi.getPublicMeters() }
+  async getGridHistory(limit?: number) { return this.metersApi.getGridHistory(limit) }
+
+  // ==========================================
+  // CARBON CREDITS
+  // ==========================================
+
+  async getCarbonBalance() { return this.carbonApi.getCarbonBalance() }
+  async getCarbonHistory() { return this.carbonApi.getCarbonHistory() }
+  async getCarbonTransactions() { return this.carbonApi.getCarbonTransactions() }
+  async transferCarbonCredits(data: any) { return this.carbonApi.transferCarbonCredits(data) }
+
+  // ==========================================
+  // FUTURES
+  // ==========================================
+
+  async getPositions() { return this.futuresApi.getPositions() }
+  async getFuturesProducts() { return this.futuresApi.getFuturesProducts() }
+  async createFuturesOrder(data: any) { return this.futuresApi.createFuturesOrder(data) }
+  async getFuturesPositions() { return this.futuresApi.getFuturesPositions() }
+  async getFuturesCandles(productId: string, interval?: string) { return this.futuresApi.getFuturesCandles(productId, interval) }
+  async getFuturesOrderBook(productId: string) { return this.futuresApi.getFuturesOrderBook(productId) }
+  async getFuturesOrders() { return this.futuresApi.getFuturesOrders() }
+  async closeFuturesPosition(positionId: string) { return this.futuresApi.closeFuturesPosition(positionId) }
+
+  // ==========================================
+  // ADMIN
+  // ==========================================
+
+  async getRevenueSummary() { return this.adminApi.getRevenueSummary() }
+  async getRevenueRecords(limit?: number, offset?: number) { return this.adminApi.getRevenueRecords(limit, offset) }
+  async getVppClusters() { return this.adminApi.getVppClusters() }
+  async dispatchVppCluster(clusterId: string, targetKw: number) { return this.adminApi.dispatchVppCluster(clusterId, targetKw) }
+  async getAdminStats() { return this.adminApi.getAdminStats() }
+  async getSystemHealth() { return this.adminApi.getSystemHealth() }
+  async getAdminActivity() { return this.adminApi.getAdminActivity() }
+  async getZoneEconomicInsights(timeframe?: string) { return this.adminApi.getZoneEconomicInsights(timeframe) }
+  async getAdminUsers(filters?: any) { return this.adminApi.getAdminUsers(filters) }
+  async updateUserRole(userId: string, role: string) { return this.adminApi.updateUserRole(userId, role) }
+  async deactivateUser(userId: string) { return this.adminApi.deactivateUser(userId) }
+  async reactivateUser(userId: string) { return this.adminApi.reactivateUser(userId) }
+  async exportTradingHistory(format: 'csv' | 'json', filters?: any) { return this.adminApi.exportTradingHistory(format, filters) }
+
+  // P2P Config Management
+  async getP2PConfigs() { return this.adminApi.getP2PConfigs() }
+  async updateP2PConfig(key: string, value: number, reason?: string) { return this.adminApi.updateP2PConfig(key, value, reason) }
+  async getP2PConfigAudit(key?: string, limit?: number) { return this.adminApi.getP2PConfigAudit(key, limit) }
+
+  // Backward compatibility method for user / admin confusion in  // Analytics / Market Data
+  async getMarketStats() { return this.tradingApi.getMarketStats() }
+  async getMarketAnalytics(params: { timeframe: string }) {
+    // Old implementation called: `/api/v1/analytics/market?timeframe=${params.timeframe}`
+    return this.tradingApi.getMarketData() // Close enough to the old implementation which didn't use timeframe anyway
   }
 }
 

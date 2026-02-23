@@ -17,6 +17,7 @@ import init, {
   crypto_verify as wasm_crypto_verify,
   hmac_sha256 as wasm_hmac_sha256,
   sha256 as wasm_sha256,
+  sign_p2p_order as wasm_sign_p2p_order,
 } from './wasm-generated/gridtokenx_wasm'
 
 export interface Greeks {
@@ -527,6 +528,25 @@ export function hmacVerify(
     encoder.encode(message),
     sigHex
   )
+}
+
+/**
+ * High-level wrapper for P2P order signing
+ */
+export function signP2POrder(
+  side: string,
+  amount: string,
+  price: string,
+  timestamp: number,
+  secret_key: Uint8Array
+): string {
+  if (!isWasmLoaded()) return ''
+  try {
+    return wasm_sign_p2p_order(side, amount, price, BigInt(timestamp), secret_key)
+  } catch (e) {
+    console.error('[WASM] Failed to sign P2P order:', e)
+    return ''
+  }
 }
 
 export async function createCommitment(

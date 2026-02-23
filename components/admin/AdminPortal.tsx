@@ -13,7 +13,8 @@ import {
     BarChart3,
     LayoutDashboard,
     Clock,
-    Shield
+    Shield,
+    Settings
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -96,6 +97,16 @@ export function AdminPortal() {
             color: 'text-indigo-500',
             borderColor: 'border-l-indigo-500',
             bgColor: 'bg-indigo-500/10'
+        },
+        {
+            title: 'P2P Configuration',
+            description: 'Manage wheeling charges, loss factors, and market pricing parameters without smart contract redeployment.',
+            href: '/admin/p2p-config',
+            icon: Settings,
+            badge: 'Market',
+            color: 'text-cyan-500',
+            borderColor: 'border-l-cyan-500',
+            bgColor: 'bg-cyan-500/10'
         }
     ]
 

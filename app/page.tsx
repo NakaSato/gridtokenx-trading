@@ -170,23 +170,16 @@ export default function Homepage() {
                 className="h-full"
                 id="center-vertical-group"
               >
-                {/* MAP */}
-                <ResizablePanel id="center-map" defaultSize={75} minSize={30}>
+                {/* MAP - No Tabs */}
+                <ResizablePanel id="center-map" defaultSize={85} minSize={30}>
                   <div className="flex h-full flex-col overflow-hidden">
-                    <Tabs defaultValue="map" className="flex h-full flex-col">
-                      <div className="relative mt-1 min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                        <TabsContent
-                          value="map"
-                          className="m-0 h-full flex-col p-0 data-[state=active]:flex"
-                        >
-                          <EnergyGridMapWrapper
-                            onTradeFromNode={handleTradeFromNode}
-                            viewState={viewState}
-                            onViewStateChange={handleViewStateChange}
-                          />
-                        </TabsContent>
-                      </div>
-                    </Tabs>
+                    <div className="relative mt-1 min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                      <EnergyGridMapWrapper
+                        onTradeFromNode={handleTradeFromNode}
+                        viewState={viewState}
+                        onViewStateChange={handleViewStateChange}
+                      />
+                    </div>
                   </div>
                 </ResizablePanel>
 
@@ -195,9 +188,9 @@ export default function Homepage() {
                 {/* POSITIONS */}
                 <ResizablePanel
                   id="center-positions"
-                  defaultSize={25}
-                  minSize={15}
-                  maxSize={50}
+                  defaultSize={15}
+                  minSize={10}
+                  maxSize={40}
                 >
                   <div className="h-full overflow-y-auto pt-2">
                     <TradingPositionsPanel />

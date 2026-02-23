@@ -1,75 +1,93 @@
+import { apiRequest, ApiResponse } from './core'
 import type {
-  RegistrationRequest,
-  RegistrationResponse,
   LoginRequest,
   LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  VerifyEmailResponse,
+  UserProfile,
+  ResendVerificationRequest,
+  ResendVerificationResponse,
 } from '../../types/auth'
 
-export async function register(
-  data: RegistrationRequest
-): Promise<RegistrationResponse> {
-  const res = await fetch('/api/v1/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
+export class AuthApi {
+  constructor(private getToken: () => string | undefined) { }
 
-  const text = await res.text()
-  let payload: any = {}
-  try {
-    payload = text ? JSON.parse(text) : {}
-  } catch (err) {
-    throw new Error(`Invalid JSON response from server: ${err}`)
+  async login(username: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    return apiRequest<LoginResponse>('/api/v1/auth/token', {
+      method: 'POST',
+      body: { username, password },
+    })
   }
 
-  if (!res.ok) {
-    let message = payload?.message || res.statusText || 'Registration failed'
-
-    // Handle 422 Unprocessable Entity with detailed validation info
-    if (res.status === 422) {
-      message =
-        payload?.message ||
-        'Validation error: Please check all required fields are filled correctly. Ensure username is 3-50 chars, password is 8+ chars, email is valid, and role is one of: user, producer, consumer, admin, ami.'
-    }
-
-    throw new Error(message)
+  async register(userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
+    return apiRequest<RegisterResponse>('/api/v1/users', {
+      method: 'POST',
+      body: userData,
+    })
   }
 
-  return payload as RegistrationResponse
-}
-
-export async function login(data: LoginRequest): Promise<LoginResponse> {
-  const res = await fetch('/api/v1/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-
-  const text = await res.text()
-  let payload: any = {}
-  try {
-    payload = text ? JSON.parse(text) : {}
-  } catch (err) {
-    throw new Error(`Invalid JSON response from server: ${err}`)
+  async verifyWalletSignature(data: {
+    wallet_address: string
+    signature: string
+    message: string
+    timestamp: number
+  }): Promise<ApiResponse<LoginResponse>> {
+    return apiRequest<LoginResponse>('/api/v1/auth/wallet/verify', {
+      method: 'POST',
+      body: data,
+    })
   }
 
-  if (!res.ok) {
-    let message = payload?.message || res.statusText || 'Login failed'
-
-    // Handle specific error cases
-    if (res.status === 401) {
-      message = payload?.message || 'Invalid username or password'
-    } else if (res.status === 403) {
-      message =
-        payload?.message ||
-        'Email verification required. Please check your email.'
-    } else if (res.status === 422) {
-      message =
-        payload?.message || 'Validation error: Please check your credentials.'
-    }
-
-    throw new Error(message)
+  async logout() {
+    return apiRequest('/api/v1/auth/logout', {
+      method: 'POST',
+      token: this.getToken(),
+    })
   }
 
-  return payload as LoginResponse
+  async updateWallet(
+    walletAddress: string,
+    verifyOwnership?: boolean
+  ): Promise<ApiResponse<UserProfile>> {
+    return apiRequest<UserProfile>('/api/v1/user/wallet', {
+      method: 'POST',
+      body: {
+        wallet_address: walletAddress,
+        verify_ownership: verifyOwnership,
+      },
+      token: this.getToken(),
+    })
+  }
+
+  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
+    return apiRequest<VerifyEmailResponse>(
+      `/api/v1/auth/verify?token=${encodeURIComponent(token)}`,
+      { method: 'GET' }
+    )
+  }
+
+  async resendVerification(email: string): Promise<ApiResponse<ResendVerificationResponse>> {
+    return apiRequest<ResendVerificationResponse>('/api/v1/auth/resend-verification', {
+      method: 'POST',
+      body: { email },
+    })
+  }
+
+  async forgotPassword(email: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiRequest<{ success: boolean; message: string }>('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    })
+  }
+
+  async resetPassword(
+    token: string,
+    newPassword: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiRequest<{ success: boolean; message: string }>('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: { token, new_password: newPassword },
+    })
+  }
 }

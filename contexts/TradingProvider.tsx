@@ -136,11 +136,11 @@ export const TradingContext = createContext<TradingContextType>({
   marketAddress: undefined,
   orders: [],
   isLoadingOrders: false,
-  refreshOrders: () => {},
+  refreshOrders: () => { },
   createSellOrder: async () => '',
   createBuyOrder: async () => '',
   activeOrderFill: null,
-  setActiveOrderFill: () => {},
+  setActiveOrderFill: () => { },
   createStablecoinSellOrder: async () => '',
   createStablecoinBuyOrder: async () => '',
   executeConfidentialSettlement: async () => '',
@@ -290,11 +290,23 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({
       const amountBn = new BN(Math.round(amount))
       const priceBn = new BN(Math.round(price))
 
+      // 3.5 Derive ZoneMarket PDA (assuming Zone 1 for now)
+      const zoneId = 1
+      const [zoneMarketAddress] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('zone_market'),
+          marketAddress.toBuffer(),
+          new BN(zoneId).toArrayLike(Buffer, 'le', 4),
+        ],
+        program.programId
+      )
+
       // 4. Build Instructions
       const createIx = await (program.methods as any)
         .createSellOrder(orderId, amountBn, priceBn)
         .accounts({
           market: marketAddress,
+          zoneMarket: zoneMarketAddress,
           order: orderAddress,
           authority: publicKey,
           systemProgram: SystemProgram.programId,
@@ -323,6 +335,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({
           .matchOrders(amountBn)
           .accounts({
             market: marketAddress,
+            zoneMarket: zoneMarketAddress,
             buyOrder: buyOrderAddress,
             sellOrder: sellOrderAddress,
             tradeRecord: tradeRecordAddress,
@@ -382,11 +395,23 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({
       const amountBn = new BN(Math.round(amount))
       const priceBn = new BN(Math.round(price))
 
+      // 3.5 Derive ZoneMarket PDA (assuming Zone 1 for now)
+      const zoneId = 1
+      const [zoneMarketAddress] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from('zone_market'),
+          marketAddress.toBuffer(),
+          new BN(zoneId).toArrayLike(Buffer, 'le', 4),
+        ],
+        program.programId
+      )
+
       // 4. Build Instructions
       const createIx = await (program.methods as any)
         .createBuyOrder(orderId, amountBn, priceBn)
         .accounts({
           market: marketAddress,
+          zoneMarket: zoneMarketAddress,
           order: orderAddress,
           authority: publicKey,
           systemProgram: SystemProgram.programId,
@@ -414,6 +439,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({
           .matchOrders(amountBn)
           .accounts({
             market: marketAddress,
+            zoneMarket: zoneMarketAddress,
             buyOrder: buyOrderAddress,
             sellOrder: sellOrderAddress,
             tradeRecord: tradeRecordAddress,

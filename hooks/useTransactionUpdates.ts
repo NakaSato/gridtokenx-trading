@@ -23,6 +23,21 @@ export interface TransactionStatusUpdate {
 }
 
 /**
+ * OrderBook snapshot update from WebSocket
+ */
+export interface OrderBookEntry {
+    price_per_kwh: number
+    energy_amount: number
+    username?: string
+}
+
+export interface OrderBookSnapshotUpdate {
+    bids: OrderBookEntry[]
+    asks: OrderBookEntry[]
+    timestamp: string
+}
+
+/**
  * P2P order update from WebSocket
  */
 export interface P2POrderUpdate {
@@ -317,6 +332,39 @@ export function useSettlementUpdates(
         latestSettlement,
         settlements,
         clearSettlements: () => setSettlements([]),
+    }
+}
+
+/**
+ * Hook for real-time OrderBook snapshot updates
+ */
+export function useOrderBookUpdates(
+    options: {
+        onUpdate?: (update: OrderBookSnapshotUpdate) => void
+        token?: string
+    } = {}
+) {
+    const { onUpdate, token } = options
+    const [latestSnapshot, setLatestSnapshot] = useState<OrderBookSnapshotUpdate | null>(null)
+
+    const handleUpdate = useCallback(
+        (data: OrderBookSnapshotUpdate) => {
+            setLatestSnapshot(data)
+            onUpdate?.(data)
+        },
+        [onUpdate]
+    )
+
+    const { connected } = useWebSocketMessage<OrderBookSnapshotUpdate>(
+        'trades',
+        'order_book_snapshot',
+        handleUpdate,
+        token
+    )
+
+    return {
+        connected,
+        latestSnapshot,
     }
 }
 

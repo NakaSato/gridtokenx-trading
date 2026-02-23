@@ -41,7 +41,7 @@ describe('ApiClient', () => {
       const result = await defaultApiClient.register(registerData)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/auth/register'),
+        expect.stringContaining('/api/v1/users'),
         expect.objectContaining({
           method: 'POST',
           headers: {

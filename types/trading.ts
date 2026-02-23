@@ -171,3 +171,22 @@ export interface RevenueRecord {
     description: string | null;
     created_at: string;
 }
+
+// --- Market Stats ---
+
+export interface ZoneStats {
+    zone_id: number;
+    generator_count: number;
+    consumer_count: number;
+    total_generation: string;
+    total_consumption: string;
+    net_balance: string;
+}
+
+export interface MarketStatsResponse {
+    total_generation: string;
+    total_consumption: string;
+    net_balance: string;
+    active_users: number;
+    zones: ZoneStats[];
+}

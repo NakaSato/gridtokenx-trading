@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { defaultApiClient } from '@/lib/api-client'
@@ -15,6 +15,8 @@ import {
     Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+import { useOrderBookUpdates } from '@/hooks/useTransactionUpdates'
 
 interface OrderBookDepthProps {
     currentPrice?: number
@@ -50,7 +52,30 @@ export default function OrderBookDepth({
     const [loading, setLoading] = useState(false)
     const [priceImpact, setPriceImpact] = useState<number | null>(null)
 
-    // Fetch order book depth
+    const processOrderBookData = useCallback((bids: any[], asks: any[]) => {
+        const aggregatedBids = aggregateDepth(bids, 'buy')
+        const aggregatedAsks = aggregateDepth(asks, 'sell')
+
+        const bestBid = aggregatedBids.length > 0 ? Math.max(...aggregatedBids.map(b => b.price)) : 0
+        const bestAsk = aggregatedAsks.length > 0 ? Math.min(...aggregatedAsks.map(a => a.price)) : 0
+        const midPrice = bestBid > 0 && bestAsk > 0 ? (bestBid + bestAsk) / 2 : currentPrice || 0
+
+        const totalBidVolume = aggregatedBids.reduce((sum, b) => sum + b.amount, 0)
+        const totalAskVolume = aggregatedAsks.reduce((sum, a) => sum + a.amount, 0)
+
+        setOrderBook({
+            bids: aggregatedBids.slice(0, 5),
+            asks: aggregatedAsks.slice(0, 5),
+            spread: bestAsk - bestBid,
+            midPrice,
+            bestBid,
+            bestAsk,
+            totalBidVolume,
+            totalAskVolume
+        })
+    }, [currentPrice])
+
+    // Fetch initial order book depth
     useEffect(() => {
         const fetchDepth = async () => {
             if (!token) return
@@ -62,39 +87,29 @@ export default function OrderBookDepth({
 
                 if (response.data) {
                     const data = response.data as any
-                    // Aggregate orders by price level
-                    const bids = aggregateDepth(data.buy_orders || data.bids || [], 'buy')
-                    const asks = aggregateDepth(data.sell_orders || data.asks || [], 'sell')
-
-                    const bestBid = bids.length > 0 ? Math.max(...bids.map(b => b.price)) : 0
-                    const bestAsk = asks.length > 0 ? Math.min(...asks.map(a => a.price)) : 0
-                    const midPrice = bestBid > 0 && bestAsk > 0 ? (bestBid + bestAsk) / 2 : currentPrice || 0
-
-                    const totalBidVolume = bids.reduce((sum, b) => sum + b.amount, 0)
-                    const totalAskVolume = asks.reduce((sum, a) => sum + a.amount, 0)
-
-                    setOrderBook({
-                        bids: bids.slice(0, 5),
-                        asks: asks.slice(0, 5),
-                        spread: bestAsk - bestBid,
-                        midPrice,
-                        bestBid,
-                        bestAsk,
-                        totalBidVolume,
-                        totalAskVolume
-                    })
+                    processOrderBookData(
+                        data.buy_orders || data.bids || [],
+                        data.sell_orders || data.asks || []
+                    )
                 }
             } catch (err) {
-                console.error('Failed to fetch order book:', err)
+                console.error('Failed to fetch initial order book:', err)
             } finally {
                 setLoading(false)
             }
         }
 
         fetchDepth()
-        const interval = setInterval(fetchDepth, 5000) // Refresh every 5s
-        return () => clearInterval(interval)
-    }, [token, currentPrice])
+    }, [token, processOrderBookData])
+
+    // Listen to real-time order book updates
+    const { latestSnapshot } = useOrderBookUpdates({ token: token || undefined })
+
+    useEffect(() => {
+        if (latestSnapshot) {
+            processOrderBookData(latestSnapshot.bids, latestSnapshot.asks)
+        }
+    }, [latestSnapshot, processOrderBookData])
 
     // Calculate price impact
     useEffect(() => {

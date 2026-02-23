@@ -16,6 +16,7 @@ export type WebSocketMessageType =
   | 'transaction_status_update'
   | 'p2p_order_update'
   | 'settlement_complete'
+  | 'order_book_snapshot'
 
 
 export interface WebSocketMessage<T = any> {

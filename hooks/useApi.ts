@@ -434,8 +434,8 @@ export function useAdminActivity(token?: string) {
 /**
  * Hook for fetching zone economic insights (Admin)
  */
-export function useZoneEconomicInsights(timeframe: string = '24h', token?: string) {
-  const client = useApiClient(token)
+export function useZoneEconomicInsights(timeframe: string, token?: string) {
+  const client = useMemo(() => createApiClient(token), [token])
   const { data, loading, error, refetch } = useApiRequest(
     () => client.getZoneEconomicInsights(timeframe),
     [timeframe, token]
@@ -444,15 +444,45 @@ export function useZoneEconomicInsights(timeframe: string = '24h', token?: strin
 }
 
 /**
+ * Hook for tracking aggregate market statistics
+ */
+export function useMarketStats(token?: string) {
+  const [stats, setStats] = useState<import('../types/trading').MarketStatsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const client = useMemo(() => createApiClient(token), [token])
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await client.getMarketStats()
+      if (response.error) {
+        setError(response.error)
+      } else if (response.data) {
+        setStats(response.data)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch market stats')
+    } finally {
+      setLoading(false)
+    }
+  }, [client])
+
+  useEffect(() => {
+    fetchStats()
+    const interval = setInterval(fetchStats, 30000) // Poll every 30s
+    return () => clearInterval(interval)
+  }, [fetchStats])
+
+  return { stats, loading, error, refresh: fetchStats }
+}
+
+/**
  * Hook for fetching all users (Admin)
  */
-export function useAdminUsers(token?: string) {
+export function useAdminUsers(token?: string, filters?: any) {
   const client = useApiClient(token)
   const { data, loading, error, refetch } = useApiRequest(
-    () => client.getAdminUsers(),
-    [token]
-  )
-  return { users: data?.users, total: data?.total, loading, error, refetch }
 }
 
 /**
@@ -491,4 +521,77 @@ export function useAdminActions(token?: string) {
   }
 
   return { updateRole, deactivateUser, reactivateUser, loading, error }
+}
+
+/**
+ * Hook for P2P Config management (Admin)
+ */
+export function useP2PConfig() {
+  const client = useApiClient()
+  const [configs, setConfigs] = useState<any[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [updating, setUpdating] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchConfigs = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [configResponse, auditResponse] = await Promise.all([
+        client.getP2PConfigs(),
+        client.getP2PConfigAudit()
+      ])
+
+      if (configResponse.error) {
+        setError(configResponse.error)
+      } else {
+        setConfigs(configResponse.data?.configs || [])
+      }
+
+      if (auditResponse.data?.history) {
+        setAuditLogs(auditResponse.data.history)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch configs')
+    } finally {
+      setLoading(false)
+    }
+  }, [client])
+
+  const updateConfig = useCallback(async (key: string, value: number, reason?: string) => {
+    setUpdating(key)
+    try {
+      const response = await client.updateP2PConfig(key, value, reason)
+      if (response.error) {
+        setError(response.error)
+        return false
+      }
+      await fetchConfigs()
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update config')
+      return false
+    } finally {
+      setUpdating(null)
+    }
+  }, [client, fetchConfigs])
+
+  const refresh = useCallback(() => {
+    fetchConfigs()
+  }, [fetchConfigs])
+
+  useEffect(() => {
+    fetchConfigs()
+  }, [fetchConfigs])
+
+  return {
+    configs,
+    auditLogs,
+    loading,
+    error,
+    updateConfig,
+    updating,
+    refresh
+  }
 }
