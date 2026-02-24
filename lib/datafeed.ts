@@ -12,10 +12,12 @@ const REQUEST_LIMIT = 25
 const TIME_WINDOW = 10000
 const CACHE_DURATION = 5 * 60 * 1000
 
+// State tracking for rate limiting
 let requestCount = 0
 let lastRequestTime = 0
 
-const canMakeRequest = () => {
+/** Check if we can make a request within rate limits */
+const canMakeRequest = (): boolean => {
   const now = Date.now()
   if (now - lastRequestTime >= TIME_WINDOW) {
     requestCount = 0
@@ -25,16 +27,16 @@ const canMakeRequest = () => {
   return requestCount < REQUEST_LIMIT
 }
 
+/** Generate cache key for history requests */
 const getCacheKey = (
   symbol: string,
   from: number,
   to: number,
   resolution: string
-) => {
-  return `${symbol}-${from}-${to}-${resolution}`
-}
+): string => `${symbol}-${from}-${to}-${resolution}`
 
-const isCacheValid = (timestamp: number) => {
+/** Check if cached data is still valid */
+const isCacheValid = (timestamp: number): boolean => {
   return Date.now() - timestamp < CACHE_DURATION
 }
 
@@ -42,6 +44,7 @@ export const setSymbolLogo = (symbol: string, logoPath: string) => {
   logoCache.set(symbol, logoPath)
 }
 
+/** Retry a function with exponential backoff */
 const retryWithBackoff = async <T>(
   fn: () => Promise<T>,
   maxRetries = 3,

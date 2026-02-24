@@ -3,6 +3,7 @@
  * Centralized configuration for all external URLs used across the application
  */
 
+/** External link keys for type-safe access */
 export const EXTERNAL_LINKS = {
     // Documentation
     docs: process.env.NEXT_PUBLIC_DOCS_URL || 'https://docs.gridtokenx.com',
@@ -18,21 +19,18 @@ export const EXTERNAL_LINKS = {
     website: process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://gridtokenx.com',
 
     // Blockchain Explorer
-    solanaExplorer: process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || 'https://explorer.solana.com',
+    solanaExplorer: process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || 'https://explorer.gridtokenx.com',
 } as const
 
+/** Type for external link keys */
 export type ExternalLinkKey = keyof typeof EXTERNAL_LINKS
 
-/**
- * Get an external link URL by key
- */
+/** Get an external link URL by key with type safety */
 export function getExternalLink(key: ExternalLinkKey): string {
     return EXTERNAL_LINKS[key]
 }
 
-/**
- * Check if a URL is external (not a relative path)
- */
+/** Check if a URL is external (not a relative path) */
 export function isExternalUrl(url: string): boolean {
     return url.startsWith('http://') || url.startsWith('https://')
 }

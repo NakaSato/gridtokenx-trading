@@ -23,11 +23,11 @@ import { GovernanceProvider } from '@/contexts/GovernanceProvider'
 import { LendingProvider } from '@/contexts/LendingProvider'
 import { MarketplaceProvider } from '@/contexts/MarketplaceProvider'
 import { TradingProvider } from '@/contexts/TradingProvider'
+import { NotificationToastProvider } from '../hooks/useNotificationToast'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
-const siteDescription =
-  'Advanced P2P energy trading platform on Solana. Trade energy tokens, manage futures and options, earn yields, and participate in decentralized renewable energy markets.'
+const siteDescription = 'P2P energy trading platform'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -174,18 +174,20 @@ export default function RootLayout({
                           <LendingProvider>
                             <MarketplaceProvider>
                               <TradingProvider>
-                                <AuthModalManager />
-                                <DevFaucet />
-                                <EmailVerificationBanner />
-                                <ClaimStealthModal />
-                                <FulfillTradeModal />
-                                <div className="mx-auto flex h-screen flex-col px-6">
-                                  <NavBar />
-                                  <main className="flex flex-1 flex-col overflow-hidden">
-                                    {children}
-                                  </main>
-                                  <Footer />
-                                </div>
+                                <NotificationToastProvider>
+                                  <AuthModalManager />
+                                  <DevFaucet />
+                                  <EmailVerificationBanner />
+                                  <ClaimStealthModal />
+                                  <FulfillTradeModal />
+                                  <div className="mx-auto flex h-screen flex-col px-6">
+                                    <NavBar />
+                                    <main className="flex flex-1 flex-col overflow-hidden">
+                                      {children}
+                                    </main>
+                                    <Footer />
+                                  </div>
+                                </NotificationToastProvider>
                               </TradingProvider>
                             </MarketplaceProvider>
                           </LendingProvider>

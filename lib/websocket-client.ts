@@ -5,6 +5,7 @@
 
 import { API_CONFIG, getWsUrl } from './config'
 
+/** WebSocket message types supported by the platform */
 export type WebSocketMessageType =
   | 'orderbook_update'
   | 'trade_update'
@@ -18,23 +19,29 @@ export type WebSocketMessageType =
   | 'settlement_complete'
   | 'order_book_snapshot'
 
-
-export interface WebSocketMessage<T = any> {
+/** Standard WebSocket message format */
+export interface WebSocketMessage<T = unknown> {
   type: WebSocketMessageType
   data: T
   timestamp: string
 }
 
+/** WebSocket connection options */
 export interface WebSocketClientOptions {
+  /** Whether to automatically reconnect on disconnect */
   reconnect?: boolean
+  /** Delay in ms before attempting reconnect */
   reconnectDelay?: number
+  /** Maximum number of reconnect attempts */
   maxReconnectAttempts?: number
+  /** Authentication token for private channels */
   token?: string
   /** If true, this is a public endpoint that doesn't require authentication */
   isPublic?: boolean
 }
 
-export type WebSocketEventHandler = (message: WebSocketMessage) => void
+/** Event handler type for WebSocket messages */
+export type WebSocketEventHandler<T = unknown> = (message: WebSocketMessage<T>) => void
 
 /**
  * WebSocket Client for real-time updates

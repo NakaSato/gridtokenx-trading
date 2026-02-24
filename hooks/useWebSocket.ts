@@ -102,17 +102,15 @@ export function useWebSocketMessage<T = any>(
   useEffect(() => {
     if (!client) return
 
-    const messageHandler: WebSocketEventHandler = (
-      message: WebSocketMessage<T>
-    ) => {
+    const messageHandler = (message: WebSocketMessage<T>) => {
       setLatestMessage(message.data)
       handler(message.data)
     }
 
-    client.on(messageType, messageHandler)
+    client.on(messageType, messageHandler as WebSocketEventHandler)
 
     return () => {
-      client.off(messageType, messageHandler)
+      client.off(messageType, messageHandler as WebSocketEventHandler)
     }
   }, [client, messageType, handler])
 

@@ -1,8 +1,7 @@
 /**
  * WASM Bridge for GridTokenX Platform
  *
- * TypeScript wrapper to load and call WASM functions for
- * Options pricing, Energy Grid calculations, and Simulation.
+ * TypeScript wrapper to load and call WASM functions
  */
 
 import init, {
@@ -17,7 +16,6 @@ import init, {
   crypto_verify as wasm_crypto_verify,
   hmac_sha256 as wasm_hmac_sha256,
   sha256 as wasm_sha256,
-  sign_p2p_order as wasm_sign_p2p_order,
 } from './wasm-generated/gridtokenx_wasm'
 
 export interface Greeks {
@@ -160,9 +158,13 @@ export function getWasmExports(): WasmExports | null {
 }
 
 // =============================================================================
-// OPTIONS PRICING FUNCTIONS
+// OPTIONS PRICING FUNCTIONS (JS Fallbacks)
 // =============================================================================
 
+const R = 0.0
+const SIGMA = 0.5
+
+/** Calculate Black-Scholes option price */
 export function blackScholes(
   s: number,
   k: number,
@@ -172,41 +174,7 @@ export function blackScholes(
   return blackScholesJS(s, k, t, isCall)
 }
 
-export function deltaCalc(
-  s: number,
-  k: number,
-  t: number,
-  isCall: boolean
-): number {
-  return deltaCalcJS(s, k, t, isCall)
-}
-
-export function gammaCalc(s: number, k: number, t: number): number {
-  return gammaCalcJS(s, k, t)
-}
-
-export function vegaCalc(s: number, k: number, t: number): number {
-  return vegaCalcJS(s, k, t)
-}
-
-export function thetaCalc(
-  s: number,
-  k: number,
-  t: number,
-  isCall: boolean
-): number {
-  return thetaCalcJS(s, k, t, isCall)
-}
-
-export function rhoCalc(
-  s: number,
-  k: number,
-  t: number,
-  isCall: boolean
-): number {
-  return rhoCalcJS(s, k, t, isCall)
-}
-
+/** Calculate option Greeks (delta, gamma, vega, theta, rho) */
 export function calculateGreeks(
   s: number,
   k: number,
@@ -222,194 +190,21 @@ export function calculateGreeks(
   }
 }
 
-// =============================================================================
-// ENERGY GRID FUNCTIONS
-// =============================================================================
-
-export function calculateBezier(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  intensity: number,
-  segments: number
-): [number, number][] {
-  if (!isWasmLoaded()) return []
-
-  const points = calculate_bezier(x1, y1, x2, y2, intensity, segments)
-  const result: [number, number][] = []
-
-  for (let i = 0; i < points.length; i += 2) {
-    result.push([points[i], points[i + 1]])
-  }
-
-  return result
-}
-
-// =============================================================================
-// ORDER BOOK FUNCTIONS
-// =============================================================================
-
-export interface Order {
-  id: number
-  side: 'buy' | 'sell'
-  price: number
-  quantity: number
-  timestamp: number
-}
-
-export function orderbookInit(): void {
-  if (isWasmLoaded() && !orderBookInstance) {
-    orderBookInstance = new WasmOrderBook()
-  }
-}
-
-export function orderbookAdd(order: Order): void {
-  if (!orderBookInstance) orderbookInit()
-  if (orderBookInstance) {
-    orderBookInstance.add_order(
-      Number(order.id),
-      order.side === 'buy' ? 0 : 1, // WASM uses u8 for side, 0=Buy, 1=Sell
-      order.price,
-      order.quantity,
-      BigInt(order.timestamp)
-    )
-  }
-}
-
-export function orderbookCancel(orderId: number): boolean {
-  if (orderBookInstance) {
-    return orderBookInstance.cancel_order(Number(orderId))
-  }
-  return false
-}
-
-export function orderbookBestBid(): number {
-  return orderBookInstance?.best_bid_price() ?? -1
-}
-
-export function orderbookBestAsk(): number {
-  return orderBookInstance?.best_ask_price() ?? -1
-}
-
-export function orderbookSpread(): number {
-  return orderBookInstance?.spread() ?? -1
-}
-
-export function orderbookMidPrice(): number {
-  return orderBookInstance?.mid_price() ?? -1
-}
-
-// =============================================================================
-// AUCTION FUNCTIONS
-// =============================================================================
-
-export function auctionInit(): void {
-  if (isWasmLoaded() && !auctionSimulatorInstance) {
-    auctionSimulatorInstance = new WasmAuctionSimulator()
-  }
-}
-
-export function auctionAddOrder(
-  id: number,
-  price: number,
-  amount: number,
-  is_bid: boolean
-): void {
-  if (!auctionSimulatorInstance) auctionInit()
-  if (auctionSimulatorInstance) {
-    auctionSimulatorInstance.add_order(Number(id), price, amount, is_bid)
-  }
-}
-
-export function auctionCalculateClearingPrice(): {
-  price: number
-  volume: number
-} {
-  if (!auctionSimulatorInstance) return { price: 0, volume: 0 }
-  const result = auctionSimulatorInstance.calculate_clearing_price()
-  // Returns [clearing_price, clearing_volume]
-  return {
-    price: result[0] || 0,
-    volume: result[1] || 0,
-  }
-}
-
-export function auctionClear(): void {
-  if (auctionSimulatorInstance) {
-    auctionSimulatorInstance.clear()
-  }
-}
-
-// =============================================================================
-// P&L CHART FUNCTIONS
-// =============================================================================
-
-export function calculatePnL(
-  price: number,
-  strikePrice: number,
-  premium: number,
-  contractType: 'call' | 'put' | string,
-  positionType: 'long' | 'short' | string
-): number {
-  if (contractType === 'call') {
-    if (positionType === 'long') {
-      return Math.max(price - strikePrice, 0) - premium
-    } else {
-      return premium - Math.max(price - strikePrice, 0)
-    }
-  } else {
-    if (positionType === 'long') {
-      return Math.max(strikePrice - price, 0) - premium
-    } else {
-      return premium - Math.max(strikePrice - price, 0)
-    }
-  }
-}
-
-export function generatePnLBatch(
-  strikePrice: number,
-  premium: number,
-  contractType: 'call' | 'put' | string,
-  positionType: 'long' | 'short' | string,
-  rangePercent: number = 0.2,
-  numPoints: number = 400
-): PnLData {
-  const range = strikePrice * rangePercent
-  const minPrice = strikePrice - range
-  const maxPrice = strikePrice + range
-  const priceStep = (maxPrice - minPrice) / (numPoints - 1)
-
-  const prices: number[] = []
-  const pnlData: number[] = []
-
-  for (let i = 0; i < numPoints; i++) {
-    const price = minPrice + i * priceStep
-    const pnl = calculatePnL(
-      price,
-      strikePrice,
-      premium,
-      contractType,
-      positionType
-    )
-    prices.push(price)
-    pnlData.push(pnl)
-  }
-
-  return {
-    prices,
-    pnlData,
-    minPnL: Math.min(...pnlData),
-    maxPnL: Math.max(...pnlData),
-  }
-}
+/** Calculate individual Greek values */
+export const deltaCalc = (s: number, k: number, t: number, isCall: boolean): number =>
+  deltaCalcJS(s, k, t, isCall)
+export const gammaCalc = (s: number, k: number, t: number): number =>
+  gammaCalcJS(s, k, t)
+export const vegaCalc = (s: number, k: number, t: number): number =>
+  vegaCalcJS(s, k, t)
+export const thetaCalc = (s: number, k: number, t: number, isCall: boolean): number =>
+  thetaCalcJS(s, k, t, isCall)
+export const rhoCalc = (s: number, k: number, t: number, isCall: boolean): number =>
+  rhoCalcJS(s, k, t, isCall)
 
 // =============================================================================
 // JAVASCRIPT FALLBACKS
 // =============================================================================
-
-const R = 0.0
-const SIGMA = 0.5
 
 function normalCdf(z: number): number {
   const beta1 = -0.0004406
@@ -492,6 +287,31 @@ function rhoCalcJS(s: number, k: number, t: number, isCall: boolean): number {
 }
 
 // =============================================================================
+// ENERGY GRID FUNCTIONS
+// =============================================================================
+
+/** Calculate Bezier curve points for energy grid visualization */
+export function calculateBezier(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  intensity: number,
+  segments: number
+): [number, number][] {
+  if (!isWasmLoaded()) return []
+
+  const points = calculate_bezier(x1, y1, x2, y2, intensity, segments)
+  const result: [number, number][] = []
+
+  for (let i = 0; i < points.length; i += 2) {
+    result.push([points[i], points[i + 1]])
+  }
+
+  return result
+}
+
+// =============================================================================
 // CRYPTO & ZK
 // =============================================================================
 
@@ -532,6 +352,7 @@ export function hmacVerify(
 
 /**
  * High-level wrapper for P2P order signing
+ * NOTE: This function is currently disabled as wasm_sign_p2p_order is not available
  */
 export function signP2POrder(
   side: string,
@@ -540,13 +361,8 @@ export function signP2POrder(
   timestamp: number,
   secret_key: Uint8Array
 ): string {
-  if (!isWasmLoaded()) return ''
-  try {
-    return wasm_sign_p2p_order(side, amount, price, BigInt(timestamp), secret_key)
-  } catch (e) {
-    console.error('[WASM] Failed to sign P2P order:', e)
-    return ''
-  }
+  console.warn('[WASM] signP2POrder is not implemented in WASM module')
+  return ''
 }
 
 export async function createCommitment(

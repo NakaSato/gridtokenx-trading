@@ -14,7 +14,10 @@ export const CAMPUS_CONFIG = {
     totalCapacity: "2950 kWh",
     operationalSince: "2024",
     efficiency: "94.5%"
-}
+} as const
+
+/** Type for campus configuration */
+export type CampusConfig = typeof CAMPUS_CONFIG
 
 /**
  * Energy Grid Map Configuration
@@ -46,7 +49,10 @@ export const ENERGY_GRID_CONFIG = {
     progressBar: {
         maxCapacity: 500,  // kW
     },
-}
+} as const
+
+/** Type for energy grid configuration */
+export type EnergyGridConfig = typeof ENERGY_GRID_CONFIG
 
 /**
  * P2P Trading Configuration
@@ -59,13 +65,13 @@ export const P2P_CONFIG = {
         { id: 2, name: 'Zone 2 - Commercial' },
         { id: 3, name: 'Zone 3 - Industrial' },
         { id: 4, name: 'Zone 4 - Mixed Use' },
-    ],
+    ] as const,
 
     // Default price per kWh (THB)
     defaultPrice: 4.0,
 
     // Quick amount percentages
-    quickAmountPercentages: [25, 50, 75, 100],
+    quickAmountPercentages: [25, 50, 75, 100] as const,
 
     // Grid pricing defaults (THB/kWh)
     defaultGridImportPrice: 4.50,
@@ -73,4 +79,10 @@ export const P2P_CONFIG = {
 
     // Pagination
     itemsPerPage: 10,
-}
+} as const
+
+/** Trading zone type */
+export type TradingZone = typeof P2P_CONFIG.zones[number]
+
+/** Type for P2P configuration */
+export type P2PConfig = typeof P2P_CONFIG

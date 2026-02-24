@@ -10,7 +10,6 @@ import { MetersApi } from './api/meters'
 import { AdminApi } from './api/admin'
 import { CarbonApi } from './api/carbon'
 import { FuturesApi } from './api/futures'
-// Re-export core types for backward compatibility
 export type { ApiRequestOptions, ApiResponse } from './api/core'
 export { apiRequest } from './api/core'
 

@@ -21,21 +21,78 @@ import {
     getLpTokenMintPDA
 } from './pda-utils'
 
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/** Parameters for opening an option position */
+export interface OpenOptionParams {
+    amount: number
+    strike: number
+    period: number
+    expiredTime: number
+    isCall: boolean
+    paySol: boolean
+    quoteToken: 'USDC' | 'THB'
+}
+
+/** Parameters for liquidity operations */
+export interface LiquidityParams {
+    amount: number
+    asset: PublicKey
+    poolName: string
+}
+
+/** Parameters for auction orders */
+export interface AuctionOrderParams {
+    batch: PublicKey
+    price: number
+    amount: number
+    isBid: boolean
+    tokenMint: PublicKey
+    userTokenAccount: PublicKey
+}
+
+/** Parameters for canceling auction orders */
+export interface CancelAuctionParams {
+    batch: PublicKey
+    orderIndex: number
+    tokenMint: PublicKey
+    userTokenAccount: PublicKey
+}
+
+/** Parameters for encrypted bids */
+export interface EncryptedBidParams {
+    batch: PublicKey
+    encryptedPrice: number[] // 64 bytes
+    encryptedAmount: number[] // 64 bytes
+    isBid: boolean
+}
+
+/** Parameters for settlement execution */
+export interface SettlementParams {
+    batch: PublicKey
+    bidIndex: number
+    askIndex: number
+    amount: number
+    buyerCurrency: PublicKey
+    sellerCurrency: PublicKey
+    sellerEnergy: PublicKey
+    buyerEnergy: PublicKey
+    currencyMint: PublicKey
+    energyMint: PublicKey
+    tokenProgram: PublicKey
+    buyerAuthority: PublicKey
+    sellerAuthority: PublicKey
+}
+
 export const openOption = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        amount: number,
-        strike: number,
-        period: number,
-        expiredTime: number,
-        isCall: boolean,
-        paySol: boolean,
-        quoteToken: 'USDC' | 'THB'
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: OpenOptionParams
+): Promise<boolean> => {
     const { amount, strike, period, expiredTime, isCall, paySol, quoteToken } = params
     const poolName = quoteToken === 'USDC' ? 'THB-USDC' : 'THB-SOL'
     const baseMint = THB_MINT
@@ -99,9 +156,9 @@ export const closeOption = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
     optionIndex: number
-) => {
+): Promise<boolean> => {
     const poolsToCheck = [
         { name: 'THB-USDC', mint: USDC_MINT },
         { name: 'THB-SOL', mint: WSOL_MINT }
@@ -168,10 +225,10 @@ export const claimOption = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
     optionIndex: number,
     solPrice: number
-) => {
+): Promise<boolean> => {
     const transaction = await program.methods
         .claim_option(new BN(optionIndex), solPrice)
         .accountsPartial({
@@ -194,9 +251,9 @@ export const exerciseOption = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
     optionIndex: number
-) => {
+): Promise<boolean> => {
     const transaction = await program.methods
         .exercise_option(new BN(optionIndex))
         .accountsPartial({
@@ -218,13 +275,9 @@ export const addLiquidity = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        amount: number,
-        asset: PublicKey,
-        poolName: string
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: LiquidityParams
+): Promise<boolean> => {
     const { amount, asset, poolName } = params
     const pool = getPoolPDA(poolName, program.programId)
     const custodyPDA = getCustodyPDA(pool, asset, program.programId)
@@ -268,13 +321,9 @@ export const removeLiquidity = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        amount: number,
-        asset: PublicKey,
-        poolName: string
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: LiquidityParams
+): Promise<boolean> => {
     const { amount, asset, poolName } = params
     const pool = getPoolPDA(poolName, program.programId)
     const poolData = await program.account.Pool.fetch(pool)
@@ -345,19 +394,12 @@ export const initializeAuction = async (
 }
 
 export const submitAuctionOrder = async (
-    program: Program<any>,
+    program: Program,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        batch: PublicKey,
-        price: number,
-        amount: number,
-        isBid: boolean,
-        tokenMint: PublicKey,
-        userTokenAccount: PublicKey
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: AuctionOrderParams
+): Promise<boolean> => {
     const { batch, price, amount, isBid, tokenMint, userTokenAccount } = params;
 
     // Derive Vault PDA: [b"batch_vault", batch, mint]
@@ -394,17 +436,12 @@ export const submitAuctionOrder = async (
 }
 
 export const cancelAuctionOrder = async (
-    program: Program<any>,
+    program: Program,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        batch: PublicKey,
-        orderIndex: number,
-        tokenMint: PublicKey,
-        userTokenAccount: PublicKey
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: CancelAuctionParams
+): Promise<boolean> => {
     const { batch, orderIndex, tokenMint, userTokenAccount } = params;
 
     const [vaultPda] = PublicKey.findProgramAddressSync(
@@ -435,17 +472,12 @@ export const cancelAuctionOrder = async (
 }
 
 export const submitEncryptedBid = async (
-    program: Program<any>,
+    program: Program,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        batch: PublicKey,
-        encryptedPrice: number[], // 64 bytes
-        encryptedAmount: number[], // 64 bytes
-        isBid: boolean
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: EncryptedBidParams
+): Promise<boolean> => {
     const { batch, encryptedPrice, encryptedAmount, isBid } = params;
 
     const transaction = await (program.methods as any)
@@ -472,26 +504,12 @@ export const submitEncryptedBid = async (
 }
 
 export const executeSettlement = async (
-    program: Program<any>,
+    program: Program,
     connection: Connection,
     publicKey: PublicKey,
-    sendTransaction: any,
-    params: {
-        batch: PublicKey,
-        bidIndex: number,
-        askIndex: number,
-        amount: number,
-        buyerCurrency: PublicKey,
-        sellerCurrency: PublicKey,
-        sellerEnergy: PublicKey,
-        buyerEnergy: PublicKey,
-        currencyMint: PublicKey,
-        energyMint: PublicKey,
-        tokenProgram: PublicKey,
-        buyerAuthority: PublicKey,
-        sellerAuthority: PublicKey
-    }
-) => {
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    params: SettlementParams
+): Promise<boolean> => {
     const { batch, bidIndex, askIndex, amount, ...accounts } = params;
 
     if (!(program.methods as any).executeSettlement) {

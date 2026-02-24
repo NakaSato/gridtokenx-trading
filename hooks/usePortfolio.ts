@@ -62,11 +62,10 @@ export function usePortfolioPositions() {
         queryKey: ['portfolio-positions', token],
         queryFn: async () => {
             if (!token) throw new Error('Authentication required')
-            // Match the envelope seen in legacy code
-            const response = await apiClient.getFuturesPositions() as any
-            const data = response.data?.data || response.data || []
+            const response = await apiClient.getFuturesPositions()
+            const rawData = ((response.data as { data?: unknown[] })?.data || response.data || []) as ApiFuturesPosition[]
 
-            return data.map((pos: ApiFuturesPosition) => ({
+            return rawData.map((pos) => ({
                 index: pos.id,
                 token: pos.product_symbol || 'Unknown',
                 logo: '/images/solana.png',
@@ -113,8 +112,8 @@ export function usePortfolioOrders() {
         queryFn: async () => {
             if (!token) throw new Error('Authentication required')
             // Match the envelope seen in legacy code
-            const response = await apiClient.getOrders({ status: 'active' }) as any
-            const data = response.data?.data || response.data || []
+            const response = await apiClient.getOrders({ status: 'active' })
+            const data = (response.data as { data?: ApiOrder[] })?.data || response.data || []
 
             return data.map((order: ApiOrder) => ({
                 index: order.id,
@@ -165,10 +164,10 @@ export function usePortfolioTradeHistory(limit = 50) {
         queryKey: ['portfolio-trade-history', token, limit],
         queryFn: async () => {
             if (!token) throw new Error('Authentication required')
-            const response = await apiClient.getTrades({ limit }) as any
-            const trades = response.data?.trades || response.data || []
+            const response = await apiClient.getTrades({ limit })
+            const rawData = ((response.data as { trades?: unknown[] })?.trades || response.data || []) as TradeRecord[]
 
-            return trades.map((trade: TradeRecord) => ({
+            return rawData.map((trade) => ({
                 transactionID: trade.id,
                 token: {
                     name: 'GridToken',
@@ -186,7 +185,7 @@ export function usePortfolioTradeHistory(limit = 50) {
                 effectiveEnergy: trade.effective_energy ? parseFloat(trade.effective_energy) : undefined,
                 buyerZoneId: trade.buyer_zone_id,
                 sellerZoneId: trade.seller_zone_id,
-            }))
+            })) as Transaction[]
         },
         enabled: !!token,
     })

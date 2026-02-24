@@ -2,8 +2,8 @@ import { Bar } from '@/types/trading'
 
 const STREAMING_URL =
   'https://benchmarks.pyth.network/v1/shims/tradingview/streaming'
-const channelToSubscription = new Map()
 
+// Subscription management types
 interface Handler {
   id: string
   callback: (bar: Bar) => void
@@ -15,6 +15,9 @@ interface SubscriptionItem {
   lastDailyBar: Bar
   handlers: Handler[]
 }
+
+// Channel subscription map with proper typing
+const channelToSubscription = new Map<string, SubscriptionItem>()
 
 function handleStreamingData(data: any, subscriptionItem: SubscriptionItem) {
   try {

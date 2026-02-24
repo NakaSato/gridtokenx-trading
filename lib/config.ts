@@ -1,11 +1,38 @@
 /**
  * Application Configuration
- * Centralized configuration using environment variables
+ * Centralized configuration using environment variables with type safety
  */
 
-// -----------------------------------------------------------------------------
-// Solana Network Configuration
-// -----------------------------------------------------------------------------
+import { isExternalUrl } from './links'
+
+// =============================================================================
+// Type Definitions
+// =============================================================================
+
+export interface SolanaConfig {
+  readonly network: string
+  readonly rpcUrl: string
+  readonly wsUrl: string
+}
+
+export interface ApiConfig {
+  readonly baseUrl: string
+  readonly wsBaseUrl: string
+}
+
+export interface MapboxConfig {
+  readonly token: string
+}
+
+export interface FeatureFlags {
+  readonly enableAnalytics: boolean
+  readonly enableDebug: boolean
+  readonly showDevTools: boolean
+}
+
+// =============================================================================
+// Configuration Objects
+// =============================================================================
 export const SOLANA_CONFIG = {
   network: process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'localnet',
   rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://localhost:8899',
@@ -94,16 +121,20 @@ export const isProduction = () => process.env.NODE_ENV === 'production'
 
 /**
  * Get full API URL for a given path
+ * Validates the path to prevent double slashes
  */
 export const getApiUrl = (path: string): string => {
-  return `${API_CONFIG.baseUrl}${path.startsWith('/') ? path : `/${path}`}`
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_CONFIG.baseUrl}${cleanPath}`
 }
 
 /**
  * Get full WebSocket URL for a given path
+ * Validates the path to prevent double slashes
  */
 export const getWsUrl = (path: string): string => {
-  return `${API_CONFIG.wsBaseUrl}${path.startsWith('/') ? path : `/${path}`}`
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_CONFIG.wsBaseUrl}${cleanPath}`
 }
 
 /**

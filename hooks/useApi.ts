@@ -4,9 +4,30 @@
  * React Hooks for API Client
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { ApiClient, ApiResponse, createApiClient } from '../lib/api-client'
 import type { Role } from '@/types/auth'
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+/** Generic API request state */
+export interface ApiRequestState<T> {
+  data: T | null
+  loading: boolean
+  error: string | null
+}
+
+/** Generic API request return type */
+export interface ApiRequestResult<T> extends ApiRequestState<T> {
+  execute: () => Promise<void>
+  refetch: () => Promise<void>
+}
+
+// =============================================================================
+// HOOKS
+// =============================================================================
 
 /**
  * Hook to access the API client with optional authentication
@@ -28,10 +49,10 @@ export function useApiClient(token?: string) {
 /**
  * Generic hook for API requests with loading and error states
  */
-export function useApiRequest<T = any>(
+export function useApiRequest<T = unknown>(
   requestFn: () => Promise<ApiResponse<T>>,
-  dependencies: any[] = []
-) {
+  dependencies: unknown[] = []
+): ApiRequestResult<T> {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -483,6 +504,10 @@ export function useMarketStats(token?: string) {
 export function useAdminUsers(token?: string, filters?: any) {
   const client = useApiClient(token)
   const { data, loading, error, refetch } = useApiRequest(
+    () => client.getAdminUsers(filters),
+    [filters, token]
+  )
+  return { users: data, loading, error, refetch }
 }
 
 /**
@@ -528,8 +553,8 @@ export function useAdminActions(token?: string) {
  */
 export function useP2PConfig() {
   const client = useApiClient()
-  const [configs, setConfigs] = useState<any[]>([])
-  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [configs, setConfigs] = useState<Record<string, number | string>[]>([])
+  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

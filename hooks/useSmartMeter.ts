@@ -67,7 +67,7 @@ export function useSmartMeter() {
             toast.success(`Successfully minted ${data?.kwh_amount} GRX tokens!`)
             queryClient.invalidateQueries({ queryKey: ['smartMeter'] })
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             toast.error(error.message || 'Failed to mint tokens')
         }
     })
