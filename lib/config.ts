@@ -35,7 +35,7 @@ export interface FeatureFlags {
 // =============================================================================
 export const SOLANA_CONFIG = {
   network: process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'localnet',
-  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://localhost:8899',
+  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://localhost:4000/api/v1/rpc',
   wsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || 'ws://localhost:8900',
 } as const
 

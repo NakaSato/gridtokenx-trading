@@ -10,7 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '',
     '/portfolio',
     '/futures',
-    '/energy-profiles',
     '/meter',
     '/privacy-policy',
     '/terms-and-conditions',

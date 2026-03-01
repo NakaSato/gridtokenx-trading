@@ -11,7 +11,7 @@ import {
   ExternalLink,
   MessagesSquare,
   ShieldCheck,
-  BarChart3,
+  TrendingUp,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -32,7 +32,6 @@ import { Logo } from './Logo'
 import dynamic from 'next/dynamic'
 import NavBarMobile from './NavBarMobile'
 import { NetworkStatus } from './NetworkStatus'
-
 
 // Dynamic Imports for Header Performance
 const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
@@ -98,13 +97,12 @@ const NAV_ITEMS: NavItem[] = [
     requiresAuth: true,
   },
   {
-    name: 'Energy Profiles',
-    href: '/energy-profiles',
-    icon: <BarChart3 size={16} />,
+    name: 'Futures',
+    href: '/futures',
+    icon: <TrendingUp size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
     requiresAuth: true,
   },
-
   {
     name: 'Portfolio',
     href: '/portfolio',

@@ -137,28 +137,29 @@ export class UserApi {
     }
 
     async markNotificationAsRead(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}/read`, {
-            method: 'PUT',
+        return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}`, {
+            method: 'PATCH',
+            body: { is_read: true },
             token: this.getToken(),
         })
     }
 
     async markAllNotificationsAsRead(): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>('/api/v1/notifications/read-all', {
-            method: 'PUT',
+        return apiRequest<{ success: boolean }>('/api/v1/notifications/mark-all-read', {
+            method: 'POST',
             token: this.getToken(),
         })
     }
 
     async getNotificationPreferences(): Promise<ApiResponse<NotificationPreferences>> {
-        return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
+        return apiRequest<NotificationPreferences>('/api/v1/users/me/notification-preferences', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
-    async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>('/api/v1/notifications/preferences', {
+    async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<NotificationPreferences>> {
+        return apiRequest<NotificationPreferences>('/api/v1/users/me/notification-preferences', {
             method: 'PUT',
             body: data,
             token: this.getToken(),

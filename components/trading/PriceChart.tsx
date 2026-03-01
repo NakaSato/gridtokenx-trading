@@ -9,13 +9,43 @@ import { ContractContext } from '@/contexts/contractProvider'
 import { Loader2, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
-export default function PriceChart() {
+import { createApiClient } from '@/lib/api-client'
+import { useAuth } from '@/contexts/AuthProvider'
+
+interface PriceChartProps {
+    symbol?: string
+    productId?: string
+    type?: 'spot' | 'futures'
+}
+
+export default function PriceChart({ symbol = 'GRX', productId, type = 'spot' }: PriceChartProps) {
     const { program } = useContext(ContractContext)
+    const { token } = useAuth()
     const [data, setData] = useState<{ time: number; price: number; dateStr: string }[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchData = async () => {
+            if (type === 'futures' && token && productId) {
+                try {
+                    const api = createApiClient(token)
+                    const response = await api.getFuturesCandles(productId)
+                    if (response.data) {
+                        const chartData = response.data.map((c: any) => ({
+                            time: new Date(c.time).getTime(),
+                            price: parseFloat(c.close),
+                            dateStr: format(new Date(c.time), 'HH:mm')
+                        }))
+                        setData(chartData)
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch futures candles", err)
+                } finally {
+                    setLoading(false)
+                }
+                return
+            }
+
             if (!program) return
 
             try {
@@ -43,7 +73,7 @@ export default function PriceChart() {
         fetchData()
         const interval = setInterval(fetchData, 10000) // Refresh every 10s
         return () => clearInterval(interval)
-    }, [program])
+    }, [program, type, token, productId])
 
     const currentPrice = data.length > 0 ? data[data.length - 1].price : 0
     const prevPrice = data.length > 1 ? data[data.length - 2].price : currentPrice
@@ -56,7 +86,7 @@ export default function PriceChart() {
                 <div className="flex flex-col">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-primary" />
-                        Market Price (GRX/kWh)
+                        {symbol} {type === 'futures' ? 'Perpetual' : 'Market Price'}
                     </CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-xl font-bold font-mono">

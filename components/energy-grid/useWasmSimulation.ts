@@ -30,7 +30,8 @@ export function useWasmSimulation({
         isLoaded: wasmLoaded,
         initSimulationNodesWasm,
         initSimulationFlowsWasm,
-        updateSimulationWasm
+        updateSimulationWasm,
+        getGridTotalsWasm
     } = useWasmMath()
 
     // Initialize Wasm State
@@ -200,8 +201,20 @@ export function useWasmSimulation({
     }, [isLive, wasmLoaded, updateSimulationWasm, energyNodes, energyTransfers, updateIntervalMs])
 
 
-    // Calc totals (Same as before, could be moved to Wasm too but fast enough in JS)
+    // Calc totals (WASM optimized)
     const gridTotals = useMemo(() => {
+        const wasmTotals = getGridTotalsWasm()
+        if (wasmTotals) {
+            return {
+                totalGeneration: wasmTotals.total_generation,
+                totalConsumption: wasmTotals.total_consumption,
+                co2Saved: wasmTotals.co2_saved,
+                activeMeters: wasmTotals.active_meters,
+                avgStorage: wasmTotals.avg_storage
+            }
+        }
+
+        // Fallback (JS)
         const totalGeneration = energyNodes
             .filter((n) => n.type === 'generator')
             .reduce((sum, n) => sum + (liveNodeData[n.id]?.currentValue ?? 0), 0)
@@ -227,7 +240,7 @@ export function useWasmSimulation({
                 return totalPercent / storageNodes.length
             })(),
         }
-    }, [energyNodes, liveNodeData])
+    }, [energyNodes, liveNodeData, getGridTotalsWasm])
 
     return {
         liveNodeData,

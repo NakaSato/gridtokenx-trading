@@ -441,6 +441,18 @@ export function useSystemHealth(token?: string) {
 }
 
 /**
+ * Hook for fetching grid topology and branch status (Admin)
+ */
+export function useGridTopology(token?: string) {
+  const client = useApiClient(token)
+  const { data, loading, error, refetch } = useApiRequest(
+    () => client.getGridTopology(),
+    [token]
+  )
+  return { topology: data, loading, error, refetch }
+}
+
+/**
  * Hook for fetching platform activity logs (Admin)
  */
 export function useAdminActivity(token?: string) {
@@ -549,12 +561,35 @@ export function useAdminActions(token?: string) {
 }
 
 /**
+ * P2P Config Item Type
+ */
+export interface P2PConfigItem {
+  config_key: string
+  config_value: number
+  category: string
+  description?: string
+  updated_at: string
+}
+
+/**
+ * P2P Config Audit Entry Type
+ */
+export interface P2PConfigAuditEntry {
+  id: number
+  config_key: string
+  old_value: number | null
+  new_value: number | null
+  changed_at: string
+  change_reason?: string
+}
+
+/**
  * Hook for P2P Config management (Admin)
  */
 export function useP2PConfig() {
   const client = useApiClient()
-  const [configs, setConfigs] = useState<Record<string, number | string>[]>([])
-  const [auditLogs, setAuditLogs] = useState<Record<string, unknown>[]>([])
+  const [configs, setConfigs] = useState<P2PConfigItem[]>([])
+  const [auditLogs, setAuditLogs] = useState<P2PConfigAuditEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -619,4 +654,16 @@ export function useP2PConfig() {
     updating,
     refresh
   }
+}
+
+/**
+ * Hook for fetching user meters
+ */
+export function useMeters(token?: string) {
+  const client = useApiClient(token)
+  const { data, loading, error, refetch } = useApiRequest(
+    () => client.getMyMeters(),
+    [token]
+  )
+  return { meters: data, loading, error, refetch }
 }

@@ -49,12 +49,20 @@ interface UserP2PStats {
     success_rate: number
 }
 
+interface RecentMatch {
+    id: string
+    energy: number
+    price: number
+    timestamp: Date
+}
+
 const P2PStatus = React.memo(function P2PStatus() {
     const { token, user } = useAuth()
     const [matchingStatus, setMatchingStatus] = useState<MatchingStatus | null>(null)
     const [settlementStats, setSettlementStats] = useState<SettlementStats | null>(null)
     const [userStats, setUserStats] = useState<UserP2PStats | null>(null)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+    const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([])
 
     // Real-time P2P order updates
     const { connected: p2pConnected, latestUpdate: latestOrderUpdate } = useP2POrderUpdates({
@@ -120,10 +128,20 @@ const P2PStatus = React.memo(function P2PStatus() {
         }
     }, [latestOrderUpdate, latestSettlement, fetchData])
 
-    // Listen for legacy WebSocket updates
-    useOrderMatchedWebSocket(() => {
+    // Listen for WebSocket match events — accumulate for live feed
+    useOrderMatchedWebSocket(useCallback((data: any) => {
         fetchData()
-    }, token || undefined)
+        // Add to recent matches feed
+        const match: RecentMatch = {
+            id: data?.match_id || `match-${Date.now()}`,
+            energy: parseFloat(data?.energy_amount || data?.amount || '0'),
+            price: parseFloat(data?.price_per_kwh || data?.price || '0'),
+            timestamp: new Date(),
+        }
+        if (match.energy > 0) {
+            setRecentMatches(prev => [match, ...prev].slice(0, 5)) // Keep last 5
+        }
+    }, [fetchData]), token || undefined)
 
     if (!token) return null
 
@@ -292,6 +310,42 @@ const P2PStatus = React.memo(function P2PStatus() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Live Match Activity Feed */}
+            {recentMatches.length > 0 && (
+                <Card className="rounded-lg border-border bg-card shadow-sm overflow-hidden">
+                    <CardHeader className="pb-1 pt-3 px-3">
+                        <div className="flex items-center gap-1.5">
+                            <div className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </div>
+                            <span className="text-xs font-semibold">Recent Matches</span>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-3 pt-1">
+                        <div className="space-y-1.5">
+                            {recentMatches.map((m) => (
+                                <div key={m.id} className="flex items-center justify-between text-xs py-1 px-2 rounded bg-muted/30 animate-in fade-in slide-in-from-top-1 duration-300">
+                                    <div className="flex items-center gap-1.5">
+                                        <Zap className="h-3 w-3 text-amber-500" />
+                                        <span className="font-mono font-medium text-foreground">
+                                            {m.energy.toFixed(2)} kWh
+                                        </span>
+                                        <span className="text-muted-foreground">@</span>
+                                        <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                                            ฿{m.price.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground">
+                                        {m.timestamp.toLocaleTimeString()}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Settlement Status - Enhanced */}
             <Card className="rounded-lg border-border bg-card shadow-sm">

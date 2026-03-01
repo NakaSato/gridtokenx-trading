@@ -1,7 +1,6 @@
 import {
   Activity,
   ArrowUpDown,
-  BarChart3,
   BookOpenText,
   ChartLine,
   ChevronDown,
@@ -145,32 +144,6 @@ export default function NavBarMobile() {
               <Badge
                 className={cn(
                   active === 'Meter'
-                    ? 'text-gradient-primary border-primary'
-                    : 'border-secondary-foreground text-secondary-foreground',
-                  'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'
-                )}
-              >
-                BETA
-              </Badge>
-            </Button>
-            <Button
-              className={cn(
-                buttonVariants({
-                  variant: active === 'EnergyProfiles' ? 'active' : 'inactive',
-                }),
-                'flex justify-start rounded-sm bg-accent px-5 py-3'
-              )}
-              onClick={() => {
-                handleClick('EnergyProfiles')
-                router.push('/energy-profiles')
-                setIsOpen(false)
-              }}
-            >
-              <BarChart3 size={16} />
-              <h1 className="text-sm font-medium text-nowrap">Energy Profiles</h1>
-              <Badge
-                className={cn(
-                  active === 'EnergyProfiles'
                     ? 'text-gradient-primary border-primary'
                     : 'border-secondary-foreground text-secondary-foreground',
                   'flex h-4 rounded-[3px] border bg-transparent px-1 py-[3px] text-center text-[8px] group-hover:border-primary group-hover:text-primary'

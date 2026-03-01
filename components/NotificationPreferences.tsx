@@ -158,6 +158,13 @@ export default function NotificationPreferences() {
                         active={prefs.alert_notifications}
                         onToggle={() => togglePref('alert_notifications')}
                     />
+                    <PreferenceToggle
+                        icon={Settings2}
+                        label="System Notifications"
+                        description="Core platform updates, maintenance, and security announcements."
+                        active={prefs.system_notifications}
+                        onToggle={() => togglePref('system_notifications')}
+                    />
                 </div>
             </div>
         </div>

@@ -4,14 +4,14 @@ WORKDIR /app
 # Install dependencies
 FROM base AS deps
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Rebuild the source code
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Disable Next.js telemetry
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED 1w
 RUN bun run build
 
 # Production image, copy all the files and run next

@@ -71,6 +71,27 @@ export interface EnergyProfileData {
  * Based on peak-to-avg ratio (x-axis) and daytime ratio (y-axis)
  */
 function performClustering(characteristics: ProfileCharacteristics): ClusteringData {
+    // Try WASM version first
+    try {
+        const { isWasmLoaded, performClustering: wasmClustering } = require('@/lib/wasm-bridge')
+        if (isWasmLoaded()) {
+            const result = wasmClustering({
+                peak_to_avg_ratio: characteristics.peakToAvgRatio,
+                daytime_ratio: characteristics.daytimeRatio
+            })
+            if (result) {
+                return {
+                    userPosition: result.user_position,
+                    clusterCenters: result.cluster_centers,
+                    nearestCluster: result.nearest_cluster as ProfileArchetypeId,
+                    distanceToCluster: result.distance_to_cluster,
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Clustering] WASM clustering failed, falling back to JS:', e)
+    }
+
     // Normalize characteristics for clustering
     const userX = Math.min(characteristics.peakToAvgRatio / 5, 1) // Normalize to 0-1
     const userY = characteristics.daytimeRatio
@@ -181,41 +202,67 @@ export function useEnergyProfile() {
             const analyticsResponse = await apiClient.getUserAnalytics({ timeframe: '30d' })
             const analytics = analyticsResponse.data
 
-            // Calculate total kWh
-            const totalKwh = readings.reduce((sum: number, r: any) =>
-                sum + parseFloat(r.kwh || r.kwh_amount || '0'), 0)
-
             // Generate hourly distribution from readings
-            const hourlyBuckets: { [key: number]: number[] } = {}
-            for (let i = 0; i < 24; i++) hourlyBuckets[i] = []
+            let hourlyDistribution: HourlyDataPoint[] = []
+            let totalKwh = 0
+            let daytimeConsumption = 0
+            let nighttimeConsumption = 0
 
-            readings.forEach((r: any) => {
-                const date = new Date(r.timestamp || r.reading_timestamp || r.created_at || new Date())
-                const hour = date.getHours()
-                hourlyBuckets[hour].push(parseFloat(r.kwh || r.kwh_amount || '0'))
-            })
-
-            const hourlyDistribution: HourlyDataPoint[] = Array.from({ length: 24 }, (_, hour) => {
-                const bucket = hourlyBuckets[hour]
-                const avgKwh = bucket.length > 0
-                    ? bucket.reduce((a, b) => a + b, 0) / bucket.length
-                    : Math.random() * 2 + 0.5 // Fallback sample data
-                return {
-                    hour: `${hour.toString().padStart(2, '0')}:00`,
-                    consumption: avgKwh,
-                    isDaytime: hour >= 6 && hour < 18,
+            // Try WASM version first
+            try {
+                const { isWasmLoaded, aggregateReadings: wasmAggregate } = require('@/lib/wasm-bridge')
+                if (isWasmLoaded()) {
+                    const result = wasmAggregate(readings)
+                    if (result) {
+                        hourlyDistribution = result.hourly_distribution.map((h: any) => ({
+                            hour: h.hour,
+                            consumption: h.consumption,
+                            isDaytime: h.is_daytime
+                        }))
+                        totalKwh = result.total_kwh
+                        daytimeConsumption = result.daytime_consumption
+                        nighttimeConsumption = result.nighttime_consumption
+                    }
                 }
-            })
+            } catch (e) {
+                console.warn('[Aggregation] WASM aggregation failed, falling back to JS:', e)
+            }
 
-            // Calculate profile characteristics
-            const daytimeConsumption = hourlyDistribution
-                .filter(h => h.isDaytime)
-                .reduce((sum, h) => sum + h.consumption, 0)
-            const nighttimeConsumption = hourlyDistribution
-                .filter(h => !h.isDaytime)
-                .reduce((sum, h) => sum + h.consumption, 0)
+            // Fallback JS logic if WASM failed or not loaded
+            if (hourlyDistribution.length === 0) {
+                totalKwh = readings.reduce((sum: number, r: any) =>
+                    sum + parseFloat(r.kwh || r.kwh_amount || '0'), 0)
+
+                const hourlyBuckets: { [key: number]: number[] } = {}
+                for (let i = 0; i < 24; i++) hourlyBuckets[i] = []
+
+                readings.forEach((r: any) => {
+                    const date = new Date(r.timestamp || r.reading_timestamp || r.created_at || new Date())
+                    const hour = date.getHours()
+                    hourlyBuckets[hour].push(parseFloat(r.kwh || r.kwh_amount || '0'))
+                })
+
+                hourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
+                    const bucket = hourlyBuckets[hour]
+                    const avgKwh = bucket.length > 0
+                        ? bucket.reduce((a, b) => a + b, 0) / bucket.length
+                        : Math.random() * 2 + 0.5
+                    return {
+                        hour: `${hour.toString().padStart(2, '0')}:00`,
+                        consumption: avgKwh,
+                        isDaytime: hour >= 6 && hour < 18,
+                    }
+                })
+
+                daytimeConsumption = hourlyDistribution
+                    .filter(h => h.isDaytime)
+                    .reduce((sum, h) => sum + h.consumption, 0)
+                nighttimeConsumption = hourlyDistribution
+                    .filter(h => !h.isDaytime)
+                    .reduce((sum, h) => sum + h.consumption, 0)
+            }
+
             const totalConsumption = daytimeConsumption + nighttimeConsumption
-
             const peakHour = hourlyDistribution.reduce((max, h) =>
                 h.consumption > max.consumption ? h : max, hourlyDistribution[0])
             const avgHourlyConsumption = totalConsumption / 24

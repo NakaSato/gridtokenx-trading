@@ -1,0 +1,137 @@
+###
+# GridTokenX Trading Platform API Requests
+# Use with REST Client extension in VS Code
+###
+
+@baseUrl = {{next_public_api_base_url}}
+@authToken = YOUR_JWT_TOKEN_HERE
+
+### AUTHENTICATION
+
+# @name login
+POST {{baseUrl}}/api/auth/login/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "testpassword"
+}
+
+###
+
+# @name register
+POST {{baseUrl}}/api/auth/register/
+Content-Type: application/json
+
+{
+    "username": "newuser",
+    "email": "newuser@example.com",
+    "password": "securepassword",
+    "first_name": "New",
+    "last_name": "User"
+}
+
+###
+
+# @name verifyWallet
+POST {{baseUrl}}/api/auth/verify-wallet/
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "wallet_address": "SOLANA_WALLET_ADDRESS",
+    "signature": "SIGNATURE_OF_MESSAGE"
+}
+
+### TRADING (P2P & ORDERBOOK)
+
+# @name getP2POrderBook
+GET {{baseUrl}}/api/trading/p2p/orderbook/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name createP2POrder
+POST {{baseUrl}}/api/trading/p2p/orders/
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "side": "buy",
+    "amount_kw": 10.5,
+    "price_per_kw": 0.15,
+    "zone_id": "zone-1"
+}
+
+###
+
+# @name getMarketData
+GET {{baseUrl}}/api/trading/market/stats/
+Authorization: Bearer {{authToken}}
+
+### USER & PROFILE
+
+# @name getProfile
+GET {{baseUrl}}/api/user/profile/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getBalance
+GET {{baseUrl}}/api/user/balance/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getUserTransactions
+GET {{baseUrl}}/api/user/transactions?limit=10
+Authorization: Bearer {{authToken}}
+
+### SMART METERS & GRID
+
+# @name getMyMeters
+GET {{baseUrl}}/api/meters/my-meters/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name registerMeter
+POST {{baseUrl}}/api/meters/register/
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "meter_id": "METER-123",
+    "location": "Bangkok, TH",
+    "meter_type": "residential"
+}
+
+###
+
+# @name getGridStatus
+GET {{baseUrl}}/api/grid/status/
+Authorization: Bearer {{authToken}}
+
+### FUTURES
+
+# @name getFuturesProducts
+GET {{baseUrl}}/api/futures/products/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getFuturesPositions
+GET {{baseUrl}}/api/futures/positions/
+Authorization: Bearer {{authToken}}
+
+### ADMIN
+
+# @name getSystemHealth
+GET {{baseUrl}}/api/admin/health/
+Authorization: Bearer {{authToken}}
+
+###
+
+# @name getRevenueSummary
+GET {{baseUrl}}/api/admin/revenue/summary/
+Authorization: Bearer {{authToken}}

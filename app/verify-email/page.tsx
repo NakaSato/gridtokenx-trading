@@ -6,6 +6,7 @@ import { defaultApiClient } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card'
 import {
   CheckCircle2,
   Loader2,
@@ -13,6 +14,11 @@ import {
   Wallet,
   Copy,
   Check,
+  Mail,
+  AlertCircle,
+  Clock,
+  XCircle,
+  ArrowRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
@@ -45,10 +51,6 @@ function VerifyEmailContent() {
 
   // Auto-verify on mount
   useEffect(() => {
-    // Check if user is already authenticated but allow verification to proceed if token is present
-    // We do NOT redirect here because the user might be verifying to get their wallet address generate
-
-
     if (!token) {
       setState('invalid')
       setMessage(
@@ -57,7 +59,7 @@ function VerifyEmailContent() {
       return
     }
     verifyEmailToken(token)
-  }, [token, router])
+  }, [token])
 
   // Auto-redirect countdown
   useEffect(() => {
@@ -70,7 +72,7 @@ function VerifyEmailContent() {
     }
     const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
     return () => clearTimeout(timer)
-  }, [state, countdown, router])
+  }, [state, countdown])
 
   // Resend cooldown timer
   useEffect(() => {
@@ -156,7 +158,6 @@ function VerifyEmailContent() {
         toast.success('Automatically signed in!')
       }
     } catch (error: unknown) {
-      console.error('Email verification error:', error)
       setState('error')
       setMessage(`Verification failed: ${getErrorMessage(error)}`)
     }
@@ -182,7 +183,6 @@ function VerifyEmailContent() {
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate email
     if (!email) {
       toast.error('Please enter your email address')
       return
@@ -201,7 +201,6 @@ function VerifyEmailContent() {
         return
       }
 
-      // Handle success based on status
       const { status, message } = response.data
 
       if (status === 'already_verified') {
@@ -215,17 +214,15 @@ function VerifyEmailContent() {
           message || 'Verification email sent! Please check your inbox.'
         )
         setCanResend(false)
-        setResendCooldown(30)
+        setResendCooldown(60)
       }
     } catch (error: unknown) {
-      console.error('Resend verification error:', error)
       toast.error(`Failed to resend: ${getErrorMessage(error)}`)
     } finally {
       setIsResending(false)
     }
   }
 
-  // Copy wallet address
   const handleCopyWallet = async () => {
     if (!walletAddress) return
     try {
@@ -238,7 +235,6 @@ function VerifyEmailContent() {
     }
   }
 
-  // Format cooldown timer
   const formatCooldown = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
@@ -246,54 +242,108 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="rounded-lg border border-border bg-accent p-8 shadow-lg">
-          {/* Title */}
-          <h1 className="mb-4 text-center text-2xl font-semibold text-foreground">
-            {state === 'loading' && 'Verifying Email...'}
-            {state === 'success' && 'Email Verified!'}
-            {state === 'error' && 'Verification Failed'}
-            {state === 'expired' && 'Token Expired'}
-            {state === 'invalid' && 'Invalid Token'}
-          </h1>
+    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
+      <Card className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <StatusIcon state={state} />
+          </div>
+          <CardTitle className="text-2xl font-bold tracking-tight">
+            <StatusTitle state={state} />
+          </CardTitle>
+          <CardDescription className="text-muted-foreground mt-2">
+            {message || <StatusMessage state={state} />}
+          </CardDescription>
+        </CardHeader>
 
-          {/* Message */}
-          <p className="mb-6 text-center text-muted-foreground">{message}</p>
-
-          {/* Success State */}
+        <CardContent>
           {state === 'success' && (
             <SuccessView
               walletAddress={walletAddress}
               copied={copied}
               countdown={countdown}
               onCopyWallet={handleCopyWallet}
-              onGoHome={() => (window.location.href = '/')}
+              onGoHome={() => (router.push('/'))}
             />
           )}
 
-          {/* Error/Expired/Invalid State */}
-          {(state === 'error' ||
-            state === 'expired' ||
-            state === 'invalid') && (
-              <ResendForm
-                email={email}
-                isResending={isResending}
-                canResend={canResend}
-                resendCooldown={resendCooldown}
-                onEmailChange={setEmail}
-                onSubmit={handleResendVerification}
-                onGoHome={() => (window.location.href = '/')}
-                formatCooldown={formatCooldown}
-              />
-            )}
-        </div>
-      </div>
+          {(state === 'error' || state === 'expired' || state === 'invalid') && (
+            <ResendForm
+              email={email}
+              isResending={isResending}
+              canResend={canResend}
+              resendCooldown={resendCooldown}
+              onEmailChange={setEmail}
+              onSubmit={handleResendVerification}
+              formatCooldown={formatCooldown}
+              state={state}
+            />
+          )}
+
+          {state === 'loading' && (
+            <div className="space-y-4 py-4">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="h-full w-2/3 animate-pulse rounded-full bg-primary" />
+              </div>
+              <p className="text-center text-xs text-muted-foreground">
+                Initializing secure verification...
+              </p>
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-4 border-t pt-6">
+          {state !== 'success' && (
+            <Button variant="ghost" className="w-full" onClick={() => router.push('/')}>
+              Back to Marketplace
+            </Button>
+          )}
+          <p className="text-xs text-center text-muted-foreground">
+            Having trouble? <a href="/contact" className="text-primary hover:underline font-medium">Contact support</a>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }
 
-// Success View Component
+function StatusIcon({ state }: { state: VerificationState }) {
+  const iconClass = "h-12 w-12"
+  switch (state) {
+    case 'loading':
+      return <Loader2 className={`${iconClass} animate-spin text-primary`} />
+    case 'success':
+      return <CheckCircle2 className={`${iconClass} text-green-500`} />
+    case 'expired':
+      return <Clock className={`${iconClass} text-amber-500`} />
+    case 'invalid':
+    case 'error':
+      return <AlertCircle className={`${iconClass} text-red-500`} />
+  }
+}
+
+function StatusTitle({ state }: { state: VerificationState }) {
+  const titles = {
+    loading: 'Verifying Email',
+    success: 'Verification Successful',
+    expired: 'Link Expired',
+    invalid: 'Invalid Link',
+    error: 'Verification Error'
+  }
+  return titles[state]
+}
+
+function StatusMessage({ state }: { state: VerificationState }) {
+  const messages = {
+    loading: 'Securing your connection to the energy grid...',
+    success: 'Your account is now fully activated and ready for trading.',
+    expired: 'This secure link is no longer valid. Please request a new one.',
+    invalid: 'The verification parameters provided do not match our records.',
+    error: 'An unexpected error occurred. Please try again later.'
+  }
+  return messages[state]
+}
+
 function SuccessView({
   walletAddress,
   copied,
@@ -308,87 +358,36 @@ function SuccessView({
   onGoHome: () => void
 }) {
   return (
-    <div className="space-y-6 text-center">
-      {/* Wallet Address Section */}
+    <div className="space-y-6">
       {walletAddress && (
-        <div className="bg-secondary/50 space-y-4 rounded-lg border border-border p-6">
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Wallet className="h-6 w-6" />
-            <h2 className="text-lg font-semibold">
-              Your Solana Wallet is Ready!
-            </h2>
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-primary font-semibold">
+            <Wallet className="h-5 w-5" />
+            <span>Solana Wallet Generated</span>
           </div>
-
-          <p className="text-sm text-muted-foreground">
-            We've automatically created a secure Solana wallet for you
-          </p>
-
-          <div className="break-all rounded-md bg-background p-4">
-            <code className="font-mono text-sm text-foreground">
-              {walletAddress}
-            </code>
+          <div className="font-mono text-[10px] break-all p-2 bg-background rounded border cursor-pointer hover:bg-muted/50 transition-colors" onClick={onCopyWallet}>
+            {walletAddress}
           </div>
-
-          <Button
-            onClick={onCopyWallet}
-            variant="outline"
-            size="sm"
-            className="w-full"
-          >
-            {copied ? (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Wallet Address
-              </>
-            )}
+          <Button variant="secondary" size="sm" className="w-full h-8 text-xs" onClick={onCopyWallet}>
+            {copied ? <Check className="h-3 w-3 mr-2" /> : <Copy className="h-3 w-3 mr-2" />}
+            {copied ? 'Copied' : 'Copy Address'}
           </Button>
         </div>
       )}
 
-      {/* Next Steps */}
-      <div className="bg-secondary/30 rounded-lg border border-border p-4">
-        <h3 className="mb-3 font-semibold text-foreground">What's Next?</h3>
-        <ul className="space-y-2 text-left text-sm text-muted-foreground">
-          <li className="flex items-start gap-2">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-            <span>Your email is verified</span>
-          </li>
-          {walletAddress && (
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-              <span>Your Solana wallet is created</span>
-            </li>
-          )}
-          <li className="flex items-start gap-2">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
-            <span>You can now login to the platform</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-primary">🚀</span>
-            <span>Start trading energy tokens!</span>
-          </li>
-        </ul>
-      </div>
-
-      {/* Redirect Notice */}
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Redirecting to home in {countdown} seconds...
-        </p>
-        <Button onClick={onGoHome} className="w-full" size="lg">
-          Go to Home Now
+      <div className="space-y-2">
+        <Button onClick={onGoHome} className="w-full h-11">
+          Launch Dashboard
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
+        <p className="text-[10px] text-center text-muted-foreground">
+          Auto-launching in {countdown}s...
+        </p>
       </div>
     </div>
   )
 }
 
-// Resend Form Component
 function ResendForm({
   email,
   isResending,
@@ -396,8 +395,8 @@ function ResendForm({
   resendCooldown,
   onEmailChange,
   onSubmit,
-  onGoHome,
   formatCooldown,
+  state,
 }: {
   email: string
   isResending: boolean
@@ -405,74 +404,68 @@ function ResendForm({
   resendCooldown: number
   onEmailChange: (email: string) => void
   onSubmit: (e: React.FormEvent) => void
-  onGoHome: () => void
   formatCooldown: (seconds: number) => string
+  state: VerificationState
 }) {
   return (
-    <>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Email Address
+        </Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
-            placeholder="Enter your email"
-            className="h-10"
+            placeholder="name@example.com"
+            className="pl-9 h-11"
             required
             disabled={isResending || !canResend}
           />
         </div>
-
-        <Button
-          type="submit"
-          disabled={isResending || !canResend}
-          className="w-full"
-          size="lg"
-        >
-          {isResending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending...
-            </>
-          ) : !canResend ? (
-            <>Resend in {formatCooldown(resendCooldown)}</>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Resend Verification Email
-            </>
-          )}
-        </Button>
-      </form>
-
-      <div className="mt-6 border-t border-border pt-6">
-        <Button variant="outline" onClick={onGoHome} className="w-full">
-          Back to Home
-        </Button>
       </div>
-    </>
+
+      <Button
+        type="submit"
+        disabled={isResending || !canResend}
+        className="w-full h-11"
+      >
+        {isResending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCw className="mr-2 h-4 w-4" />
+        )}
+        {canResend ? 'Resend Verification' : `Retry in ${formatCooldown(resendCooldown)}`}
+      </Button>
+    </form>
   )
 }
 
-// Default export with Suspense boundary
 export default function VerifyEmailPage() {
   return (
     <ErrorBoundary name="Email Verification">
       <Suspense
         fallback={
-          <div className="flex min-h-screen items-center justify-center px-4 py-12">
-            <div className="w-full max-w-md">
-              <div className="rounded-lg border border-border bg-accent p-8 shadow-lg">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-center text-muted-foreground">
-                    Loading verification page...
-                  </p>
+          <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
+            <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm animate-pulse">
+              <CardHeader className="text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-muted" />
                 </div>
-              </div>
-            </div>
+                <CardTitle className="h-8 w-3/4 mx-auto bg-muted rounded" />
+                <CardDescription className="h-4 w-1/2 mx-auto mt-2 bg-muted rounded" />
+              </CardHeader>
+              <CardContent className="space-y-4 py-4">
+                <div className="h-2 w-full rounded-full bg-muted" />
+                <div className="h-4 w-2/3 mx-auto bg-muted rounded" />
+              </CardContent>
+              <CardFooter className="border-t pt-6">
+                <div className="h-10 w-full bg-muted rounded" />
+              </CardFooter>
+            </Card>
           </div>
         }
       >

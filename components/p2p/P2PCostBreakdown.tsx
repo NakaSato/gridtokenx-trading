@@ -55,8 +55,8 @@ export default function P2PCostBreakdown({
     const [error, setError] = useState<string | null>(null)
 
     // Market prices for comparison (use config defaults)
-    const [gridImportPrice, setGridImportPrice] = useState(P2P_CONFIG.defaultGridImportPrice)
-    const [gridExportPrice, setGridExportPrice] = useState(P2P_CONFIG.defaultGridExportPrice)
+    const [gridImportPrice, setGridImportPrice] = useState<number>(P2P_CONFIG.defaultGridImportPrice)
+    const [gridExportPrice, setGridExportPrice] = useState<number>(P2P_CONFIG.defaultGridExportPrice)
 
     useEffect(() => {
         const fetchCost = async () => {

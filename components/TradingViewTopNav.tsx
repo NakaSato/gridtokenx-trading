@@ -98,20 +98,23 @@ export default memo(function TradingViewTopNav({
           loading={marketLoading}
         />
 
-        {/* New Metrics */}
-        <div className="h-8 w-px bg-border/50 hidden xl:block" />
-
-        <StatItem
-          label="Funding / 8h"
-          value="0.0042%"
-          loading={false}
-          subValue="03:22:10"
-        />
-        <StatItem
-          label="Open Interest"
-          value="$12.5M"
-          loading={false}
-        />
+        {/* Futures Specific Metrics */}
+        {type === 'futures' && (
+          <>
+            <div className="h-8 w-px bg-border/50 hidden xl:block" />
+            <StatItem
+              label="Funding / 8h"
+              value="0.0042%"
+              loading={false}
+              subValue="03:22:10"
+            />
+            <StatItem
+              label="Open Interest"
+              value="$12.5M"
+              loading={false}
+            />
+          </>
+        )}
 
         {/* Sentiment / Ratio */}
         <div className="h-8 w-px bg-border/50 hidden xl:block" />
@@ -135,12 +138,12 @@ export default memo(function TradingViewTopNav({
           size="sm"
           className={cn(
             "h-9 gap-2 text-xs font-medium text-muted-foreground hover:text-foreground",
-            type === 'options' && "bg-secondary text-foreground"
+            type === 'futures' && "bg-secondary text-foreground"
           )}
-          onClick={() => router.push(type === 'options' ? '/' : '/options-chain')}
+          onClick={() => router.push(type === 'futures' ? '/' : '/futures')}
         >
-          <TableColumnsSplit className="h-4 w-4" />
-          {type === 'options' ? 'Spot Trading' : 'Options Chain'}
+          <TrendingUp className="h-4 w-4" />
+          {type === 'futures' ? 'Spot Trading' : 'Futures Trading'}
         </Button>
       </div>
 

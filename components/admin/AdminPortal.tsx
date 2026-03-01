@@ -14,11 +14,13 @@ import {
     LayoutDashboard,
     Clock,
     Shield,
-    Settings
+    Settings,
+    Map
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAdminStats, useAuth } from '@/hooks/useApi'
+import { GridTopologyMap } from './GridTopologyMap'
 
 function QuickStat({ label, value, trend, icon: Icon, color }: any) {
     return (
@@ -47,6 +49,7 @@ function QuickStat({ label, value, trend, icon: Icon, color }: any) {
 export function AdminPortal() {
     const { token } = useAuth()
     const { stats, loading } = useAdminStats(token ?? undefined)
+
     const adminTools = [
         {
             title: 'Revenue & Collection',
@@ -57,6 +60,16 @@ export function AdminPortal() {
             color: 'text-green-500',
             borderColor: 'border-l-green-500',
             bgColor: 'bg-green-500/10'
+        },
+        {
+            title: 'Grid Operations',
+            description: 'Live topology map, transmission congestion monitoring, and branch capacity management.',
+            href: '/admin/grid',
+            icon: Map,
+            badge: 'Live',
+            color: 'text-orange-500',
+            borderColor: 'border-l-orange-500',
+            bgColor: 'bg-orange-500/10'
         },
         {
             title: 'VPP Orchestration',
@@ -163,6 +176,23 @@ export function AdminPortal() {
                     color="text-purple-500"
                 />
             </div>
+
+            {/* Live Topology Map Section */}
+            <section>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Zap className="h-5 w-5 text-yellow-500" />
+                        Grid Infrastructure Status
+                    </h3>
+                    <Link href="/admin/grid">
+                        <Button variant="ghost" size="sm" className="text-xs gap-1">
+                            Topology Details
+                            <ArrowRight className="h-3 w-3" />
+                        </Button>
+                    </Link>
+                </div>
+                <GridTopologyMap />
+            </section>
 
             {/* Admin Tools Grid */}
             <section>

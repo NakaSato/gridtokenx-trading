@@ -66,7 +66,9 @@ function EmptyState({ message }: { message: string }) {
 
 export function UserManagement() {
     const { token } = useAuth()
-    const { users, total, loading, refetch } = useAdminUsers(token ?? undefined)
+    const { users: usersResponse, loading, refetch } = useAdminUsers(token ?? undefined)
+    const users = usersResponse?.users ?? []
+    const total = usersResponse?.total ?? 0
     const { updateRole, deactivateUser, reactivateUser, loading: actionLoading } = useAdminActions(token ?? undefined)
     const [searchTerm, setSearchTerm] = useState('')
     const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -169,7 +171,7 @@ export function UserManagement() {
 
             {/* Stats */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Showing {filteredUsers.length} of {total || 0} users</span>
+                <span>Showing {filteredUsers.length} of {total} users</span>
                 <div className="flex gap-4">
                     <span className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-green-500" />

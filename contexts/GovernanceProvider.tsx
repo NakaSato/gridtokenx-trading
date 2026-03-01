@@ -23,7 +23,7 @@ import governanceIdl from '@/lib/idl/governance.json'
 const GOVERNANCE_PROGRAM_ID = new PublicKey(
   'DuLg6buhqs78SRj1qDp5vSyGrSfG9FF4nPKm8Tn8hSJL'
 )
-const SOLANA_RPC_URL = 'http://127.0.0.1:8899'
+const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://127.0.0.1:4000/api/v1/rpc'
 
 interface Proposal {
   id: string

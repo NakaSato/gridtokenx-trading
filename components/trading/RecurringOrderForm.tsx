@@ -1,36 +1,43 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Sun, CalendarDays, CalendarRange } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Sun, CalendarDays, CalendarRange, Clock, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import type { IntervalType } from '@/types/features'
+import { P2PCostBreakdown } from './P2PCostBreakdown'
+import { useMeters } from '@/hooks/useApi'
 
 export function RecurringOrderForm() {
     const { token } = useAuth()
     const [side, setSide] = useState<'buy' | 'sell'>('buy')
     const [amount, setAmount] = useState('')
-    const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+    const [priceLimit, setPriceLimit] = useState('')
+    const [intervalType, setIntervalType] = useState<IntervalType>('daily')
+    const [intervalValue, setIntervalValue] = useState('1')
+    const [maxExecutions, setMaxExecutions] = useState('')
+    const [name, setName] = useState('')
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
     const [isSuccess, setIsSuccess] = useState(false)
+    const { meters } = useMeters(token ?? undefined)
+    const [sellerZoneId, setSellerZoneId] = useState(1)
 
-    const frequencyConfig = {
-        daily: { label: 'Daily', icon: 'Sun', desc: 'Every 24 hours', color: 'text-amber-500', bg: 'bg-amber-500/10' },
-        weekly: { label: 'Weekly', icon: 'CalendarDays', desc: 'Every 7 days', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        monthly: { label: 'Monthly', icon: 'CalendarRange', desc: 'Every 30 days', color: 'text-purple-500', bg: 'bg-purple-500/10' }
+    const buyerZoneId = useMemo(() => {
+        const m = meters as any[] | null
+        return m?.[0]?.zone_id || 1
+    }, [meters])
+
+    const frequencyConfig: Record<IntervalType, { label: string; icon: string; desc: string; color: string; bg: string }> = {
+        hourly: { label: 'Hourly', icon: 'Clock', desc: 'Every N hours', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+        daily: { label: 'Daily', icon: 'Sun', desc: 'Every N days', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+        weekly: { label: 'Weekly', icon: 'CalendarDays', desc: 'Every N weeks', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+        monthly: { label: 'Monthly', icon: 'CalendarRange', desc: 'Every N months', color: 'text-purple-500', bg: 'bg-purple-500/10' }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -43,20 +50,44 @@ export function RecurringOrderForm() {
 
         try {
             const apiClient = createApiClient(token)
-            const response = await apiClient.createRecurringOrder({
-                symbol: 'GRX',
+            const payload: any = {
                 side,
-                amount,
-                frequency,
-                start_at: new Date().toISOString()
-            })
+                energy_amount: amount,
+                interval_type: intervalType,
+                interval_value: parseInt(intervalValue) || 1,
+            }
+
+            // Add price limit based on side
+            if (priceLimit) {
+                if (side === 'buy') {
+                    payload.max_price_per_kwh = priceLimit
+                } else {
+                    payload.min_price_per_kwh = priceLimit
+                }
+            }
+
+            if (maxExecutions) {
+                payload.max_executions = parseInt(maxExecutions)
+            }
+
+            if (name.trim()) {
+                payload.name = name.trim()
+            }
+
+            const response = await apiClient.createRecurringOrder(payload)
 
             if (response.error) {
                 setMessage(response.error)
             } else {
-                setMessage(`Successfully started ${frequency} strategy`)
+                const data = response.data as any
+                const nextRun = data?.next_execution_at
+                    ? new Date(data.next_execution_at).toLocaleString()
+                    : 'soon'
+                setMessage(`DCA strategy created! First execution: ${nextRun}`)
                 setIsSuccess(true)
                 setAmount('')
+                setPriceLimit('')
+                setName('')
             }
         } catch (err) {
             setMessage('Failed to schedule recurring order')
@@ -65,9 +96,11 @@ export function RecurringOrderForm() {
         }
     }
 
+    const intervalLabel = intervalType === 'hourly' ? 'hour' : intervalType === 'daily' ? 'day' : intervalType === 'weekly' ? 'week' : 'month'
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Strategy Type Selector */}
+            {/* Side Selector */}
             <div className="flex gap-1 p-1 bg-background rounded-xl border border-border/50 shadow-sm">
                 <button
                     type="button"
@@ -80,7 +113,7 @@ export function RecurringOrderForm() {
                     )}
                 >
                     <TrendingDown className="h-4 w-4" />
-                    <span>Buy</span>
+                    <span>Buy (DCA In)</span>
                 </button>
                 <button
                     type="button"
@@ -93,15 +126,27 @@ export function RecurringOrderForm() {
                     )}
                 >
                     <TrendingUp className="h-4 w-4" />
-                    <span>Sell</span>
+                    <span>Sell (DCA Out)</span>
                 </button>
             </div>
 
             <div className="space-y-4">
+                {/* Strategy Name */}
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium text-foreground">Strategy Name <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input
+                        type="text"
+                        placeholder="e.g. Daily Solar Buy"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="h-10 rounded-xl border-border bg-muted/30 text-sm"
+                    />
+                </div>
+
                 {/* Amount Input */}
                 <div className="space-y-2">
                     <Label className="text-sm font-medium text-foreground flex items-center justify-between">
-                        <span>Amount per order</span>
+                        <span>Amount per execution</span>
                         <span className="text-xs text-muted-foreground">Min: 0.1 kWh</span>
                     </Label>
                     <div className="relative">
@@ -130,48 +175,95 @@ export function RecurringOrderForm() {
                     </div>
                 </div>
 
+                {/* Price Limit */}
+                <div className="space-y-2">
+                    <Label className="text-sm font-medium text-foreground flex items-center justify-between">
+                        <span>{side === 'buy' ? 'Max Price' : 'Min Price'} <span className="text-muted-foreground text-xs">(optional)</span></span>
+                        <span className="text-xs text-muted-foreground">{side === 'buy' ? 'Skip if price exceeds' : 'Skip if price below'}</span>
+                    </Label>
+                    <div className="relative">
+                        <Input
+                            type="number"
+                            placeholder="No limit"
+                            value={priceLimit}
+                            onChange={(e) => setPriceLimit(e.target.value)}
+                            min="0.01"
+                            step="0.01"
+                            className="h-10 rounded-xl border-border bg-muted/30 pr-16 text-right font-mono text-sm"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            ฿/kWh
+                        </span>
+                    </div>
+                </div>
+
                 {/* Frequency */}
                 <div className="space-y-3">
                     <Label className="text-sm font-medium text-foreground flex items-center gap-2">
                         <Repeat className="h-4 w-4 text-muted-foreground" />
                         Frequency
                     </Label>
-                    <div className="flex gap-2">
-                        {(Object.keys(frequencyConfig) as Array<keyof typeof frequencyConfig>).map((key) => {
+                    <div className="grid grid-cols-4 gap-2">
+                        {(Object.keys(frequencyConfig) as IntervalType[]).map((key) => {
                             const config = frequencyConfig[key]
-                            const isActive = frequency === key
-                            const Icon = { Sun, CalendarDays, CalendarRange }[config.icon] || Sun
+                            const isActive = intervalType === key
+                            const Icon = { Clock, Sun, CalendarDays, CalendarRange }[config.icon] || Sun
                             return (
                                 <button
                                     key={key}
                                     type="button"
-                                    onClick={() => setFrequency(key)}
+                                    onClick={() => setIntervalType(key)}
                                     className={cn(
-                                        "flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                                        "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200",
                                         isActive
                                             ? cn("border-primary bg-primary/5 shadow-md shadow-primary/10", config.color)
                                             : "border-border bg-muted/30 text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
                                     )}
                                 >
                                     <div className={cn(
-                                        "flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200",
+                                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
                                         isActive ? config.bg : "bg-muted"
                                     )}>
-                                        <Icon className={cn("h-5 w-5", isActive ? config.color : "text-muted-foreground")} />
+                                        <Icon className={cn("h-4 w-4", isActive ? config.color : "text-muted-foreground")} />
                                     </div>
-                                    <div className="text-center">
-                                        <span className={cn(
-                                            "block text-sm font-bold transition-colors",
-                                            isActive ? "text-foreground" : "text-muted-foreground"
-                                        )}>{config.label}</span>
-                                        <span className="block text-[10px] text-muted-foreground mt-0.5">{config.desc}</span>
-                                    </div>
-                                    {isActive && (
-                                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary" />
-                                    )}
+                                    <span className={cn(
+                                        "text-xs font-bold transition-colors",
+                                        isActive ? "text-foreground" : "text-muted-foreground"
+                                    )}>{config.label}</span>
                                 </button>
                             )
                         })}
+                    </div>
+                </div>
+
+                {/* Interval Value + Max Executions */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            <Hash className="h-3 w-3" />
+                            Every N {intervalLabel}s
+                        </Label>
+                        <Input
+                            type="number"
+                            value={intervalValue}
+                            onChange={(e) => setIntervalValue(e.target.value)}
+                            min="1"
+                            max="30"
+                            className="h-10 rounded-xl border-border bg-muted/30 text-center font-mono text-sm"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-xs font-medium text-muted-foreground">
+                            Max Executions <span className="text-muted-foreground/60">(∞ if empty)</span>
+                        </Label>
+                        <Input
+                            type="number"
+                            placeholder="∞"
+                            value={maxExecutions}
+                            onChange={(e) => setMaxExecutions(e.target.value)}
+                            min="1"
+                            className="h-10 rounded-xl border-border bg-muted/30 text-center font-mono text-sm"
+                        />
                     </div>
                 </div>
             </div>
@@ -184,7 +276,7 @@ export function RecurringOrderForm() {
                     </div>
                     <div>
                         <h4 className="text-sm font-semibold text-foreground">Strategy Summary</h4>
-                        <p className="text-xs text-muted-foreground">Automated recurring orders</p>
+                        <p className="text-xs text-muted-foreground">Automated DCA orders</p>
                     </div>
                 </div>
                 <div className="space-y-2 text-sm">
@@ -202,11 +294,63 @@ export function RecurringOrderForm() {
                         <span className="font-mono font-semibold text-foreground">{amount || '0'} kWh</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Frequency</span>
-                        <span className="font-semibold text-foreground capitalize">{frequencyConfig[frequency].label}</span>
+                        <span className="text-muted-foreground">Schedule</span>
+                        <span className="font-semibold text-foreground">
+                            Every {intervalValue !== '1' ? `${intervalValue} ` : ''}{frequencyConfig[intervalType].label.toLowerCase()}{intervalValue !== '1' ? 's' : ''}
+                        </span>
                     </div>
+                    {priceLimit && (
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">{side === 'buy' ? 'Max Price' : 'Min Price'}</span>
+                            <span className="font-mono font-semibold text-foreground">฿{priceLimit}/kWh</span>
+                        </div>
+                    )}
+                    {maxExecutions && (
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Limit</span>
+                            <span className="font-mono font-semibold text-foreground">{maxExecutions} executions</span>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Seller Scenario Selector */}
+            <div className="space-y-2 px-1">
+                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center justify-between">
+                    <span>Simulated Matching Scenario</span>
+                    <span className="text-primary italic normal-case">Affects fees</span>
+                </Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                        { id: buyerZoneId, label: 'Intra-zone', desc: 'Neighbor' },
+                        { id: (buyerZoneId % 3) + 1, label: 'Inter-zone', desc: 'Nearby' },
+                        { id: 0, label: 'Main Grid', desc: 'Import' }
+                    ].map((scenario) => (
+                        <button
+                            key={scenario.label}
+                            type="button"
+                            onClick={() => setSellerZoneId(scenario.id)}
+                            className={cn(
+                                "flex flex-col items-center py-2 px-1 rounded-xl border transition-all duration-200",
+                                sellerZoneId === scenario.id
+                                    ? "bg-primary/5 border-primary shadow-sm"
+                                    : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
+                            )}
+                        >
+                            <span className="text-[10px] font-bold">{scenario.label}</span>
+                            <span className="text-[9px] opacity-70 leading-none">{scenario.desc}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* P2P Cost Breakdown */}
+            <P2PCostBreakdown
+                amount={parseFloat(amount) || 0}
+                agreedPrice={parseFloat(priceLimit) || undefined}
+                buyerZoneId={buyerZoneId}
+                sellerZoneId={sellerZoneId}
+            />
 
             <Button
                 type="submit"
@@ -233,8 +377,8 @@ export function RecurringOrderForm() {
                 <div className={cn(
                     "flex items-start gap-3 rounded-xl p-4 text-sm",
                     isSuccess
-                        ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700"
-                        : "border border-rose-500/20 bg-rose-500/10 text-rose-700"
+                        ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                        : "border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400"
                 )}>
                     {isSuccess ? (
                         <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />

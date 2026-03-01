@@ -4,6 +4,7 @@ import {
     blackScholes,
     calculateGreeks as calculateGreeksWasmHelper,
     calculateBezier as calculateBezierWasmHelper,
+    calculatePortfolioRisk as calculatePortfolioRiskWasmHelper,
     Simulation
 } from '@/lib/wasm-bridge'
 import { useWasm } from '@/lib/wasm-provider'
@@ -62,6 +63,15 @@ export function useWasmMath() {
         }
     }, [isLoaded])
 
+    const getGridTotalsWasm = useCallback(() => {
+        if (!isLoaded || !simulationRef.current) return null
+        return simulationRef.current.get_grid_totals()
+    }, [isLoaded])
+
+    const calculatePortfolioRisk = useCallback((positions: any[]) => {
+        return calculatePortfolioRiskWasmHelper(positions)
+    }, [])
+
     const calculateOptionsPrice = useCallback((s: number, k: number, t: number, isCall: boolean) => {
         return blackScholes(s, k, t, isCall)
     }, [])
@@ -78,6 +88,8 @@ export function useWasmMath() {
         initSimulationNodesWasm,
         initSimulationFlowsWasm,
         updateSimulationWasm,
+        getGridTotalsWasm,
+        calculatePortfolioRisk,
         calculateOptionsPrice,
         calculateGreeks
     }

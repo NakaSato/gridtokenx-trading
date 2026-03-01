@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, X, Bell } from "lucide-react";
 
 export default function DevFaucet() {
     const { user } = useAuth();
@@ -13,6 +13,8 @@ export default function DevFaucet() {
     const [error, setError] = useState(false);
     const [isMinimized, setIsMinimized] = useState(true);
     const [isDismissed, setIsDismissed] = useState(false);
+
+    const [notifLoading, setNotifLoading] = useState(false);
 
     // Use connected wallet's publicKey first, fallback to user's stored wallet_address
     const walletAddress = connected && publicKey ? publicKey.toBase58() : user?.wallet_address;
@@ -52,6 +54,42 @@ export default function DevFaucet() {
             setMessage(err.message);
         } finally {
             setLoading(false);
+        }
+    }, [apiUrl, walletAddress]);
+
+    const sendTestNotification = useCallback(async (type: string = "system") => {
+        if (!walletAddress) {
+            setMessage("Log in to use test notification");
+            setError(true);
+            return;
+        }
+
+        setNotifLoading(true);
+        setMessage("");
+        setError(false);
+
+        try {
+            const response = await fetch(`${apiUrl}/api/v1/dev/test-notification`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    wallet_address: walletAddress,
+                    notification_type: type,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Test notification failed");
+            }
+
+            setMessage(`Notification sent! ID: ${data.notification_id?.slice(0, 8)}...`);
+        } catch (err: any) {
+            setError(true);
+            setMessage(err.message);
+        } finally {
+            setNotifLoading(false);
         }
     }, [apiUrl, walletAddress]);
 
@@ -116,6 +154,36 @@ export default function DevFaucet() {
                                 >
                                     Get 1k kWh
                                 </button>
+                            </div>
+
+                            <div className="border-t border-gray-700 pt-2 mt-2">
+                                <p className="text-xs text-gray-500 mb-2">Test Notifications</p>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => sendTestNotification("order_filled")}
+                                        disabled={notifLoading}
+                                        className="flex items-center gap-1 rounded bg-purple-600 px-2 py-1 text-xs text-white transition hover:bg-purple-500 disabled:opacity-50"
+                                    >
+                                        <Bell size={12} />
+                                        Order Filled
+                                    </button>
+                                    <button
+                                        onClick={() => sendTestNotification("order_matched")}
+                                        disabled={notifLoading}
+                                        className="flex items-center gap-1 rounded bg-orange-600 px-2 py-1 text-xs text-white transition hover:bg-orange-500 disabled:opacity-50"
+                                    >
+                                        <Bell size={12} />
+                                        Order Matched
+                                    </button>
+                                    <button
+                                        onClick={() => sendTestNotification("system")}
+                                        disabled={notifLoading}
+                                        className="flex items-center gap-1 rounded bg-gray-600 px-2 py-1 text-xs text-white transition hover:bg-gray-500 disabled:opacity-50"
+                                    >
+                                        <Bell size={12} />
+                                        System
+                                    </button>
+                                </div>
                             </div>
 
                             {message && (

@@ -14,7 +14,7 @@ export class TradingApi {
             payload.energy_amount = payload.amount
             delete payload.amount
         }
-        return apiRequest('/api/v1/trading/orders', {
+        return apiRequest('/api/v1/orders', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -30,7 +30,7 @@ export class TradingApi {
 
     async getOrders(filters?: { status?: string; limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/trading/orders?${params.toString()}`, {
+        return apiRequest(`/api/v1/orders?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -38,7 +38,7 @@ export class TradingApi {
 
     async getOrderBook(filters?: { status?: string }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/trading/orderbook?${params.toString()}`, {
+        return apiRequest(`/api/v1/orderbook?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -54,13 +54,13 @@ export class TradingApi {
     async getTrades(filters?: { limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
         return apiRequest<import('../../types/trading').TradeHistory>(
-            `/api/v1/trading/trades?${params.toString()}`,
+            `/api/v1/trades?${params.toString()}`,
             { method: 'GET', token: this.getToken() }
         )
     }
 
     async cancelOrder(orderId: string) {
-        return apiRequest(`/api/v1/trading/orders/${orderId}`, {
+        return apiRequest(`/api/v1/orders/${orderId}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -74,7 +74,7 @@ export class TradingApi {
         signature?: string
         timestamp?: number
     }) {
-        return apiRequest<{ id: string }>('/api/v1/trading/orders', {
+        return apiRequest<{ id: string }>('/api/v1/orders', {
             method: 'POST',
             body: {
                 side: orderData.side,
@@ -90,14 +90,14 @@ export class TradingApi {
     }
 
     async getP2POrderBook() {
-        return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/trading/orderbook', {
+        return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/orderbook', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getMyP2POrders() {
-        return apiRequest<any[]>('/api/v1/trading/orders', {
+        return apiRequest<any[]>('/api/v1/orders', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -112,7 +112,7 @@ export class TradingApi {
             sell_price_range: { min: number; max: number }
             can_match: boolean
             match_reason: string
-        }>('/api/v1/trading/matching-status', {
+        }>('/api/v1/matching-status', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -125,7 +125,7 @@ export class TradingApi {
             confirmed_count: number
             failed_count: number
             total_settled_value: number
-        }>('/api/v1/trading/settlement-stats', {
+        }>('/api/v1/settlement-stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -150,7 +150,7 @@ export class TradingApi {
             seller_zone: number
             is_grid_compliant: boolean
             grid_violation_reason?: string
-        }>('/api/v1/trading/p2p/calculate-cost', {
+        }>('/api/v1/p2p/calculate-cost', {
             method: 'POST',
             body: request,
             token: this.getToken(),
@@ -165,7 +165,7 @@ export class TradingApi {
             loss_allocation_model: string
             wheeling_charges: Record<string, number>
             loss_factors: Record<string, number>
-        }>('/api/v1/trading/p2p/market-prices', {
+        }>('/api/v1/p2p/market-prices', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -191,7 +191,7 @@ export class TradingApi {
                 created_at: string
             }>
             total: number
-        }>(`/api/v1/trading/trades?${params.toString()}`, {
+        }>(`/api/v1/trades?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -202,7 +202,7 @@ export class TradingApi {
         target_price: string
         condition: 'above' | 'below'
     }): Promise<ApiResponse<PriceAlert>> {
-        return apiRequest<PriceAlert>('/api/v1/trading/price-alerts', {
+        return apiRequest<PriceAlert>('/api/v1/price-alerts', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -210,14 +210,14 @@ export class TradingApi {
     }
 
     async listPriceAlerts(): Promise<ApiResponse<PriceAlert[]>> {
-        return apiRequest<PriceAlert[]>('/api/v1/trading/price-alerts', {
+        return apiRequest<PriceAlert[]>('/api/v1/price-alerts', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async deletePriceAlert(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/trading/price-alerts/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/price-alerts/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -225,11 +225,20 @@ export class TradingApi {
 
     async createRecurringOrder(data: any): Promise<ApiResponse<any>> {
         const payload = { ...data }
+        // Map legacy field names to API model
         if (payload.amount && !payload.energy_amount) {
             payload.energy_amount = payload.amount
             delete payload.amount
         }
-        return apiRequest<any>('/api/v1/trading/recurring', {
+        if (payload.frequency && !payload.interval_type) {
+            payload.interval_type = payload.frequency
+            delete payload.frequency
+        }
+        // Remove fields not in API model
+        delete payload.symbol
+        delete payload.start_at
+        delete payload.end_at
+        return apiRequest<any>('/api/v1/orders/recurring', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -237,35 +246,35 @@ export class TradingApi {
     }
 
     async listRecurringOrders(): Promise<ApiResponse<RecurringOrder[]>> {
-        return apiRequest<RecurringOrder[]>('/api/v1/trading/recurring', {
+        return apiRequest<RecurringOrder[]>('/api/v1/orders/recurring', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getRecurringOrder(id: string): Promise<ApiResponse<RecurringOrder>> {
-        return apiRequest<RecurringOrder>(`/api/v1/trading/recurring/${id}`, {
+        return apiRequest<RecurringOrder>(`/api/v1/orders/recurring/${id}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async cancelRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
     }
 
     async pauseRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/pause`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/pause`, {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async resumeRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/trading/recurring/${id}/resume`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/resume`, {
             method: 'POST',
             token: this.getToken(),
         })

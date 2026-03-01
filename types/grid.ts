@@ -80,8 +80,16 @@ export interface MeterLink {
     zone_id: number | null
 }
 
+export interface GridBranch {
+    from_zone: number
+    to_zone: number
+    capacity_kwh: number
+    current_flow_kwh: number
+}
+
 export interface GridTopologyResponse {
     zones: Record<string, ZoneTopologyData>
+    branches: GridBranch[]
     meters: MeterLink[]
 }
 

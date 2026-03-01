@@ -28,6 +28,17 @@ export function derivePrivacyRootSeed(walletSignature: Uint8Array): Uint8Array {
  * Allows recovering b_i for any transaction.
  */
 export function deriveBlindingFactor(rootSeed: Uint8Array, index: number): Uint8Array {
+    // Try WASM version for performance and consistency
+    try {
+        const { isWasmLoaded, deriveStealthKey } = require('./wasm-bridge')
+        if (isWasmLoaded()) {
+            const factor = deriveStealthKey(rootSeed, index)
+            if (factor) return factor
+        }
+    } catch (e) {
+        // Fallback
+    }
+
     const seedHex = Buffer.from(rootSeed).toString('hex');
     const factorHex = sha256(`GridTokenX_Blinding_Factor:${index}:${seedHex}`);
 
@@ -53,9 +64,13 @@ export async function recoverAmountFromCommitment(
     blinding: Uint8Array,
     maxSearch: number = 1000000
 ): Promise<number | null> {
-    // This is mathematically complex and usually requires a Rainbow Table 
-    // or baby-step giant-step if the amount is unknown.
-    // For our prototype, we'll implement a simple "verified guess" check.
-    // Real wallets store the last known balance locally to avoid this.
+    try {
+        const { isWasmLoaded, recoverAmount } = require('./wasm-bridge')
+        if (isWasmLoaded()) {
+            return recoverAmount(commitment, blinding)
+        }
+    } catch (e) {
+        // Fallback
+    }
     return null;
 }

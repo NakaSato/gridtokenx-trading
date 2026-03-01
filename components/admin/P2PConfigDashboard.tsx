@@ -19,25 +19,12 @@ import {
     AlertCircle,
     CheckCircle2
 } from 'lucide-react'
-import { useP2PConfig } from '@/hooks/useApi'
+import { useP2PConfig, P2PConfigItem, P2PConfigAuditEntry } from '@/hooks/useApi'
 import toast from 'react-hot-toast'
 
-interface ConfigItem {
-    config_key: string
-    config_value: number
-    category: string
-    description?: string
-    updated_at: string
-}
-
-interface AuditEntry {
-    id: number
-    config_key: string
-    old_value: number | null
-    new_value: number | null
-    changed_at: string
-    change_reason?: string
-}
+// Use types from useApi.ts
+type ConfigItem = P2PConfigItem
+type AuditEntry = P2PConfigAuditEntry
 
 function ConfigEditor({
     config,
@@ -185,13 +172,14 @@ export function P2PConfigDashboard() {
     }, [updateConfig])
 
     // Group configs by category
-    const groupedConfigs = configs.reduce((acc: Record<string, ConfigItem[]>, config: ConfigItem) => {
-        if (!acc[config.category]) {
-            acc[config.category] = []
+    const groupedConfigs = (configs || []).reduce<Record<string, ConfigItem[]>>((acc, config) => {
+        const category = config.category || 'general'
+        if (!acc[category]) {
+            acc[category] = []
         }
-        acc[config.category].push(config)
+        acc[category].push(config)
         return acc
-    }, {} as Record<string, ConfigItem[]>)
+    }, {})
 
     const categories = [
         { id: 'pricing', label: 'Pricing', icon: DollarSign, color: 'text-green-500' },

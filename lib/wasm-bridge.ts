@@ -9,14 +9,26 @@ import init, {
   Simulation,
   OrderBook as WasmOrderBook,
   AuctionSimulator as WasmAuctionSimulator,
+  black_scholes as wasm_black_scholes,
   calculate_bezier,
+  calculate_portfolio_risk as wasm_calculate_portfolio_risk,
+  aggregate_readings as wasm_aggregate_readings,
+  calculate_greeks as wasm_calculate_greeks,
   create_commitment as wasm_create_commitment,
   create_range_proof as wasm_create_range_proof,
   create_transfer_proof as wasm_create_transfer_proof,
   crypto_verify as wasm_crypto_verify,
+  delta_calc as wasm_delta_calc,
+  derive_stealth_key as wasm_derive_stealth_key,
+  gamma_calc as wasm_gamma_calc,
   hmac_sha256 as wasm_hmac_sha256,
+  perform_clustering as wasm_perform_clustering,
+  recover_amount_from_commitment as wasm_recover_amount_from_commitment,
+  rho_calc as wasm_rho_calc,
   sha256 as wasm_sha256,
-} from './wasm-generated/gridtokenx_wasm'
+  theta_calc as wasm_theta_calc,
+  vega_calc as wasm_vega_calc,
+} from './wasm/gridtokenx_wasm.js'
 
 export interface Greeks {
   delta: number
@@ -171,6 +183,9 @@ export function blackScholes(
   t: number,
   isCall: boolean
 ): number {
+  if (isWasmLoaded()) {
+    return wasm_black_scholes(s, k, t, isCall)
+  }
   return blackScholesJS(s, k, t, isCall)
 }
 
@@ -181,6 +196,16 @@ export function calculateGreeks(
   t: number,
   isCall: boolean
 ): Greeks {
+  if (isWasmLoaded()) {
+    const greeks = wasm_calculate_greeks(s, k, t, isCall)
+    return {
+      delta: greeks.delta,
+      gamma: greeks.gamma,
+      vega: greeks.vega,
+      theta: greeks.theta,
+      rho: greeks.rho,
+    }
+  }
   return {
     delta: deltaCalcJS(s, k, t, isCall),
     gamma: gammaCalcJS(s, k, t),
@@ -192,15 +217,15 @@ export function calculateGreeks(
 
 /** Calculate individual Greek values */
 export const deltaCalc = (s: number, k: number, t: number, isCall: boolean): number =>
-  deltaCalcJS(s, k, t, isCall)
+  isWasmLoaded() ? wasm_delta_calc(s, k, t, isCall) : deltaCalcJS(s, k, t, isCall)
 export const gammaCalc = (s: number, k: number, t: number): number =>
-  gammaCalcJS(s, k, t)
+  isWasmLoaded() ? wasm_gamma_calc(s, k, t) : gammaCalcJS(s, k, t)
 export const vegaCalc = (s: number, k: number, t: number): number =>
-  vegaCalcJS(s, k, t)
+  isWasmLoaded() ? wasm_vega_calc(s, k, t) : vegaCalcJS(s, k, t)
 export const thetaCalc = (s: number, k: number, t: number, isCall: boolean): number =>
-  thetaCalcJS(s, k, t, isCall)
+  isWasmLoaded() ? wasm_theta_calc(s, k, t, isCall) : thetaCalcJS(s, k, t, isCall)
 export const rhoCalc = (s: number, k: number, t: number, isCall: boolean): number =>
-  rhoCalcJS(s, k, t, isCall)
+  isWasmLoaded() ? wasm_rho_calc(s, k, t, isCall) : rhoCalcJS(s, k, t, isCall)
 
 // =============================================================================
 // JAVASCRIPT FALLBACKS
@@ -394,4 +419,48 @@ export async function createTransferProof(
     senderBlinding,
     amountBlinding
   )
+}
+
+/**
+ * Perform high-performance clustering for energy profiles
+ */
+export function performClustering(characteristics: {
+  peak_to_avg_ratio: number
+  daytime_ratio: number
+}): any {
+  if (!isWasmLoaded()) return null
+  return wasm_perform_clustering(characteristics)
+}
+
+/**
+ * Perform high-performance data aggregation for energy readings
+ */
+export function aggregateReadings(readings: any[]): any {
+  if (!isWasmLoaded()) return null
+  return wasm_aggregate_readings(readings)
+}
+
+/**
+ * Recover hidden amount from a Pedersen commitment
+ */
+export function recoverAmount(commitment: number[], blinding: Uint8Array): number | null {
+  if (!isWasmLoaded()) return null
+  const result = wasm_recover_amount_from_commitment(commitment, blinding)
+  return result !== undefined ? Number(result) : null
+}
+
+/**
+ * Derive stealth key for private links
+ */
+export function deriveStealthKey(rootSeed: Uint8Array, index: number): Uint8Array | null {
+  if (!isWasmLoaded()) return null
+  return wasm_derive_stealth_key(rootSeed, index)
+}
+
+/**
+ * Calculate aggregated risk for a portfolio of positions
+ */
+export function calculatePortfolioRisk(positions: any[]): any {
+  if (!isWasmLoaded()) return null
+  return wasm_calculate_portfolio_risk(positions)
 }

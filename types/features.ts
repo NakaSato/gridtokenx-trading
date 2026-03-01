@@ -71,6 +71,14 @@ export interface NotificationPreferences {
     trade_notifications: boolean;
     alert_notifications: boolean;
     system_notifications: boolean;
+    // Granular toggles
+    order_filled?: boolean;
+    order_matched?: boolean;
+    conditional_triggered?: boolean;
+    recurring_executed?: boolean;
+    price_alerts?: boolean;
+    escrow_events?: boolean;
+    system_announcements?: boolean;
 }
 
 // --- Price Alerts ---
@@ -84,26 +92,39 @@ export interface PriceAlert {
     created_at: string;
 }
 
-// --- Recurring Orders ---
+// --- Recurring Orders (DCA) ---
+export type IntervalType = 'hourly' | 'daily' | 'weekly' | 'monthly';
+export type RecurringStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+
 export interface RecurringOrder {
     id: string;
     user_id: string;
-    symbol: string;
     side: 'buy' | 'sell';
-    amount: string;
-    frequency: 'daily' | 'weekly' | 'monthly';
-    start_at: string;
-    end_at?: string;
-    last_run_at?: string;
-    status: 'active' | 'paused' | 'completed' | 'cancelled';
+    energy_amount: string;
+    max_price_per_kwh?: string;
+    min_price_per_kwh?: string;
+    interval_type: IntervalType;
+    interval_value: number;
+    next_execution_at: string;
+    last_executed_at?: string;
+    status: RecurringStatus;
+    total_executions: number;
+    max_executions?: number;
+    name?: string;
+    description?: string;
     created_at: string;
+    updated_at: string;
 }
 
 export interface CreateRecurringOrderRequest {
-    symbol: string;
     side: 'buy' | 'sell';
-    amount: string;
-    frequency: 'daily' | 'weekly' | 'monthly';
-    start_at?: string;
-    end_at?: string;
+    energy_amount: string;
+    max_price_per_kwh?: string;
+    min_price_per_kwh?: string;
+    interval_type: IntervalType;
+    interval_value?: number;
+    max_executions?: number;
+    name?: string;
+    description?: string;
+    session_token?: string;
 }

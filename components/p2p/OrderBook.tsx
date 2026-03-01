@@ -1,113 +1,257 @@
+'use client'
+
 import { useTrading, OrderAccount } from '@/contexts/TradingProvider'
 import { PublicKey } from '@solana/web3.js'
-import { format } from 'date-fns'
-import { ArrowDownLeft, ArrowUpRight, Filter } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { ArrowDownLeft, ArrowUpRight, Globe, Link2, Loader2 } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { clsx } from 'clsx'
 import { BN } from '@coral-xyz/anchor'
-
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useAuth } from '@/contexts/AuthProvider'
+import { defaultApiClient } from '@/lib/api-client'
+import { useOrderBookUpdates } from '@/hooks/useTransactionUpdates'
+
+// Unified order type for display (can come from on-chain or off-chain)
+interface UnifiedOrder {
+    id: string
+    side: 'buy' | 'sell'
+    price: number
+    amount: number
+    filledAmount: number
+    remaining: number
+    source: 'onchain' | 'offchain'
+    zoneId?: number
+    createdAt?: string
+    // On-chain order reference for take action
+    onchainOrder?: OrderAccount
+}
 
 export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) => {
     const { orders, isLoadingOrders, setActiveOrderFill } = useTrading()
     const { publicKey } = useWallet()
+    const { token } = useAuth()
     const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all')
+    const [offchainOrders, setOffchainOrders] = useState<UnifiedOrder[]>([])
+    const [offchainLoading, setOffchainLoading] = useState(false)
 
     // Helper to check if a Pubkey is "empty" (System Program or Zero)
     const isEmptyKey = (key: PublicKey) => {
         return key.equals(PublicKey.default) || key.toBase58() === '11111111111111111111111111111111'
     }
 
-    // Process and sort orders
-    const processedOrders = useMemo(() => {
-        if (!orders) return { bids: [], asks: [] }
+    // Precision: on-chain values are scaled by 1e6
+    const fromBn = (bn: BN) => bn.toNumber() / 1_000_000
 
-        // Filter active orders (Status check - assuming 0 or {active:{}} is active)
-        // Since we don't know the exact enum mapping yet, we'll list all for now
-        // or try to infer. We'll show all orders that look open.
-        // An open Buy order has a Buyer but NO Seller.
-        // An open Sell order has a Seller but NO Buyer.
+    // Fetch off-chain orders from REST API
+    const fetchOffchainOrders = useCallback(async () => {
+        setOffchainLoading(true)
+        try {
+            if (token) {
+                defaultApiClient.setToken(token)
+            }
+            const response = await defaultApiClient.getP2POrderBook()
+
+            if (response.data) {
+                const data = response.data as any
+                const rawOrders = data.data || data.orders || []
+
+                // If data comes as { bids, asks } format
+                const bids = data.bids || []
+                const asks = data.asks || []
+                const allOrders = rawOrders.length > 0 ? rawOrders : [...bids, ...asks]
+
+                const unified: UnifiedOrder[] = allOrders.map((o: any) => ({
+                    id: o.id || `offchain-${Math.random()}`,
+                    side: (o.side || (bids.includes(o) ? 'buy' : 'sell')) as 'buy' | 'sell',
+                    price: Number(o.price_per_kwh || o.price || 0),
+                    amount: Number(o.energy_amount || o.amount || 0),
+                    filledAmount: Number(o.filled_amount || 0),
+                    remaining: Number(o.energy_amount || o.amount || 0) - Number(o.filled_amount || 0),
+                    source: 'offchain' as const,
+                    zoneId: o.zone_id,
+                    createdAt: o.created_at,
+                })).filter((o: UnifiedOrder) => o.remaining > 0 && o.price > 0)
+
+                setOffchainOrders(unified)
+            }
+        } catch (err) {
+            console.error('Failed to fetch off-chain order book:', err)
+        } finally {
+            setOffchainLoading(false)
+        }
+    }, [token])
+
+    // Initial fetch
+    useEffect(() => {
+        fetchOffchainOrders()
+    }, [fetchOffchainOrders])
+
+    // Real-time WebSocket updates: refresh order book on snapshot
+    const { latestSnapshot } = useOrderBookUpdates({ token: token || undefined })
+
+    useEffect(() => {
+        if (latestSnapshot) {
+            // When we receive a WebSocket snapshot, process it
+            const bids = latestSnapshot.bids || []
+            const asks = latestSnapshot.asks || []
+            const allOrders = [...bids, ...asks]
+
+            if (allOrders.length > 0) {
+                const unified: UnifiedOrder[] = allOrders.map((o: any) => ({
+                    id: o.id || `ws-${Math.random()}`,
+                    side: (bids.includes(o) ? 'buy' : (o.side || 'sell')) as 'buy' | 'sell',
+                    price: Number(o.price_per_kwh || o.price || 0),
+                    amount: Number(o.energy_amount || o.amount || 0),
+                    filledAmount: Number(o.filled_amount || 0),
+                    remaining: Number(o.remaining_amount || o.amount || 0),
+                    source: 'offchain' as const,
+                    zoneId: o.zone_id,
+                    createdAt: o.created_at,
+                })).filter((o: UnifiedOrder) => o.remaining > 0 && o.price > 0)
+
+                setOffchainOrders(unified)
+            } else {
+                // Snapshot with no orders — trigger a REST refetch for full data
+                fetchOffchainOrders()
+            }
+        }
+    }, [latestSnapshot, fetchOffchainOrders])
+
+    // Convert on-chain orders to unified format
+    const onchainUnified = useMemo<UnifiedOrder[]>(() => {
+        if (!orders) return []
 
         let openOrders = orders.filter(o => {
             const hasBuyer = !isEmptyKey(o.account.buyer)
             const hasSeller = !isEmptyKey(o.account.seller)
-            const isMatched = hasBuyer && hasSeller
-
-            // Filter out matched orders (where both are set)
-            // Also check status if possible, but structure matching is robust.
-            return !isMatched
+            return !(hasBuyer && hasSeller) // Filter matched orders
         })
 
         if (myOrdersOnly && publicKey) {
             openOrders = openOrders.filter(o => o.account.authority.equals(publicKey))
         }
 
-        const bids = openOrders.filter(o => !isEmptyKey(o.account.buyer)).sort((a, b) => b.account.pricePerKwh.cmp(a.account.pricePerKwh)) // Descending price
-        const asks = openOrders.filter(o => !isEmptyKey(o.account.seller)).sort((a, b) => a.account.pricePerKwh.cmp(b.account.pricePerKwh)) // Ascending price
-
-        return { bids, asks }
+        return openOrders.map(o => {
+            const isBid = !isEmptyKey(o.account.buyer)
+            return {
+                id: o.publicKey.toBase58(),
+                side: isBid ? 'buy' as const : 'sell' as const,
+                price: fromBn(o.account.pricePerKwh),
+                amount: fromBn(o.account.amount),
+                filledAmount: fromBn(o.account.filledAmount),
+                remaining: fromBn(o.account.amount.sub(o.account.filledAmount)),
+                source: 'onchain' as const,
+                onchainOrder: o,
+            }
+        })
     }, [orders, myOrdersOnly, publicKey])
 
-    // Precision (micro-kWh, micro-USDC?)
-    // Need to verify units. IDL comments say "kWh * 1000" or similar?
-    // TradingProvider defines PRECISION_FACTOR = 1_000_000.
-    // Let's assume on-chain values are scaled by 1e6.
-    const fromBn = (bn: BN) => {
-        return bn.toNumber() / 1_000_000
-    }
+    // Merge and deduplicate (on-chain takes priority for duplicates)
+    const allUnified = useMemo(() => {
+        // On-chain orders are the authoritative source; off-chain supplement them
+        const onchainIds = new Set(onchainUnified.map(o => o.id))
 
-    const handleTake = (order: OrderAccount, isSellOrder: boolean) => {
-        // Taking a Sell Order (Ask) means we want to BUY.
-        // Taking a Buy Order (Bid) means we want to SELL.
+        // Include off-chain orders that don't duplicate on-chain ones
+        const deduped = [
+            ...onchainUnified,
+            ...offchainOrders.filter(o => !onchainIds.has(o.id))
+        ]
 
-        setActiveOrderFill({
-            amount: fromBn(order.account.amount.sub(order.account.filledAmount)), // Remaining amount
-            price: fromBn(order.account.pricePerKwh),
-            targetOrder: order
-        })
+        return deduped
+    }, [onchainUnified, offchainOrders])
 
-        // Scroll to form? handled by UI update or user action
-    }
+    // Split into bids and asks
+    const processedOrders = useMemo(() => {
+        const bids = allUnified
+            .filter(o => o.side === 'buy')
+            .sort((a, b) => b.price - a.price) // Descending price
+
+        const asks = allUnified
+            .filter(o => o.side === 'sell')
+            .sort((a, b) => a.price - b.price) // Ascending price
+
+        return { bids, asks }
+    }, [allUnified])
 
     // Combine for display based on filter
     const displayOrders = useMemo(() => {
-        let list: { order: OrderAccount, type: 'bid' | 'ask' }[] = []
-        if (filter !== 'sell') {
-            list = list.concat(processedOrders.bids.map(o => ({ order: o, type: 'bid' as const })))
-        }
-        if (filter !== 'buy') {
-            list = list.concat(processedOrders.asks.map(o => ({ order: o, type: 'ask' as const })))
-        }
-        // Sort by time created? or price?
-        // Usually mixed list is sorted by time or proximity to market price.
-        // Let's just list them nicely.
+        let list: UnifiedOrder[] = []
+        if (filter !== 'sell') list = list.concat(processedOrders.bids)
+        if (filter !== 'buy') list = list.concat(processedOrders.asks)
         return list
     }, [processedOrders, filter])
 
-    if (isLoadingOrders) {
-        return <div className="p-4 text-center text-gray-500">Loading Order Book...</div>
+    const handleTake = (order: UnifiedOrder) => {
+        if (order.onchainOrder) {
+            // On-chain: use existing TradingProvider flow
+            setActiveOrderFill({
+                amount: order.remaining,
+                price: order.price,
+                targetOrder: order.onchainOrder,
+            })
+        } else {
+            // Off-chain: pre-fill the order form with counterparty price
+            setActiveOrderFill({
+                amount: order.remaining,
+                price: order.price,
+                targetOrder: undefined as any,
+            })
+        }
+    }
+
+    const isLoading = isLoadingOrders || offchainLoading
+
+    if (isLoading && displayOrders.length === 0) {
+        return (
+            <div className="p-4 text-center text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading Order Book...
+            </div>
+        )
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">{myOrdersOnly ? 'My Active Orders' : 'Order Book'}</h3>
-                <div className="flex gap-2">
+        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden flex flex-col h-full">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">
+                        {myOrdersOnly ? 'My Active Orders' : 'Order Book'}
+                    </h3>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                        {displayOrders.length}
+                    </span>
+                </div>
+                <div className="flex gap-1.5">
                     <button
                         onClick={() => setFilter('all')}
-                        className={clsx("px-3 py-1 text-xs rounded-full font-medium transition-colors", filter === 'all' ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200")}
+                        className={clsx(
+                            "px-3 py-1 text-xs rounded-full font-medium transition-colors",
+                            filter === 'all'
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
                     >
                         All
                     </button>
                     <button
                         onClick={() => setFilter('buy')}
-                        className={clsx("px-3 py-1 text-xs rounded-full font-medium transition-colors", filter === 'buy' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200")}
+                        className={clsx(
+                            "px-3 py-1 text-xs rounded-full font-medium transition-colors",
+                            filter === 'buy'
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
                     >
                         Bids
                     </button>
                     <button
                         onClick={() => setFilter('sell')}
-                        className={clsx("px-3 py-1 text-xs rounded-full font-medium transition-colors", filter === 'sell' ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200")}
+                        className={clsx(
+                            "px-3 py-1 text-xs rounded-full font-medium transition-colors",
+                            filter === 'sell'
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
                     >
                         Asks
                     </button>
@@ -116,56 +260,68 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
 
             <div className="flex-1 overflow-y-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
+                    <thead className="bg-muted/50 sticky top-0 z-10">
                         <tr>
-                            <th className="px-4 py-3 text-left font-medium text-gray-500">Side</th>
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Price (USDC/kWh)</th>
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Amount (kWh)</th>
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Action</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Side</th>
+                            <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Price (฿/kWh)</th>
+                            <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Amount (kWh)</th>
+                            <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Source</th>
+                            <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-border/50">
                         {displayOrders.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                                     No active orders found
                                 </td>
                             </tr>
                         ) : (
-                            displayOrders.map(({ order, type }) => (
-                                <tr key={order.publicKey.toBase58()} className="hover:bg-gray-50 group transition-colors">
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center gap-2">
-                                            {type === 'bid' ? (
-                                                <span className="inline-flex items-center gap-1 text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs font-medium">
-                                                    <ArrowDownLeft className="w-3 h-3" />
-                                                    Bid
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">
-                                                    <ArrowUpRight className="w-3 h-3" />
-                                                    Ask
-                                                </span>
-                                            )}
-                                        </div>
+                            displayOrders.map((order) => (
+                                <tr key={order.id} className="hover:bg-muted/30 group transition-colors">
+                                    <td className="px-4 py-2.5">
+                                        {order.side === 'buy' ? (
+                                            <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-medium">
+                                                <ArrowDownLeft className="w-3 h-3" />
+                                                Bid
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded text-xs font-medium">
+                                                <ArrowUpRight className="w-3 h-3" />
+                                                Ask
+                                            </span>
+                                        )}
                                     </td>
-                                    <td className="px-4 py-3 text-right font-medium text-gray-900">
-                                        {fromBn(order.account.pricePerKwh).toFixed(4)}
+                                    <td className="px-4 py-2.5 text-right font-mono font-medium text-foreground">
+                                        {order.price.toFixed(4)}
                                     </td>
-                                    <td className="px-4 py-3 text-right text-gray-600">
-                                        {fromBn(order.account.amount.sub(order.account.filledAmount)).toFixed(2)}
+                                    <td className="px-4 py-2.5 text-right text-muted-foreground">
+                                        {order.remaining.toFixed(2)}
                                     </td>
-                                    <td className="px-4 py-3 text-right">
+                                    <td className="px-4 py-2.5 text-right">
+                                        {order.source === 'onchain' ? (
+                                            <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400" title="On-chain order">
+                                                <Link2 className="w-3 h-3" />
+                                                Chain
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400" title="Off-chain P2P order">
+                                                <Globe className="w-3 h-3" />
+                                                P2P
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2.5 text-right">
                                         <button
-                                            onClick={() => handleTake(order, type === 'ask')}
+                                            onClick={() => handleTake(order)}
                                             className={clsx(
                                                 "px-3 py-1 rounded text-xs font-medium transition-all opacity-0 group-hover:opacity-100",
-                                                type === 'ask'
-                                                    ? "bg-green-600 text-white hover:bg-green-700 shadow-sm hover:shadow" // Buying from Ask
-                                                    : "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow"   // Selling to Bid
+                                                order.side === 'sell'
+                                                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm hover:shadow"
+                                                    : "bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow"
                                             )}
                                         >
-                                            {type === 'ask' ? 'Buy' : 'Sell'}
+                                            {order.side === 'sell' ? 'Buy' : 'Sell'}
                                         </button>
                                     </td>
                                 </tr>
