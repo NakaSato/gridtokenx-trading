@@ -26,7 +26,17 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "jest",
+      "mapbox-gl",
+      "react-map-gl",
+      "react-window",
+      "supercluster"
+    ]
   },
   "include": [
     "next-env.d.ts",
