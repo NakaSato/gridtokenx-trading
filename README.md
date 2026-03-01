@@ -35,22 +35,22 @@ The **GridTokenX Trading Platform** is the web frontend for the GridTokenX P2P E
 ### Prerequisites
 
 - **Node.js** 20+ or **Bun**
-- **pnpm** (recommended) or npm
+- **bun run** (recommended) or npm
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun run install
 
 # Set up environment variables
 cp .env.example .env.local
 
 # Build WASM module (required for crypto/pricing features)
-pnpm build:wasm
+bun run build:wasm
 
 # Start development server
-pnpm dev
+bun run dev
 ```
 
 ### Scripts
@@ -247,10 +247,10 @@ gridtokenx-trading/
 
 ```bash
 # Unit tests
-pnpm test
+bun run test
 
 # E2E tests (requires running dev server)
-pnpm test:e2e
+bun run test:e2e
 ```
 
 ### Test Suites
@@ -268,7 +268,7 @@ The project uses a standalone Next.js build with a **Bun** runtime in Docker:
 
 ```bash
 # Build
-pnpm build
+bun run build
 
 # Docker
 docker build -t gridtokenx-trading .
