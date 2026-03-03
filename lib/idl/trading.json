@@ -1,5 +1,5 @@
 {
-  "address": "8S2e2p4ghqMJuzTz5AkAKSka7jqsjgBH7eWDcCHzXPND",
+  "address": "3iFReh5tvdWkLt7eJcvGKsST7wcwZsSHk3z3xCfUwHLw",
   "metadata": {
     "name": "trading",
     "version": "0.1.1",
@@ -8,122 +8,24 @@
   },
   "instructions": [
     {
-      "name": "authorize_oracle",
-      "docs": [
-        "Authorize a new oracle for meter verification"
-      ],
+      "name": "add_order_to_batch",
       "discriminator": [
-        160,
-        242,
         137,
-        241,
-        147,
-        184,
-        241,
-        64
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "oracle",
-          "type": "pubkey"
-        }
-      ]
-    },
-    {
-      "name": "batch_confidential_settlement",
-      "docs": [
-        "Execute batch confidential settlement - process multiple ZK settlements in one transaction"
-      ],
-      "discriminator": [
-        111,
-        95,
-        28,
-        77,
-        157,
-        190,
-        182,
-        191
-      ],
-      "accounts": [
-        {
-          "name": "sender_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "receiver_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "receiver_owner"
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "zk_token_proof_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "settlements",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "BatchSettlementItem"
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "cancel_auction_order",
-      "docs": [
-        "Cancel an order in an Open auction batch and refund assets"
-      ],
-      "discriminator": [
-        34,
-        217,
-        2,
+        245,
+        53,
+        9,
+        115,
         121,
-        49,
-        136,
-        43,
-        76
+        65,
+        27
       ],
       "accounts": [
         {
-          "name": "batch",
+          "name": "market",
           "writable": true
         },
         {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "vault",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
+          "name": "order"
         },
         {
           "name": "authority",
@@ -131,21 +33,41 @@
           "signer": true
         },
         {
-          "name": "token_program"
+          "name": "governance_config"
         }
       ],
-      "args": [
+      "args": []
+    },
+    {
+      "name": "cancel_batch",
+      "discriminator": [
+        234,
+        119,
+        48,
+        250,
+        255,
+        221,
+        77,
+        45
+      ],
+      "accounts": [
         {
-          "name": "order_idx",
-          "type": "u32"
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "governance_config"
         }
-      ]
+      ],
+      "args": []
     },
     {
       "name": "cancel_order",
-      "docs": [
-        "Cancel an active order"
-      ],
       "discriminator": [
         95,
         129,
@@ -158,7 +80,10 @@
       ],
       "accounts": [
         {
-          "name": "market",
+          "name": "market"
+        },
+        {
+          "name": "zone_market",
           "writable": true
         },
         {
@@ -167,132 +92,17 @@
         },
         {
           "name": "authority",
+          "writable": true,
           "signer": true
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": []
     },
     {
-      "name": "complete_bridge_transfer",
-      "docs": [
-        "Complete a bridge transfer from another chain"
-      ],
-      "discriminator": [
-        92,
-        186,
-        3,
-        87,
-        117,
-        124,
-        209,
-        142
-      ],
-      "accounts": [
-        {
-          "name": "market"
-        },
-        {
-          "name": "bridge_config"
-        },
-        {
-          "name": "bridge_transfer",
-          "writable": true
-        },
-        {
-          "name": "wrapped_record",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "bridge_escrow",
-          "writable": true
-        },
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "vaa_hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "configure_payment_token",
-      "docs": [
-        "Configure a payment token (USDC/USDT) for the market"
-      ],
-      "discriminator": [
-        1,
-        135,
-        93,
-        201,
-        62,
-        217,
-        114,
-        27
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "token_config",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "token_type",
-          "type": "u8"
-        },
-        {
-          "name": "min_order_size",
-          "type": "u64"
-        },
-        {
-          "name": "max_price_deviation_bps",
-          "type": "u16"
-        }
-      ]
-    },
-    {
       "name": "create_buy_order",
-      "docs": [
-        "Create a buy order for energy"
-      ],
       "discriminator": [
         182,
         87,
@@ -305,7 +115,10 @@
       ],
       "accounts": [
         {
-          "name": "market",
+          "name": "market"
+        },
+        {
+          "name": "zone_market",
           "writable": true
         },
         {
@@ -319,11 +132,14 @@
         },
         {
           "name": "system_program"
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
         {
-          "name": "order_id",
+          "name": "order_id_val",
           "type": "u64"
         },
         {
@@ -337,176 +153,7 @@
       ]
     },
     {
-      "name": "create_carbon_listing",
-      "docs": [
-        "Create a listing for carbon credits (RECs)"
-      ],
-      "discriminator": [
-        121,
-        174,
-        94,
-        31,
-        156,
-        133,
-        102,
-        35
-      ],
-      "accounts": [
-        {
-          "name": "marketplace",
-          "writable": true
-        },
-        {
-          "name": "listing",
-          "writable": true
-        },
-        {
-          "name": "certificate",
-          "writable": true
-        },
-        {
-          "name": "seller",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "price_per_rec",
-          "type": "u64"
-        },
-        {
-          "name": "expires_at",
-          "type": "i64"
-        }
-      ]
-    },
-    {
-      "name": "create_cross_chain_order",
-      "docs": [
-        "Create a cross-chain order record"
-      ],
-      "discriminator": [
-        194,
-        177,
-        97,
-        108,
-        138,
-        86,
-        192,
-        172
-      ],
-      "accounts": [
-        {
-          "name": "cross_chain_order",
-          "writable": true
-        },
-        {
-          "name": "solana_order"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "origin_chain",
-          "type": "u16"
-        },
-        {
-          "name": "origin_order_id",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "origin_user",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "energy_amount",
-          "type": "u64"
-        },
-        {
-          "name": "price",
-          "type": "u64"
-        },
-        {
-          "name": "payment_token",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "create_price_snapshot",
-      "docs": [
-        "CREATE a price snapshot for history"
-      ],
-      "discriminator": [
-        151,
-        75,
-        60,
-        210,
-        168,
-        113,
-        255,
-        248
-      ],
-      "accounts": [
-        {
-          "name": "pricing_config"
-        },
-        {
-          "name": "snapshot",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "timestamp",
-          "type": "i64"
-        }
-      ]
-    },
-    {
       "name": "create_sell_order",
-      "docs": [
-        "Create a sell order for energy",
-        "Validates that the seller has a valid ERC certificate before allowing the order"
-      ],
       "discriminator": [
         53,
         52,
@@ -519,7 +166,10 @@
       ],
       "accounts": [
         {
-          "name": "market",
+          "name": "market"
+        },
+        {
+          "name": "zone_market",
           "writable": true
         },
         {
@@ -528,9 +178,6 @@
         },
         {
           "name": "erc_certificate",
-          "docs": [
-            "Optional: ERC certificate for prosumers"
-          ],
           "optional": true
         },
         {
@@ -540,11 +187,14 @@
         },
         {
           "name": "system_program"
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
         {
-          "name": "order_id",
+          "name": "order_id_val",
           "type": "u64"
         },
         {
@@ -554,125 +204,11 @@
         {
           "name": "price_per_kwh",
           "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "create_stablecoin_buy_order",
-      "docs": [
-        "Create a buy order with stablecoin payment option"
-      ],
-      "discriminator": [
-        18,
-        128,
-        231,
-        63,
-        85,
-        14,
-        89,
-        175
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "order",
-          "writable": true
-        },
-        {
-          "name": "payment_info",
-          "writable": true
-        },
-        {
-          "name": "token_config"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "energy_amount",
-          "type": "u64"
-        },
-        {
-          "name": "max_price_per_kwh",
-          "type": "u64"
-        },
-        {
-          "name": "payment_token",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "create_stablecoin_sell_order",
-      "docs": [
-        "Create a sell order with stablecoin payment option"
-      ],
-      "discriminator": [
-        234,
-        235,
-        8,
-        34,
-        149,
-        174,
-        66,
-        46
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "order",
-          "writable": true
-        },
-        {
-          "name": "payment_info",
-          "writable": true
-        },
-        {
-          "name": "token_config"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "energy_amount",
-          "type": "u64"
-        },
-        {
-          "name": "price_per_kwh",
-          "type": "u64"
-        },
-        {
-          "name": "payment_token",
-          "type": "u8"
         }
       ]
     },
     {
       "name": "execute_atomic_settlement",
-      "docs": [
-        "Execute a truly atomic settlement between buyer and seller",
-        "This performs both currency and energy transfers in a single instruction"
-      ],
       "discriminator": [
         86,
         216,
@@ -721,6 +257,10 @@
           "writable": true
         },
         {
+          "name": "loss_collector",
+          "writable": true
+        },
+        {
           "name": "energy_mint"
         },
         {
@@ -742,6 +282,9 @@
         },
         {
           "name": "secondary_token_program"
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
@@ -754,20 +297,17 @@
           "type": "u64"
         },
         {
-          "name": "wheeling_charge",
+          "name": "wheeling_charge_val",
+          "type": "u64"
+        },
+        {
+          "name": "loss_cost_val",
           "type": "u64"
         }
       ]
     },
     {
       "name": "execute_batch",
-      "docs": [
-        "Create and execute a batch of orders with physical token transfers",
-        "Optimized: Aggregates multiple matches in a single transaction",
-        "This implementation uses remaining_accounts to pass all required ATAs:",
-        "For each match i, accounts are expected at indices [2 + i*6..2 + i*6 + 5]:",
-        "0: Buyer Currency Escrow, 1: Seller Energy Escrow, 2: Seller Currency, 3: Buyer Energy, 4: Fee Collector, 5: Wheeling Collector"
-      ],
       "discriminator": [
         112,
         159,
@@ -787,687 +327,26 @@
           "name": "authority",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
         {
-          "name": "amount",
+          "name": "match_pairs",
           "type": {
-            "vec": "u64"
-          }
-        },
-        {
-          "name": "price",
-          "type": {
-            "vec": "u64"
-          }
-        },
-        {
-          "name": "wheeling_charge",
-          "type": {
-            "vec": "u64"
-          }
-        }
-      ]
-    },
-    {
-      "name": "execute_confidential_auction_settlement",
-      "docs": [
-        "Execute confidential settlement for an auction trade"
-      ],
-      "discriminator": [
-        50,
-        243,
-        102,
-        210,
-        120,
-        226,
-        10,
-        210
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "buyer_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "seller_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "buyer_owner"
-        },
-        {
-          "name": "seller_owner"
-        },
-        {
-          "name": "seller_energy_vault",
-          "writable": true
-        },
-        {
-          "name": "buyer_energy_account",
-          "writable": true
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "zk_token_proof_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "price",
-          "type": "u64"
-        },
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        },
-        {
-          "name": "proof",
-          "type": {
-            "defined": {
-              "name": "TransferProof"
+            "vec": {
+              "defined": {
+                "name": "MatchPair"
+              }
             }
           }
         }
       ]
-    },
-    {
-      "name": "execute_confidential_settlement",
-      "docs": [
-        "Execute confidential settlement between orders"
-      ],
-      "discriminator": [
-        144,
-        61,
-        101,
-        79,
-        67,
-        206,
-        85,
-        138
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "buy_order",
-          "writable": true
-        },
-        {
-          "name": "sell_order",
-          "writable": true
-        },
-        {
-          "name": "buyer_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "seller_confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "seller_energy_escrow",
-          "writable": true
-        },
-        {
-          "name": "buyer_energy_account",
-          "writable": true
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "escrow_authority",
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "zk_token_proof_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "price",
-          "type": "u64"
-        },
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        },
-        {
-          "name": "proof",
-          "type": {
-            "defined": {
-              "name": "TransferProof"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "execute_settlement",
-      "docs": [
-        "Execute settlement for specific orders in a cleared auction",
-        "This is a permissionless crank instruction.",
-        "It matches a Bid (buyer) and an Ask (seller) at the Uniform Clearing Price."
-      ],
-      "discriminator": [
-        237,
-        120,
-        82,
-        62,
-        224,
-        193,
-        147,
-        137
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "buyer_currency_vault",
-          "writable": true
-        },
-        {
-          "name": "seller_energy_vault",
-          "writable": true
-        },
-        {
-          "name": "seller_currency",
-          "writable": true
-        },
-        {
-          "name": "buyer_energy",
-          "writable": true
-        },
-        {
-          "name": "currency_mint"
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "buyer_authority"
-        },
-        {
-          "name": "seller_authority"
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "bid_order_idx",
-          "type": "u32"
-        },
-        {
-          "name": "ask_order_idx",
-          "type": "u32"
-        },
-        {
-          "name": "settle_amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "execute_stablecoin_settlement",
-      "docs": [
-        "Execute atomic settlement with stablecoin payment"
-      ],
-      "discriminator": [
-        191,
-        33,
-        51,
-        226,
-        68,
-        211,
-        91,
-        31
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "buy_order",
-          "writable": true
-        },
-        {
-          "name": "sell_order",
-          "writable": true
-        },
-        {
-          "name": "buy_payment_info",
-          "writable": true
-        },
-        {
-          "name": "sell_payment_info",
-          "writable": true
-        },
-        {
-          "name": "stablecoin_mint"
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "buyer_stablecoin",
-          "writable": true
-        },
-        {
-          "name": "seller_stablecoin",
-          "writable": true
-        },
-        {
-          "name": "buyer_energy",
-          "writable": true
-        },
-        {
-          "name": "seller_energy",
-          "writable": true
-        },
-        {
-          "name": "fee_collector",
-          "writable": true
-        },
-        {
-          "name": "escrow_authority"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "energy_token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "exchange_rate",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "fill_carbon_listing",
-      "docs": [
-        "Fill a carbon listing (buy RECs)"
-      ],
-      "discriminator": [
-        22,
-        255,
-        62,
-        109,
-        98,
-        255,
-        195,
-        32
-      ],
-      "accounts": [
-        {
-          "name": "marketplace",
-          "writable": true
-        },
-        {
-          "name": "listing",
-          "writable": true
-        },
-        {
-          "name": "certificate",
-          "writable": true
-        },
-        {
-          "name": "buyer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "seller",
-          "writable": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "initialize",
-      "discriminator": [
-        175,
-        175,
-        109,
-        31,
-        13,
-        152,
-        155,
-        237
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initialize_amm_pool",
-      "docs": [
-        "Initialize the Energy AMM pool"
-      ],
-      "discriminator": [
-        20,
-        58,
-        19,
-        89,
-        14,
-        193,
-        139,
-        31
-      ],
-      "accounts": [
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "market"
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "currency_mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "curve_type",
-          "type": {
-            "defined": {
-              "name": "CurveType"
-            }
-          }
-        },
-        {
-          "name": "slope",
-          "type": "u64"
-        },
-        {
-          "name": "base",
-          "type": "u64"
-        },
-        {
-          "name": "fee_bps",
-          "type": "u16"
-        }
-      ]
-    },
-    {
-      "name": "initialize_auction",
-      "docs": [
-        "Initialize a new auction batch"
-      ],
-      "discriminator": [
-        37,
-        10,
-        117,
-        197,
-        208,
-        88,
-        117,
-        62
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "market"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "batch_id",
-          "type": "u64"
-        },
-        {
-          "name": "duration",
-          "type": "i64"
-        }
-      ]
-    },
-    {
-      "name": "initialize_bridge",
-      "docs": [
-        "Initialize the Wormhole bridge configuration"
-      ],
-      "discriminator": [
-        6,
-        173,
-        152,
-        229,
-        35,
-        112,
-        127,
-        151
-      ],
-      "accounts": [
-        {
-          "name": "market",
-          "writable": true
-        },
-        {
-          "name": "bridge_config",
-          "writable": true
-        },
-        {
-          "name": "wormhole_program"
-        },
-        {
-          "name": "token_bridge_program"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "min_bridge_amount",
-          "type": "u64"
-        },
-        {
-          "name": "bridge_fee_bps",
-          "type": "u16"
-        },
-        {
-          "name": "relayer_fee",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "initialize_carbon_marketplace",
-      "docs": [
-        "Initialize the carbon marketplace"
-      ],
-      "discriminator": [
-        28,
-        238,
-        200,
-        43,
-        93,
-        133,
-        242,
-        96
-      ],
-      "accounts": [
-        {
-          "name": "marketplace",
-          "writable": true
-        },
-        {
-          "name": "rec_mint"
-        },
-        {
-          "name": "carbon_mint"
-        },
-        {
-          "name": "treasury"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "minting_fee_bps",
-          "type": "u16"
-        },
-        {
-          "name": "trading_fee_bps",
-          "type": "u16"
-        },
-        {
-          "name": "kwh_to_rec_rate",
-          "type": "u32"
-        },
-        {
-          "name": "carbon_intensity",
-          "type": "u32"
-        }
-      ]
-    },
-    {
-      "name": "initialize_confidential_balance",
-      "docs": [
-        "Initialize a confidential balance account for confidential trading"
-      ],
-      "discriminator": [
-        1,
-        102,
-        22,
-        142,
-        241,
-        31,
-        99,
-        41
-      ],
-      "accounts": [
-        {
-          "name": "confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": []
     },
     {
       "name": "initialize_market",
-      "docs": [
-        "Initialize the trading market"
-      ],
       "discriminator": [
         35,
         35,
@@ -1495,103 +374,47 @@
       "args": []
     },
     {
-      "name": "initialize_meter_config",
-      "docs": [
-        "Initialize meter verification configuration"
-      ],
+      "name": "initialize_program",
       "discriminator": [
-        212,
-        143,
-        244,
-        254,
-        89,
-        91,
-        15,
-        88
-      ],
-      "accounts": [
-        {
-          "name": "config",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "max_delta_per_hour",
-          "type": "u64"
-        },
-        {
-          "name": "min_interval",
-          "type": "u32"
-        }
-      ]
-    },
-    {
-      "name": "initialize_meter_history",
-      "docs": [
-        "Initialize meter history for a specific meter"
-      ],
-      "discriminator": [
-        44,
-        204,
-        191,
-        237,
-        59,
-        178,
+        176,
         107,
-        169
+        205,
+        168,
+        24,
+        157,
+        175,
+        103
       ],
       "accounts": [
-        {
-          "name": "history",
-          "writable": true
-        },
-        {
-          "name": "meter"
-        },
         {
           "name": "authority",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "system_program"
         }
       ],
       "args": []
     },
     {
-      "name": "initialize_pricing_config",
-      "docs": [
-        "Initialize dynamic pricing configuration"
-      ],
+      "name": "initialize_zone_market",
       "discriminator": [
-        86,
-        141,
-        171,
-        141,
-        30,
-        244,
-        39,
-        107
+        185,
+        121,
+        4,
+        197,
+        200,
+        69,
+        32,
+        201
       ],
       "accounts": [
-        {
-          "name": "pricing_config",
-          "writable": true
-        },
         {
           "name": "market"
         },
         {
+          "name": "zone_market",
+          "writable": true
+        },
+        {
           "name": "authority",
           "writable": true,
           "signer": true
@@ -1602,134 +425,13 @@
       ],
       "args": [
         {
-          "name": "base_price",
-          "type": "u64"
-        },
-        {
-          "name": "min_price",
-          "type": "u64"
-        },
-        {
-          "name": "max_price",
-          "type": "u64"
-        },
-        {
-          "name": "timezone_offset",
-          "type": "i16"
-        }
-      ]
-    },
-    {
-      "name": "initiate_bridge_transfer",
-      "docs": [
-        "Initiate a bridge transfer to another chain"
-      ],
-      "discriminator": [
-        91,
-        245,
-        11,
-        223,
-        231,
-        116,
-        200,
-        42
-      ],
-      "accounts": [
-        {
-          "name": "bridge_config"
-        },
-        {
-          "name": "bridge_transfer",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "bridge_escrow",
-          "writable": true
-        },
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "destination_chain",
-          "type": "u16"
-        },
-        {
-          "name": "destination_address",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "timestamp",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "match_cross_chain_order",
-      "docs": [
-        "Match a local order with a cross-chain order"
-      ],
-      "discriminator": [
-        170,
-        147,
-        117,
-        60,
-        205,
-        21,
-        60,
-        90
-      ],
-      "accounts": [
-        {
-          "name": "solana_order",
-          "writable": true
-        },
-        {
-          "name": "cross_chain_order",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
+          "name": "zone_id",
+          "type": "u32"
         }
       ]
     },
     {
       "name": "match_orders",
-      "docs": [
-        "Match a buy order with a sell order"
-      ],
       "discriminator": [
         17,
         1,
@@ -1742,7 +444,10 @@
       ],
       "accounts": [
         {
-          "name": "market",
+          "name": "market"
+        },
+        {
+          "name": "zone_market",
           "writable": true
         },
         {
@@ -1764,6 +469,9 @@
         },
         {
           "name": "system_program"
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
@@ -1774,741 +482,16 @@
       ]
     },
     {
-      "name": "mint_rec_certificate",
-      "docs": [
-        "Mint a new REC certificate based on verified production"
-      ],
+      "name": "settle_offchain_match",
       "discriminator": [
-        60,
-        243,
-        107,
-        203,
-        199,
-        82,
-        49,
-        117
-      ],
-      "accounts": [
-        {
-          "name": "marketplace",
-          "writable": true
-        },
-        {
-          "name": "certificate",
-          "writable": true
-        },
-        {
-          "name": "issuer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "verified_reading",
-          "docs": [
-            "The verified reading that justifies this REC issuance"
-          ]
-        },
-        {
-          "name": "authority",
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "generation_start",
-          "type": "i64"
-        },
-        {
-          "name": "generation_end",
-          "type": "i64"
-        }
-      ]
-    },
-    {
-      "name": "private_transfer",
-      "docs": [
-        "Private Transfer - Send encrypted tokens between confidential accounts"
-      ],
-      "discriminator": [
-        107,
-        20,
-        177,
-        94,
-        33,
-        119,
-        16,
-        110
-      ],
-      "accounts": [
-        {
-          "name": "sender_balance",
-          "writable": true
-        },
-        {
-          "name": "receiver_balance",
-          "writable": true
-        },
-        {
-          "name": "receiver_owner"
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "zk_token_proof_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        },
-        {
-          "name": "proof",
-          "type": {
-            "defined": {
-              "name": "TransferProof"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "prototype_confidential_settlement",
-      "docs": [
-        "Prototype: Execute confidential settlement"
-      ],
-      "discriminator": [
-        148,
-        121,
-        132,
-        162,
-        28,
-        116,
-        52,
-        216
-      ],
-      "accounts": [
-        {
-          "name": "sender",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "receiver",
-          "writable": true
-        },
-        {
-          "name": "sender_token",
-          "writable": true
-        },
-        {
-          "name": "receiver_token",
-          "writable": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "zk_token_proof_program"
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "resolve_auction",
-      "docs": [
-        "Resolve the auction by calculating the uniform clearing price"
-      ],
-      "discriminator": [
-        191,
-        112,
-        64,
-        241,
-        38,
-        232,
-        227,
-        26
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "retire_rec_certificate",
-      "docs": [
-        "Retire a REC certificate for compliance or voluntary offset"
-      ],
-      "discriminator": [
-        238,
-        137,
-        27,
-        27,
-        10,
-        33,
-        224,
-        232
-      ],
-      "accounts": [
-        {
-          "name": "marketplace",
-          "writable": true
-        },
-        {
-          "name": "certificate",
-          "writable": true
-        },
-        {
-          "name": "retirement",
-          "writable": true
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "reason",
-          "type": "u8"
-        },
-        {
-          "name": "beneficiary",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "compliance_period",
-          "type": {
-            "array": [
-              "u8",
-              16
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "reveal_confidential_bid",
-      "docs": [
-        "Reveal a previously submitted confidential bid"
-      ],
-      "discriminator": [
-        246,
-        27,
-        185,
-        23,
-        36,
-        247,
-        33,
-        174
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "price",
-          "type": "u64"
-        },
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "salt",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "shield_energy",
-      "docs": [
-        "Shield energy - convert public tokens to confidential balance"
-      ],
-      "discriminator": [
-        2,
-        240,
-        24,
-        223,
-        148,
-        177,
-        176,
-        206
-      ],
-      "accounts": [
-        {
-          "name": "confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "zk_token_proof_program"
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        },
-        {
-          "name": "proof",
-          "type": {
-            "defined": {
-              "name": "RangeProof"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "submit_auction_order",
-      "docs": [
-        "Submit an order to the current auction"
-      ],
-      "discriminator": [
-        158,
-        126,
-        157,
-        69,
-        54,
-        69,
-        146,
-        19
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "vault",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "price",
-          "type": "u64"
-        },
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "is_bid",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "name": "submit_confidential_bid",
-      "docs": [
-        "Submit a confidential commitment (hash) to an auction"
-      ],
-      "discriminator": [
-        191,
-        214,
-        187,
-        213,
-        229,
-        116,
-        49,
-        21
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "vault",
-          "writable": true
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "hash",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "collateral_amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "submit_encrypted_bid",
-      "docs": [
-        "Submit an encrypted bid to the current auction"
-      ],
-      "discriminator": [
-        79,
-        24,
-        114,
-        130,
-        197,
-        38,
-        79,
-        99
-      ],
-      "accounts": [
-        {
-          "name": "batch",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "encrypted_price",
-          "type": {
-            "array": [
-              "u8",
-              64
-            ]
-          }
-        },
-        {
-          "name": "encrypted_amount",
-          "type": {
-            "array": [
-              "u8",
-              64
-            ]
-          }
-        },
-        {
-          "name": "is_bid",
-          "type": "bool"
-        }
-      ]
-    },
-    {
-      "name": "swap_buy_energy",
-      "docs": [
-        "Swap currency for energy via AMM"
-      ],
-      "discriminator": [
-        72,
-        84,
-        79,
-        31,
-        14,
-        54,
-        64,
-        73
-      ],
-      "accounts": [
-        {
-          "name": "pool",
-          "writable": true
-        },
-        {
-          "name": "user_energy_account",
-          "writable": true
-        },
-        {
-          "name": "user_currency_account",
-          "writable": true
-        },
-        {
-          "name": "pool_energy_vault",
-          "writable": true
-        },
-        {
-          "name": "pool_currency_vault",
-          "writable": true
-        },
-        {
-          "name": "energy_mint"
-        },
-        {
-          "name": "currency_mint"
-        },
-        {
-          "name": "user",
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount_milli_kwh",
-          "type": "u64"
-        },
-        {
-          "name": "max_currency",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "transfer_carbon_credits",
-      "docs": [
-        "Transfer carbon credits (REC tokens) between wallets",
-        "Allows users to transfer their renewable energy credits to other users"
-      ],
-      "discriminator": [
-        113,
-        160,
-        162,
-        2,
-        155,
-        207,
-        160,
-        221
-      ],
-      "accounts": [
-        {
-          "name": "sender",
-          "docs": [
-            "Sender of carbon credits"
-          ],
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "receiver"
-        },
-        {
-          "name": "sender_rec_account",
-          "docs": [
-            "Sender's REC token account"
-          ],
-          "writable": true
-        },
-        {
-          "name": "receiver_rec_account",
-          "docs": [
-            "Receiver's REC token account"
-          ],
-          "writable": true
-        },
-        {
-          "name": "rec_mint",
-          "docs": [
-            "REC mint (Renewable Energy Certificate token)"
-          ]
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "unshield_energy",
-      "docs": [
-        "Unshield energy - convert confidential balance to public tokens"
-      ],
-      "discriminator": [
-        211,
-        99,
-        73,
-        96,
-        249,
-        157,
-        125,
-        46
-      ],
-      "accounts": [
-        {
-          "name": "confidential_balance",
-          "writable": true
-        },
-        {
-          "name": "mint",
-          "writable": true
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "mint_authority"
-        },
-        {
-          "name": "owner",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
-          "name": "new_encrypted_amount",
-          "type": {
-            "defined": {
-              "name": "WrappedElGamalCiphertext"
-            }
-          }
-        },
-        {
-          "name": "proof",
-          "type": {
-            "defined": {
-              "name": "TransferProof"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "update_batch_config",
-      "docs": [
-        "Update the batch processing configuration for the market"
-      ],
-      "discriminator": [
-        191,
-        189,
-        236,
-        146,
-        4,
-        221,
-        31,
-        192
+        140,
+        170,
+        63,
+        151,
+        81,
+        62,
+        212,
+        11
       ],
       "accounts": [
         {
@@ -2516,66 +499,269 @@
           "writable": true
         },
         {
-          "name": "authority",
+          "name": "zone_market",
+          "writable": true
+        },
+        {
+          "name": "buyer_nullifier",
+          "writable": true
+        },
+        {
+          "name": "seller_nullifier",
+          "writable": true
+        },
+        {
+          "name": "buyer_currency_account",
+          "writable": true
+        },
+        {
+          "name": "seller_currency_account",
+          "writable": true
+        },
+        {
+          "name": "seller_energy_account",
+          "writable": true
+        },
+        {
+          "name": "buyer_energy_account",
+          "writable": true
+        },
+        {
+          "name": "fee_collector",
+          "writable": true
+        },
+        {
+          "name": "wheeling_collector",
+          "writable": true
+        },
+        {
+          "name": "loss_collector",
+          "writable": true
+        },
+        {
+          "name": "currency_mint"
+        },
+        {
+          "name": "energy_mint"
+        },
+        {
+          "name": "market_authority"
+        },
+        {
+          "name": "payer",
+          "writable": true,
           "signer": true
+        },
+        {
+          "name": "sysvar_instructions"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "secondary_token_program"
+        },
+        {
+          "name": "system_program"
         }
       ],
       "args": [
         {
-          "name": "config",
+          "name": "buyer_payload",
           "type": {
             "defined": {
-              "name": "BatchConfig"
+              "name": "OffchainOrderPayload"
             }
+          }
+        },
+        {
+          "name": "seller_payload",
+          "type": {
+            "defined": {
+              "name": "OffchainOrderPayload"
+            }
+          }
+        },
+        {
+          "name": "match_amount",
+          "type": "u64"
+        },
+        {
+          "name": "match_price",
+          "type": "u64"
+        },
+        {
+          "name": "wheeling_charge_val",
+          "type": "u64"
+        },
+        {
+          "name": "loss_cost_val",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "submit_limit_order",
+      "docs": [
+        "CDA (Continuous Double Auction) Limit Order",
+        "Submits a limit order and attempts immediate matching against the order book"
+      ],
+      "discriminator": [
+        88,
+        229,
+        102,
+        53,
+        138,
+        92,
+        41,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "order",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "governance_config"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id_val",
+          "type": "u64"
+        },
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "submit_market_order",
+      "docs": [
+        "CDA Market Order - Execute immediately at best available price"
+      ],
+      "discriminator": [
+        55,
+        227,
+        97,
+        34,
+        86,
+        37,
+        73,
+        12
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "zone_market"
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "governance_config"
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_depth",
+      "docs": [
+        "Update market depth tracking",
+        "This instruction updates the buy/sell side depth arrays based on current orders"
+      ],
+      "discriminator": [
+        181,
+        172,
+        219,
+        119,
+        18,
+        167,
+        28,
+        168
+      ],
+      "accounts": [
+        {
+          "name": "market",
+          "writable": true
+        },
+        {
+          "name": "zone_market",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "governance_config"
+        }
+      ],
+      "args": [
+        {
+          "name": "buy_prices",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "buy_amounts",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "sell_prices",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "sell_amounts",
+          "type": {
+            "vec": "u64"
           }
         }
       ]
     },
     {
-      "name": "update_market_data",
-      "docs": [
-        "Update market data for dynamic pricing"
-      ],
-      "discriminator": [
-        38,
-        27,
-        206,
-        55,
-        6,
-        151,
-        187,
-        10
-      ],
-      "accounts": [
-        {
-          "name": "pricing_config",
-          "writable": true
-        },
-        {
-          "name": "authority",
-          "signer": true
-        }
-      ],
-      "args": [
-        {
-          "name": "supply",
-          "type": "u64"
-        },
-        {
-          "name": "demand",
-          "type": "u64"
-        },
-        {
-          "name": "congestion_factor",
-          "type": "u16"
-        }
-      ]
-    },
-    {
       "name": "update_market_params",
-      "docs": [
-        "Update market parameters (admin only)"
-      ],
       "discriminator": [
         70,
         117,
@@ -2594,45 +780,49 @@
         {
           "name": "authority",
           "signer": true
+        },
+        {
+          "name": "governance_config"
         }
       ],
       "args": [
         {
-          "name": "market_fee_bps",
+          "name": "fee_bps",
           "type": "u16"
         },
         {
-          "name": "clearing_enabled",
+          "name": "clearing",
           "type": "bool"
+        },
+        {
+          "name": "min_price",
+          "type": "u64"
+        },
+        {
+          "name": "max_price",
+          "type": "u64"
         }
       ]
     },
     {
-      "name": "verify_meter_reading",
+      "name": "update_price_history",
       "docs": [
-        "Verify a meter reading with signature and ZK checks"
+        "Update price history with new trade data",
+        "Maintains rolling 24-hour price history and calculates VWAP"
       ],
       "discriminator": [
-        241,
-        21,
-        121,
-        191,
-        164,
-        130,
-        56,
-        206
+        23,
+        154,
+        255,
+        160,
+        30,
+        165,
+        151,
+        70
       ],
       "accounts": [
         {
-          "name": "config",
-          "writable": true
-        },
-        {
-          "name": "history",
-          "writable": true
-        },
-        {
-          "name": "verified_reading",
+          "name": "market",
           "writable": true
         },
         {
@@ -2641,141 +831,22 @@
           "signer": true
         },
         {
-          "name": "token_mint",
-          "writable": true
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
+          "name": "governance_config"
         }
       ],
       "args": [
         {
-          "name": "reading_proof",
-          "type": {
-            "defined": {
-              "name": "MeterReadingProof"
-            }
-          }
+          "name": "trade_price",
+          "type": "u64"
         },
         {
-          "name": "timestamp",
-          "type": "i64"
+          "name": "trade_volume",
+          "type": "u64"
         }
       ]
     }
   ],
   "accounts": [
-    {
-      "name": "AmmPool",
-      "discriminator": [
-        54,
-        82,
-        185,
-        138,
-        179,
-        191,
-        211,
-        169
-      ]
-    },
-    {
-      "name": "AuctionBatch",
-      "discriminator": [
-        148,
-        71,
-        225,
-        194,
-        22,
-        87,
-        51,
-        235
-      ]
-    },
-    {
-      "name": "BridgeConfig",
-      "discriminator": [
-        40,
-        206,
-        51,
-        233,
-        246,
-        40,
-        178,
-        85
-      ]
-    },
-    {
-      "name": "BridgeTransfer",
-      "discriminator": [
-        29,
-        199,
-        232,
-        66,
-        207,
-        59,
-        19,
-        226
-      ]
-    },
-    {
-      "name": "CarbonListing",
-      "discriminator": [
-        147,
-        78,
-        153,
-        28,
-        233,
-        167,
-        209,
-        56
-      ]
-    },
-    {
-      "name": "CarbonMarketplace",
-      "discriminator": [
-        149,
-        248,
-        110,
-        96,
-        51,
-        79,
-        101,
-        12
-      ]
-    },
-    {
-      "name": "ConfidentialBalance",
-      "discriminator": [
-        42,
-        231,
-        174,
-        201,
-        132,
-        195,
-        163,
-        181
-      ]
-    },
-    {
-      "name": "CrossChainOrder",
-      "discriminator": [
-        18,
-        190,
-        104,
-        180,
-        20,
-        65,
-        45,
-        17
-      ]
-    },
     {
       "name": "ErcCertificate",
       "discriminator": [
@@ -2803,32 +874,6 @@
       ]
     },
     {
-      "name": "MeterHistory",
-      "discriminator": [
-        41,
-        76,
-        61,
-        116,
-        44,
-        249,
-        114,
-        215
-      ]
-    },
-    {
-      "name": "MeterVerificationConfig",
-      "discriminator": [
-        50,
-        149,
-        49,
-        234,
-        23,
-        119,
-        102,
-        135
-      ]
-    },
-    {
       "name": "Order",
       "discriminator": [
         134,
@@ -2842,81 +887,29 @@
       ]
     },
     {
-      "name": "OrderPaymentInfo",
+      "name": "OrderNullifier",
       "discriminator": [
-        33,
-        167,
-        9,
-        112,
-        239,
-        242,
+        68,
+        220,
+        230,
         170,
-        210
+        239,
+        47,
+        76,
+        166
       ]
     },
     {
-      "name": "PriceSnapshot",
+      "name": "PoAConfig",
       "discriminator": [
-        152,
-        36,
-        67,
-        109,
-        153,
-        115,
         119,
-        27
-      ]
-    },
-    {
-      "name": "PricingConfig",
-      "discriminator": [
-        126,
-        131,
-        53,
-        131,
-        89,
-        154,
-        123,
-        85
-      ]
-    },
-    {
-      "name": "RecCertificate",
-      "discriminator": [
-        146,
-        16,
-        188,
-        193,
-        182,
-        241,
-        39,
-        232
-      ]
-    },
-    {
-      "name": "RetirementRecord",
-      "discriminator": [
-        92,
-        94,
-        20,
-        172,
-        23,
-        190,
-        157,
-        123
-      ]
-    },
-    {
-      "name": "TokenConfig",
-      "discriminator": [
-        92,
-        73,
-        255,
+        6,
+        28,
+        138,
+        199,
         43,
-        107,
-        51,
-        117,
-        101
+        5,
+        184
       ]
     },
     {
@@ -2933,83 +926,31 @@
       ]
     },
     {
-      "name": "VerifiedReading",
+      "name": "ZoneMarket",
       "discriminator": [
-        187,
-        139,
-        48,
-        203,
-        192,
-        141,
-        47,
-        206
-      ]
-    },
-    {
-      "name": "WrappedTokenRecord",
-      "discriminator": [
-        35,
-        124,
-        224,
-        175,
-        46,
+        83,
+        27,
         231,
-        135,
-        237
+        64,
+        5,
+        239,
+        21,
+        196
       ]
     }
   ],
   "events": [
     {
-      "name": "AuctionOrderSubmitted",
+      "name": "BatchCancelled",
       "discriminator": [
-        7,
-        219,
-        53,
-        215,
-        119,
-        4,
-        253,
-        66
-      ]
-    },
-    {
-      "name": "AuctionResolved",
-      "discriminator": [
-        135,
-        86,
-        129,
-        72,
-        80,
-        120,
-        12,
-        248
-      ]
-    },
-    {
-      "name": "AuctionSettled",
-      "discriminator": [
-        61,
-        151,
-        131,
-        170,
-        95,
-        203,
-        219,
-        147
-      ]
-    },
-    {
-      "name": "BatchConfidentialSettlementEvent",
-      "discriminator": [
-        158,
-        203,
-        37,
-        139,
-        104,
-        9,
-        45,
-        5
+        59,
+        115,
+        236,
+        211,
+        209,
+        249,
+        121,
+        225
       ]
     },
     {
@@ -3026,45 +967,6 @@
       ]
     },
     {
-      "name": "BridgeCompleted",
-      "discriminator": [
-        193,
-        3,
-        159,
-        15,
-        77,
-        120,
-        7,
-        163
-      ]
-    },
-    {
-      "name": "BridgeConfigUpdated",
-      "discriminator": [
-        227,
-        123,
-        98,
-        3,
-        252,
-        3,
-        58,
-        203
-      ]
-    },
-    {
-      "name": "BridgeInitiated",
-      "discriminator": [
-        248,
-        64,
-        170,
-        255,
-        141,
-        147,
-        160,
-        240
-      ]
-    },
-    {
       "name": "BuyOrderCreated",
       "discriminator": [
         110,
@@ -3078,55 +980,42 @@
       ]
     },
     {
-      "name": "CarbonCreditTransferred",
+      "name": "DepthUpdated",
       "discriminator": [
-        107,
-        255,
-        220,
-        29,
-        6,
-        24,
-        180,
-        184
+        244,
+        243,
+        211,
+        98,
+        67,
+        41,
+        9,
+        99
       ]
     },
     {
-      "name": "ConfidentialSettlementEvent",
+      "name": "LimitOrderSubmitted",
       "discriminator": [
-        168,
-        28,
-        72,
-        58,
-        8,
-        135,
-        92,
-        155
-      ]
-    },
-    {
-      "name": "ListingCreated",
-      "discriminator": [
+        120,
         94,
-        164,
-        167,
-        255,
-        246,
-        186,
-        12,
-        96
+        26,
+        49,
+        158,
+        86,
+        6,
+        202
       ]
     },
     {
-      "name": "ListingFilled",
+      "name": "MaintenanceModeChanged",
       "discriminator": [
-        242,
-        77,
-        204,
-        29,
-        185,
-        210,
-        14,
-        37
+        84,
+        212,
+        246,
+        43,
+        24,
+        32,
+        175,
+        196
       ]
     },
     {
@@ -3143,6 +1032,19 @@
       ]
     },
     {
+      "name": "MarketOrderSubmitted",
+      "discriminator": [
+        202,
+        42,
+        198,
+        182,
+        164,
+        185,
+        6,
+        55
+      ]
+    },
+    {
       "name": "MarketParamsUpdated",
       "discriminator": [
         88,
@@ -3156,16 +1058,16 @@
       ]
     },
     {
-      "name": "OracleAuthorized",
+      "name": "OrderAddedToBatch",
       "discriminator": [
-        88,
-        11,
-        73,
-        240,
-        31,
-        77,
-        112,
-        61
+        78,
+        228,
+        60,
+        115,
+        137,
+        134,
+        124,
+        18
       ]
     },
     {
@@ -3195,107 +1097,16 @@
       ]
     },
     {
-      "name": "PeakEventDeclared",
+      "name": "PriceHistoryUpdated",
       "discriminator": [
-        25,
-        138,
-        225,
-        67,
-        32,
-        234,
-        38,
-        108
-      ]
-    },
-    {
-      "name": "PriceUpdated",
-      "discriminator": [
-        154,
-        72,
-        87,
-        150,
-        246,
-        230,
-        23,
-        217
-      ]
-    },
-    {
-      "name": "PricingConfigured",
-      "discriminator": [
-        103,
-        97,
-        54,
-        176,
-        139,
-        44,
-        79,
-        43
-      ]
-    },
-    {
-      "name": "PrivateTransferEvent",
-      "discriminator": [
-        157,
-        106,
-        106,
-        6,
-        146,
-        15,
-        183,
-        251
-      ]
-    },
-    {
-      "name": "ReadingVerified",
-      "discriminator": [
-        166,
-        195,
-        235,
-        255,
-        88,
-        120,
-        7,
-        156
-      ]
-    },
-    {
-      "name": "RecMinted",
-      "discriminator": [
-        219,
+        143,
+        95,
+        218,
+        141,
+        1,
+        158,
         222,
-        19,
-        11,
-        213,
-        112,
-        145,
-        66
-      ]
-    },
-    {
-      "name": "RecRetired",
-      "discriminator": [
-        91,
-        119,
-        77,
-        243,
-        119,
-        237,
-        33,
-        251
-      ]
-    },
-    {
-      "name": "RecTransferred",
-      "discriminator": [
-        87,
-        52,
-        65,
-        183,
-        249,
-        110,
-        93,
-        83
+        142
       ]
     },
     {
@@ -3310,429 +1121,138 @@
         239,
         240
       ]
-    },
-    {
-      "name": "ShieldEvent",
-      "discriminator": [
-        63,
-        189,
-        150,
-        76,
-        39,
-        180,
-        65,
-        230
-      ]
-    },
-    {
-      "name": "StablecoinOrderCreated",
-      "discriminator": [
-        77,
-        246,
-        76,
-        50,
-        50,
-        40,
-        59,
-        221
-      ]
-    },
-    {
-      "name": "StablecoinSettlement",
-      "discriminator": [
-        235,
-        109,
-        116,
-        255,
-        194,
-        108,
-        17,
-        151
-      ]
-    },
-    {
-      "name": "TokenConfigured",
-      "discriminator": [
-        153,
-        220,
-        126,
-        193,
-        90,
-        98,
-        145,
-        116
-      ]
-    },
-    {
-      "name": "TokenSwapExecuted",
-      "discriminator": [
-        198,
-        12,
-        212,
-        54,
-        61,
-        8,
-        176,
-        104
-      ]
-    },
-    {
-      "name": "TokensReceived",
-      "discriminator": [
-        179,
-        2,
-        19,
-        254,
-        12,
-        223,
-        159,
-        135
-      ]
-    },
-    {
-      "name": "UnshieldEvent",
-      "discriminator": [
-        241,
-        158,
-        74,
-        33,
-        108,
-        246,
-        131,
-        79
-      ]
     }
   ],
   "errors": [
     {
       "code": 6000,
-      "name": "ValueOutOfRange",
-      "msg": "Value is out of representable range"
+      "name": "UnauthorizedAuthority",
+      "msg": "Unauthorized authority"
     },
     {
       "code": 6001,
-      "name": "InvalidCommitment",
-      "msg": "Invalid commitment"
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
     },
     {
       "code": 6002,
-      "name": "InvalidPubkey",
-      "msg": "Invalid public key"
+      "name": "InvalidPrice",
+      "msg": "Invalid price"
     },
     {
       "code": 6003,
-      "name": "ProofGenerationFailed",
-      "msg": "Proof generation failed"
+      "name": "InactiveSellOrder",
+      "msg": "Inactive sell order"
     },
     {
       "code": 6004,
-      "name": "InvalidProofFormat",
-      "msg": "Invalid proof format"
+      "name": "InactiveBuyOrder",
+      "msg": "Inactive buy order"
     },
     {
       "code": 6005,
-      "name": "ProofVerificationFailed",
-      "msg": "Proof verification failed"
+      "name": "PriceMismatch",
+      "msg": "Price mismatch"
     },
     {
       "code": 6006,
-      "name": "EmptyCiphertext",
-      "msg": "Empty ciphertext not allowed"
+      "name": "OrderNotCancellable",
+      "msg": "Order not cancellable"
     },
     {
       "code": 6007,
-      "name": "InvalidCiphertext",
-      "msg": "Invalid ciphertext"
+      "name": "InsufficientEscrowBalance",
+      "msg": "Insufficient escrow balance"
     },
     {
       "code": 6008,
-      "name": "RangeProofVerificationFailed",
-      "msg": "Range proof verification failed: value may exceed valid range"
+      "name": "InvalidErcCertificate",
+      "msg": "Invalid ERC certificate status"
     },
     {
       "code": 6009,
-      "name": "TransferProofVerificationFailed",
-      "msg": "Transfer proof verification failed: balance conservation not satisfied"
+      "name": "ErcExpired",
+      "msg": "ERC certificate has expired"
     },
     {
       "code": 6010,
-      "name": "CiphertextMismatch",
-      "msg": "Ciphertext mismatch: encrypted balances don't match expected values"
+      "name": "NotValidatedForTrading",
+      "msg": "ERC certificate not validated for trading"
     },
     {
       "code": 6011,
-      "name": "InsufficientEncryptedBalance",
-      "msg": "Insufficient encrypted balance for operation"
+      "name": "ExceedsErcAmount",
+      "msg": "Order amount exceeds available ERC certificate amount"
+    },
+    {
+      "code": 6012,
+      "name": "BatchProcessingDisabled",
+      "msg": "Batch processing is disabled"
+    },
+    {
+      "code": 6013,
+      "name": "BatchSizeExceeded",
+      "msg": "Batch size exceeded"
+    },
+    {
+      "code": 6014,
+      "name": "ReentrancyLock",
+      "msg": "Re-entrancy Guard Lock"
+    },
+    {
+      "code": 6015,
+      "name": "EmptyBatch",
+      "msg": "Batch is empty"
+    },
+    {
+      "code": 6016,
+      "name": "BatchTooLarge",
+      "msg": "Batch size exceeds maximum allowed (5)"
+    },
+    {
+      "code": 6017,
+      "name": "MaintenanceMode",
+      "msg": "System is in maintenance mode"
+    },
+    {
+      "code": 6018,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6019,
+      "name": "PriceBelowMinimum",
+      "msg": "Price below market minimum"
+    },
+    {
+      "code": 6020,
+      "name": "PriceAboveMaximum",
+      "msg": "Price above market maximum"
+    },
+    {
+      "code": 6021,
+      "name": "InsufficientLiquidity",
+      "msg": "Insufficient liquidity for market order"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidOrderSide",
+      "msg": "Invalid order side"
+    },
+    {
+      "code": 6023,
+      "name": "OrderExpired",
+      "msg": "Order has expired"
+    },
+    {
+      "code": 6024,
+      "name": "SlippageExceeded",
+      "msg": "Slippage exceeded: Price outside allowed bounds"
     }
   ],
   "types": [
     {
-      "name": "AmmPool",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "type": "pubkey"
-          },
-          {
-            "name": "energy_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "currency_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "energy_reserve",
-            "type": "u64"
-          },
-          {
-            "name": "currency_reserve",
-            "type": "u64"
-          },
-          {
-            "name": "curve_type",
-            "type": {
-              "defined": {
-                "name": "CurveType"
-              }
-            }
-          },
-          {
-            "name": "bonding_slope",
-            "type": "u64"
-          },
-          {
-            "name": "bonding_base",
-            "type": "u64"
-          },
-          {
-            "name": "fee_bps",
-            "type": "u16"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionBatch",
-      "docs": [
-        "Represents a batch of orders for a specific time window",
-        "Optimized for Zero-Copy access"
-      ],
-      "serialization": "bytemuck",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "docs": [
-              "Market this batch belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "batch_id",
-            "docs": [
-              "Batch ID (usually start timestamp)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "clearing_price",
-            "docs": [
-              "Clearing Price (MCP) - set when Cleared"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "clearing_volume",
-            "docs": [
-              "Total volume to be traded at clearing price"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "start_time",
-            "type": "i64"
-          },
-          {
-            "name": "end_time",
-            "type": "i64"
-          },
-          {
-            "name": "state",
-            "docs": [
-              "Current state"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "locked",
-            "type": "u8"
-          },
-          {
-            "name": "_padding",
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
-          },
-          {
-            "name": "order_count",
-            "type": "u32"
-          },
-          {
-            "name": "commitment_count",
-            "type": "u32"
-          },
-          {
-            "name": "confidential_order_count",
-            "type": "u32"
-          },
-          {
-            "name": "orders",
-            "docs": [
-              "Storing fixed number of orders (20 max)"
-            ],
-            "type": {
-              "array": [
-                {
-                  "defined": {
-                    "name": "AuctionOrder"
-                  }
-                },
-                20
-              ]
-            }
-          },
-          {
-            "name": "commitments",
-            "docs": [
-              "Storing fixed number of commitments (20 max)"
-            ],
-            "type": {
-              "array": [
-                {
-                  "defined": {
-                    "name": "AuctionCommitment"
-                  }
-                },
-                20
-              ]
-            }
-          },
-          {
-            "name": "confidential_orders",
-            "docs": [
-              "Storing fixed number of confidential orders (20 max)"
-            ],
-            "type": {
-              "array": [
-                {
-                  "defined": {
-                    "name": "ConfidentialAuctionOrder"
-                  }
-                },
-                20
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionCommitment",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "order_id",
-            "type": "pubkey"
-          },
-          {
-            "name": "hash",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "collateral_locked",
-            "type": "u64"
-          },
-          {
-            "name": "_padding",
-            "type": {
-              "array": [
-                "u8",
-                8
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionOrder",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "order_id",
-            "type": "pubkey"
-          },
-          {
-            "name": "price",
-            "type": "u64"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "is_bid",
-            "type": "u8"
-          },
-          {
-            "name": "_padding",
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionOrderSubmitted",
+      "name": "BatchCancelled",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3741,87 +1261,8 @@
             "type": "u64"
           },
           {
-            "name": "order_id",
+            "name": "authority",
             "type": "pubkey"
-          },
-          {
-            "name": "price",
-            "type": "u64"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "is_bid",
-            "type": "bool"
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionResolved",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "batch_id",
-            "type": "u64"
-          },
-          {
-            "name": "clearing_price",
-            "type": "u64"
-          },
-          {
-            "name": "clearing_volume",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "AuctionSettled",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "batch_id",
-            "type": "u64"
-          },
-          {
-            "name": "buyer",
-            "type": "pubkey"
-          },
-          {
-            "name": "seller",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "price",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BatchConfidentialSettlementEvent",
-      "docs": [
-        "Event emitted for batch confidential settlements"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "num_settlements",
-            "type": "u8"
-          },
-          {
-            "name": "total_energy",
-            "type": "u64"
           },
           {
             "name": "timestamp",
@@ -3912,6 +1353,9 @@
     },
     {
       "name": "BatchInfo",
+      "docs": [
+        "Batch information for grouped order execution"
+      ],
       "repr": {
         "kind": "c"
       },
@@ -3960,381 +1404,6 @@
       }
     },
     {
-      "name": "BatchSettlementItem",
-      "docs": [
-        "A single settlement item in a batch"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "encrypted_amount",
-            "type": {
-              "defined": {
-                "name": "WrappedElGamalCiphertext"
-              }
-            }
-          },
-          {
-            "name": "proof",
-            "type": {
-              "defined": {
-                "name": "TransferProof"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "BridgeCompleted",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "transfer",
-            "type": "pubkey"
-          },
-          {
-            "name": "destination_chain",
-            "type": "u16"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "vaa_hash",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BridgeConfig",
-      "docs": [
-        "Bridge configuration for the trading market"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "market",
-            "docs": [
-              "Market this config belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "wormhole_program",
-            "docs": [
-              "Wormhole core bridge program"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "token_bridge_program",
-            "docs": [
-              "Wormhole token bridge program"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "authority",
-            "docs": [
-              "Bridge authority (for managing config)"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "enabled",
-            "docs": [
-              "Whether bridging is enabled"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "min_bridge_amount",
-            "docs": [
-              "Minimum bridge amount (to cover fees)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "bridge_fee_bps",
-            "docs": [
-              "Bridge fee in basis points"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "relayer_fee",
-            "docs": [
-              "Relayer fee for destination chain"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "supported_chains",
-            "docs": [
-              "Supported destination chains (bitmap)"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "total_bridged_out",
-            "docs": [
-              "Total bridged out"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "total_bridged_in",
-            "docs": [
-              "Total bridged in"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "bridge_count",
-            "docs": [
-              "Bridge transaction count"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved for future use"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "BridgeConfigUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "name": "min_bridge_amount",
-            "type": "u64"
-          },
-          {
-            "name": "bridge_fee_bps",
-            "type": "u16"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BridgeInitiated",
-      "docs": [
-        "Events for bridge operations"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "source_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "destination_chain",
-            "type": "u16"
-          },
-          {
-            "name": "destination_address",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "fee",
-            "type": "u64"
-          },
-          {
-            "name": "sequence",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BridgeTransfer",
-      "docs": [
-        "Pending bridge transfer record"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "user",
-            "docs": [
-              "User who initiated the transfer"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "source_mint",
-            "docs": [
-              "Source token mint"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "destination_chain",
-            "docs": [
-              "Destination chain"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "destination_address",
-            "docs": [
-              "Destination address (32 bytes, zero-padded for non-Solana chains)"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "amount",
-            "docs": [
-              "Amount being transferred"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "fee",
-            "docs": [
-              "Bridge fee charged"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "status",
-            "docs": [
-              "Transfer status"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "sequence",
-            "docs": [
-              "Wormhole sequence number (for tracking)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "vaa_hash",
-            "docs": [
-              "VAA hash (when confirmed)"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "initiated_at",
-            "docs": [
-              "Initiated timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "completed_at",
-            "docs": [
-              "Completed timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "BuyOrderCreated",
       "type": {
         "kind": "struct",
@@ -4363,554 +1432,29 @@
       }
     },
     {
-      "name": "CarbonCreditTransferred",
+      "name": "DepthUpdated",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "sender",
-            "type": "pubkey"
+            "name": "buy_levels",
+            "type": "u8"
           },
           {
-            "name": "receiver",
-            "type": "pubkey"
+            "name": "sell_levels",
+            "type": "u8"
           },
           {
-            "name": "amount",
+            "name": "best_bid",
+            "type": "u64"
+          },
+          {
+            "name": "best_ask",
             "type": "u64"
           },
           {
             "name": "timestamp",
             "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "CarbonListing",
-      "docs": [
-        "Carbon offset listing for trading"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "listing_id",
-            "docs": [
-              "Listing ID"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "seller",
-            "docs": [
-              "Seller"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "certificate",
-            "docs": [
-              "REC certificate being sold"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "docs": [
-              "Amount of RECs for sale"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "price_per_rec",
-            "docs": [
-              "Price per REC token (in payment token)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "payment_mint",
-            "docs": [
-              "Payment token mint"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "min_purchase",
-            "docs": [
-              "Minimum purchase amount"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "expires_at",
-            "docs": [
-              "Expiry timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "created_at",
-            "docs": [
-              "Created timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "is_active",
-            "docs": [
-              "Is listing active"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "total_sold",
-            "docs": [
-              "Total sold from this listing"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "CarbonMarketplace",
-      "docs": [
-        "Carbon marketplace configuration"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "authority",
-            "docs": [
-              "Marketplace authority"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "rec_mint",
-            "docs": [
-              "REC token mint"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "carbon_mint",
-            "docs": [
-              "Carbon token mint (tradeable)"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "treasury",
-            "docs": [
-              "Treasury for collected fees"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "minting_fee_bps",
-            "docs": [
-              "Minting fee (basis points)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "trading_fee_bps",
-            "docs": [
-              "Trading fee (basis points)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "retirement_fee_bps",
-            "docs": [
-              "Retirement fee (basis points)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "total_minted",
-            "docs": [
-              "Total RECs minted"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "total_retired",
-            "docs": [
-              "Total RECs retired"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "total_carbon_offset",
-            "docs": [
-              "Total carbon offset (kg CO2e)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "active_listings",
-            "docs": [
-              "Active listings count"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "is_active",
-            "docs": [
-              "Whether marketplace is active"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "kwh_to_rec_rate",
-            "docs": [
-              "Conversion rate: kWh to REC tokens (scaled by 1000)",
-              "e.g., 1000 = 1 REC per kWh, 100 = 0.1 REC per kWh"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "carbon_intensity",
-            "docs": [
-              "Carbon intensity factor (g CO2e avoided per kWh)"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved",
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ConfidentialAuctionOrder",
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "order_id",
-            "type": "pubkey"
-          },
-          {
-            "name": "encrypted_price",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          },
-          {
-            "name": "encrypted_amount",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "is_bid",
-            "type": "u8"
-          },
-          {
-            "name": "_padding",
-            "type": {
-              "array": [
-                "u8",
-                7
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ConfidentialBalance",
-      "docs": [
-        "Confidential balance with ZK proofs support"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "docs": [
-              "Owner of this balance"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "docs": [
-              "Token mint"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "encrypted_balance",
-            "docs": [
-              "Encrypted balance (ElGamal)"
-            ],
-            "type": {
-              "defined": {
-                "name": "WrappedElGamalCiphertext"
-              }
-            }
-          },
-          {
-            "name": "balance_commitment",
-            "docs": [
-              "Commitment to current balance (for verification)"
-            ],
-            "type": {
-              "defined": {
-                "name": "WrappedPedersenCommitment"
-              }
-            }
-          },
-          {
-            "name": "pending_credits",
-            "docs": [
-              "Pending incoming transfers"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "pending_debits",
-            "docs": [
-              "Pending outgoing transfers (locked)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "last_update_slot",
-            "docs": [
-              "Last update slot"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "docs": [
-              "Account bump seed"
-            ],
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ConfidentialSettlementEvent",
-      "docs": [
-        "Event emitted for confidential settlements"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "buyer",
-            "type": "pubkey"
-          },
-          {
-            "name": "seller",
-            "type": "pubkey"
-          },
-          {
-            "name": "energy_amount",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "docs": [
-              "Payment amount is NOT logged to preserve privacy"
-            ],
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "CrossChainOrder",
-      "docs": [
-        "Cross-chain order structure for multi-chain trading"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "solana_order",
-            "docs": [
-              "Order on Solana"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "origin_chain",
-            "docs": [
-              "Origin chain"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "origin_order_id",
-            "docs": [
-              "Origin order ID (chain-specific format)"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "origin_user",
-            "docs": [
-              "User on origin chain"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "energy_amount",
-            "docs": [
-              "Energy amount"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "price",
-            "docs": [
-              "Price in origin chain token"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "payment_token",
-            "docs": [
-              "Origin chain payment token"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "status",
-            "docs": [
-              "Order status"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "settlement_vaa",
-            "docs": [
-              "Settlement VAA hash"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "created_at",
-            "docs": [
-              "Created timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "settled_at",
-            "docs": [
-              "Settled timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "CurveType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "LinearSolar"
-          },
-          {
-            "name": "SteepWind"
-          },
-          {
-            "name": "FlatBattery"
           }
         ]
       }
@@ -4923,9 +1467,18 @@
           {
             "name": "certificate_id",
             "docs": [
-              "Unique certificate identifier"
+              "Unique certificate identifier - FIXED: 64 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "id_len",
+            "type": "u8"
           },
           {
             "name": "authority",
@@ -4951,16 +1504,34 @@
           {
             "name": "renewable_source",
             "docs": [
-              "Source of renewable energy (solar, wind, etc.)"
+              "Source of renewable energy (solar, wind, etc.) - FIXED: 64 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "source_len",
+            "type": "u8"
           },
           {
             "name": "validation_data",
             "docs": [
-              "Additional validation data"
+              "Additional validation data - FIXED: 256 bytes"
             ],
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                256
+              ]
+            }
+          },
+          {
+            "name": "data_len",
+            "type": "u16"
           },
           {
             "name": "issued_at",
@@ -5008,11 +1579,18 @@
           {
             "name": "revocation_reason",
             "docs": [
-              "Revocation reason (if revoked)"
+              "Revocation reason (if revoked) - FIXED: 128 bytes"
             ],
             "type": {
-              "option": "string"
+              "array": [
+                "u8",
+                128
+              ]
             }
+          },
+          {
+            "name": "reason_len",
+            "type": "u8"
           },
           {
             "name": "revoked_at",
@@ -5063,28 +1641,24 @@
       }
     },
     {
-      "name": "ListingCreated",
+      "name": "LimitOrderSubmitted",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "listing_id",
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "price",
             "type": "u64"
-          },
-          {
-            "name": "seller",
-            "type": "pubkey"
-          },
-          {
-            "name": "certificate",
-            "type": "pubkey"
           },
           {
             "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "price_per_rec",
             "type": "u64"
           },
           {
@@ -5095,25 +1669,17 @@
       }
     },
     {
-      "name": "ListingFilled",
+      "name": "MaintenanceModeChanged",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "listing_id",
-            "type": "u64"
-          },
-          {
-            "name": "buyer",
+            "name": "authority",
             "type": "pubkey"
           },
           {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "total_price",
-            "type": "u64"
+            "name": "maintenance_mode",
+            "type": "bool"
           },
           {
             "name": "timestamp",
@@ -5184,6 +1750,14 @@
             }
           },
           {
+            "name": "min_price_per_kwh",
+            "type": "u64"
+          },
+          {
+            "name": "max_price_per_kwh",
+            "type": "u64"
+          },
+          {
             "name": "batch_config",
             "type": {
               "defined": {
@@ -5213,49 +1787,60 @@
             }
           },
           {
-            "name": "buy_side_depth",
+            "name": "_padding_depth_1",
             "type": {
               "array": [
-                {
-                  "defined": {
-                    "name": "PriceLevel"
-                  }
-                },
-                20
+                "u8",
+                512
               ]
             }
           },
           {
-            "name": "sell_side_depth",
+            "name": "_padding_depth_2",
             "type": {
               "array": [
-                {
-                  "defined": {
-                    "name": "PriceLevel"
-                  }
-                },
-                20
+                "u8",
+                256
               ]
             }
           },
           {
-            "name": "buy_side_depth_count",
-            "type": "u8"
+            "name": "_padding_depth_3",
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
           },
           {
-            "name": "sell_side_depth_count",
-            "type": "u8"
+            "name": "_padding_depth_4",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "_padding_depth_5",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
           },
           {
             "name": "price_history_count",
             "type": "u8"
           },
           {
-            "name": "_padding_depth",
+            "name": "_padding_history_align",
             "type": {
               "array": [
                 "u8",
-                5
+                1
               ]
             }
           },
@@ -5301,6 +1886,30 @@
       }
     },
     {
+      "name": "MarketOrderSubmitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "MarketParamsUpdated",
       "type": {
         "kind": "struct",
@@ -5318,6 +1927,14 @@
             "type": "bool"
           },
           {
+            "name": "min_price_per_kwh",
+            "type": "u64"
+          },
+          {
+            "name": "max_price_per_kwh",
+            "type": "u64"
+          },
+          {
             "name": "timestamp",
             "type": "i64"
           }
@@ -5325,310 +1942,68 @@
       }
     },
     {
-      "name": "MeterCommitment",
+      "name": "MatchPair",
       "docs": [
-        "Meter Data Verification Module for GridTokenX",
-        "",
-        "Provides cryptographic verification of meter readings:",
-        "- ZK proofs for meter data integrity",
-        "- Anomaly detection for fraudulent readings",
-        "- Tamper-evident commitment chains",
-        "- Oracle signature verification",
-        "Meter reading commitment (hash of reading + timestamp + nonce)"
+        "Match pair for batch execution"
       ],
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "hash",
-            "docs": [
-              "Hash of the meter reading data"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "docs": [
-              "Timestamp of the reading"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "previous",
-            "docs": [
-              "Previous commitment hash (chain)"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "MeterHistory",
-      "docs": [
-        "Meter reading history for anomaly detection"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "meter",
-            "docs": [
-              "Meter this history belongs to"
-            ],
+            "name": "buy_order",
             "type": "pubkey"
           },
           {
-            "name": "readings",
-            "docs": [
-              "Recent readings (circular buffer)"
-            ],
+            "name": "sell_order",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OffchainOrderPayload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
             "type": {
               "array": [
-                "u64",
-                24
+                "u8",
+                16
               ]
             }
           },
           {
-            "name": "timestamps",
-            "docs": [
-              "Timestamps for each reading"
-            ],
-            "type": {
-              "array": [
-                "i64",
-                24
-              ]
-            }
+            "name": "user",
+            "type": "pubkey"
           },
           {
-            "name": "current_index",
-            "docs": [
-              "Current index in circular buffer"
-            ],
+            "name": "energy_amount",
+            "type": "u64"
+          },
+          {
+            "name": "price_per_kwh",
+            "type": "u64"
+          },
+          {
+            "name": "side",
             "type": "u8"
           },
           {
-            "name": "total_readings",
-            "docs": [
-              "Total readings recorded"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "running_average",
-            "docs": [
-              "Running average"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "std_deviation",
-            "docs": [
-              "Standard deviation (scaled by 100)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "last_anomaly_at",
-            "docs": [
-              "Last anomaly timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "anomaly_count",
-            "docs": [
-              "Total anomalies detected"
-            ],
+            "name": "zone_id",
             "type": "u32"
           },
           {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "MeterReadingProof",
-      "docs": [
-        "ZK proof for meter reading validity"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "commitment",
-            "docs": [
-              "Commitment to the reading value"
-            ],
-            "type": {
-              "defined": {
-                "name": "MeterCommitment"
-              }
-            }
-          },
-          {
-            "name": "range_proof",
-            "docs": [
-              "Range proof showing reading is within valid bounds"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                128
-              ]
-            }
-          },
-          {
-            "name": "oracle_signature",
-            "docs": [
-              "Signature from authorized oracle"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "oracle_pubkey",
-            "docs": [
-              "Oracle public key"
-            ],
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "MeterVerificationConfig",
-      "docs": [
-        "Meter verification configuration"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "authority",
-            "docs": [
-              "Authority that can update config"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "authorized_oracles",
-            "docs": [
-              "Authorized oracles for verification"
-            ],
-            "type": {
-              "array": [
-                "pubkey",
-                5
-              ]
-            }
-          },
-          {
-            "name": "oracle_count",
-            "docs": [
-              "Number of active oracles"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "min_oracles",
-            "docs": [
-              "Minimum oracles required for verification"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "max_delta_per_hour",
-            "docs": [
-              "Maximum reading delta per hour (kWh * 1000)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "max_same_readings",
-            "docs": [
-              "Maximum consecutive same readings (suspicious)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "min_interval",
-            "docs": [
-              "Minimum reading interval (seconds)"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "anomaly_detection_enabled",
-            "docs": [
-              "Whether anomaly detection is enabled"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved",
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "OracleAuthorized",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "oracle",
-            "type": "pubkey"
-          },
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
+            "name": "expires_at",
             "type": "i64"
           }
         ]
@@ -5699,6 +2074,26 @@
       }
     },
     {
+      "name": "OrderAddedToBatch",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "batch_id",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "OrderCancelled",
       "type": {
         "kind": "struct",
@@ -5763,96 +2158,264 @@
       }
     },
     {
-      "name": "OrderPaymentInfo",
-      "docs": [
-        "Stablecoin order extension - stores payment token preference"
-      ],
+      "name": "OrderNullifier",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "order",
-            "docs": [
-              "Order this payment info belongs to"
-            ],
+            "name": "order_id",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "authority",
             "type": "pubkey"
           },
           {
-            "name": "payment_token",
-            "docs": [
-              "Payment token type"
-            ],
+            "name": "filled_amount",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
             "type": "u8"
-          },
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoAConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
-            "name": "payment_mint",
+            "name": "authority",
             "docs": [
-              "Payment token mint"
+              "Single authority - REC certifying entity"
             ],
             "type": "pubkey"
           },
           {
-            "name": "price_in_payment_token",
+            "name": "authority_name",
             "docs": [
-              "Price in payment token (converted from GRID if needed)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "exchange_rate",
-            "docs": [
-              "Exchange rate used for conversion (if applicable)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rate_timestamp",
-            "docs": [
-              "Conversion timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "payment_processed",
-            "docs": [
-              "Whether payment has been processed"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
+              "Authority name (e.g., \"REC\") - FIXED: 64 bytes"
             ],
             "type": {
               "array": [
                 "u8",
-                32
+                64
               ]
+            }
+          },
+          {
+            "name": "name_len",
+            "type": "u8"
+          },
+          {
+            "name": "contact_info",
+            "docs": [
+              "Authority contact information - FIXED: 128 bytes"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                128
+              ]
+            }
+          },
+          {
+            "name": "contact_len",
+            "type": "u8"
+          },
+          {
+            "name": "version",
+            "docs": [
+              "Governance version for upgrades"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "maintenance_mode",
+            "docs": [
+              "System maintenance mode"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "erc_validation_enabled",
+            "docs": [
+              "Whether ERC validation is enabled"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "min_energy_amount",
+            "docs": [
+              "Minimum energy amount for ERC issuance (kWh)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_erc_amount",
+            "docs": [
+              "Maximum ERC amount per certificate (kWh)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "erc_validity_period",
+            "docs": [
+              "ERC certificate validity period (seconds)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "auto_revoke_expired",
+            "docs": [
+              "Auto-revoke expired certificates"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "require_oracle_validation",
+            "docs": [
+              "Require oracle validation for ERC issuance"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "delegation_enabled",
+            "docs": [
+              "Whether the authority can delegate ERC validation"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "oracle_authority",
+            "docs": [
+              "Oracle authority for AMI data validation"
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "min_oracle_confidence",
+            "docs": [
+              "Minimum confidence score for oracle validation (0-100)"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "allow_certificate_transfers",
+            "docs": [
+              "Allow certificate transfers between accounts"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "total_ercs_issued",
+            "docs": [
+              "Total ERCs issued since inception"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_ercs_validated",
+            "docs": [
+              "Total ERCs validated for trading"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_ercs_revoked",
+            "docs": [
+              "Total ERCs revoked"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_energy_certified",
+            "docs": [
+              "Total energy certified (kWh)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "When governance was initialized"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "last_updated",
+            "docs": [
+              "Last configuration update"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "last_erc_issued_at",
+            "docs": [
+              "Last ERC issued timestamp"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "pending_authority",
+            "docs": [
+              "Pending new authority (for 2-step transfer)"
+            ],
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "pending_authority_proposed_at",
+            "docs": [
+              "When the pending authority change was proposed"
+            ],
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "pending_authority_expires_at",
+            "docs": [
+              "When the pending authority change expires (48 hours)"
+            ],
+            "type": {
+              "option": "i64"
             }
           }
         ]
       }
     },
     {
-      "name": "PeakEventDeclared",
+      "name": "PriceHistoryUpdated",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "market",
-            "type": "pubkey"
+            "name": "trade_price",
+            "type": "u64"
           },
           {
-            "name": "multiplier",
-            "type": "u16"
+            "name": "trade_volume",
+            "type": "u64"
           },
           {
-            "name": "start_time",
-            "type": "i64"
+            "name": "vwap",
+            "type": "u64"
           },
           {
-            "name": "end_time",
+            "name": "timestamp",
             "type": "i64"
           }
         ]
@@ -5914,842 +2477,6 @@
       }
     },
     {
-      "name": "PriceSnapshot",
-      "docs": [
-        "Price snapshot for historical tracking"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "docs": [
-              "Market this snapshot belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "docs": [
-              "Timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "price",
-            "docs": [
-              "Calculated price at this time"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "base_component",
-            "docs": [
-              "Components that made up the price"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "tou_multiplier",
-            "type": "u16"
-          },
-          {
-            "name": "seasonal_multiplier",
-            "type": "u16"
-          },
-          {
-            "name": "supply_demand_adjustment",
-            "type": "i32"
-          },
-          {
-            "name": "congestion_adjustment",
-            "type": "i32"
-          },
-          {
-            "name": "supply",
-            "docs": [
-              "Market conditions at snapshot time"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "demand",
-            "type": "u64"
-          },
-          {
-            "name": "time_period",
-            "type": "u8"
-          },
-          {
-            "name": "season",
-            "type": "u8"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                16
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceTier",
-      "docs": [
-        "Price tier configuration"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "base_price",
-            "docs": [
-              "Base price in micro-units (6 decimals)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "multiplier",
-            "docs": [
-              "Multiplier for this tier (100 = 1.0x, 150 = 1.5x)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "start_hour",
-            "docs": [
-              "Start hour (0-23)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "end_hour",
-            "docs": [
-              "End hour (0-23)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "period",
-            "docs": [
-              "Time period classification"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "_padding",
-            "docs": [
-              "Padding"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                2
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PriceUpdated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "type": "pubkey"
-          },
-          {
-            "name": "old_price",
-            "type": "u64"
-          },
-          {
-            "name": "new_price",
-            "type": "u64"
-          },
-          {
-            "name": "time_period",
-            "type": "u8"
-          },
-          {
-            "name": "supply",
-            "type": "u64"
-          },
-          {
-            "name": "demand",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PricingConfig",
-      "docs": [
-        "Dynamic pricing configuration for a market"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "market",
-            "docs": [
-              "Market this config belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "authority",
-            "docs": [
-              "Authority that can update pricing"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "enabled",
-            "docs": [
-              "Whether dynamic pricing is enabled"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "base_price",
-            "docs": [
-              "Base price per kWh (in micro-units, 6 decimals)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "min_price",
-            "docs": [
-              "Minimum price floor"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "max_price",
-            "docs": [
-              "Maximum price ceiling"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "tou_tiers",
-            "docs": [
-              "Time-of-use price tiers (up to 6)"
-            ],
-            "type": {
-              "array": [
-                {
-                  "defined": {
-                    "name": "PriceTier"
-                  }
-                },
-                6
-              ]
-            }
-          },
-          {
-            "name": "tou_tier_count",
-            "docs": [
-              "Number of active TOU tiers"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "seasonal_multipliers",
-            "docs": [
-              "Seasonal multipliers (100 = 1.0x)"
-            ],
-            "type": {
-              "array": [
-                "u16",
-                4
-              ]
-            }
-          },
-          {
-            "name": "current_supply",
-            "docs": [
-              "Current supply level (for supply/demand pricing)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "current_demand",
-            "docs": [
-              "Current demand level"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "supply_demand_sensitivity",
-            "docs": [
-              "Supply/demand sensitivity (basis points)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "congestion_factor",
-            "docs": [
-              "Grid congestion factor (100 = normal, >100 = congested)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "last_update",
-            "docs": [
-              "Last price update timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "update_interval",
-            "docs": [
-              "Price update interval (seconds)"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "timezone_offset",
-            "docs": [
-              "Timezone offset from UTC (hours * 100, e.g., +7:00 = 700)"
-            ],
-            "type": "i16"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved for future use",
-              "Reserved for future use"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "PricingConfigured",
-      "docs": [
-        "Events"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "type": "pubkey"
-          },
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "base_price",
-            "type": "u64"
-          },
-          {
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "PrivateTransferEvent",
-      "docs": [
-        "Event emitted for private transfers between confidential accounts"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "sender",
-            "type": "pubkey"
-          },
-          {
-            "name": "receiver",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "docs": [
-              "Amount is NOT logged to preserve privacy - only participants know"
-            ],
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RangeProof",
-      "docs": [
-        "Range Proof: Proves 0 <= value < 2^64"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "commitment",
-            "docs": [
-              "The commitment being proven"
-            ],
-            "type": {
-              "defined": {
-                "name": "WrappedPedersenCommitment"
-              }
-            }
-          },
-          {
-            "name": "proof",
-            "docs": [
-              "The proof data (serialized SDK RangeProof)"
-            ],
-            "type": "bytes"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ReadingVerified",
-      "docs": [
-        "Events"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "meter",
-            "type": "pubkey"
-          },
-          {
-            "name": "reading",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "commitment",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "oracle",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RecCertificate",
-      "docs": [
-        "REC certificate metadata"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "certificate_id",
-            "docs": [
-              "Unique certificate ID"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "owner",
-            "docs": [
-              "Owner of the certificate"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "issuer",
-            "docs": [
-              "Original issuer (prosumer)"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "rec_type",
-            "docs": [
-              "Energy source type"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "energy_amount",
-            "docs": [
-              "Energy amount (kWh * 1000)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "rec_amount",
-            "docs": [
-              "REC token amount"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "carbon_offset",
-            "docs": [
-              "Carbon offset (g CO2e)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "generation_start",
-            "docs": [
-              "Generation start timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "generation_end",
-            "docs": [
-              "Generation end timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "issued_at",
-            "docs": [
-              "Issuance timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "location",
-            "docs": [
-              "Location (grid zone)"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                8
-              ]
-            }
-          },
-          {
-            "name": "meter",
-            "docs": [
-              "Meter that generated this energy"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "verified_by",
-            "docs": [
-              "Verification oracle"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "is_retired",
-            "docs": [
-              "Is certificate retired"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "retirement_reason",
-            "docs": [
-              "Retirement info (if retired)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "retired_at",
-            "type": "i64"
-          },
-          {
-            "name": "retired_by",
-            "type": "pubkey"
-          },
-          {
-            "name": "retirement_beneficiary",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "RecMinted",
-      "docs": [
-        "Events"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "certificate_id",
-            "type": "u64"
-          },
-          {
-            "name": "issuer",
-            "type": "pubkey"
-          },
-          {
-            "name": "rec_type",
-            "type": "u8"
-          },
-          {
-            "name": "energy_amount",
-            "type": "u64"
-          },
-          {
-            "name": "rec_amount",
-            "type": "u64"
-          },
-          {
-            "name": "carbon_offset",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RecRetired",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "retirement_id",
-            "type": "u64"
-          },
-          {
-            "name": "certificate",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "carbon_offset",
-            "type": "u64"
-          },
-          {
-            "name": "reason",
-            "type": "u8"
-          },
-          {
-            "name": "beneficiary",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RecTransferred",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "certificate",
-            "type": "pubkey"
-          },
-          {
-            "name": "from",
-            "type": "pubkey"
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RetirementRecord",
-      "docs": [
-        "Retirement record for compliance/audit"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "retirement_id",
-            "docs": [
-              "Unique retirement ID"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "certificate",
-            "docs": [
-              "Certificate that was retired"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "docs": [
-              "Amount retired"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "carbon_offset",
-            "docs": [
-              "Carbon offset (g CO2e)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "reason",
-            "docs": [
-              "Retirement reason"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "retired_by",
-            "docs": [
-              "Retired by"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "beneficiary",
-            "docs": [
-              "Beneficiary name/description"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "compliance_period",
-            "docs": [
-              "Compliance period (e.g., \"2026-Q1\")"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                16
-              ]
-            }
-          },
-          {
-            "name": "retired_at",
-            "docs": [
-              "Retired timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "tx_signature",
-            "docs": [
-              "Transaction signature for proof"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
       "name": "SellOrderCreated",
       "type": {
         "kind": "struct",
@@ -6768,302 +2495,6 @@
           },
           {
             "name": "price_per_kwh",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ShieldEvent",
-      "docs": [
-        "Event emitted when tokens are shielded (public → confidential)"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "StablecoinOrderCreated",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "order",
-            "type": "pubkey"
-          },
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "payment_token",
-            "type": "u8"
-          },
-          {
-            "name": "payment_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "energy_amount",
-            "type": "u64"
-          },
-          {
-            "name": "price_in_payment",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "StablecoinSettlement",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "buy_order",
-            "type": "pubkey"
-          },
-          {
-            "name": "sell_order",
-            "type": "pubkey"
-          },
-          {
-            "name": "payment_token",
-            "type": "u8"
-          },
-          {
-            "name": "energy_amount",
-            "type": "u64"
-          },
-          {
-            "name": "payment_amount",
-            "type": "u64"
-          },
-          {
-            "name": "grid_equivalent",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TokenConfig",
-      "docs": [
-        "Token configuration for the trading market"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "market",
-            "docs": [
-              "Market this config belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "token_type",
-            "docs": [
-              "Token type"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "mint",
-            "docs": [
-              "Token mint address"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "decimals",
-            "docs": [
-              "Token decimals"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "enabled",
-            "docs": [
-              "Whether this token is enabled for trading"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "min_order_size",
-            "docs": [
-              "Minimum order size in this token"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "price_oracle",
-            "docs": [
-              "Oracle price feed for conversion (if applicable)"
-            ],
-            "type": {
-              "option": "pubkey"
-            }
-          },
-          {
-            "name": "last_price",
-            "docs": [
-              "Last known price in base units (for rate limiting)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "last_price_update",
-            "docs": [
-              "Last price update timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "max_price_deviation_bps",
-            "docs": [
-              "Maximum price deviation allowed (basis points)"
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved for future use"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "TokenConfigured",
-      "docs": [
-        "Events for stablecoin payments"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "market",
-            "type": "pubkey"
-          },
-          {
-            "name": "token_type",
-            "type": "u8"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "enabled",
-            "type": "bool"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TokenSwapExecuted",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "input_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "output_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "input_amount",
-            "type": "u64"
-          },
-          {
-            "name": "output_amount",
-            "type": "u64"
-          },
-          {
-            "name": "rate",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TokensReceived",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "user",
-            "type": "pubkey"
-          },
-          {
-            "name": "source_chain",
-            "type": "u16"
-          },
-          {
-            "name": "wrapped_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
             "type": "u64"
           },
           {
@@ -7118,164 +2549,13 @@
       }
     },
     {
-      "name": "TransferProof",
+      "name": "ZoneMarket",
       "docs": [
-        "Transfer Proof: Proves balance conservation"
+        "Zone Market account for tracking order book depth in a specific geographic zone.",
+        "This allows order book depth mapping to be sharded out of the main Market account,",
+        "preventing write lock contention on the global state when different zones are trading."
       ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount_commitment",
-            "docs": [
-              "Commitment to the transfer amount"
-            ],
-            "type": {
-              "defined": {
-                "name": "WrappedPedersenCommitment"
-              }
-            }
-          },
-          {
-            "name": "proof",
-            "docs": [
-              "The proof data (serialized SDK TransferProof)"
-            ],
-            "type": "bytes"
-          }
-        ]
-      }
-    },
-    {
-      "name": "UnshieldEvent",
-      "docs": [
-        "Event emitted when tokens are unshielded (confidential → public)"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "pubkey"
-          },
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "VerifiedReading",
-      "docs": [
-        "Verified meter reading record"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "bump",
-            "docs": [
-              "Bump seed for PDA"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "meter",
-            "docs": [
-              "Meter this reading belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "docs": [
-              "Reading timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "value",
-            "docs": [
-              "Verified reading value (kWh * 1000)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "reading_type",
-            "docs": [
-              "Reading type (production/consumption)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "commitment",
-            "docs": [
-              "Commitment hash"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "verified_by",
-            "docs": [
-              "Oracle that verified this reading"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "verified_at",
-            "docs": [
-              "Verification timestamp"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "anomaly_flags",
-            "docs": [
-              "Anomaly flags (bitmask)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "confidence",
-            "docs": [
-              "Confidence score (0-100)"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "WrappedElGamalCiphertext",
-      "docs": [
-        "Wrapper for ElGamal Ciphertext to implement Anchor traits"
-      ],
+      "serialization": "bytemuck",
       "repr": {
         "kind": "c"
       },
@@ -7283,104 +2563,78 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "data",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "WrappedPedersenCommitment",
-      "docs": [
-        "Wrapper for Pedersen Commitment to implement Anchor traits"
-      ],
-      "repr": {
-        "kind": "c"
-      },
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "data",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "WrappedTokenRecord",
-      "docs": [
-        "Incoming wrapped token record"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "wrapped_mint",
-            "docs": [
-              "Wormhole wrapped token mint"
-            ],
+            "name": "market",
             "type": "pubkey"
           },
           {
-            "name": "origin_chain",
-            "docs": [
-              "Original chain ID"
-            ],
-            "type": "u16"
+            "name": "zone_id",
+            "type": "u32"
           },
           {
-            "name": "origin_address",
-            "docs": [
-              "Original token address"
-            ],
+            "name": "_padding1",
             "type": {
               "array": [
                 "u8",
-                32
+                4
               ]
             }
           },
           {
-            "name": "trading_approved",
-            "docs": [
-              "Whether this wrapped token is approved for trading"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "total_received",
-            "docs": [
-              "Total received via bridge"
-            ],
+            "name": "total_volume",
             "type": "u64"
           },
           {
-            "name": "total_unwrapped",
-            "docs": [
-              "Total unwrapped (sent back)"
-            ],
-            "type": "u64"
+            "name": "active_orders",
+            "type": "u32"
           },
           {
-            "name": "_reserved",
-            "docs": [
-              "Reserved"
-            ],
+            "name": "total_trades",
+            "type": "u32"
+          },
+          {
+            "name": "buy_side_depth_count",
+            "type": "u8"
+          },
+          {
+            "name": "sell_side_depth_count",
+            "type": "u8"
+          },
+          {
+            "name": "_padding2",
             "type": {
               "array": [
                 "u8",
-                32
+                6
+              ]
+            }
+          },
+          {
+            "name": "last_clearing_price",
+            "type": "u64"
+          },
+          {
+            "name": "buy_side_depth",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "PriceLevel"
+                  }
+                },
+                20
+              ]
+            }
+          },
+          {
+            "name": "sell_side_depth",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "PriceLevel"
+                  }
+                },
+                20
               ]
             }
           }

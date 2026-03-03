@@ -1,8 +1,8 @@
 {
-  "address": "5DJCWKo5cXt3PXRsrpH1xixra4wXWbNzxZ1p4FHqSxvi",
+  "address": "ExZKhghptUk675rjxgHPjJZjczgWWRRwzUTQnqjPTLno",
   "metadata": {
     "name": "energy_token",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "Energy Token program for P2P Energy Trading - SPL token wrapper"
   },
@@ -29,10 +29,7 @@
         },
         {
           "name": "authority",
-          "signer": true,
-          "relations": [
-            "token_info"
-          ]
+          "signer": true
         }
       ],
       "args": [
@@ -92,7 +89,8 @@
     {
       "name": "create_token_mint",
       "docs": [
-        "Create a new GRX token mint with Token 2022 compatibility"
+        "Add metadata to an existing GRX token mint via Metaplex",
+        "Must be called after initialize_token with the same mint address"
       ],
       "discriminator": [
         35,
@@ -107,8 +105,10 @@
       "accounts": [
         {
           "name": "mint",
-          "writable": true,
-          "signer": true
+          "writable": true
+        },
+        {
+          "name": "token_info"
         },
         {
           "name": "metadata",
@@ -124,8 +124,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         },
         {
           "name": "token_program"
@@ -134,12 +133,10 @@
           "name": "metadata_program"
         },
         {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
+          "name": "rent"
         },
         {
-          "name": "sysvar_instructions",
-          "address": "Sysvar1nstructions1111111111111111111111111"
+          "name": "sysvar_instructions"
         }
       ],
       "args": [
@@ -195,53 +192,11 @@
       "accounts": [
         {
           "name": "token_info",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  105,
-                  110,
-                  102,
-                  111,
-                  95,
-                  50,
-                  48,
-                  50,
-                  50
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "mint",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  50,
-                  48,
-                  50,
-                  50
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -249,20 +204,22 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         },
         {
           "name": "token_program"
         },
         {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
+          "name": "rent"
         }
       ],
       "args": [
         {
           "name": "registry_program_id",
+          "type": "pubkey"
+        },
+        {
+          "name": "registry_authority",
           "type": "pubkey"
         }
       ]
@@ -289,30 +246,7 @@
         },
         {
           "name": "token_info",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  105,
-                  110,
-                  102,
-                  111,
-                  95,
-                  50,
-                  48,
-                  50,
-                  50
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "destination",
@@ -334,12 +268,10 @@
           "name": "token_program"
         },
         {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          "name": "associated_token_program"
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -368,31 +300,7 @@
       "accounts": [
         {
           "name": "token_info",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  105,
-                  110,
-                  102,
-                  111,
-                  95,
-                  50,
-                  48,
-                  50,
-                  50
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "mint",
@@ -405,6 +313,9 @@
         {
           "name": "authority",
           "signer": true
+        },
+        {
+          "name": "registry_authority"
         },
         {
           "name": "token_program"
@@ -477,6 +388,19 @@
   ],
   "events": [
     {
+      "name": "EnergyConsumed",
+      "discriminator": [
+        7,
+        49,
+        221,
+        236,
+        120,
+        233,
+        254,
+        13
+      ]
+    },
+    {
       "name": "GridTokensMinted",
       "discriminator": [
         178,
@@ -487,6 +411,19 @@
         247,
         211,
         210
+      ]
+    },
+    {
+      "name": "MeterReadingRecorded",
+      "discriminator": [
+        160,
+        7,
+        34,
+        41,
+        3,
+        125,
+        125,
+        9
       ]
     },
     {
@@ -560,6 +497,30 @@
   ],
   "types": [
     {
+      "name": "EnergyConsumed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "meter_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "energy_consumed_kwh",
+            "type": "u64"
+          },
+          {
+            "name": "tokens_burned",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "GridTokensMinted",
       "type": {
         "kind": "struct",
@@ -580,7 +541,34 @@
       }
     },
     {
+      "name": "MeterReadingRecorded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "meter_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "meter_serial",
+            "type": "string"
+          },
+          {
+            "name": "energy_kwh",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "TokenInfo",
+      "docs": [
+        "Token program configuration and state"
+      ],
       "serialization": "bytemuck",
       "repr": {
         "kind": "c"
@@ -590,6 +578,10 @@
         "fields": [
           {
             "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "registry_authority",
             "type": "pubkey"
           },
           {

@@ -1,8 +1,8 @@
 {
-  "address": "9sz5rrCnWTLqPeQVuyJgyQ1hqLGXrT94GLfVVoWUKpxz",
+  "address": "B7Detx5TMRQNzVCgdd9Rp5YnN9cAtC7KeMBrzdZZsd4E",
   "metadata": {
     "name": "blockbench",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "BLOCKBENCH Micro-benchmarks for Solana/Anchor - Consensus, Execution, and Storage Layer Testing"
   },
@@ -245,30 +245,7 @@
             "Optional: benchmark state for metric tracking"
           ],
           "writable": true,
-          "optional": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  108,
-                  111,
-                  99,
-                  107,
-                  98,
-                  101,
-                  110,
-                  99,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "payer"
-              }
-            ]
-          }
+          "optional": true
         }
       ],
       "args": [
@@ -297,30 +274,7 @@
         },
         {
           "name": "benchmark_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  108,
-                  111,
-                  99,
-                  107,
-                  98,
-                  101,
-                  110,
-                  99,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         }
       ],
       "args": [],
@@ -350,34 +304,10 @@
         },
         {
           "name": "benchmark_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  108,
-                  111,
-                  99,
-                  107,
-                  98,
-                  101,
-                  110,
-                  99,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -471,36 +401,10 @@
         },
         {
           "name": "io_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  105,
-                  111,
-                  95,
-                  104,
-                  101,
-                  97,
-                  118,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "payer"
-              },
-              {
-                "kind": "arg",
-                "path": "key_prefix"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -543,30 +447,7 @@
         },
         {
           "name": "benchmark_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  108,
-                  111,
-                  99,
-                  107,
-                  98,
-                  101,
-                  110,
-                  99,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         }
       ],
       "args": [
@@ -612,30 +493,7 @@
         },
         {
           "name": "benchmark_state",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  108,
-                  111,
-                  99,
-                  107,
-                  98,
-                  101,
-                  110,
-                  99,
-                  104
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         }
       ],
       "args": []
@@ -660,34 +518,10 @@
         },
         {
           "name": "ycsb_store",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -723,62 +557,11 @@
         },
         {
           "name": "ycsb_store",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "record",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  114,
-                  101,
-                  99,
-                  111,
-                  114,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "ycsb_store"
-              },
-              {
-                "kind": "arg",
-                "path": "key"
-              }
-            ]
-          }
+          "writable": true
         }
       ],
       "args": [
@@ -813,34 +596,10 @@
         },
         {
           "name": "ycsb_store",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": []
@@ -865,66 +624,14 @@
         },
         {
           "name": "ycsb_store",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "record",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  114,
-                  101,
-                  99,
-                  111,
-                  114,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "ycsb_store"
-              },
-              {
-                "kind": "arg",
-                "path": "key"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -961,61 +668,10 @@
           "signer": true
         },
         {
-          "name": "ycsb_store",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "name": "ycsb_store"
         },
         {
-          "name": "record",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  114,
-                  101,
-                  99,
-                  111,
-                  114,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "ycsb_store"
-              },
-              {
-                "kind": "arg",
-                "path": "key"
-              }
-            ]
-          }
+          "name": "record"
         }
       ],
       "args": [
@@ -1050,66 +706,14 @@
           "signer": true
         },
         {
-          "name": "ycsb_store",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  115,
-                  116,
-                  111,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "authority"
-              }
-            ]
-          }
+          "name": "ycsb_store"
         },
         {
           "name": "record",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  121,
-                  99,
-                  115,
-                  98,
-                  95,
-                  114,
-                  101,
-                  99,
-                  111,
-                  114,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "ycsb_store"
-              },
-              {
-                "kind": "arg",
-                "path": "key"
-              }
-            ]
-          }
+          "writable": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [

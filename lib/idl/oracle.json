@@ -1,5 +1,5 @@
 {
-  "address": "EkcPD2YEXhpo1J73UX9EJNnjV2uuFS8KXMVLx9ybqnhU",
+  "address": "Ad5crRxCcvKFAShAMYtRAD9XKak1cwH1FCE6TrpUA9i2",
   "metadata": {
     "name": "oracle",
     "version": "0.1.1",
@@ -121,7 +121,8 @@
       ],
       "accounts": [
         {
-          "name": "oracle_data"
+          "name": "oracle_data",
+          "writable": true
         },
         {
           "name": "authority",
@@ -172,7 +173,12 @@
           "signer": true
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "epoch_timestamp",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "update_api_gateway",
@@ -524,6 +530,11 @@
       "code": 6013,
       "name": "InvalidConfiguration",
       "msg": "Invalid configuration parameter"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidEpoch",
+      "msg": "Invalid market epoch - must be greater than last cleared epoch"
     }
   ],
   "types": [
@@ -602,6 +613,10 @@
           },
           {
             "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "epoch_number",
             "type": "i64"
           }
         ]
@@ -743,8 +758,29 @@
             "type": "u64"
           },
           {
-            "name": "min_reading_interval",
+            "name": "total_global_energy_produced",
             "type": "u64"
+          },
+          {
+            "name": "total_global_energy_consumed",
+            "type": "u64"
+          },
+          {
+            "name": "min_reading_interval",
+            "type": "u16"
+          },
+          {
+            "name": "_padding_8",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "last_cleared_epoch",
+            "type": "i64"
           },
           {
             "name": "average_reading_interval",

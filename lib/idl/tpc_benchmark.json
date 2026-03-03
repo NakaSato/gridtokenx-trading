@@ -1,8 +1,8 @@
 {
-  "address": "Gn99qZgnpwNXsQaBB7zvyycnRJmMGaQ4UaG5PpvBsmEu",
+  "address": "DN3XToyEqdvLxXchQZufQj5eXZrxE1yfxsDVDPUrXemD",
   "metadata": {
     "name": "tpc_benchmark",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "TPC-C/TPC-E Benchmark Implementation for Solana Anchor - PoA Environment",
     "repository": "https://github.com/NakaSato/gridtokenx-anchor"
@@ -25,29 +25,7 @@
           "name": "warehouse",
           "docs": [
             "Warehouse for reference"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "payer",
@@ -55,8 +33,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -87,32 +64,7 @@
           "name": "district",
           "docs": [
             "District for reference"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "new_order",
@@ -120,109 +72,21 @@
             "NewOrder to be deleted (oldest in district)",
             "Note: In practice, the client must find the oldest o_id"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  110,
-                  101,
-                  119,
-                  95,
-                  111,
-                  114,
-                  100,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "account",
-                "path": "new_order.o_id",
-                "account": "NewOrderEntry"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "order",
           "docs": [
             "Order to be updated"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  100,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "account",
-                "path": "new_order.o_id",
-                "account": "NewOrderEntry"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "customer",
           "docs": [
             "Customer to be updated"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  117,
-                  115,
-                  116,
-                  111,
-                  109,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "account",
-                "path": "order.c_id",
-                "account": "Order"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "payer",
@@ -230,8 +94,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -264,25 +127,7 @@
       "accounts": [
         {
           "name": "benchmark",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  101,
-                  110,
-                  99,
-                  104,
-                  109,
-                  97,
-                  114,
-                  107
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -290,8 +135,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -320,67 +164,13 @@
       "accounts": [
         {
           "name": "customer",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  117,
-                  115,
-                  116,
-                  111,
-                  109,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "c_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "district",
           "docs": [
             "Verify district exists"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "authority",
@@ -388,8 +178,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -474,38 +263,7 @@
       "accounts": [
         {
           "name": "index",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  105,
-                  100,
-                  120,
-                  95,
-                  99,
-                  95,
-                  108,
-                  97,
-                  115,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "last_name_hash"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -513,8 +271,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -552,60 +309,13 @@
       "accounts": [
         {
           "name": "district",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "warehouse",
           "docs": [
             "Verify warehouse exists"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "authority",
@@ -613,8 +323,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -671,24 +380,7 @@
       "accounts": [
         {
           "name": "item",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  105,
-                  116,
-                  101,
-                  109
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "i_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -696,8 +388,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -738,80 +429,19 @@
       "accounts": [
         {
           "name": "stock",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115,
-                  116,
-                  111,
-                  99,
-                  107
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "i_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "warehouse",
           "docs": [
             "Verify warehouse exists"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "item",
           "docs": [
             "Verify item exists"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  105,
-                  116,
-                  101,
-                  109
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "i_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "authority",
@@ -819,8 +449,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -897,29 +526,7 @@
       "accounts": [
         {
           "name": "warehouse",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -927,8 +534,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -983,29 +589,7 @@
           "name": "warehouse",
           "docs": [
             "Warehouse - read tax rate"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "district",
@@ -1013,67 +597,13 @@
             "District - CRITICAL: increment next_o_id (WRITE LOCK)",
             "This is the primary serialization point for the district"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "customer",
           "docs": [
             "Customer - read discount rate"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  117,
-                  115,
-                  116,
-                  111,
-                  109,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "c_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "order",
@@ -1081,72 +611,14 @@
             "Order - to be created (PDA with next_o_id)",
             "Space allocated for max 15 order lines"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  111,
-                  114,
-                  100,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "account",
-                "path": "district.next_o_id",
-                "account": "District"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "new_order",
           "docs": [
             "NewOrder - to be created (queue entry for undelivered orders)"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  110,
-                  101,
-                  119,
-                  95,
-                  111,
-                  114,
-                  100,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "account",
-                "path": "district.next_o_id",
-                "account": "District"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "payer",
@@ -1157,8 +629,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -1172,6 +643,10 @@
         },
         {
           "name": "c_id",
+          "type": "u64"
+        },
+        {
+          "name": "o_id",
           "type": "u64"
         },
         {
@@ -1203,36 +678,7 @@
           "name": "customer",
           "docs": [
             "Customer - READ"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  117,
-                  115,
-                  116,
-                  111,
-                  109,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "c_id"
-              }
-            ]
-          }
+          ]
         },
         {
           "name": "order",
@@ -1288,61 +734,14 @@
           "docs": [
             "Warehouse receiving payment - UPDATE YTD"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  119,
-                  97,
-                  114,
-                  101,
-                  104,
-                  111,
-                  117,
-                  115,
-                  101
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "district",
           "docs": [
             "District receiving payment - UPDATE YTD"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "customer",
@@ -1350,36 +749,7 @@
             "Customer making payment - UPDATE BALANCE",
             "Note: Customer may be from different warehouse/district (15% of cases)"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  99,
-                  117,
-                  115,
-                  116,
-                  111,
-                  109,
-                  101,
-                  114
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "c_w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "c_d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "c_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "history",
@@ -1387,35 +757,7 @@
             "History record - CREATE",
             "h_id should be a unique timestamp provided by the client"
           ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  104,
-                  105,
-                  115,
-                  116,
-                  111,
-                  114,
-                  121
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              },
-              {
-                "kind": "arg",
-                "path": "h_id"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "customer_index",
@@ -1431,8 +773,7 @@
           "signer": true
         },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "name": "system_program"
         }
       ],
       "args": [
@@ -1485,25 +826,7 @@
       "accounts": [
         {
           "name": "benchmark",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  101,
-                  110,
-                  99,
-                  104,
-                  109,
-                  97,
-                  114,
-                  107
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -1551,25 +874,7 @@
       "accounts": [
         {
           "name": "benchmark",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  101,
-                  110,
-                  99,
-                  104,
-                  109,
-                  97,
-                  114,
-                  107
-                ]
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "authority",
@@ -1598,32 +903,7 @@
           "name": "district",
           "docs": [
             "District to get next_o_id (determines recent orders)"
-          ],
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  105,
-                  115,
-                  116,
-                  114,
-                  105,
-                  99,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "w_id"
-              },
-              {
-                "kind": "arg",
-                "path": "d_id"
-              }
-            ]
-          }
+          ]
         }
       ],
       "args": [

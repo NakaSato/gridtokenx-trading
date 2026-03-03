@@ -21,7 +21,7 @@ import governanceIdl from '@/lib/idl/governance.json'
 
 // Hardcoded for localnet dev - same as in Anchor.toml
 const GOVERNANCE_PROGRAM_ID = new PublicKey(
-  'DuLg6buhqs78SRj1qDp5vSyGrSfG9FF4nPKm8Tn8hSJL'
+  'DksRNiZsEZ3zN8n8ZWfukFqi3z74e5865oZ8wFk38p4X'
 )
 const SOLANA_RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://127.0.0.1:4000/api/v1/rpc'
 
