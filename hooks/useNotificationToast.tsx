@@ -158,9 +158,13 @@ export function useNotificationToast() {
   // Order matched notification
   useOrderMatchedWebSocket(
     useCallback((data: OrderMatchedData) => {
+      if (!data) return
+      const amount = data.matched_amount ?? (data as any).amount ?? '0'
+      const price = data.match_price ?? (data as any).price ?? '0'
+      const matchId = data.match_id ?? (data as any).id ?? 'unknown'
       toast.success(
-        <OrderMatchedToast amount={data.matched_amount} price={data.match_price} />,
-        { duration: 5000, id: `order-matched-${data.match_id}` }
+        <OrderMatchedToast amount={amount} price={price} />,
+        { duration: 5000, id: `order-matched-${matchId}` }
       )
     }, [])
   )

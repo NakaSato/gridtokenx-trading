@@ -7,7 +7,6 @@ Allow: /
 # Disallow private/internal pages
 Disallow: /api/
 Disallow: /_next/
-Disallow: /admin/
 
 # Sitemap
 Sitemap: https://trading.gridtokenx.com/sitemap.xml

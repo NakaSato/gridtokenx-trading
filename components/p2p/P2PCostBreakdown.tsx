@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { P2P_CONFIG } from '@/lib/constants'
+import { motion } from 'framer-motion'
 
 interface P2PCostBreakdownProps {
     buyerZone: number
@@ -244,49 +245,90 @@ export default function P2PCostBreakdown({
                 </div>
 
                 {/* P2P vs Grid Comparison */}
-                <div className="space-y-2 rounded-sm border border-border/50 p-3">
-                    <h4 className="text-xs font-medium uppercase text-muted-foreground">
-                        P2P vs Grid Comparison
-                    </h4>
+                <div className="space-y-3 rounded-sm border border-border/50 p-4 bg-accent/5 backdrop-blur-sm">
+                    <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                            Grid Cost Optimized Comparison
+                        </h4>
+                        {buyerSavings > 0 && (
+                            <Badge className="h-4 text-[8px] bg-emerald-500/10 text-emerald-500 border-none font-bold">
+                                {((buyerSavings / gridImportCost) * 100).toFixed(1)}% SAVINGS
+                            </Badge>
+                        )}
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <div className="flex items-center gap-1">
+                    <div className="space-y-3">
+                        {/* Grid Cost Bar */}
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[10px] font-medium text-muted-foreground">
+                                <span>Standard Grid Import</span>
+                                <span className="font-mono">฿{gridImportCost.toFixed(2)}</span>
+                            </div>
+                            <div className="h-2 w-full bg-muted/30 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-muted-foreground/30"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '100%' }}
+                                    transition={{ duration: 1 }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* P2P Cost Bar */}
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-tight">
+                                <span>P2P Smart Settlement</span>
+                                <span className="font-mono">฿{cost.total_cost.toFixed(2)}</span>
+                            </div>
+                            <div className="h-3 w-full bg-primary/10 rounded-full overflow-hidden border border-primary/5">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-primary/60 to-primary"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (cost.total_cost / gridImportCost) * 100)}%` }}
+                                    transition={{ duration: 1, delay: 0.2 }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                        <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                            <div className="flex items-center gap-1 mb-1">
                                 {buyerSavings > 0 ? (
-                                    <TrendingDown className="h-4 w-4 text-emerald-500" />
+                                    <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
                                 ) : (
-                                    <TrendingUp className="h-4 w-4 text-destructive" />
+                                    <TrendingUp className="h-3.5 w-3.5 text-destructive" />
                                 )}
-                                <span className="text-xs text-muted-foreground">Buyer Savings</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Net Savings</span>
                             </div>
                             <span className={cn(
-                                "font-mono text-sm font-medium",
+                                "font-mono text-sm font-black",
                                 buyerSavings > 0 ? "text-emerald-500" : "text-destructive"
                             )}>
                                 {buyerSavings > 0 ? '+' : ''}฿{buyerSavings.toFixed(2)}
                             </span>
                         </div>
 
-                        <div>
-                            <div className="flex items-center gap-1">
+                        <div className="p-2 rounded-lg bg-blue-500/5 border border-blue-500/10 text-right">
+                            <div className="flex items-center justify-end gap-1 mb-1">
                                 {sellerPremium > 0 ? (
-                                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                    <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
                                 ) : (
-                                    <TrendingDown className="h-4 w-4 text-destructive" />
+                                    <TrendingDown className="h-3.5 w-3.5 text-destructive" />
                                 )}
-                                <span className="text-xs text-muted-foreground">Seller Premium</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">Seller Yield</span>
                             </div>
                             <span className={cn(
-                                "font-mono text-sm font-medium",
-                                sellerPremium > 0 ? "text-emerald-500" : "text-destructive"
+                                "font-mono text-sm font-black",
+                                sellerPremium > 0 ? "text-blue-500" : "text-destructive"
                             )}>
                                 {sellerPremium > 0 ? '+' : ''}฿{sellerPremium.toFixed(2)}
                             </span>
                         </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-muted-foreground">
-                        Grid Import: ฿{gridImportPrice}/kWh • Grid Export: ฿{gridExportPrice}/kWh
+                    <div className="text-[9px] text-muted-foreground opacity-50 font-medium">
+                        Based on Grid Import: ฿{gridImportPrice}/kWh • Feed-in: ฿{gridExportPrice}/kWh
                     </div>
                 </div>
             </CardContent>

@@ -171,6 +171,20 @@ export class TradingApi {
         })
     }
 
+    async getMarketConfig() {
+        return apiRequest<{
+            base_price_thb_kwh: number
+            grid_import_price_thb_kwh: number
+            grid_export_price_thb_kwh: number
+            transaction_fee_bps: number
+            min_price_per_kwh: number
+            max_price_per_kwh: number
+        }>('/api/v1/market/config', {
+            method: 'GET',
+            token: this.getToken(),
+        })
+    }
+
     async getTradeHistory(filters?: { limit?: number; offset?: number }) {
         const params = new URLSearchParams()
         if (filters?.limit) params.set('limit', String(filters.limit))
@@ -278,5 +292,13 @@ export class TradingApi {
             method: 'POST',
             token: this.getToken(),
         })
+    }
+
+    async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
+        return apiRequest<Blob>(`/api/v1/trades/export?format=${format}`, {
+            method: 'GET',
+            token: this.getToken(),
+            responseType: 'blob'
+        } as any)
     }
 }

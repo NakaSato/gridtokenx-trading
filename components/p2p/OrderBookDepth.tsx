@@ -230,41 +230,79 @@ export default function OrderBookDepth({
                 </div>
 
                 {/* Depth Visualization */}
-                <div className="space-y-1">
-                    {/* Asks (Sells) - Reversed to show highest first */}
-                    <div className="space-y-0.5">
-                        {[...orderBook.asks].reverse().map((ask, i) => (
-                            <DepthBar
-                                key={`ask-${i}`}
-                                level={ask}
-                                total={orderBook.totalAskVolume}
-                                type="ask"
-                                isHighlighted={!!currentPrice && currentPrice >= ask.price}
+                <div className="space-y-4">
+                    {/* SVG Depth Chart */}
+                    <div className="h-32 w-full relative">
+                        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                            {/* Ask Depth Area (top half) */}
+                            <path
+                                d={`M ${100 - (orderBook.asks.length > 0 ? (orderBook.asks[0].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 0 L 100 0 L 100 50 L ${100 - (orderBook.asks.length > 0 ? (orderBook.asks[orderBook.asks.length - 1].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 50 Z`}
+                                fill="url(#askGradient)"
+                                className="transition-all duration-500"
                             />
-                        ))}
+                            {/* Bid Depth Area (bottom half) */}
+                            <path
+                                d={`M 0 50 L ${(orderBook.bids.length > 0 ? (orderBook.bids[orderBook.bids.length - 1].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 50 L ${(orderBook.bids.length > 0 ? (orderBook.bids[0].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 100 L 0 100 Z`}
+                                fill="url(#bidGradient)"
+                                className="transition-all duration-500"
+                            />
+
+                            <defs>
+                                <linearGradient id="askGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                                </linearGradient>
+                                <linearGradient id="bidGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0" />
+                                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.4" />
+                                </linearGradient>
+                            </defs>
+
+                            {/* Mid Line */}
+                            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" />
+                        </svg>
+
+                        {/* Legend for Depth Chart */}
+                        <div className="absolute top-1 right-2 text-[8px] font-black uppercase text-destructive tracking-widest">Supply Depth</div>
+                        <div className="absolute bottom-1 left-2 text-[8px] font-black uppercase text-emerald-500 tracking-widest">Demand Depth</div>
                     </div>
 
-                    {/* Current Price Indicator */}
-                    <div className="py-1 border-y border-border/50">
-                        <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] text-muted-foreground">Mid Price</span>
-                            <span className="font-mono text-sm font-semibold">
-                                ฿{orderBook.midPrice.toFixed(2)}
-                            </span>
+                    <div className="space-y-1 pt-2 border-t border-border/20">
+                        {/* Asks (Sells) - Reversed to show highest first */}
+                        <div className="space-y-0.5">
+                            {[...orderBook.asks].reverse().map((ask, i) => (
+                                <DepthBar
+                                    key={`ask-${i}`}
+                                    level={ask}
+                                    total={orderBook.totalAskVolume}
+                                    type="ask"
+                                    isHighlighted={!!currentPrice && currentPrice >= ask.price}
+                                />
+                            ))}
                         </div>
-                    </div>
 
-                    {/* Bids (Buys) */}
-                    <div className="space-y-0.5">
-                        {orderBook.bids.map((bid, i) => (
-                            <DepthBar
-                                key={`bid-${i}`}
-                                level={bid}
-                                total={orderBook.totalBidVolume}
-                                type="bid"
-                                isHighlighted={!!currentPrice && currentPrice <= bid.price}
-                            />
-                        ))}
+                        {/* Current Price Indicator */}
+                        <div className="py-1.5 border-y border-border/50 bg-accent/20">
+                            <div className="flex items-center justify-between px-2">
+                                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Mid Market</span>
+                                <span className="font-mono text-sm font-black text-primary">
+                                    ฿{orderBook.midPrice.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Bids (Buys) */}
+                        <div className="space-y-0.5">
+                            {orderBook.bids.map((bid, i) => (
+                                <DepthBar
+                                    key={`bid-${i}`}
+                                    level={bid}
+                                    total={orderBook.totalBidVolume}
+                                    type="bid"
+                                    isHighlighted={!!currentPrice && currentPrice <= bid.price}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
 

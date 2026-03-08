@@ -127,6 +127,25 @@ export function useMarketData(token?: string) {
 }
 
 /**
+ * Hook for fetching market configurations
+ */
+export function useMarketConfig(token?: string) {
+  const client = useApiClient(token)
+
+  const { data, loading, error, refetch } = useApiRequest(
+    () => client.getMarketConfig(),
+    [token]
+  )
+
+  return {
+    marketConfig: data,
+    loading,
+    error,
+    refetch,
+  }
+}
+
+/**
  * Hook for creating orders
  */
 export function useCreateOrder(token?: string) {
@@ -321,162 +340,6 @@ export function useAuth() {
 }
 
 /**
- * Hook for fetching revenue summary (Admin)
- */
-export function useRevenueSummary(token?: string) {
-  const client = useApiClient(token)
-
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getRevenueSummary(),
-    [token]
-  )
-
-  return {
-    summary: data,
-    loading,
-    error,
-    refetch,
-  }
-}
-
-/**
- * Hook for fetching revenue records (Admin)
- */
-export function useRevenueRecords(
-  token?: string,
-  filters?: { limit?: number; offset?: number }
-) {
-  const client = useApiClient(token)
-
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getRevenueRecords(filters?.limit, filters?.offset),
-    [token, filters]
-  )
-
-  return {
-    records: data,
-    loading,
-    error,
-    refetch,
-  }
-}
-
-/**
- * Hook for fetching VPP clusters (Admin)
- */
-export function useVppClusters(token?: string) {
-  const client = useApiClient(token)
-
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getVppClusters(),
-    [token]
-  )
-
-  return {
-    clusters: data,
-    loading,
-    error,
-    refetch,
-  }
-}
-
-/**
- * Hook for dispatching VPP cluster (Admin)
- */
-export function useDispatchVppCluster(token?: string) {
-  const client = useApiClient(token)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const dispatch = useCallback(
-    async (clusterId: string, targetKw: number) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const response = await client.dispatchVppCluster(clusterId, targetKw)
-        if (response.error) {
-          setError(response.error)
-          return null
-        }
-        return response.data
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-        return null
-      } finally {
-        setLoading(false)
-      }
-    },
-    [client]
-  )
-
-  return {
-    dispatch,
-    loading,
-    error,
-  }
-}
-
-/**
- * Hook for fetching platform statistics (Admin)
- */
-export function useAdminStats(token?: string) {
-  const client = useApiClient(token)
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getAdminStats(),
-    [token]
-  )
-  return { stats: data, loading, error, refetch }
-}
-
-/**
- * Hook for fetching system health (Admin)
- */
-export function useSystemHealth(token?: string) {
-  const client = useApiClient(token)
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getSystemHealth(),
-    [token]
-  )
-  return { health: data, loading, error, refetch }
-}
-
-/**
- * Hook for fetching grid topology and branch status (Admin)
- */
-export function useGridTopology(token?: string) {
-  const client = useApiClient(token)
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getGridTopology(),
-    [token]
-  )
-  return { topology: data, loading, error, refetch }
-}
-
-/**
- * Hook for fetching platform activity logs (Admin)
- */
-export function useAdminActivity(token?: string) {
-  const client = useApiClient(token)
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getAdminActivity(),
-    [token]
-  )
-  return { activities: data, loading, error, refetch }
-}
-
-/**
- * Hook for fetching zone economic insights (Admin)
- */
-export function useZoneEconomicInsights(timeframe: string, token?: string) {
-  const client = useMemo(() => createApiClient(token), [token])
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getZoneEconomicInsights(timeframe),
-    [timeframe, token]
-  )
-  return { insights: data, loading, error, refetch }
-}
-
-/**
  * Hook for tracking aggregate market statistics
  */
 export function useMarketStats(token?: string) {
@@ -508,152 +371,6 @@ export function useMarketStats(token?: string) {
   }, [fetchStats])
 
   return { stats, loading, error, refresh: fetchStats }
-}
-
-/**
- * Hook for fetching all users (Admin)
- */
-export function useAdminUsers(token?: string, filters?: any) {
-  const client = useApiClient(token)
-  const { data, loading, error, refetch } = useApiRequest(
-    () => client.getAdminUsers(filters),
-    [filters, token]
-  )
-  return { users: data, loading, error, refetch }
-}
-
-/**
- * Hook for performing administrative user actions
- */
-export function useAdminActions(token?: string) {
-  const client = useApiClient(token)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const updateRole = async (userId: string, role: string) => {
-    setLoading(true)
-    setError(null)
-    const res = await client.updateUserRole(userId, role)
-    setLoading(false)
-    if (res.error) setError(res.error)
-    return res.data
-  }
-
-  const deactivateUser = async (userId: string) => {
-    setLoading(true)
-    setError(null)
-    const res = await client.deactivateUser(userId)
-    setLoading(false)
-    if (res.error) setError(res.error)
-    return res.data
-  }
-
-  const reactivateUser = async (userId: string) => {
-    setLoading(true)
-    setError(null)
-    const res = await client.reactivateUser(userId)
-    setLoading(false)
-    if (res.error) setError(res.error)
-    return res.data
-  }
-
-  return { updateRole, deactivateUser, reactivateUser, loading, error }
-}
-
-/**
- * P2P Config Item Type
- */
-export interface P2PConfigItem {
-  config_key: string
-  config_value: number
-  category: string
-  description?: string
-  updated_at: string
-}
-
-/**
- * P2P Config Audit Entry Type
- */
-export interface P2PConfigAuditEntry {
-  id: number
-  config_key: string
-  old_value: number | null
-  new_value: number | null
-  changed_at: string
-  change_reason?: string
-}
-
-/**
- * Hook for P2P Config management (Admin)
- */
-export function useP2PConfig() {
-  const client = useApiClient()
-  const [configs, setConfigs] = useState<P2PConfigItem[]>([])
-  const [auditLogs, setAuditLogs] = useState<P2PConfigAuditEntry[]>([])
-  const [loading, setLoading] = useState(false)
-  const [updating, setUpdating] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchConfigs = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [configResponse, auditResponse] = await Promise.all([
-        client.getP2PConfigs(),
-        client.getP2PConfigAudit()
-      ])
-
-      if (configResponse.error) {
-        setError(configResponse.error)
-      } else {
-        setConfigs(configResponse.data?.configs || [])
-      }
-
-      if (auditResponse.data?.history) {
-        setAuditLogs(auditResponse.data.history)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch configs')
-    } finally {
-      setLoading(false)
-    }
-  }, [client])
-
-  const updateConfig = useCallback(async (key: string, value: number, reason?: string) => {
-    setUpdating(key)
-    try {
-      const response = await client.updateP2PConfig(key, value, reason)
-      if (response.error) {
-        setError(response.error)
-        return false
-      }
-      await fetchConfigs()
-      return true
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update config')
-      return false
-    } finally {
-      setUpdating(null)
-    }
-  }, [client, fetchConfigs])
-
-  const refresh = useCallback(() => {
-    fetchConfigs()
-  }, [fetchConfigs])
-
-  useEffect(() => {
-    fetchConfigs()
-  }, [fetchConfigs])
-
-  return {
-    configs,
-    auditLogs,
-    loading,
-    error,
-    updateConfig,
-    updating,
-    refresh
-  }
 }
 
 /**

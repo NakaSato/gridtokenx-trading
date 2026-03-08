@@ -7,7 +7,6 @@ import { AuthApi } from './api/auth'
 import { TradingApi } from './api/trading'
 import { UserApi } from './api/user'
 import { MetersApi } from './api/meters'
-import { AdminApi } from './api/admin'
 import { CarbonApi } from './api/carbon'
 import { FuturesApi } from './api/futures'
 export type { ApiRequestOptions, ApiResponse } from './api/core'
@@ -25,7 +24,6 @@ export class ApiClient {
   private tradingApi: TradingApi
   private userApi: UserApi
   private metersApi: MetersApi
-  private adminApi: AdminApi
   private carbonApi: CarbonApi
   private futuresApi: FuturesApi
 
@@ -39,7 +37,6 @@ export class ApiClient {
     this.tradingApi = new TradingApi(getToken)
     this.userApi = new UserApi(getToken)
     this.metersApi = new MetersApi(getToken)
-    this.adminApi = new AdminApi(getToken)
     this.carbonApi = new CarbonApi(getToken)
     this.futuresApi = new FuturesApi(getToken)
   }
@@ -74,6 +71,7 @@ export class ApiClient {
   async getOrders(filters?: any) { return this.tradingApi.getOrders(filters) }
   async getOrderBook(filters?: any) { return this.tradingApi.getOrderBook(filters) }
   async getMarketData() { return this.tradingApi.getMarketData() }
+  async getMarketConfig() { return this.tradingApi.getMarketConfig() }
   async getTrades(filters?: any) { return this.tradingApi.getTrades(filters) }
   async cancelOrder(orderId: string) { return this.tradingApi.cancelOrder(orderId) }
 
@@ -159,34 +157,15 @@ export class ApiClient {
   async getFuturesOrders() { return this.futuresApi.getFuturesOrders() }
   async closeFuturesPosition(positionId: string) { return this.futuresApi.closeFuturesPosition(positionId) }
 
-  // ==========================================
-  // ADMIN
-  // ==========================================
-
-  async getRevenueSummary() { return this.adminApi.getRevenueSummary() }
-  async getRevenueRecords(limit?: number, offset?: number) { return this.adminApi.getRevenueRecords(limit, offset) }
-  async getVppClusters() { return this.adminApi.getVppClusters() }
-  async dispatchVppCluster(clusterId: string, targetKw: number) { return this.adminApi.dispatchVppCluster(clusterId, targetKw) }
-  async getAdminStats() { return this.adminApi.getAdminStats() }
-  async getSystemHealth() { return this.adminApi.getSystemHealth() }
-  async getAdminActivity() { return this.adminApi.getAdminActivity() }
-  async getZoneEconomicInsights(timeframe?: string) { return this.adminApi.getZoneEconomicInsights(timeframe) }
-  async getAdminUsers(filters?: any) { return this.adminApi.getAdminUsers(filters) }
-  async updateUserRole(userId: string, role: string) { return this.adminApi.updateUserRole(userId, role) }
-  async deactivateUser(userId: string) { return this.adminApi.deactivateUser(userId) }
-  async reactivateUser(userId: string) { return this.adminApi.reactivateUser(userId) }
-  async exportTradingHistory(format: 'csv' | 'json', filters?: any) { return this.adminApi.exportTradingHistory(format, filters) }
-
-  // P2P Config Management
-  async getP2PConfigs() { return this.adminApi.getP2PConfigs() }
-  async updateP2PConfig(key: string, value: number, reason?: string) { return this.adminApi.updateP2PConfig(key, value, reason) }
-  async getP2PConfigAudit(key?: string, limit?: number) { return this.adminApi.getP2PConfigAudit(key, limit) }
-
-  // Backward compatibility method for user / admin confusion in  // Analytics / Market Data
+  // Analytics / Market Data
   async getMarketStats() { return this.tradingApi.getMarketStats() }
   async getMarketAnalytics(params: { timeframe: string }) {
     // Old implementation called: `/api/v1/analytics/market?timeframe=${params.timeframe}`
     return this.tradingApi.getMarketData() // Close enough to the old implementation which didn't use timeframe anyway
+  }
+
+  async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
+    return this.tradingApi.exportTradingHistory(format)
   }
 }
 

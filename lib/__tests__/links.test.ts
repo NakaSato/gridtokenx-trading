@@ -35,7 +35,7 @@ describe('links', () => {
     })
 
     it('should have solana explorer URL', () => {
-      expect(EXTERNAL_LINKS.solanaExplorer).toContain('solana.com')
+      expect(EXTERNAL_LINKS.solanaExplorer).toContain('gridtokenx.com')
     })
   })
 

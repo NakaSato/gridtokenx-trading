@@ -18,6 +18,7 @@ import type { EnergyNode } from '@/components/energy-grid/types'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
 import { useCrypto } from '@/hooks/useCrypto'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
+import { useMarketConfig } from '@/hooks/useApi'
 import {
   OrderTypeTabs,
   MatchTargetIndicator,
@@ -57,6 +58,7 @@ const OrderForm = React.memo(function OrderForm({
   const [currency] = useState<'GRX' | 'USDC'>('GRX')
   const { isLoaded: cryptoLoaded } = useCrypto()
   const queryClient = useQueryClient()
+  const { marketConfig } = useMarketConfig(token ?? undefined)
   const {
     createBuyOrder,
     createSellOrder,
@@ -209,6 +211,18 @@ const OrderForm = React.memo(function OrderForm({
     if (!price || parseFloat(price) <= 0) {
       setMessage('Please enter a valid price')
       return
+    }
+
+    if (marketConfig) {
+      const priceVal = parseFloat(price)
+      if (priceVal < marketConfig.min_price_per_kwh) {
+        setMessage(`Price cannot be lower than the minimum limit (฿${marketConfig.min_price_per_kwh})`)
+        return
+      }
+      if (priceVal > marketConfig.max_price_per_kwh) {
+        setMessage(`Price cannot be higher than the maximum limit (฿${marketConfig.max_price_per_kwh})`)
+        return
+      }
     }
 
     if (orderType === 'sell' && balance !== null && parseFloat(amount) > balance) {

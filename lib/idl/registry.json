@@ -354,7 +354,7 @@
     {
       "name": "set_oracle_authority",
       "docs": [
-        "Set the oracle authority (admin only)"
+        "Set the oracle authority"
       ],
       "discriminator": [
         39,
@@ -516,7 +516,7 @@
     {
       "name": "update_user_status",
       "docs": [
-        "Update user status (admin only)"
+        "Update user status"
       ],
       "discriminator": [
         4,

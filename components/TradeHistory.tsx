@@ -6,9 +6,10 @@ import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
-import { History, TrendingUp } from 'lucide-react'
+import { History, TrendingUp, BarChart3, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Trade {
     id: string
@@ -54,6 +55,12 @@ const TradeHistory = React.memo(function TradeHistory() {
     }
 
     useEffect(() => {
+        if (!token) {
+            setTrades([])
+            setLoading(false)
+            return
+        }
+
         fetchTrades()
         const interval = setInterval(fetchTrades, 10000)
 
@@ -114,16 +121,38 @@ const TradeHistory = React.memo(function TradeHistory() {
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
                     <span className="flex items-center gap-2">
                         <History className="h-3.5 w-3.5" />
-                        Recent Trades
+                        Market Activity
                     </span>
                     {trades.length > 0 && (
                         <div className="flex items-center gap-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-medium text-foreground">{trades.length} active</span>
+                            <span className="text-[10px] font-medium text-foreground uppercase tracking-widest">{trades.length} Trades</span>
                         </div>
                     )}
                 </CardTitle>
             </CardHeader>
+
+            {/* Market Statistics Bar */}
+            <div className="px-4 py-3 bg-accent/20 border-b border-border/30 grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1">
+                        <TrendingUp className="h-2.5 w-2.5 text-primary" /> VWAP (24H)
+                    </p>
+                    <div className="text-sm font-black font-mono">
+                        ฿{(trades.reduce((acc, t) => acc + (parseFloat(t.price) * parseFloat(t.quantity)), 0) /
+                            trades.reduce((acc, t) => acc + parseFloat(t.quantity), 0) || 0).toFixed(2)}
+                    </div>
+                </div>
+                <div className="space-y-1 text-right">
+                    <p className="text-[8px] font-black uppercase text-muted-foreground tracking-widest flex items-center justify-end gap-1">
+                        <BarChart3 className="h-2.5 w-2.5 text-purple-500" /> Volume
+                    </p>
+                    <div className="text-sm font-black font-mono">
+                        {trades.reduce((acc, t) => acc + parseFloat(t.quantity), 0).toFixed(1)} <span className="text-[9px] font-normal uppercase text-muted-foreground">kWh</span>
+                    </div>
+                </div>
+            </div>
+
             <CardContent className="flex-1 overflow-y-auto p-0">
                 {trades.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-3">

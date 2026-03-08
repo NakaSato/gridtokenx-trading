@@ -249,17 +249,6 @@ export default function NavBar() {
             />
           ))}
 
-          {user?.role === 'admin' && (
-            <NavLink
-              item={{
-                name: 'Admin',
-                href: '/admin',
-                icon: <ShieldCheck size={16} />,
-              }}
-              isActive={activeRoute === 'Admin'}
-              onClick={() => setActiveItem('Admin')}
-            />
-          )}
 
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger

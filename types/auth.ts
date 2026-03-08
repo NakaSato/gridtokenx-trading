@@ -1,4 +1,4 @@
-export type Role = "user" | "producer" | "consumer" | "admin" | "ami";
+export type Role = "user" | "producer" | "consumer" | "ami";
 
 export interface RegistrationRequest {
   username: string;
@@ -102,7 +102,7 @@ export interface UserProfile {
   id: string;
   username: string;
   email: string;
-  role: "user" | "producer" | "consumer" | "admin" | "ami";
+  role: "user" | "producer" | "consumer" | "ami";
   wallet_address?: string;
   first_name?: string;
   last_name?: string;

@@ -10,7 +10,7 @@
     {
       "name": "add_backup_oracle",
       "docs": [
-        "Add backup oracle (admin only)"
+        "Add backup oracle"
       ],
       "discriminator": [
         143,
@@ -75,7 +75,7 @@
     {
       "name": "remove_backup_oracle",
       "docs": [
-        "Remove backup oracle (admin only)"
+        "Remove backup oracle"
       ],
       "discriminator": [
         131,
@@ -183,7 +183,7 @@
     {
       "name": "update_api_gateway",
       "docs": [
-        "Update API Gateway address (admin only)"
+        "Update API Gateway address"
       ],
       "discriminator": [
         66,
@@ -215,7 +215,7 @@
     {
       "name": "update_oracle_status",
       "docs": [
-        "Update oracle status (admin only)"
+        "Update oracle status"
       ],
       "discriminator": [
         17,
@@ -247,7 +247,7 @@
     {
       "name": "update_production_ratio_config",
       "docs": [
-        "Update production/consumption ratio validation threshold (admin only)",
+        "Update production/consumption ratio validation threshold",
         "Allows adjustment for different deployment scenarios (residential vs. large solar farms)"
       ],
       "discriminator": [
@@ -280,7 +280,7 @@
     {
       "name": "update_validation_config",
       "docs": [
-        "Update validation configuration (admin only)"
+        "Update validation configuration"
       ],
       "discriminator": [
         104,
