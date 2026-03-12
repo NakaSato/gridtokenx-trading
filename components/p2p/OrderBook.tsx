@@ -33,7 +33,8 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
     const [filter, setFilter] = useState<'all' | 'buy' | 'sell'>('all')
     const [offchainOrders, setOffchainOrders] = useState<UnifiedOrder[]>([])
     const [offchainLoading, setOffchainLoading] = useState(false)
-
+    const [animatedRows, setAnimatedRows] = useState<Set<string>>(new Set())
+    
     // Helper to check if a Pubkey is "empty" (System Program or Zero)
     const isEmptyKey = (key: PublicKey) => {
         return key.equals(PublicKey.default) || key.toBase58() === '11111111111111111111111111111111'
@@ -108,8 +109,26 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
                     zoneId: o.zone_id,
                     createdAt: o.created_at,
                 })).filter((o: UnifiedOrder) => o.remaining > 0 && o.price > 0)
-
-                setOffchainOrders(unified)
+                
+                // Diff the new snapshot against the current state to trigger animations
+                setOffchainOrders(prev => {
+                    const newAnimated = new Set<string>()
+                    unified.forEach(newOrder => {
+                        const existingOrder = prev.find(o => o.price === newOrder.price && o.side === newOrder.side)
+                        // Animate if it's a completely new price point, or if the available amount has mutated
+                        if (!existingOrder || existingOrder.remaining !== newOrder.remaining) {
+                            newAnimated.add(newOrder.id)
+                        }
+                    })
+                    
+                    if (newAnimated.size > 0) {
+                        setAnimatedRows(newAnimated)
+                        // Clear the animation class after 800ms (matches CSS duration)
+                        setTimeout(() => setAnimatedRows(new Set()), 800)
+                    }
+                    
+                    return unified
+                })
             } else {
                 // Snapshot with no orders — trigger a REST refetch for full data
                 fetchOffchainOrders()
@@ -278,7 +297,12 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
                             </tr>
                         ) : (
                             displayOrders.map((order) => (
-                                <tr key={order.id} className="hover:bg-muted/30 group transition-colors">
+                                <tr key={order.id} className={clsx(
+                                    "hover:bg-muted/30 group transition-colors",
+                                    animatedRows.has(order.id) && (
+                                        order.side === 'buy' ? 'animate-flash-buy' : 'animate-flash-sell'
+                                    )
+                                )}>
                                     <td className="px-4 py-2.5">
                                         {order.side === 'buy' ? (
                                             <span className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-medium">

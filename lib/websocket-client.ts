@@ -18,6 +18,7 @@ export type WebSocketMessageType =
   | 'p2p_order_update'
   | 'settlement_complete'
   | 'order_book_snapshot'
+  | 'conditional_order_triggered'
 
 /** Standard WebSocket message format */
 export interface WebSocketMessage<T = unknown> {

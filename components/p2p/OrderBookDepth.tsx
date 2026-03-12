@@ -51,6 +51,7 @@ export default function OrderBookDepth({
     const [orderBook, setOrderBook] = useState<OrderBookSnapshot | null>(null)
     const [loading, setLoading] = useState(false)
     const [priceImpact, setPriceImpact] = useState<number | null>(null)
+    const [isFlashing, setIsFlashing] = useState<boolean>(false)
 
     const processOrderBookData = useCallback((bids: any[], asks: any[]) => {
         const aggregatedBids = aggregateDepth(bids, 'buy')
@@ -63,15 +64,25 @@ export default function OrderBookDepth({
         const totalBidVolume = aggregatedBids.reduce((sum, b) => sum + b.amount, 0)
         const totalAskVolume = aggregatedAsks.reduce((sum, a) => sum + a.amount, 0)
 
-        setOrderBook({
-            bids: aggregatedBids.slice(0, 5),
-            asks: aggregatedAsks.slice(0, 5),
-            spread: bestAsk - bestBid,
-            midPrice,
-            bestBid,
-            bestAsk,
-            totalBidVolume,
-            totalAskVolume
+        setOrderBook(prev => {
+            if (prev) {
+                // Determine if a meaningful volume change occurred to flash
+                if (prev.totalBidVolume !== totalBidVolume || prev.totalAskVolume !== totalAskVolume) {
+                    setIsFlashing(true)
+                    setTimeout(() => setIsFlashing(false), 500)
+                }
+            }
+
+            return {
+                bids: aggregatedBids.slice(0, 5),
+                asks: aggregatedAsks.slice(0, 5),
+                spread: bestAsk - bestBid,
+                midPrice,
+                bestBid,
+                bestAsk,
+                totalBidVolume,
+                totalAskVolume
+            }
         })
     }, [currentPrice])
 
@@ -184,7 +195,8 @@ export default function OrderBookDepth({
     }
 
     return (
-        <Card className="border-border/50 bg-card/50 rounded-lg overflow-hidden">
+        <Card className={cn("border-border/50 bg-card/50 rounded-lg overflow-hidden transition-colors",
+            isFlashing ? "bg-accent/30" : "")}>
             <CardHeader className="pb-2 pt-3 px-3">
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center text-xs font-medium">
@@ -237,13 +249,13 @@ export default function OrderBookDepth({
                             {/* Ask Depth Area (top half) */}
                             <path
                                 d={`M ${100 - (orderBook.asks.length > 0 ? (orderBook.asks[0].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 0 L 100 0 L 100 50 L ${100 - (orderBook.asks.length > 0 ? (orderBook.asks[orderBook.asks.length - 1].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 50 Z`}
-                                fill="url(#askGradient)"
+                                fill={isFlashing ? "rgba(239, 68, 68, 0.6)" : "url(#askGradient)"}
                                 className="transition-all duration-500"
                             />
                             {/* Bid Depth Area (bottom half) */}
                             <path
                                 d={`M 0 50 L ${(orderBook.bids.length > 0 ? (orderBook.bids[orderBook.bids.length - 1].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 50 L ${(orderBook.bids.length > 0 ? (orderBook.bids[0].cumulative / Math.max(orderBook.totalAskVolume, orderBook.totalBidVolume)) * 100 : 0)} 100 L 0 100 Z`}
-                                fill="url(#bidGradient)"
+                                fill={isFlashing ? "rgba(16, 185, 129, 0.6)" : "url(#bidGradient)"}
                                 className="transition-all duration-500"
                             />
 

@@ -5,9 +5,10 @@
  * Provides hooks for transaction status changes, P2P order updates, and settlement notifications
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWebSocketMessage } from './useWebSocket'
 import toast from 'react-hot-toast'
+import throttle from 'lodash.throttle'
 
 /**
  * Transaction status update from WebSocket
@@ -62,6 +63,19 @@ export interface SettlementComplete {
     energy_amount: string
     total_cost: string
     transaction_signature: string | null
+    timestamp: string
+}
+
+/**
+ * Conditional order trigger notification from WebSocket
+ */
+export interface ConditionalOrderTriggered {
+    order_id: string
+    user_id: string
+    trigger_type: 'StopLoss' | 'TakeProfit' | 'TrailingStop' | string
+    side: 'buy' | 'sell' | string
+    trigger_price: string
+    market_price: string
     timestamp: string
 }
 
@@ -181,6 +195,27 @@ function showSettlementToast(settlement: SettlementComplete): void {
 }
 
 /**
+ * Show toast notification for conditional order trigger
+ */
+function showConditionalOrderToast(update: ConditionalOrderTriggered): void {
+    const typeLabel = update.trigger_type === 'StopLoss' ? 'Stop-Loss' : 
+                     update.trigger_type === 'TakeProfit' ? 'Take-Profit' : 
+                     update.trigger_type === 'TrailingStop' ? 'Trailing Stop' : update.trigger_type
+    
+    const sideLabel = update.side.toLowerCase() === 'buy' ? '🟢 Buy' : '🔴 Sell'
+    
+    toast(`${typeLabel} Triggered! ${sideLabel}`, {
+        icon: '🔔',
+        duration: 5000,
+        style: {
+            border: '1px solid #7137f1',
+            padding: '16px',
+            color: '#7137f1',
+        },
+    })
+}
+
+/**
  * Hook for real-time transaction status updates
  * Automatically shows toast notifications and tracks latest updates
  */
@@ -195,18 +230,36 @@ export function useTransactionUpdates(
     const [latestUpdate, setLatestUpdate] = useState<TransactionStatusUpdate | null>(null)
     const [updates, setUpdates] = useState<TransactionStatusUpdate[]>([])
 
-    const handleUpdate = useCallback(
-        (data: TransactionStatusUpdate) => {
-            setLatestUpdate(data)
-            setUpdates((prev) => [data, ...prev].slice(0, 50)) // Keep last 50
+    // Use a ref to accumulate updates between throttles
+    const updatesQueue = useRef<TransactionStatusUpdate[]>([])
+
+    const flushUpdates = useCallback(
+        throttle(() => {
+            if (updatesQueue.current.length === 0) return
+
+            const updates = [...updatesQueue.current]
+            updatesQueue.current = []
+
+            setLatestUpdate(updates[0])
+            setUpdates((prev) => [...updates, ...prev].slice(0, 50)) // Keep last 50
 
             if (showToasts) {
-                showTransactionToast(data)
+                // To avoid toast overload, we only show toast for the most recent 3 updates if there's a flood
+                const displayUpdates = updates.slice(0, 3)
+                displayUpdates.forEach(u => showTransactionToast(u))
             }
 
-            onUpdate?.(data)
-        },
+            if (onUpdate) onUpdate(updates[0])
+        }, 150, { leading: true, trailing: true }),
         [showToasts, onUpdate]
+    )
+
+    const handleUpdate = useCallback(
+        (data: TransactionStatusUpdate) => {
+            updatesQueue.current.unshift(data)
+            flushUpdates()
+        },
+        [flushUpdates]
     )
 
     const { connected } = useWebSocketMessage<TransactionStatusUpdate>(
@@ -240,33 +293,55 @@ export function useP2POrderUpdates(
     const [latestUpdate, setLatestUpdate] = useState<P2POrderUpdate | null>(null)
     const [activeOrders, setActiveOrders] = useState<Map<string, P2POrderUpdate>>(new Map())
 
-    const handleUpdate = useCallback(
-        (data: P2POrderUpdate) => {
-            // Filter by user ID if specified
-            if (filterUserId && data.user_id !== filterUserId) {
-                return
-            }
+    // Use a ref to accumulate map updates between throttles
+    const updatesQueue = useRef<P2POrderUpdate[]>([])
 
-            setLatestUpdate(data)
+    // Throttled flush to the actual React states
+    const flushUpdates = useCallback(
+        throttle(() => {
+            if (updatesQueue.current.length === 0) return
 
-            // Update active orders map
+            const updates = [...updatesQueue.current]
+            updatesQueue.current = []
+
+            // Set latest
+            setLatestUpdate(updates[0])
+
+            // Batch into active orders map
             setActiveOrders((prev) => {
                 const next = new Map(prev)
-                if (data.status === 'filled' || data.status === 'cancelled') {
-                    next.delete(data.order_id)
-                } else {
-                    next.set(data.order_id, data)
-                }
+                updates.forEach(data => {
+                    if (data.status === 'filled' || data.status === 'cancelled') {
+                        next.delete(data.order_id)
+                    } else {
+                        next.set(data.order_id, data)
+                    }
+                })
                 return next
             })
 
+            // Run toasts sequentially to prevent massive popups
             if (showToasts) {
-                showP2POrderToast(data)
+                // To avoid toast overload, we only show toast for the most recent 3 updates if there's a flood
+                const displayUpdates = updates.slice(0, 3)
+                displayUpdates.forEach(u => showP2POrderToast(u))
             }
 
-            onUpdate?.(data)
+            // Trigger generic callback on last item
+            if (onUpdate) onUpdate(updates[0])
+
+        }, 150, { leading: true, trailing: true }),
+        [showToasts, onUpdate]
+    )
+
+    const handleUpdate = useCallback(
+        (data: P2POrderUpdate) => {
+            if (filterUserId && data.user_id !== filterUserId) return
+
+            updatesQueue.current.unshift(data)
+            flushUpdates()
         },
-        [showToasts, onUpdate, filterUserId]
+        [flushUpdates, filterUserId]
     )
 
     const { connected } = useWebSocketMessage<P2POrderUpdate>(
@@ -301,6 +376,28 @@ export function useSettlementUpdates(
     const [latestSettlement, setLatestSettlement] = useState<SettlementComplete | null>(null)
     const [settlements, setSettlements] = useState<SettlementComplete[]>([])
 
+    const settlementsQueue = useRef<SettlementComplete[]>([])
+
+    const flushSettlements = useCallback(
+        throttle(() => {
+            if (settlementsQueue.current.length === 0) return
+
+            const stlUpdates = [...settlementsQueue.current]
+            settlementsQueue.current = []
+
+            setLatestSettlement(stlUpdates[0])
+            setSettlements((prev) => [...stlUpdates, ...prev].slice(0, 50))
+
+            if (showToasts) {
+                const displayUpdates = stlUpdates.slice(0, 3)
+                displayUpdates.forEach(s => showSettlementToast(s))
+            }
+
+            if (onSettlement) onSettlement(stlUpdates[0])
+        }, 150, { leading: true, trailing: true }),
+        [showToasts, onSettlement]
+    )
+
     const handleSettlement = useCallback(
         (data: SettlementComplete) => {
             // Filter by user ID if specified (either as buyer or seller)
@@ -308,16 +405,10 @@ export function useSettlementUpdates(
                 return
             }
 
-            setLatestSettlement(data)
-            setSettlements((prev) => [data, ...prev].slice(0, 50))
-
-            if (showToasts) {
-                showSettlementToast(data)
-            }
-
-            onSettlement?.(data)
+            settlementsQueue.current.unshift(data)
+            flushSettlements()
         },
-        [showToasts, onSettlement, filterUserId]
+        [flushSettlements, filterUserId]
     )
 
     const { connected } = useWebSocketMessage<SettlementComplete>(
@@ -347,12 +438,19 @@ export function useOrderBookUpdates(
     const { onUpdate, token } = options
     const [latestSnapshot, setLatestSnapshot] = useState<OrderBookSnapshotUpdate | null>(null)
 
-    const handleUpdate = useCallback(
-        (data: OrderBookSnapshotUpdate) => {
+    const throttledUpdate = useCallback(
+        throttle((data: OrderBookSnapshotUpdate) => {
             setLatestSnapshot(data)
             onUpdate?.(data)
-        },
+        }, 150, { leading: true, trailing: true }),
         [onUpdate]
+    )
+
+    const handleUpdate = useCallback(
+        (data: OrderBookSnapshotUpdate) => {
+            throttledUpdate(data)
+        },
+        [throttledUpdate]
     )
 
     const { connected } = useWebSocketMessage<OrderBookSnapshotUpdate>(
@@ -365,6 +463,68 @@ export function useOrderBookUpdates(
     return {
         connected,
         latestSnapshot,
+    }
+}
+
+/**
+ * Hook for real-time conditional order trigger updates
+ */
+export function useConditionalOrderUpdates(
+    options: {
+        showToasts?: boolean
+        onTrigger?: (update: ConditionalOrderTriggered) => void
+        filterUserId?: string
+        token?: string
+    } = {}
+) {
+    const { showToasts = true, onTrigger, filterUserId, token } = options
+    const [latestTrigger, setLatestTrigger] = useState<ConditionalOrderTriggered | null>(null)
+    const [triggers, setTriggers] = useState<ConditionalOrderTriggered[]>([])
+
+    const triggersQueue = useRef<ConditionalOrderTriggered[]>([])
+
+    const flushTriggers = useCallback(
+        throttle(() => {
+            if (triggersQueue.current.length === 0) return
+
+            const updates = [...triggersQueue.current]
+            triggersQueue.current = []
+
+            setLatestTrigger(updates[0])
+            setTriggers((prev) => [...updates, ...prev].slice(0, 50))
+
+            if (showToasts) {
+                const displayUpdates = updates.slice(0, 3)
+                displayUpdates.forEach(u => showConditionalOrderToast(u))
+            }
+
+            if (onTrigger) onTrigger(updates[0])
+        }, 150, { leading: true, trailing: true }),
+        [showToasts, onTrigger]
+    )
+
+    const handleTrigger = useCallback(
+        (data: ConditionalOrderTriggered) => {
+            if (filterUserId && data.user_id !== filterUserId) return
+
+            triggersQueue.current.unshift(data)
+            flushTriggers()
+        },
+        [flushTriggers, filterUserId]
+    )
+
+    const { connected } = useWebSocketMessage<ConditionalOrderTriggered>(
+        'trades',
+        'conditional_order_triggered',
+        handleTrigger,
+        token
+    )
+
+    return {
+        connected,
+        latestTrigger,
+        triggers,
+        clearTriggers: () => setTriggers([]),
     }
 }
 
@@ -384,13 +544,15 @@ export function useAllTradingUpdates(
     const transactions = useTransactionUpdates({ showToasts, token })
     const p2pOrders = useP2POrderUpdates({ showToasts, filterUserId: userId, token })
     const settlements = useSettlementUpdates({ showToasts, filterUserId: userId, token })
+    const conditionalOrders = useConditionalOrderUpdates({ showToasts, filterUserId: userId, token })
 
-    const isConnected = transactions.connected || p2pOrders.connected || settlements.connected
+    const isConnected = transactions.connected || p2pOrders.connected || settlements.connected || conditionalOrders.connected
 
     return {
         isConnected,
         transactions,
         p2pOrders,
         settlements,
+        conditionalOrders,
     }
 }

@@ -206,3 +206,21 @@ input[type='number'] {
   animation: marquee 15s linear infinite;
   white-space: nowrap;
 }
+
+@keyframes flash-buy {
+  0% { background-color: rgba(16, 185, 129, 0.4); } 
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-sell {
+  0% { background-color: rgba(239, 68, 68, 0.4); }
+  100% { background-color: transparent; }
+}
+
+.animate-flash-buy {
+  animation: flash-buy 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-flash-sell {
+  animation: flash-sell 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

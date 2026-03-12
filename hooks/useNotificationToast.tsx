@@ -45,6 +45,16 @@ interface P2POrderUpdateData {
   price_per_kwh: string
 }
 
+interface ConditionalOrderTriggeredData {
+  order_id: string
+  user_id: string
+  trigger_type: string
+  side: string
+  trigger_price: string
+  market_price: string
+  timestamp: string
+}
+
 interface TransactionStatusData {
   operation_id: string
   transaction_type: string
@@ -135,14 +145,26 @@ const TxSuccessToast = ({ type, status }: { type: string; status: string }) => (
   </div>
 )
 
+const ConditionalOrderToast = ({ type, side, triggerPrice, marketPrice }: { type: string; side: string; triggerPrice: string; marketPrice: string }) => (
+  <div className="flex items-center gap-2">
+    <TrendingUp className="h-4 w-4 text-purple-500" />
+    <div>
+      <p className="font-medium">{type} Triggered!</p>
+      <p className="text-xs opacity-80">
+        {side} order meet condition @ {marketPrice} GRIDX
+      </p>
+    </div>
+  </div>
+)
+
 /**
  * Hook to display toast notifications for WebSocket events
  * Shows toast notifications when orders are filled, matched, settled, etc.
  */
 export function useNotificationToast() {
   const { user } = useAuth()
-  // Use wallet_address as user identifier since User doesn't have id
-  const currentUserId = user?.wallet_address || ''
+  // Use id as user identifier, fallback to wallet_address
+  const currentUserId = user?.id || user?.wallet_address || ''
 
   // Order filled notification
   useOrderFilledWebSocket(
@@ -236,6 +258,38 @@ export function useNotificationToast() {
         )
       }
     }, [])
+  )
+
+  // Conditional order trigger notification
+  useWebSocketMessage(
+    'trades',
+    'conditional_order_triggered',
+    useCallback((data: ConditionalOrderTriggeredData) => {
+      // Only show for user's own orders
+      if (currentUserId !== data.user_id) return
+
+      const typeLabel = data.trigger_type === 'StopLoss' ? 'Stop-Loss' : 
+                       data.trigger_type === 'TakeProfit' ? 'Take-Profit' : 
+                       data.trigger_type === 'TrailingStop' ? 'Trailing Stop' : data.trigger_type
+      
+      const sideLabel = data.side.toLowerCase() === 'buy' ? 'Buy' : 'Sell'
+
+      toast.success(
+        <ConditionalOrderToast 
+          type={typeLabel} 
+          side={sideLabel} 
+          triggerPrice={data.trigger_price} 
+          marketPrice={data.market_price} 
+        />,
+        { 
+          duration: 6000, 
+          id: `conditional-trigger-${data.order_id}`,
+          style: {
+            border: '1px solid #7137f1',
+          }
+        }
+      )
+    }, [currentUserId])
   )
 }
 
