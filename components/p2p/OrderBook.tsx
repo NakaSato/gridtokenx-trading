@@ -277,7 +277,7 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 400px' }}>
                 <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0 z-10">
                         <tr>

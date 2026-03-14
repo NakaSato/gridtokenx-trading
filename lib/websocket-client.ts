@@ -230,18 +230,27 @@ export class WebSocketClient {
     }
 
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached')
+      console.debug(`WebSocket disconnected [${this.url}]: Max reconnect attempts reached`)
       return
     }
 
     this.reconnectAttempts++
-    console.log(
-      `Attempting to reconnect (${this.reconnectAttempts}/${this.options.maxReconnectAttempts})...`
+    
+    // Exponential backoff with jitter: delay = baseDelay * 2^(attempt-1) + random jitter
+    // Attempt 1: 3s, Attempt 2: 6s, Attempt 3: 12s, Attempt 4: 24s, Attempt 5: 48s
+    const baseDelay = this.options.reconnectDelay
+    const exponentialDelay = baseDelay * Math.pow(2, this.reconnectAttempts - 1)
+    // Add jitter: ±20% random variation to prevent thundering herd
+    const jitter = (Math.random() - 0.5) * 0.4 * exponentialDelay
+    const delay = Math.min(exponentialDelay + jitter, 60000) // Cap at 60 seconds
+
+    console.debug(
+      `WebSocket reconnecting (${this.reconnectAttempts}/${this.options.maxReconnectAttempts}) [${this.url}] in ${(delay / 1000).toFixed(1)}s...`
     )
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect()
-    }, this.options.reconnectDelay)
+    }, delay)
   }
 }
 

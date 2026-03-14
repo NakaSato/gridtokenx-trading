@@ -10,7 +10,7 @@ export default function Footer() {
 
     return (
         <footer className="hidden md:flex w-full border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 mt-auto">
-            <div className="container flex items-center justify-between gap-4 h-8">
+            <div className="flex w-full items-center justify-between gap-4 h-8">
                 <p className="text-left text-xs leading-loose text-muted-foreground">
                     © {new Date().getFullYear()} GridTokenX. All rights reserved.
                 </p>

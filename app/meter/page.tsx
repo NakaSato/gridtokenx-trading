@@ -1,16 +1,48 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Plus } from 'lucide-react'
+import { RefreshCw, Plus, Loader2 } from 'lucide-react'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
 import { SubmitReadingModal } from '@/components/SubmitReadingModal'
 import { useSmartMeter } from '@/hooks/useSmartMeter'
-import { MemoizedMeterStats as MeterStats } from '@/components/meter/MeterStats'
-import { MemoizedReadingsList as ReadingsList } from '@/components/meter/ReadingsList'
-import { MemoizedMeterList as MeterList } from '@/components/meter/MeterList'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import dynamic from 'next/dynamic'
+
+// Lazy load heavy components with skeletons
+const MeterStats = dynamic(
+  () => import('@/components/meter/MeterStats').then(m => m.MemoizedMeterStats),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+)
+
+const ReadingsList = dynamic(
+  () => import('@/components/meter/ReadingsList').then(m => m.MemoizedReadingsList),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+)
+
+const MeterList = dynamic(
+  () => import('@/components/meter/MeterList').then(m => m.MemoizedMeterList),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  }
+)
 
 export default function SmartMeterPage() {
     const {

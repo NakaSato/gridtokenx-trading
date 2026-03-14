@@ -5,6 +5,7 @@ import Map, { NavigationControl, MapRef, MapMouseEvent } from 'react-map-gl/mapb
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon, ArrowRightLeft, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import throttle from 'lodash.throttle'
 
 // Import from energy-grid sub-components
 import {
@@ -64,14 +65,18 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   // Use controlled state if provided, otherwise local state
   const viewState = propViewState || localViewState
 
-  const handleMapMove = useCallback((evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
-    if (onViewStateChange) {
-      onViewStateChange(evt.viewState)
-    } else {
-      setLocalViewState(evt.viewState)
-    }
-    // Don't update bounds here to avoid re-clustering on every frame
-  }, [onViewStateChange])
+  // Throttled map move handler to prevent excessive re-renders during pan/zoom
+  const handleMapMove = useMemo(
+    () => throttle((evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
+      if (onViewStateChange) {
+        onViewStateChange(evt.viewState)
+      } else {
+        setLocalViewState(evt.viewState)
+      }
+      // Don't update bounds here to avoid re-clustering on every frame
+    }, 100, { leading: true, trailing: true }),
+    [onViewStateChange]
+  )
 
   const [selectedNode, setSelectedNode] = useState<EnergyNode | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
@@ -227,8 +232,11 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     }
 
     window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [selectedNode, viewState])
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+      handleMapMove.cancel() // Cancel pending throttled calls
+    }
+  }, [selectedNode, viewState, handleMapMove])
 
   // Fullscreen change listener
   useEffect(() => {

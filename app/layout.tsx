@@ -17,13 +17,14 @@ import QueryProvider from '@/components/QueryProvider'
 import Footer from '@/components/Footer'
 import { EnergyProvider } from '@/contexts/EnergyProvider'
 import { PrivacyProvider } from '@/contexts/PrivacyProvider'
+import { SidebarProvider } from '@/contexts/SidebarContext'
 import ClaimStealthModal from '@/components/ClaimStealthModal'
 import FulfillTradeModal from '@/components/FulfillTradeModal'
-import { GovernanceProvider } from '@/contexts/GovernanceProvider'
 import { LendingProvider } from '@/contexts/LendingProvider'
 import { MarketplaceProvider } from '@/contexts/MarketplaceProvider'
 import { TradingProvider } from '@/contexts/TradingProvider'
 import { NotificationToastProvider } from '../hooks/useNotificationToast'
+import { reportWebVitals } from '@/lib/web-vitals'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
 const siteName = 'GridTokenX Trading'
@@ -169,8 +170,8 @@ export default function RootLayout({
                 <SocketProvider>
                   <EnergyProvider>
                     <PrivacyProvider>
-                      <WasmProvider>
-                        <GovernanceProvider>
+                      <SidebarProvider>
+                        <WasmProvider>
                           <LendingProvider>
                             <MarketplaceProvider>
                               <TradingProvider>
@@ -180,7 +181,7 @@ export default function RootLayout({
                                   <EmailVerificationBanner />
                                   <ClaimStealthModal />
                                   <FulfillTradeModal />
-                                  <div className="mx-auto flex h-screen flex-col px-6">
+                                  <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
                                     <NavBar />
                                     <main className="flex flex-1 flex-col overflow-hidden">
                                       {children}
@@ -191,8 +192,8 @@ export default function RootLayout({
                               </TradingProvider>
                             </MarketplaceProvider>
                           </LendingProvider>
-                        </GovernanceProvider>
-                      </WasmProvider>
+                        </WasmProvider>
+                      </SidebarProvider>
                     </PrivacyProvider>
                   </EnergyProvider>
                 </SocketProvider>
@@ -219,3 +220,6 @@ export default function RootLayout({
     </html>
   )
 }
+
+// Export onPerfEntry for Next.js to use
+export { reportWebVitals as onPerfEntry }

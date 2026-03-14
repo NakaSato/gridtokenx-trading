@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import TradingViewTopNav from '@/components/TradingViewTopNav'
 import { tokenList } from '@/lib/data/tokenlist'
+import { useSidebar } from '@/contexts/SidebarContext'
 
 const TradingPositionsPanel = dynamic(
   () => import('@/components/TradingPositionsPanel'),
@@ -99,6 +100,7 @@ export default function Homepage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>('Crypto.GRX/THB')
   const [selectedLogo, setSelectedLogo] = useState<string>('/svgs/gridx.svg')
 
+  const { showLeftSidebar, showRightSidebar, showPositionsPanel, toggleLeftSidebar, toggleRightSidebar, togglePositionsPanel } = useSidebar()
   const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol)
   const { marketData, loading: marketLoading } =
     usePythMarketData(selectedSymbol)
@@ -148,23 +150,31 @@ export default function Homepage() {
             id="main-panel-group"
           >
             {/* LEFT SIDEBAR - TRADING HISTORY */}
-            <ResizablePanel
-              id="left-sidebar"
-              defaultSize={15}
-              minSize={10}
-              maxSize={25}
-            >
-              <div className="flex h-full flex-col overflow-y-auto pr-1 duration-700 animate-in fade-in slide-in-from-left-4">
-                <div className="h-full flex-1 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                  <TradeHistory />
-                </div>
-              </div>
-            </ResizablePanel>
+            {showLeftSidebar && (
+              <>
+                <ResizablePanel
+                  id="left-sidebar"
+                  defaultSize={15}
+                  minSize={10}
+                  maxSize={25}
+                >
+                  <div className="flex h-full flex-col overflow-y-auto pr-1 duration-700 animate-in fade-in slide-in-from-left-4">
+                    <div className="h-full flex-1 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+                      <TradeHistory />
+                    </div>
+                  </div>
+                </ResizablePanel>
 
-            <ResizableHandle withHandle />
+                <ResizableHandle withHandle />
+              </>
+            )}
 
             {/* CENTER - MAP & POSITIONS */}
-            <ResizablePanel id="center-area" defaultSize={65} minSize={40}>
+            <ResizablePanel 
+              id="center-area" 
+              defaultSize={showLeftSidebar && showRightSidebar ? 65 : showLeftSidebar || showRightSidebar ? 80 : 100} 
+              minSize={40}
+            >
               <ResizablePanelGroup
                 direction="vertical"
                 className="h-full"
@@ -183,45 +193,53 @@ export default function Homepage() {
                   </div>
                 </ResizablePanel>
 
-                <ResizableHandle withHandle />
+                {showPositionsPanel && (
+                  <>
+                    <ResizableHandle withHandle />
 
-                {/* POSITIONS */}
-                <ResizablePanel
-                  id="center-positions"
-                  defaultSize={15}
-                  minSize={10}
-                  maxSize={40}
-                >
-                  <div className="h-full overflow-y-auto pt-2">
-                    <TradingPositionsPanel />
-                  </div>
-                </ResizablePanel>
+                    {/* POSITIONS */}
+                    <ResizablePanel
+                      id="center-positions"
+                      defaultSize={15}
+                      minSize={10}
+                      maxSize={40}
+                    >
+                      <div className="h-full overflow-y-auto pt-2">
+                        <TradingPositionsPanel />
+                      </div>
+                    </ResizablePanel>
+                  </>
+                )}
               </ResizablePanelGroup>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
+            {showRightSidebar && (
+              <>
+                <ResizableHandle withHandle />
 
-            {/* RIGHT SIDEBAR */}
-            <ResizablePanel
-              id="right-sidebar"
-              defaultSize={20}
-              minSize={12}
-              maxSize={30}
-            >
-              <div className="flex h-full flex-col overflow-y-auto pl-2 text-xs duration-700 animate-in fade-in slide-in-from-right-4">
-                <div className="flex-1 rounded-lg border border-border bg-card p-3 shadow-sm">
-                  <P2POrderForm
-                    selectedNode={selectedMeterNode}
-                    onClearNode={handleClearNode}
-                  />
-                  {token && (
-                    <div className="mt-3 flex flex-col gap-3">
-                      <P2PStatus />
+                {/* RIGHT SIDEBAR */}
+                <ResizablePanel
+                  id="right-sidebar"
+                  defaultSize={20}
+                  minSize={12}
+                  maxSize={30}
+                >
+                  <div className="flex h-full flex-col overflow-y-auto pl-2 text-xs duration-700 animate-in fade-in slide-in-from-right-4">
+                    <div className="flex-1 rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <P2POrderForm
+                        selectedNode={selectedMeterNode}
+                        onClearNode={handleClearNode}
+                      />
+                      {token && (
+                        <div className="mt-3 flex flex-col gap-3">
+                          <P2PStatus />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </ResizablePanel>
+                  </div>
+                </ResizablePanel>
+              </>
+            )}
           </ResizablePanelGroup>
         </div>
       </div>

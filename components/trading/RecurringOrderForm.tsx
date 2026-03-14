@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Sun, CalendarDays, CalendarRange, Clock, Hash } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Sun, CalendarDays, CalendarRange, Clock, Hash, Sparkles, Zap, Coins, Shield, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import type { IntervalType } from '@/types/features'
@@ -27,6 +27,10 @@ export function RecurringOrderForm() {
     const [isSuccess, setIsSuccess] = useState(false)
     const { meters } = useMeters(token ?? undefined)
     const [sellerZoneId, setSellerZoneId] = useState(1)
+    const [isCollapsed, setIsCollapsed] = useState(false)
+
+    // Quick amount presets
+    const amountPresets = ['10', '50', '100', '500']
 
     const buyerZoneId = useMemo(() => {
         const m = meters as any[] | null
@@ -99,36 +103,57 @@ export function RecurringOrderForm() {
     const intervalLabel = intervalType === 'hourly' ? 'hour' : intervalType === 'daily' ? 'day' : intervalType === 'weekly' ? 'week' : 'month'
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Side Selector */}
-            <div className="flex gap-1 p-1 bg-background rounded-xl border border-border/50 shadow-sm">
-                <button
-                    type="button"
-                    onClick={() => setSide('buy')}
-                    className={cn(
-                        "relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
-                        side === 'buy'
-                            ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30 scale-[1.02]"
-                            : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10"
-                    )}
+        <div className="flex flex-col h-full">
+            {/* Collapsible Header */}
+            <div className="flex items-center justify-between p-2 border-b border-border/50 bg-muted/20 rounded-t-xl">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+                        <Repeat className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-xs font-semibold text-foreground">DCA Strategy</span>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-primary"
+                    onClick={() => setIsCollapsed(!isCollapsed)}
                 >
-                    <TrendingDown className="h-4 w-4" />
-                    <span>Buy (DCA In)</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setSide('sell')}
-                    className={cn(
-                        "relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
-                        side === 'sell'
-                            ? "bg-rose-500 text-white shadow-md shadow-rose-500/30 scale-[1.02]"
-                            : "text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10"
-                    )}
-                >
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Sell (DCA Out)</span>
-                </button>
+                    {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+                </Button>
             </div>
+
+            {!isCollapsed && (
+                <div className="flex-1 overflow-y-auto p-3 space-y-4" style={{ minHeight: '380px' }}>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Side Selector */}
+                        <div className="flex gap-1 p-1 bg-background rounded-xl border border-border/50 shadow-sm">
+                            <button
+                                type="button"
+                                onClick={() => setSide('buy')}
+                                className={cn(
+                                    "relative flex items-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
+                                    side === 'buy'
+                                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30"
+                                        : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10"
+                                )}
+                            >
+                                <TrendingDown className="h-3.5 w-3.5" />
+                                <span>Buy</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSide('sell')}
+                                className={cn(
+                                    "relative flex items-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
+                                    side === 'sell'
+                                        ? "bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/30"
+                                        : "text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10"
+                                )}
+                            >
+                                <TrendingUp className="h-3.5 w-3.5" />
+                                <span>Sell</span>
+                            </button>
+                        </div>
 
             <div className="space-y-4">
                 {/* Strategy Name */}
@@ -356,7 +381,7 @@ export function RecurringOrderForm() {
                 type="submit"
                 size="lg"
                 className={cn(
-                    "w-full h-14 font-semibold text-base shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 rounded-xl",
+                    "w-full h-12 font-semibold text-sm shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 rounded-xl",
                     side === 'buy'
                         ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/50"
                         : "bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-rose-500/25 hover:from-rose-400 hover:to-rose-500 hover:shadow-rose-500/30 focus-visible:ring-rose-500/50"
@@ -364,30 +389,34 @@ export function RecurringOrderForm() {
                 disabled={loading || !token || !amount}
             >
                 {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                     <div className="flex items-center gap-2">
-                        <span>Start {side === 'buy' ? 'Buying' : 'Selling'} Strategy</span>
-                        <ArrowRight className="h-4 w-4" />
+                        <Zap className="h-4 w-4" />
+                        <span>Start {side === 'buy' ? 'Buying' : 'Selling'}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
                     </div>
                 )}
             </Button>
 
             {message && (
                 <div className={cn(
-                    "flex items-start gap-3 rounded-xl p-4 text-sm",
+                    "flex items-start gap-3 rounded-xl p-3 text-xs",
                     isSuccess
                         ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                         : "border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400"
                 )}>
                     {isSuccess ? (
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                     ) : (
-                        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-500" />
+                        <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-500" />
                     )}
                     <span className="leading-relaxed">{message}</span>
                 </div>
             )}
-        </form>
+                    </form>
+                </div>
+            )}
+        </div>
     )
 }

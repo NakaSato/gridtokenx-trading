@@ -10,6 +10,9 @@ import {
   ChartLine,
   ExternalLink,
   MessagesSquare,
+  PanelBottom,
+  PanelLeft,
+  PanelRight,
   ShieldCheck,
   TrendingUp,
 } from 'lucide-react'
@@ -17,6 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
 import { useAuth } from '@/contexts/AuthProvider'
+import { useSidebar } from '@/contexts/SidebarContext'
 import { buttonVariants } from './ui/button'
 import { Badge } from './ui/badge'
 import {
@@ -205,6 +209,7 @@ export default function NavBar() {
   const pathname = usePathname()
   const { connected } = useWallet()
   const { isAuthenticated, user } = useAuth()
+  const { showLeftSidebar, showRightSidebar, showPositionsPanel, toggleLeftSidebar, toggleRightSidebar, togglePositionsPanel } = useSidebar()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [activeItem, setActiveItem] = useState<string>('')
 
@@ -312,6 +317,50 @@ export default function NavBar() {
       </div>
 
       <div className="flex items-center justify-between gap-1 py-2 sm:gap-2 md:gap-3">
+        <div className="hidden items-center gap-1 sm:flex">
+          <button
+            onClick={toggleLeftSidebar}
+            className={cn(
+              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
+              showLeftSidebar
+                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
+                : 'bg-secondary text-primary shadow-inner'
+            )}
+            title={showLeftSidebar ? 'Hide left sidebar' : 'Show left sidebar'}
+            aria-label={showLeftSidebar ? 'Hide left sidebar' : 'Show left sidebar'}
+          >
+            <PanelLeft size={16} className="transition-transform duration-200 group-hover:scale-110" />
+          </button>
+
+          <button
+            onClick={toggleRightSidebar}
+            className={cn(
+              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
+              showRightSidebar
+                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
+                : 'bg-secondary text-primary shadow-inner'
+            )}
+            title={showRightSidebar ? 'Hide right sidebar' : 'Show right sidebar'}
+            aria-label={showRightSidebar ? 'Hide right sidebar' : 'Show right sidebar'}
+          >
+            <PanelRight size={16} className="transition-transform duration-200 group-hover:scale-110" />
+          </button>
+
+          <button
+            onClick={togglePositionsPanel}
+            className={cn(
+              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
+              showPositionsPanel
+                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
+                : 'bg-secondary text-primary shadow-inner'
+            )}
+            title={showPositionsPanel ? 'Hide positions panel' : 'Show positions panel'}
+            aria-label={showPositionsPanel ? 'Hide positions panel' : 'Show positions panel'}
+          >
+            <PanelBottom size={16} className="transition-transform duration-200 group-hover:scale-110" />
+          </button>
+        </div>
+
         <NetworkStatus />
 
         {isAuthenticated && (

@@ -427,17 +427,17 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex h-fit max-h-[90vh] w-fit max-w-md flex-col overflow-y-auto bg-accent p-4 md:max-w-lg md:p-10">
-        <DialogHeader className="flex h-fit flex-row items-center justify-between space-y-0 pb-4 md:h-auto md:pb-2">
-          <div className="space-y-2">
-            <DialogTitle className="text-2xl font-medium text-foreground">
+      <DialogContent className="flex h-auto max-h-[95vh] w-[95vw] max-w-full flex-col overflow-y-auto bg-accent p-4 sm:w-[90vw] sm:max-w-md md:max-w-lg md:p-10">
+        <DialogHeader className="flex h-fit flex-row items-start justify-between space-y-0 pb-4 md:h-auto md:pb-2">
+          <div className="space-y-2 pr-2">
+            <DialogTitle className="text-xl font-medium text-foreground sm:text-2xl">
               {authMode === 'wallet'
                 ? 'Connect Wallet'
                 : authMode === 'signin'
                   ? 'Sign In'
                   : 'Sign Up'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {authMode === 'wallet'
                 ? 'Connect your Solana wallet to start trading'
                 : authMode === 'signin'
@@ -446,7 +446,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </DialogDescription>
           </div>
           <Button
-            className="rounded-[12px] border-border bg-secondary p-[9px] shadow-none md:hidden [&_svg]:size-[18px]"
+            className="shrink-0 rounded-[12px] border-border bg-secondary p-[9px] shadow-none [&_svg]:size-[18px]"
             onClick={() => onClose()}
           >
             <XIcon size={18} className="text-secondary-foreground" />
@@ -469,7 +469,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </div>
           </div>
         ) : authMode === 'signin' ? (
-          <div className="mx-auto w-full max-w-md">
+          <div className="w-full">
             <>
               <form
                 onSubmit={handleEmailSignIn}
@@ -594,7 +594,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
             </>
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-md">
+          <div className="w-full">
             <>
               <form
                 onSubmit={handleEmailSignUp}
