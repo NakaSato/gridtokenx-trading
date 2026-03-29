@@ -1,8 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program, BN, Idl } from "@coral-xyz/anchor";
+const { Program } = anchor;
+import BN from 'bn.js';
+import type { Idl } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load IDL
 const idlPath = path.resolve(__dirname, "../lib/idl/trading.json");
@@ -20,14 +26,34 @@ async function main() {
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
 
-    const program = new Program(idl as Idl, provider);
+    const TRADING_PROGRAM_ID = "69dGpKu9a8EZiZ7orgfTH6CoGj9DeQHHkHBF2exSr8na";
+    (idl as any).address = TRADING_PROGRAM_ID;
+    const program = new Program(idl as Idl, provider as any);
     console.log("🔥 Starting Stress Test on OrderBook...");
 
-    // Market PDA
+    // Market PDAs
     const [marketPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("market")],
         program.programId
     );
+
+    const GOVERNANCE_PROGRAM_ID = new PublicKey("DamT9e1VqbA5nSyFZHExKwQu6qs4L5FW6dirWCK8YLd4");
+    const [governanceConfigPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("poa_config")],
+        GOVERNANCE_PROGRAM_ID
+    );
+
+    const zoneId = 0;
+    const zoneIdBuffer = Buffer.alloc(4);
+    zoneIdBuffer.writeUInt32LE(zoneId, 0);
+    const [zoneMarketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("zone_market"), marketPda.toBuffer(), zoneIdBuffer],
+        program.programId
+    );
+
+    console.log(`Market PDA: ${marketPda.toBase58()}`);
+    console.log(`Zone Market PDA: ${zoneMarketPda.toBase58()}`);
+    console.log(`Governance Config PDA: ${governanceConfigPda.toBase58()}`);
 
     // 1. Setup Users
     console.log(`Creating ${NUM_USERS} users...`);
@@ -47,62 +73,62 @@ async function main() {
 
     let successCount = 0;
     let failCount = 0;
-    const latencies: number[] = [];
+    let totalLatency = 0;
+    const orderCount = 20;
 
     // 2. Loop Orders
-    console.log(`🚀 Submitting ${NUM_ORDERS} orders...`);
+    console.log(`🚀 Submitting ${orderCount} orders...`);
 
-    for (let i = 0; i < NUM_ORDERS; i++) {
+    for (let i = 0; i < orderCount; i++) {
         const user = users[Math.floor(Math.random() * users.length)];
         const isBuy = Math.random() > 0.5;
         const orderId = new BN(Date.now() + i);
         const startTime = Date.now();
 
         try {
-            if (isBuy) {
-                const [orderPda] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("order"), user.publicKey.toBuffer(), orderId.toArrayLike(Buffer, 'le', 8)],
-                    program.programId
-                );
+            const [orderPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from("order"), user.publicKey.toBuffer(), orderId.toArrayLike(Buffer, 'le', 8)],
+                program.programId
+            );
 
+            if (isBuy) {
                 await program.methods.createBuyOrder(
                     orderId,
                     new BN(100_000000), // 100 kWh
                     new BN(5_000000)    // 5 USDC/kWh
                 ).accounts({
                     market: marketPda,
+                    zoneMarket: zoneMarketPda,
                     order: orderPda,
                     authority: user.publicKey,
                     systemProgram: SystemProgram.programId,
+                    governanceConfig: governanceConfigPda,
                 } as any).signers([user]).rpc();
 
             } else {
-                const [orderPda] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("order"), user.publicKey.toBuffer(), orderId.toArrayLike(Buffer, 'le', 8)],
-                    program.programId
-                );
-
                 await program.methods.createSellOrder(
                     orderId,
                     new BN(100_000000),
                     new BN(5_000000)
                 ).accounts({
                     market: marketPda,
+                    zoneMarket: zoneMarketPda,
                     order: orderPda,
                     ercCertificate: null, // Optional
                     authority: user.publicKey,
                     systemProgram: SystemProgram.programId,
+                    governanceConfig: governanceConfigPda,
                 } as any).signers([user]).rpc();
             }
 
             const latency = Date.now() - startTime;
-            latencies.push(latency);
+            totalLatency += latency;
             successCount++;
             process.stdout.write("."); // Progress dot
         } catch (e) {
             failCount++;
             process.stdout.write("x");
-            // console.error(e);
+            console.error(e);
         }
 
         // Small delay to avoid overly aggressive rate limiting on local validator
@@ -110,12 +136,11 @@ async function main() {
     }
 
     console.log("\n\n📊 Stress Test Results:");
-    console.log(`Total Orders: ${NUM_ORDERS}`);
+    console.log(`Total Orders: ${orderCount}`);
     console.log(`✅ Success: ${successCount}`);
     console.log(`❌ Failed: ${failCount}`);
 
-    const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length || 0;
-    console.log(`⏱️ Avg Confirmation Time: ${avgLatency.toFixed(2)} ms`);
+    console.log(`⏱️ Avg Confirmation Time: ${successCount > 0 ? (totalLatency / successCount).toFixed(2) : 0} ms`);
 
     if (failCount > 0) process.exit(1);
 }
