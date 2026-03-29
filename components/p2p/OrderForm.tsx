@@ -53,20 +53,11 @@ const OrderForm = React.memo(function OrderForm({
   const [message, setMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
   const [showCostBreakdown, setShowCostBreakdown] = useState(true)
-  const [isSigning, setIsSigning] = useState(false)
   const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(null)
-  const [currency] = useState<'GRX' | 'USDC'>('GRX')
   const { isLoaded: cryptoLoaded } = useCrypto()
   const queryClient = useQueryClient()
   const { marketConfig } = useMarketConfig(token ?? undefined)
-  const {
-    createBuyOrder,
-    createSellOrder,
-    createStablecoinBuyOrder,
-    createStablecoinSellOrder,
-    activeOrderFill,
-    setActiveOrderFill,
-  } = useTrading()
+  const { activeOrderFill, setActiveOrderFill } = useTrading()
 
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance()
   const rawBalance = balanceData?.token_balance
@@ -151,28 +142,6 @@ const OrderForm = React.memo(function OrderForm({
 
       if (apiResult.error) {
         throw new Error(apiResult.error)
-      }
-
-      try {
-        const amountValue = parseFloat(orderPayload.amount) * 1e6
-        const priceValue = parseFloat(orderPayload.price_per_kwh) * 1e6
-
-        if (currency === 'USDC') {
-          if (orderPayload.side === 'buy') {
-            await createStablecoinBuyOrder(amountValue, priceValue, 0)
-          } else {
-            await createStablecoinSellOrder(amountValue, priceValue, 0)
-          }
-        } else if (orderPayload.side === 'buy') {
-          await createBuyOrder(amountValue, priceValue, targetMatchOrder || undefined)
-        } else {
-          await createSellOrder(amountValue, priceValue, targetMatchOrder || undefined)
-        }
-      } catch (onChainError) {
-        console.warn(
-          'On-chain order submission failed (backend order is active):',
-          onChainError
-        )
       }
 
       return apiResult.data
@@ -342,7 +311,6 @@ const OrderForm = React.memo(function OrderForm({
               <SubmitButton
                 token={token}
                 loading={loading}
-                isSigning={isSigning}
                 orderType={orderType as 'buy' | 'sell'}
                 amount={amount}
                 price={price}

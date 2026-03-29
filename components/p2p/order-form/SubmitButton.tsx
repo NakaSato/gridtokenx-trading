@@ -8,7 +8,7 @@ import { Loader2, Shield, Wallet2 } from 'lucide-react'
 interface SubmitButtonProps {
   token: string | null
   loading: boolean
-  isSigning: boolean
+
   orderType: 'buy' | 'sell'
   amount: string
   price: string
@@ -19,7 +19,7 @@ interface SubmitButtonProps {
 export function SubmitButton({
   token,
   loading,
-  isSigning,
+
   orderType,
   amount,
   price,
@@ -59,7 +59,7 @@ export function SubmitButton({
       {loading ? (
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>{isSigning ? 'Signing Transaction...' : 'Processing...'}</span>
+          <span>Processing...</span>
         </div>
       ) : (
         <div className="flex items-center gap-2">
