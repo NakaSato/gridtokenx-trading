@@ -36,16 +36,20 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:4000/api/:path*',
-      },
-      {
-        source: '/health',
-        destination: 'http://localhost:4000/health',
-      },
-    ]
+    return {
+      beforeFiles: [],
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: 'http://localhost:4000/api/:path*',
+        },
+        {
+          source: '/health',
+          destination: 'http://localhost:4000/health',
+        },
+      ],
+      fallback: [],
+    }
   },
   webpack(config, { isServer }) {
     // WASM support

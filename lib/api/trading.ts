@@ -9,12 +9,15 @@ export class TradingApi {
     constructor(private getToken: () => string | undefined) { }
 
     async createOrder(orderData: any) {
-        const payload = { ...orderData }
-        if (payload.amount && !payload.energy_amount) {
-            payload.energy_amount = payload.amount
-            delete payload.amount
+        const payload = {
+            side: orderData.side,
+            order_type: orderData.order_type || 'limit',
+            energy_amount_kwh: String(orderData.amount || orderData.energy_amount_kwh),
+            price_per_kwh: String(orderData.price_per_kwh),
+            zone_id: orderData.zone_id || 1,
+            meter_id: orderData.meter_id
         }
-        return apiRequest('/api/v1/orders', {
+        return apiRequest('/api/v1/users/me/orders', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -22,7 +25,7 @@ export class TradingApi {
     }
 
     async getMarketStats(): Promise<ApiResponse<import('../../types/trading').MarketStatsResponse>> {
-        return apiRequest<import('../../types/trading').MarketStatsResponse>('/api/v1/analytics/market/stats', {
+        return apiRequest<import('../../types/trading').MarketStatsResponse>('/api/v1/markets/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -30,22 +33,21 @@ export class TradingApi {
 
     async getOrders(filters?: { status?: string; limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/orders?${params.toString()}`, {
+        return apiRequest(`/api/v1/users/me/orders?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
-    async getOrderBook(filters?: { status?: string }) {
-        const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/orderbook?${params.toString()}`, {
+    async getOrderBook(zoneId: number = 1) {
+        return apiRequest(`/api/v1/markets/zones/${zoneId}/order-book`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getMarketData() {
-        return apiRequest('/api/v1/analytics/market', {
+        return apiRequest('/api/v1/markets/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -54,13 +56,13 @@ export class TradingApi {
     async getTrades(filters?: { limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
         return apiRequest<import('../../types/trading').TradeHistory>(
-            `/api/v1/trades?${params.toString()}`,
+            `/api/v1/users/me/trades?${params.toString()}`,
             { method: 'GET', token: this.getToken() }
         )
     }
 
     async cancelOrder(orderId: string) {
-        return apiRequest(`/api/v1/orders/${orderId}`, {
+        return apiRequest(`/api/v1/users/me/orders/${orderId}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -74,7 +76,7 @@ export class TradingApi {
         signature?: string
         timestamp?: number
     }) {
-        return apiRequest<{ id: string }>('/api/v1/orders', {
+        return apiRequest<{ id: string }>('/api/v1/users/me/orders', {
             method: 'POST',
             body: {
                 side: orderData.side,
@@ -90,14 +92,14 @@ export class TradingApi {
     }
 
     async getP2POrderBook() {
-        return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/orderbook', {
+        return apiRequest<{ asks: any[]; bids: any[] }>('/api/v1/markets/orderbook', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getMyP2POrders() {
-        return apiRequest<any[]>('/api/v1/orders', {
+        return apiRequest<any[]>('/api/v1/users/me/orders', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -112,7 +114,7 @@ export class TradingApi {
             sell_price_range: { min: number; max: number }
             can_match: boolean
             match_reason: string
-        }>('/api/v1/matching-status', {
+        }>('/api/v1/markets/matching-status', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -125,7 +127,7 @@ export class TradingApi {
             confirmed_count: number
             failed_count: number
             total_settled_value: number
-        }>('/api/v1/settlement-stats', {
+        }>('/api/v1/markets/settlement-stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -134,25 +136,32 @@ export class TradingApi {
     async calculateP2PCost(request: {
         buyer_zone_id: number
         seller_zone_id: number
-        energy_amount: number
-        agreed_price?: number
+        energy_amount: number | string
+        agreed_price?: number | string
     }) {
         return apiRequest<{
-            energy_cost: number
-            wheeling_charge: number
-            loss_cost: number
-            total_cost: number
-            effective_energy: number
-            loss_factor: number
-            loss_allocation: string
-            zone_distance_km: number
-            buyer_zone: number
-            seller_zone: number
-            is_grid_compliant: boolean
-            grid_violation_reason?: string
-        }>('/api/v1/p2p/calculate-cost', {
+            quote_id: string
+            expires_at: string
+            breakdown: {
+                energy_cost: string
+                wheeling_charge: string
+                loss_cost: string
+                total_cost: string
+            }
+            grid_metrics: {
+                effective_energy_kwh: string
+                loss_factor: string
+                zone_distance_km: string
+                is_grid_compliant: boolean
+            }
+        }>('/api/v1/quotes', {
             method: 'POST',
-            body: request,
+            body: {
+                buyer_zone_id: request.buyer_zone_id,
+                seller_zone_id: request.seller_zone_id,
+                energy_amount_kwh: String(request.energy_amount),
+                agreed_price: String(request.agreed_price || '0.00')
+            },
             token: this.getToken(),
         })
     }
@@ -165,7 +174,7 @@ export class TradingApi {
             loss_allocation_model: string
             wheeling_charges: Record<string, number>
             loss_factors: Record<string, number>
-        }>('/api/v1/p2p/market-prices', {
+        }>('/api/v1/markets/p2p/market-prices', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -179,7 +188,7 @@ export class TradingApi {
             transaction_fee_bps: number
             min_price_per_kwh: number
             max_price_per_kwh: number
-        }>('/api/v1/market/config', {
+        }>('/api/v1/markets/config', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -205,7 +214,7 @@ export class TradingApi {
                 created_at: string
             }>
             total: number
-        }>(`/api/v1/trades?${params.toString()}`, {
+        }>(`/api/v1/users/me/trades?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -216,7 +225,7 @@ export class TradingApi {
         target_price: string
         condition: 'above' | 'below'
     }): Promise<ApiResponse<PriceAlert>> {
-        return apiRequest<PriceAlert>('/api/v1/price-alerts', {
+        return apiRequest<PriceAlert>('/api/v1/users/me/price-alerts', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -224,14 +233,14 @@ export class TradingApi {
     }
 
     async listPriceAlerts(): Promise<ApiResponse<PriceAlert[]>> {
-        return apiRequest<PriceAlert[]>('/api/v1/price-alerts', {
+        return apiRequest<PriceAlert[]>('/api/v1/users/me/price-alerts', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async deletePriceAlert(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/price-alerts/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/users/me/price-alerts/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -252,7 +261,7 @@ export class TradingApi {
         delete payload.symbol
         delete payload.start_at
         delete payload.end_at
-        return apiRequest<any>('/api/v1/orders/recurring', {
+        return apiRequest<any>('/api/v1/users/me/orders/recurring', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -260,42 +269,42 @@ export class TradingApi {
     }
 
     async listRecurringOrders(): Promise<ApiResponse<RecurringOrder[]>> {
-        return apiRequest<RecurringOrder[]>('/api/v1/orders/recurring', {
+        return apiRequest<RecurringOrder[]>('/api/v1/users/me/orders/recurring', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getRecurringOrder(id: string): Promise<ApiResponse<RecurringOrder>> {
-        return apiRequest<RecurringOrder>(`/api/v1/orders/recurring/${id}`, {
+        return apiRequest<RecurringOrder>(`/api/v1/users/me/orders/recurring/${id}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async cancelRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
     }
 
     async pauseRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/pause`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}/pause`, {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async resumeRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/resume`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}/resume`, {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
-        return apiRequest<Blob>(`/api/v1/trades/export?format=${format}`, {
+        return apiRequest<Blob>(`/api/v1/users/me/trades/export?format=${format}`, {
             method: 'GET',
             token: this.getToken(),
             responseType: 'blob'

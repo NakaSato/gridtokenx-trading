@@ -43,8 +43,8 @@ export const SOLANA_CONFIG = {
 // API Gateway Configuration
 // -----------------------------------------------------------------------------
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000',
-  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://localhost:4000',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4001',
+  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://localhost:4001',
 } as const
 
 // -----------------------------------------------------------------------------
@@ -76,26 +76,32 @@ export const API_ENDPOINTS = {
   },
   // Trading
   trading: {
-    orders: `${API_CONFIG.baseUrl}/api/v1/trading/orders`,
-    orderBook: `${API_CONFIG.baseUrl}/api/v1/trading/orderbook`,
-    marketData: `${API_CONFIG.baseUrl}/api/v1/analytics/market`,
-    trades: `${API_CONFIG.baseUrl}/api/v1/analytics/my-history`,
+    orders: `${API_CONFIG.baseUrl}/api/v1/users/me/orders`,
+    orderBook: `${API_CONFIG.baseUrl}/api/v1/markets/futures/order-book`,
+    marketData: `${API_CONFIG.baseUrl}/api/v1/markets/stats`,
+    quotes: `${API_CONFIG.baseUrl}/api/v1/quotes`,
+    futures: `${API_CONFIG.baseUrl}/api/v1/markets/futures`,
   },
   // User
   user: {
     profile: `${API_CONFIG.baseUrl}/api/v1/users/me`,
-    balance: `${API_CONFIG.baseUrl}/api/v1/wallets`, // Base for balance, append address in usage
-    positions: `${API_CONFIG.baseUrl}/api/v1/futures/positions`,
+    wallets: `${API_CONFIG.baseUrl}/api/v1/users/me/wallets`,
+    onchain: `${API_CONFIG.baseUrl}/api/v1/users/me/onchain-profile`,
+    balance: `${API_CONFIG.baseUrl}/api/v1/users/me/wallets`,
+    transactions: `${API_CONFIG.baseUrl}/api/v1/users/me/transactions`,
+    notifications: `${API_CONFIG.baseUrl}/api/v1/users/me/notifications`,
+    carbon: `${API_CONFIG.baseUrl}/api/v1/users/me/carbon`,
   },
   // Meters
   meters: {
     data: `${API_CONFIG.baseUrl}/api/v1/meters`,
-    submit: `${API_CONFIG.baseUrl}/api/v1/meters`, // Base for submit, append {serial}/readings in usage
+    submit: `${API_CONFIG.baseUrl}/api/v1/meters`,
+    myMeters: `${API_CONFIG.baseUrl}/api/v1/users/me/meters`,
   },
   // Grid
   grid: {
     status: `${API_CONFIG.baseUrl}/api/v1/public/grid-status`,
-    topology: `${API_CONFIG.baseUrl}/api/zones`,
+    topology: `${API_CONFIG.baseUrl}/api/v1/public/grid-topology`,
   },
   // WebSocket
   ws: {

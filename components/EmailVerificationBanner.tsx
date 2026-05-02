@@ -13,7 +13,7 @@ export function EmailVerificationBanner() {
     const [isResending, setIsResending] = useState(false)
 
     // Don't show if not authenticated, not applicable, or dismissed
-    if (!isAuthenticated || !user || user.email_verified !== false || isDismissed) {
+    if (!isAuthenticated || !user || user.status === 'verified' || isDismissed) {
         return null
     }
 

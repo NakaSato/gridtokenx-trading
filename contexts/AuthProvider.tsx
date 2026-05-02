@@ -17,16 +17,17 @@ import type {
 } from '@/types/auth'
 
 interface User {
-  id?: string
+  id: string
   username: string
   email: string
   role: string
-  blockchain_registered: boolean
-  email_verified?: boolean
-  wallet_address?: string
-  balance?: number
-  locked_amount?: number
-  locked_energy?: number
+  first_name?: string | null
+  last_name?: string | null
+  wallet_address?: string | null
+  status?: string
+  balance?: number | string
+  locked_amount?: number | string
+  locked_energy?: number | string
 }
 
 interface AuthContextType {

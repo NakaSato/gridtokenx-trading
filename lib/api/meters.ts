@@ -76,7 +76,7 @@ export class MetersApi {
     }
 
     async getGridTopology(): Promise<ApiResponse<GridTopologyResponse>> {
-        return apiRequest<GridTopologyResponse>('/api/zones', { method: 'GET' })
+        return apiRequest<GridTopologyResponse>('/api/v1/public/grid-topology', { method: 'GET' })
     }
 
     async getPublicMeters(): Promise<ApiResponse<PublicMeterResponse[]>> {
@@ -84,6 +84,6 @@ export class MetersApi {
     }
 
     async getGridHistory(limit = 30): Promise<ApiResponse<GridHistoryStatus[]>> {
-        return apiRequest<GridHistoryStatus[]>(`/api/v1/public/grid-status/history?limit=${limit}`, { method: 'GET' })
+        return apiRequest<GridHistoryStatus[]>(`/api/v1/public/grid-status?history=true&limit=${limit}`, { method: 'GET' })
     }
 }

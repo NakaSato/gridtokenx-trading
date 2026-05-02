@@ -120,15 +120,13 @@ export function usePortfolioOrders() {
                 token: 'GRID',
                 logo: '/images/grid.png',
                 symbol: 'GRX',
-                type: order.order_type || 'Limit',
+                type: 'Limit',
                 transaction: order.side.toLowerCase(),
                 limitPrice: parseFloat(order.price_per_kwh),
                 strikePrice: 0,
-                expiry: order.expires_at
-                    ? format(new Date(order.expires_at), 'MM/dd/yyyy')
-                    : 'N/A',
+                expiry: 'N/A',
                 orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
-                size: parseFloat(order.energy_amount),
+                size: parseFloat(order.energy_amount_kwh),
             }))
         },
         enabled: !!token,

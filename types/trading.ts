@@ -8,7 +8,7 @@ export interface Bar {
 }
 
 export interface ApiFuturesPosition {
-    id: number;
+    id: string;
     product_symbol: string;
     side: 'long' | 'short';
     entry_price: string;
@@ -17,12 +17,13 @@ export interface ApiFuturesPosition {
 }
 
 export interface ApiOrder {
-    id: number;
-    order_type?: string;
+    id: string;
+    zone_id: number;
     side: string;
+    status: string;
+    energy_amount_kwh: string;
     price_per_kwh: string;
-    energy_amount: string;
-    expires_at?: string;
+    filled_amount_kwh: string;
     created_at: string;
 }
 
@@ -78,9 +79,10 @@ export interface ZoneStats {
 }
 
 export interface MarketStatsResponse {
-    total_generation: string;
-    total_consumption: string;
-    net_balance: string;
+    timestamp: string;
+    total_volume_24h_kwh: string;
+    avg_price_24h: string;
     active_users: number;
-    zones: ZoneStats[];
+    grid_stability_index: string;
+    renewable_ratio: string;
 }

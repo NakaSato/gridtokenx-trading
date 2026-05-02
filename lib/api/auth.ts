@@ -14,14 +14,14 @@ export class AuthApi {
   constructor(private getToken: () => string | undefined) { }
 
   async login(username: string, password: string): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/token', {
+    return apiRequest<LoginResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: { username, password },
     })
   }
 
   async register(userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
-    return apiRequest<RegisterResponse>('/api/v1/users', {
+    return apiRequest<RegisterResponse>('/api/v1/auth/register', {
       method: 'POST',
       body: userData,
     })
@@ -50,11 +50,12 @@ export class AuthApi {
     walletAddress: string,
     verifyOwnership?: boolean
   ): Promise<ApiResponse<UserProfile>> {
-    return apiRequest<UserProfile>('/api/v1/user/wallet', {
+    return apiRequest<UserProfile>('/api/v1/users/me/wallets', {
       method: 'POST',
       body: {
         wallet_address: walletAddress,
-        verify_ownership: verifyOwnership,
+        label: 'Primary',
+        is_primary: true
       },
       token: this.getToken(),
     })

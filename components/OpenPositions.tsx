@@ -10,7 +10,7 @@ import PositionDetails from './PositionDetails'
 import { Separator } from './ui/separator'
 
 interface OpenPositionProps {
-  index: number
+  index: string | number
   token: string
   logo: string
   symbol: string

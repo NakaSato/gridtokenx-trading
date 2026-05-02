@@ -1,5 +1,5 @@
 export interface Position {
-  index: number
+  index: string
   token: string
   logo: string
   symbol: string
@@ -17,7 +17,7 @@ export interface Position {
 }
 
 export interface Order {
-  index: number
+  index: string
   token: string
   logo: string
   symbol: string
@@ -32,7 +32,7 @@ export interface Order {
 
 export const positions: Position[] = [
   {
-    index: 1,
+    index: "1",
     token: 'Bitcoin',
     logo: '/images/bitcoin.png',
     symbol: 'BTC',
@@ -49,7 +49,7 @@ export const positions: Position[] = [
     },
   },
   {
-    index: 1,
+    index: "1",
     token: 'Bitcoin',
     logo: '/images/bitcoin.png',
     symbol: 'BTC',
@@ -66,7 +66,7 @@ export const positions: Position[] = [
     },
   },
   {
-    index: 1,
+    index: "1",
     token: 'Bitcoin',
     logo: '/images/bitcoin.png',
     symbol: 'BTC',
@@ -83,7 +83,7 @@ export const positions: Position[] = [
     },
   },
   {
-    index: 1,
+    index: "1",
     token: 'Bitcoin',
     logo: '/images/bitcoin.png',
     symbol: 'BTC',
@@ -103,7 +103,7 @@ export const positions: Position[] = [
 
 export const orders: Order[] = [
   {
-    index: 1,
+    index: "1",
     token: 'Solana',
     logo: '/images/solana.png',
     symbol: 'SOL',
@@ -116,7 +116,7 @@ export const orders: Order[] = [
     size: 500,
   },
   {
-    index: 2,
+    index: "2",
     token: 'Solana',
     logo: '/images/solana.png',
     symbol: 'SOL',
@@ -129,7 +129,7 @@ export const orders: Order[] = [
     size: 500,
   },
   {
-    index: 3,
+    index: "3",
     token: 'Solana',
     logo: '/images/solana.png',
     symbol: 'SOL',
@@ -142,7 +142,7 @@ export const orders: Order[] = [
     size: 500,
   },
   {
-    index: 4,
+    index: "4",
     token: 'Bitcoin',
     logo: '/images/.png',
     symbol: 'BTC',
@@ -155,7 +155,7 @@ export const orders: Order[] = [
     size: 500,
   },
   {
-    index: 5,
+    index: "5",
     token: 'Bitcoin',
     logo: '/images/bitcoin.png',
     symbol: 'BTC',

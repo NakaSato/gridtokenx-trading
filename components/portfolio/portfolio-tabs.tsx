@@ -31,11 +31,11 @@ export function PortfolioTabs() {
   const { data: expiredInfos = [], isLoading: expiredLoading } = useExpiredOptions(program, publicKey)
   const { claimMutation, exerciseMutation } = useOptionSettlement(program, connection, publicKey, sendTransaction)
 
-  const onClaim = (optionindex: number, solPrice: number) => {
-    claimMutation.mutate({ index: optionindex, solPrice })
+  const onClaim = (optionindex: string | number, solPrice: number) => {
+    claimMutation.mutate({ index: optionindex as any, solPrice })
   }
-  const onExercise = (index: number) => {
-    exerciseMutation.mutate(index)
+  const onExercise = (index: string | number) => {
+    exerciseMutation.mutate(index as any)
   }
 
   const loading = positionsLoading || ordersLoading || historyLoading || expiredLoading

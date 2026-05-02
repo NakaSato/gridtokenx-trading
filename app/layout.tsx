@@ -8,6 +8,7 @@ import Connectionprovider from '@/contexts/connectionprovider'
 import { AuthProvider } from '@/contexts/AuthProvider'
 import { Toaster } from 'react-hot-toast'
 import { SocketProvider } from '@/contexts/SocketContext'
+import { SystemConfigProvider } from '@/contexts/systemConfigProvider'
 import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 import DevFaucet from '@/components/DevFaucet'
@@ -165,7 +166,8 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <QueryProvider>
-            <Connectionprovider>
+            <SystemConfigProvider>
+              <Connectionprovider>
               <AuthProvider>
                 <SocketProvider>
                   <EnergyProvider>
@@ -199,7 +201,8 @@ export default function RootLayout({
                 </SocketProvider>
               </AuthProvider>
             </Connectionprovider>
-          </QueryProvider>
+          </SystemConfigProvider>
+        </QueryProvider>
         </ThemeProvider>
         <Toaster
           position="bottom-right"

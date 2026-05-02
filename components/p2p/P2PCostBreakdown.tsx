@@ -83,8 +83,22 @@ export default function P2PCostBreakdown({
                 })
 
                 if (response.data) {
-                    setCost(response.data)
-                    onCostCalculated?.(response.data)
+                    const data = response.data
+                    const mappedCost: P2PTransactionCost = {
+                        energy_cost: parseFloat(data.breakdown.energy_cost),
+                        wheeling_charge: parseFloat(data.breakdown.wheeling_charge),
+                        loss_cost: parseFloat(data.breakdown.loss_cost),
+                        total_cost: parseFloat(data.breakdown.total_cost),
+                        effective_energy: parseFloat(data.grid_metrics.effective_energy_kwh),
+                        loss_factor: parseFloat(data.grid_metrics.loss_factor),
+                        loss_allocation: 'RECEIVER', // Default to receiver for now
+                        zone_distance_km: parseFloat(data.grid_metrics.zone_distance_km),
+                        buyer_zone: buyerZone,
+                        seller_zone: sellerZone,
+                        is_grid_compliant: data.grid_metrics.is_grid_compliant
+                    }
+                    setCost(mappedCost)
+                    onCostCalculated?.(mappedCost)
                 } else if (response.error) {
                     setError(response.error)
                     onCostCalculated?.(null)

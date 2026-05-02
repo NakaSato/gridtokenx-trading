@@ -48,19 +48,27 @@ export interface VerifyWalletRequest {
 
 export interface LoginResponse {
   access_token: string;
-  token_type: "Bearer";
-  expires_in: number; // seconds (86400 = 24 hours)
-  user: {
-    username: string;
-    email: string;
-    role: string;
-    blockchain_registered: boolean;
-  };
+  expires_in: number; // seconds
+  user: UserResponse;
+}
+
+export interface UserResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  first_name: string | null;
+  last_name: string | null;
+  wallet_address: string | null;
+  status: string;
 }
 
 export interface RegisterResponse {
-  message: string;
-  email_verification_sent: boolean;
+  id: string;
+  username: string;
+  email: string;
+  status: string; // "pending_verification"
+  message?: string;
 }
 
 export interface AuthError {
@@ -98,15 +106,8 @@ export interface ResendVerificationResponse {
   status: "already_verified" | "expired_resent" | "sent";
 }
 
-export interface UserProfile {
-  id: string;
-  username: string;
-  email: string;
-  role: "user" | "producer" | "consumer" | "ami";
-  wallet_address?: string;
-  first_name?: string;
-  last_name?: string;
-  blockchain_registered?: boolean;
+export interface UserProfile extends UserResponse {
+  status: string;
   // Financial fields — backend Decimal serializes as string
   balance?: number | string;
   locked_amount?: number | string;

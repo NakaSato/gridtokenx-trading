@@ -17,8 +17,11 @@ describe('ApiClient', () => {
   describe('register', () => {
     it('sends correct registration request with all fields', async () => {
       const mockResponse: RegisterResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        username: 'newuser',
+        email: 'new@example.com',
+        status: 'pending_verification',
         message: 'User registered successfully',
-        email_verification_sent: true,
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -32,7 +35,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'producer' as Role, // Cast to Role
+        role: 'producer' as Role,
         first_name: 'John',
         last_name: 'Doe',
         wallet_address: 'SomeWalletAddress123456789012345678',
@@ -41,7 +44,7 @@ describe('ApiClient', () => {
       const result = await defaultApiClient.register(registerData)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/users'),
+        expect.stringContaining('/api/v1/auth/register'),
         expect.objectContaining({
           method: 'POST',
           headers: {
@@ -58,8 +61,11 @@ describe('ApiClient', () => {
 
     it('sends registration request without optional wallet address', async () => {
       const mockResponse: RegisterResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        username: 'newuser',
+        email: 'new@example.com',
+        status: 'pending_verification',
         message: 'User registered successfully',
-        email_verification_sent: true,
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -96,7 +102,7 @@ describe('ApiClient', () => {
         username: 'existinguser',
         email: 'existing@example.com',
         password: 'password123',
-        role: 'user' as Role, // Cast to Role
+        role: 'user' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }

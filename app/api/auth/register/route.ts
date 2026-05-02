@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

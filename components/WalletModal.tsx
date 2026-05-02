@@ -23,6 +23,7 @@ import { defaultApiClient } from '../lib/api-client'
 import type { LoginResponse, RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
 import bs58 from 'bs58'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -61,7 +62,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [role, setRole] = useState('user')
+  const [role, setRole] = useState('prosumer')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -259,6 +260,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
+      // Sync Supabase session when auth mode is supabase
+      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase' && loginData.user.email) {
+        const supabase = createSupabaseClient()
+        await supabase.auth.signInWithPassword({
+          email: loginData.user.email,
+          password,
+        })
+      }
+
       // Small delay to ensure auth state is updated before closing and redirecting
       setTimeout(() => {
         onClose()
@@ -368,6 +378,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         password,
         first_name: firstName,
         last_name: lastName,
+        role: (role as any) || 'prosumer',
       })
 
       if (response.error || !response.data) {
@@ -405,6 +416,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       }
 
       const registerData: RegisterResponse = response.data
+
+      // Sync Supabase account when auth mode is supabase
+      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase') {
+        const supabase = createSupabaseClient()
+        await supabase.auth.signUp({ email, password })
+      }
 
       toast.success(
         registerData.message ||
@@ -646,6 +663,21 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-role">Account Type</Label>
+                  <select
+                    id="signup-role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="flex h-9 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                  >
+                    <option value="prosumer">Prosumer (Buy & Sell Energy)</option>
+                    <option value="consumer">Consumer (Buy Energy Only)</option>
+                    <option value="producer">Producer (Sell Energy Only)</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">

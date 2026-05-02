@@ -35,7 +35,8 @@
       "mapbox-gl",
       "react-map-gl",
       "react-window",
-      "supercluster"
+      "supercluster",
+      "@testing-library/jest-dom"
     ]
   },
   "include": [
