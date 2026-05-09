@@ -23,7 +23,6 @@ import { defaultApiClient } from '../lib/api-client'
 import type { LoginResponse, RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
 import bs58 from 'bs58'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -260,14 +259,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
-      // Sync Supabase session when auth mode is supabase
-      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase' && loginData.user.email) {
-        const supabase = createSupabaseClient()
-        await supabase.auth.signInWithPassword({
-          email: loginData.user.email,
-          password,
-        })
-      }
 
       // Small delay to ensure auth state is updated before closing and redirecting
       setTimeout(() => {
@@ -417,11 +408,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
       const registerData: RegisterResponse = response.data
 
-      // Sync Supabase account when auth mode is supabase
-      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase') {
-        const supabase = createSupabaseClient()
-        await supabase.auth.signUp({ email, password })
-      }
 
       toast.success(
         registerData.message ||

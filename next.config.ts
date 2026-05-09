@@ -41,11 +41,11 @@ const nextConfig: NextConfig = {
       afterFiles: [
         {
           source: '/api/:path*',
-          destination: 'http://localhost:4000/api/:path*',
+          destination: 'http://localhost:4001/api/:path*',
         },
         {
           source: '/health',
-          destination: 'http://localhost:4000/health',
+          destination: 'http://localhost:4001/health',
         },
       ],
       fallback: [],

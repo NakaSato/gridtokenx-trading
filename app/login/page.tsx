@@ -2,13 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -19,35 +23,24 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
 
-    const supabase = createClient()
-
-    if (mode === 'signup') {
-      const res = await fetch('/supabase-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error)
+    try {
+      if (mode === 'signup') {
+        // Redirect to wallet modal signup flow
+        // The actual registration is handled via WalletModal
+        setMessage('Please use the Sign Up button on the main page to create an account.')
+        setMode('signin')
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-        if (signInError) {
-          setMessage('Account created. Please sign in.')
-          setMode('signin')
-        } else {
-          router.push('/')
-          router.refresh()
+        if (!username || !password) {
+          setError('Please enter your username and password')
+          setLoading(false)
+          return
         }
-      }
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        setError(error.message)
-      } else {
+        await login(username, password, true)
         router.push('/')
         router.refresh()
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     }
 
     setLoading(false)
@@ -64,18 +57,37 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          {mode === 'signin' ? (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-medium">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  required
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium">Password</label>

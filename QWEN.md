@@ -1,294 +1,258 @@
-# GridTokenX Trading Platform - Project Context
+# QWEN.md - GridTokenX Trading Platform
 
 ## Project Overview
 
-**GridTokenX Trading** is a comprehensive P2P energy trading platform built on Next.js 16 (App Router) and Solana blockchain. It enables decentralized energy trading with features including spot/futures/options trading, batch auctions, carbon credits (REC marketplace), smart meter integration, cross-chain bridge, and ZK privacy features.
+The **GridTokenX Trading Platform** is a Next.js 16 (App Router) web application serving as the frontend for the GridTokenX P2P Energy Trading ecosystem. It provides interfaces for energy trading (P2P, futures, batch auctions), portfolio management, smart meter integration, blockchain interaction on Solana, carbon credit markets, ZK privacy features, and DAO governance.
 
-### Tech Stack
+### Core Technologies
 
-| Category | Technology |
-|----------|------------|
-| **Framework** | Next.js 16 (App Router, Turbopack) |
-| **Language** | TypeScript 5.9 |
-| **Runtime** | React 19 |
-| **Package Manager** | Bun (recommended) / npm |
-| **Styling** | Tailwind CSS 4 + shadcn/ui (Radix UI) |
-| **State** | React Context + TanStack Query |
-| **Blockchain** | Solana Web3.js + Anchor |
-| **Charts** | TradingView + Chart.js + Recharts |
-| **Maps** | Mapbox GL JS |
-| **WASM** | Rust-based module for crypto/pricing/ZK |
-| **Testing** | Jest (unit) + Playwright (E2E) |
-| **Deployment** | Docker (standalone Next.js + Bun) |
-
-### Key Features
-
-- **P2P Energy Trading**: Order book, trade offers, fulfillment, settlement
-- **Futures Trading**: Leveraged positions with TP/SL
-- **Batch Auctions**: Periodic auction-based energy clearing
-- **Carbon Credits**: REC marketplace for carbon credit trading
-- **Cross-Chain Bridge**: Portal for cross-chain asset transfers
-- **Smart Meter Management**: Meter registration, reading submission, energy minting
-- **Energy Grid Map**: Real-time Mapbox-based grid visualization
-- **ZK Privacy**: Shield/unshield, stealth payments, rollups
-- **Portfolio Dashboard**: Positions, PnL charts, transaction history
-- **Governance**: DAO governance with proposals and voting
-- **Wallet Integration**: Phantom, Solflare, Trust, SafePal
-
----
+- **Framework**: Next.js 16 (App Router, Turbopack for dev, Webpack for prod)
+- **Language**: TypeScript 5.9 (strict mode)
+- **Runtime**: React 19
+- **Styling**: Tailwind CSS 4 + shadcn/ui (Radix UI primitives)
+- **Blockchain**: Solana Web3.js + Anchor framework
+- **State Management**: React Context Providers + TanStack Query
+- **Charts**: TradingView (lightweight-charts) + Chart.js + Recharts
+- **Maps**: Mapbox GL JS (via react-map-gl)
+- **WASM**: Rust-based WASM module (gridtokenx-wasm) for Black-Scholes pricing, Greeks calculation, ZK proofs, and energy clustering
+- **Testing**: Jest (unit) + Playwright (E2E)
+- **Runtime**: Bun (preferred over Node.js)
 
 ## Project Structure
 
 ```
 gridtokenx-trading/
-├── app/                          # Next.js App Router pages
-│   ├── layout.tsx                # Root layout with providers
-│   ├── page.tsx                  # Main trading dashboard
-│   ├── auction/                  # Batch auction page
-│   ├── bridge/                   # Cross-chain bridge
-│   ├── carbon/                   # Carbon credit marketplace
-│   ├── energy-profiles/          # Energy analytics
-│   ├── futures/                  # Futures trading
-│   ├── leaderboards/             # Trading leaderboards
-│   ├── meter/                    # Smart meter management
-│   ├── portfolio/                # Portfolio dashboard
-│   └── api/                      # API routes (proxy)
-├── components/                   # React components
-│   ├── ui/                       # shadcn/ui components (30+)
-│   ├── auth/                     # Authentication UI
-│   ├── trading/                  # Trading widgets
-│   ├── charts/                   # Chart components
-│   ├── energy-grid/              # Energy grid map system
-│   ├── meter/                    # Meter management
-│   ├── p2p/                      # P2P trading UI
-│   ├── portfolio/                # Portfolio dashboard
-│   └── auction/                  # Batch auction UI
-├── contexts/                     # React Context providers
-│   ├── AuthProvider.tsx          # User auth state
-│   ├── connectionprovider.tsx    # Solana wallet connection
-│   ├── TradingProvider.tsx       # P2P energy trading
-│   ├── EnergyProvider.tsx        # Energy token minting
-│   ├── PrivacyProvider.tsx       # ZK privacy layer
-│   ├── GovernanceProvider.tsx    # DAO governance
-│   ├── LendingProvider.tsx       # ZK-collateralized lending
-│   ├── MarketplaceProvider.tsx   # Confidential marketplace
-│   └── SocketContext.tsx         # WebSocket management
-├── lib/                          # Services and utilities
-│   ├── api-client.ts             # REST API client (900+ lines)
-│   ├── wasm-bridge.ts            # WASM bridge for crypto/pricing
-│   ├── websocket-client.ts       # Real-time WebSocket client
-│   ├── datafeed.ts               # TradingView-compatible datafeed
-│   ├── contract-actions.ts       # Anchor program actions
-│   ├── pda-utils.ts              # Solana PDA derivation
-│   ├── zk-utils.ts               # Zero-knowledge proof utilities
-│   ├── config.ts                 # Centralized configuration
-│   └── idl/                      # Anchor IDL files
-├── hooks/                        # Custom React hooks
-├── types/                        # TypeScript type definitions
-├── utils/                        # Utility functions
-├── public/                       # Static assets
-└── tests/                        # Test suites
-    └── e2e/                      # Playwright E2E tests
+├── app/                    # Next.js App Router pages and layouts
+├── components/             # Shared UI components (shadcn/ui + custom)
+├── contexts/               # React Context providers (auth, trading, energy, etc.)
+├── hooks/                  # Custom React hooks
+├── lib/                    # Services, integrations, utilities
+│   ├── api/                # API service modules
+│   ├── idl/                # Anchor IDL files for Solana programs
+│   ├── wasm/               # Compiled WASM module
+│   └── __tests__/          # Jest test suites
+├── types/                  # TypeScript type definitions
+├── utils/                  # Utility functions
+├── tests/e2e/              # Playwright end-to-end tests
+└── public/                 # Static assets
 ```
 
----
+### Key Context Providers
+
+| Provider | Purpose |
+|----------|---------|
+| `AuthProvider` | User authentication, JWT tokens, login/logout |
+| `ConnectionProvider` | Solana connection + wallet adapter (Phantom, Solflare, Trust, SafePal) |
+| `TradingProvider` | P2P energy trading, stablecoin orders, settlement |
+| `EnergyProvider` | Energy token minting from meter readings |
+| `PrivacyProvider` | ZK privacy (shield/unshield, stealth payments) |
+| `GovernanceProvider` | DAO governance (proposals, voting) |
+| `LendingProvider` | ZK-collateralized lending |
+| `MarketplaceProvider` | Confidential marketplace |
+| `SocketContext` | WebSocket connection management |
+
+### Key Libraries & Utilities
+
+- **API Client** (`lib/api-client.ts`): REST API client (900+ lines) for GridTokenX API Gateway
+- **WebSocket Client** (`lib/websocket-client.ts`): Real-time data subscriptions
+- **WASM Bridge** (`lib/wasm-bridge.ts`): Interface to Rust WASM module for crypto/pricing
+- **Contract Actions** (`lib/contract-actions.ts`): Anchor program action helpers
+- **PDA Utils** (`lib/pda-utils.ts`): Solana Program Derived Address derivation
+- **ZK Utils** (`lib/zk-utils.ts`, `lib/privacy-utils.ts`, `lib/stealth-utils.ts`): Zero-knowledge proof utilities
 
 ## Building and Running
 
 ### Prerequisites
 
-- **Node.js** 20+ or **Bun** (recommended)
-- **wasm-pack** (for building WASM module)
+- **Bun** (recommended) or Node.js 20+
+- Mapbox GL access token (for energy grid map)
+- Solana RPC endpoint (local or remote)
+- WASM module built (for crypto/pricing features)
 
-### Setup
+### Commands
 
 ```bash
 # Install dependencies
 bun install
 
-# Set up environment variables
-cp .env.example .env.local
-
-# Build WASM module (required for crypto/pricing features)
+# Build WASM module (required for crypto/pricing)
 bun run build:wasm
 
-# Start development server
+# Start development server (with Turbopack)
 bun run dev
+
+# Production build
+bun run build
+
+# Start production server
+bun run start
+
+# Run unit tests
+bun run test
+
+# Run E2E tests (requires dev server running)
+bun run test:e2e
+
+# Lint
+bun run lint
+
+# Format code
+bun run format
+
+# Bundle analysis
+bun run analyze
+
+# Clean build artifacts
+bun run clean
 ```
 
-### Available Scripts
-
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `next dev --turbopack` | Start dev server with Turbopack |
-| `build` | `next build` | Production build |
-| `start` | `next start` | Start production server |
-| `lint` | `next lint` | Run ESLint |
-| `test` | `jest` | Run unit tests |
-| `test:watch` | `jest --watch` | Watch mode tests |
-| `test:coverage` | `jest --coverage` | Coverage report |
-| `test:e2e` | `playwright test` | End-to-end tests |
-| `build:wasm` | — | Build WASM from `gridtokenx-wasm` |
-| `format` | `prettier --write .` | Format code |
-| `analyze` | `ANALYZE=true next build --webpack` | Bundle analysis |
-| `clean` | `rm -rf .next` | Clean build cache |
-
-### Justfile Commands
-
-The project includes a `justfile` for convenient command shortcuts:
+### Using Just (alternative)
 
 ```bash
-just dev          # Start development server
+just dev          # Start dev server
 just build        # Production build
-just build-wasm   # Build WASM module
-just test         # Run unit tests
-just test-e2e     # Run E2E tests
-just lint         # Run ESLint
-just format       # Format code
+just test         # Unit tests
+just test-e2e     # E2E tests
+just lint         # ESLint
+just format       # Prettier
 just analyze      # Bundle analysis
-just clean        # Clean build artifacts
+just clean        # Clean artifacts
+just build-wasm   # Build WASM module
 ```
 
-### Docker Deployment
+### Docker
 
 ```bash
-# Build image
 docker build -t gridtokenx-trading .
-
-# Run container
 docker run -p 3000:3000 gridtokenx-trading
 ```
 
----
-
 ## Environment Variables
+
+Key environment variables (copy `.env.example` to `.env.local`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_TIMEZONE` | `UTC` | Application timezone |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | — | Mapbox GL access token |
 | `NEXT_PUBLIC_SOLANA_NETWORK` | `localnet` | Solana network (localnet/devnet/mainnet) |
 | `NEXT_PUBLIC_SOLANA_RPC_URL` | `http://127.0.0.1:4000/api/v1/rpc` | Solana RPC endpoint |
-| `NEXT_PUBLIC_SOLANA_WS_URL` | `ws://localhost:8900` | Solana WebSocket |
-| `NEXT_PUBLIC_REGISTRY_PROGRAM_ID` | — | Registry program address |
-| `NEXT_PUBLIC_ENERGY_TOKEN_PROGRAM_ID` | — | Energy token program address |
 | `NEXT_PUBLIC_TRADING_PROGRAM_ID` | — | Trading program address |
-| `NEXT_PUBLIC_ORACLE_PROGRAM_ID` | — | Oracle program address |
-| `NEXT_PUBLIC_GOVERNANCE_PROGRAM_ID` | — | Governance program address |
-| `NEXT_PUBLIC_ENERGY_TOKEN_MINT` | — | Energy token mint address |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:4000` | API Gateway base URL |
 | `NEXT_PUBLIC_WS_BASE_URL` | `ws://localhost:4000` | WebSocket base URL |
-| `NEXT_PUBLIC_PYTH_PRICE_SERVICE_URL` | `https://hermes.pyth.network` | Pyth price oracle |
-| `NEXT_PUBLIC_ENABLE_ANALYTICS` | `false` | Enable analytics |
-| `NEXT_PUBLIC_ENABLE_DEBUG` | `true` | Enable debug mode |
-| `NEXT_PUBLIC_SHOW_DEV_TOOLS` | `true` | Show developer tools |
 
----
+## Testing
+
+### Jest (Unit Tests)
+
+- Located in `lib/__tests__/` and component `__tests__/` directories
+- Uses `next/jest` for Next.js config loading
+- Tests API client, utilities, and component logic
+- Coverage configured for `components/` and `lib/` directories
+
+### Playwright (E2E Tests)
+
+- Located in `tests/e2e/`
+- Runs against `http://localhost:3000`
+- Tests authentication flow, trading flows, meter management, P2P trading
+- Retries: 2 in CI, 0 locally
+- Traces and screenshots on failure
 
 ## Development Conventions
 
+### TypeScript
+
+- Strict mode enabled (`strict: true`)
+- Path alias: `@/*` maps to project root
+- No emit (Next.js handles compilation)
+- Module resolution: `bundler`
+
 ### Code Style
 
-- **Semi-colons**: Not used (`semi: false`)
-- **Quotes**: Single quotes (`singleQuote: true`)
-- **Trailing commas**: ES5 style (`trailingComma: "es5"`)
-- **Formatter**: Prettier with Tailwind CSS plugin
+- **Prettier**: Code formatting with Tailwind CSS plugin
+- **ESLint**: Next.js recommended rules
+- **shadcn/ui**: Component library using Radix UI primitives, styled with Tailwind + cva
 
-### ESLint Configuration
+### Import Patterns
 
-Extends `next/core-web-vitals` and `next/typescript` with relaxed rules:
-- `@typescript-eslint/no-unused-vars`: off
-- `@typescript-eslint/no-explicit-any`: off
-- `prefer-const`: off
+- Use `@/` path alias for all internal imports (e.g., `@/components/ui/button`)
+- Solana/Anchor imports from `@coral-xyz/anchor`, `@solana/web3.js`
+- UI components from `@/components/ui/` (shadcn)
 
-### TypeScript Configuration
+### State Management
 
-- **Strict mode**: Enabled
-- **Module resolution**: `bundler`
-- **JSX**: `react-jsx`
-- **Path alias**: `@/*` maps to project root
+- Prefer React Context for global state (auth, trading, energy, etc.)
+- TanStack Query for server-state/data fetching
+- Custom hooks encapsulate domain logic (e.g., `useTrading()`, `usePortfolio()`)
 
-### Testing Practices
+### Component Patterns
 
-- **Unit tests**: Jest with `@testing-library/react` for component testing
-- **E2E tests**: Playwright with Chromium
-- **Test files**: `*.test.ts` or `*.spec.ts` pattern
-- **Coverage**: Collected from `components/` and `lib/` directories
+- shadcn/ui components in `components/ui/` (30+ primitives)
+- Domain-specific components in feature directories (e.g., `components/futures/`, `components/p2p/`)
+- Context providers in `contexts/` with corresponding hooks in `hooks/`
 
-### Architecture Patterns
-
-1. **Context Providers**: Heavily uses React Context for state management (auth, wallet, trading, privacy, governance, etc.)
-2. **Custom Hooks**: Encapsulates business logic in reusable hooks (`useApiClient`, `usePythPrice`, `useSmartMeter`, etc.)
-3. **Component Organization**: Feature-based folders under `components/` (e.g., `p2p/`, `futures/`, `meter/`)
-4. **API Client**: Centralized REST API client in `lib/api-client.ts` with TypeScript types
-5. **WASM Integration**: Rust-based WASM module for crypto operations, pricing calculations, and ZK proofs
-
----
-
-## Key Integrations
+## External Integrations
 
 | Service | Purpose |
 |---------|---------|
 | **GridTokenX API Gateway** | REST + WebSocket backend for auth, trading, meters, grid |
-| **Solana Blockchain** | On-chain programs via Anchor (registry, energy token, trading, oracle, governance) |
-| **Pyth Network** | Real-time price feeds for portfolio valuation |
+| **Solana Blockchain** | On-chain programs via Anchor framework |
+| **Pyth Network** | Real-time price feeds (Hermes client) |
 | **Mapbox GL** | Energy grid visualization |
-| **WASM Module** | Black-Scholes, Greeks, ZK proofs, clustering algorithms |
+| **WASM Module** | Black-Scholes pricing, Greeks, ZK proofs, clustering (Rust → WASM) |
 | **Helius** | Solana data enrichment |
 
----
-
-## Page Routes
+## Key Page Routes
 
 | Route | Description |
 |-------|-------------|
 | `/` | Main trading dashboard (Grid Map + P2P + History) |
-| `/auction` | Batch auction energy trading |
-| `/bridge` | Cross-chain bridge portal |
-| `/carbon` | Carbon credit marketplace (REC trading) |
-| `/energy-profiles` | Energy usage profile analytics & clustering |
 | `/futures` | Futures trading with leveraged positions |
-| `/leaderboards` | Trading leaderboards |
-| `/meter` | Smart meter management & readings |
+| `/auction` | Batch auction energy trading |
+| `/carbon` | Carbon credit marketplace (REC trading) |
 | `/portfolio` | Portfolio summary, positions, history |
+| `/meter` | Smart meter management & readings |
+| `/bridge` | Cross-chain bridge portal |
+| `/auth/*` | Authentication flows (login, signup, reset) |
 
----
+## Architecture Notes
 
-## Context Providers & Hooks
+- **Next.js Output**: Standalone build for Docker deployment
+- **Bundler**: Turbopack for development (fast HMR), Webpack for production
+- **WASM**: Async WebAssembly support configured for crypto operations
+- **API Rewrites**: `/api/*` routes proxy to backend at `localhost:4000`
+- **Image Sources**: Configured for Pinata, Arweave, and ShdwDrive
+- **Package Optimization**: `optimizePackageImports` configured for lucide-react, date-fns, and Solana wallet adapters
 
-### Context Providers
+## Common Tasks
 
-| Provider | Hook | Purpose |
-|----------|------|---------|
-| `AuthProvider` | `useAuth()` | User authentication, JWT tokens, login/logout/register |
-| `ConnectionProvider` | — | Solana ConnectionProvider + WalletProvider |
-| `TradingProvider` | `useTrading()` | P2P energy trading, stablecoin orders, settlement |
-| `EnergyProvider` | `useContext(EnergyContext)` | Energy token minting from meter readings |
-| `PrivacyProvider` | `usePrivacy()` | ZK privacy (shield/unshield, stealth links, rollups) |
-| `GovernanceProvider` | `useGovernance()` | DAO governance (proposals, voting, PoA config) |
-| `LendingProvider` | `useLending()` | ZK-collateralized lending (borrow/repay) |
-| `MarketplaceProvider` | `useMarketplace()` | Confidential marketplace (list/buy private offers) |
-| `SocketContext` | `useSocket()` | WebSocket connection management |
+### Adding a New Page
 
-### Custom Hooks
+1. Create directory under `app/` with `page.tsx`
+2. Add layout if needed (`layout.tsx`)
+3. Create domain-specific components in `components/<feature>/`
+4. Add context provider if needed in `contexts/`
+5. Add hooks in `hooks/` for data fetching logic
 
-| Hook | Purpose |
-|------|---------|
-| `useApiClient` / `useApiRequest` | API client wrapper with loading/error states |
-| `useCrypto` | WASM-based HMAC-SHA256 order signing |
-| `useEnergyProfile` | Energy consumption profile analysis & clustering |
-| `useGreeks` | Options Greeks calculation via WASM |
-| `useGridHistory` | Grid status history (30s polling) |
-| `useOptions` | On-chain option positions |
-| `useOptionsPricing` | Black-Scholes via WASM |
-| `useOracle` | On-chain Oracle program readings |
-| `useOrderBook` | Order book data |
-| `usePortfolio` | Portfolio data (profile, balance, positions) |
-| `usePortfolioValuation` | Live portfolio valuation using Pyth |
-| `usePythMarketData` | 24h market data from Pyth |
-| `usePythPrice` | Real-time Pyth price feeds |
-| `useSmartMeter` | Smart meter CRUD + minting |
-| `useTransactionUpdates` | Real-time WebSocket trade updates |
-| `useUserAnalytics` | User energy stats & trade history |
-| `useWalletBalance` | Wallet balance resolution |
-| `useWebSocket` | WebSocket connection management |
+### Adding a New API Integration
+
+1. Use `lib/api-client.ts` for REST calls
+2. Create service module in `lib/api/` for complex integrations
+3. Add TypeScript types in `types/`
+4. Add tests in `lib/__tests__/`
+
+### Working with Solana Programs
+
+1. IDL files in `lib/idl/`
+2. Use `lib/contract-actions.ts` for program interactions
+3. Use `lib/pda-utils.ts` for PDA derivation
+4. Add new program IDs to environment variables
+
+### Building WASM Module
+
+The WASM module lives in `../gridtokenx-wasm/` (sibling directory). Build with:
+
+```bash
+bun run build:wasm
+```
+
+This compiles the Rust WASM and outputs to `lib/wasm/`.
