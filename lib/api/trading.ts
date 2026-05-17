@@ -17,7 +17,7 @@ export class TradingApi {
             zone_id: orderData.zone_id || 1,
             meter_id: orderData.meter_id
         }
-        return apiRequest('/api/v1/users/me/orders', {
+        return apiRequest('/api/v1/orders', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -25,7 +25,7 @@ export class TradingApi {
     }
 
     async getMarketStats(): Promise<ApiResponse<import('../../types/trading').MarketStatsResponse>> {
-        return apiRequest<import('../../types/trading').MarketStatsResponse>('/api/v1/markets/stats', {
+        return apiRequest<import('../../types/trading').MarketStatsResponse>('/api/v1/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -33,21 +33,21 @@ export class TradingApi {
 
     async getOrders(filters?: { status?: string; limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/users/me/orders?${params.toString()}`, {
+        return apiRequest(`/api/v1/orders?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getOrderBook(zoneId: number = 1) {
-        return apiRequest(`/api/v1/markets/zones/${zoneId}/order-book`, {
+        return apiRequest(`/api/v1/zones/${zoneId}/book`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getMarketData() {
-        return apiRequest('/api/v1/markets/stats', {
+        return apiRequest('/api/v1/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -56,13 +56,13 @@ export class TradingApi {
     async getTrades(filters?: { limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
         return apiRequest<import('../../types/trading').TradeHistory>(
-            `/api/v1/users/me/trades?${params.toString()}`,
+            `/api/v1/trades?${params.toString()}`,
             { method: 'GET', token: this.getToken() }
         )
     }
 
     async cancelOrder(orderId: string) {
-        return apiRequest(`/api/v1/users/me/orders/${orderId}`, {
+        return apiRequest(`/api/v1/orders/${orderId}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -76,7 +76,7 @@ export class TradingApi {
         signature?: string
         timestamp?: number
     }) {
-        return apiRequest<{ id: string }>('/api/v1/users/me/orders', {
+        return apiRequest<{ id: string }>('/api/v1/orders', {
             method: 'POST',
             body: {
                 side: orderData.side,
@@ -99,7 +99,7 @@ export class TradingApi {
     }
 
     async getMyP2POrders() {
-        return apiRequest<any[]>('/api/v1/users/me/orders', {
+        return apiRequest<any[]>('/api/v1/orders', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -214,7 +214,7 @@ export class TradingApi {
                 created_at: string
             }>
             total: number
-        }>(`/api/v1/users/me/trades?${params.toString()}`, {
+        }>(`/api/v1/trades?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -225,7 +225,7 @@ export class TradingApi {
         target_price: string
         condition: 'above' | 'below'
     }): Promise<ApiResponse<PriceAlert>> {
-        return apiRequest<PriceAlert>('/api/v1/users/me/price-alerts', {
+        return apiRequest<PriceAlert>('/api/v1/price-alerts', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -233,14 +233,14 @@ export class TradingApi {
     }
 
     async listPriceAlerts(): Promise<ApiResponse<PriceAlert[]>> {
-        return apiRequest<PriceAlert[]>('/api/v1/users/me/price-alerts', {
+        return apiRequest<PriceAlert[]>('/api/v1/price-alerts', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async deletePriceAlert(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/price-alerts/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/price-alerts/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
@@ -261,7 +261,7 @@ export class TradingApi {
         delete payload.symbol
         delete payload.start_at
         delete payload.end_at
-        return apiRequest<any>('/api/v1/users/me/orders/recurring', {
+        return apiRequest<any>('/api/v1/orders/recurring', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -269,42 +269,42 @@ export class TradingApi {
     }
 
     async listRecurringOrders(): Promise<ApiResponse<RecurringOrder[]>> {
-        return apiRequest<RecurringOrder[]>('/api/v1/users/me/orders/recurring', {
+        return apiRequest<RecurringOrder[]>('/api/v1/orders/recurring', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getRecurringOrder(id: string): Promise<ApiResponse<RecurringOrder>> {
-        return apiRequest<RecurringOrder>(`/api/v1/users/me/orders/recurring/${id}`, {
+        return apiRequest<RecurringOrder>(`/api/v1/orders/recurring/${id}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async cancelRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
     }
 
     async pauseRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}/pause`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/pause`, {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async resumeRecurringOrder(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/orders/recurring/${id}/resume`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/orders/recurring/${id}/resume`, {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
-        return apiRequest<Blob>(`/api/v1/users/me/trades/export?format=${format}`, {
+        return apiRequest<Blob>(`/api/v1/trades/export?format=${format}`, {
             method: 'GET',
             token: this.getToken(),
             responseType: 'blob'

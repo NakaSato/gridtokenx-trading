@@ -45,7 +45,7 @@ export class MetersApi {
     }
 
     async getMyMeters(): Promise<ApiResponse<MeterResponse[]>> {
-        return apiRequest<MeterResponse[]>('/api/v1/users/me/meters', {
+        return apiRequest<MeterResponse[]>('/api/v1/me/meters', {
             method: 'GET',
             token: this.getToken(),
         })

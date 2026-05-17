@@ -76,27 +76,27 @@ export const API_ENDPOINTS = {
   },
   // Trading
   trading: {
-    orders: `${API_CONFIG.baseUrl}/api/v1/users/me/orders`,
-    orderBook: `${API_CONFIG.baseUrl}/api/v1/markets/futures/order-book`,
-    marketData: `${API_CONFIG.baseUrl}/api/v1/markets/stats`,
+    orders: `${API_CONFIG.baseUrl}/api/v1/orders`,
+    orderBook: `${API_CONFIG.baseUrl}/api/v1/futures/book`,
+    marketData: `${API_CONFIG.baseUrl}/api/v1/stats`,
     quotes: `${API_CONFIG.baseUrl}/api/v1/quotes`,
-    futures: `${API_CONFIG.baseUrl}/api/v1/markets/futures`,
+    futures: `${API_CONFIG.baseUrl}/api/v1/futures`,
   },
   // User
   user: {
-    profile: `${API_CONFIG.baseUrl}/api/v1/users/me`,
-    wallets: `${API_CONFIG.baseUrl}/api/v1/users/me/wallets`,
-    onchain: `${API_CONFIG.baseUrl}/api/v1/users/me/onchain-profile`,
-    balance: `${API_CONFIG.baseUrl}/api/v1/users/me/wallets`,
-    transactions: `${API_CONFIG.baseUrl}/api/v1/users/me/transactions`,
-    notifications: `${API_CONFIG.baseUrl}/api/v1/users/me/notifications`,
-    carbon: `${API_CONFIG.baseUrl}/api/v1/users/me/carbon`,
+    profile: `${API_CONFIG.baseUrl}/api/v1/profile`,
+    wallets: `${API_CONFIG.baseUrl}/api/v1/wallets`,
+    onchain: `${API_CONFIG.baseUrl}/api/v1/onboarding/on-chain`,
+    balance: `${API_CONFIG.baseUrl}/api/v1/wallets`,
+    transactions: `${API_CONFIG.baseUrl}/api/v1/transactions`,
+    notifications: `${API_CONFIG.baseUrl}/api/v1/notifications`,
+    carbon: `${API_CONFIG.baseUrl}/api/v1/carbon/balance`,
   },
   // Meters
   meters: {
     data: `${API_CONFIG.baseUrl}/api/v1/meters`,
     submit: `${API_CONFIG.baseUrl}/api/v1/meters`,
-    myMeters: `${API_CONFIG.baseUrl}/api/v1/users/me/meters`,
+    myMeters: `${API_CONFIG.baseUrl}/api/v1/me/meters`,
   },
   // Grid
   grid: {

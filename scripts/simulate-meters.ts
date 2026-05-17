@@ -26,7 +26,7 @@ async function main() {
 
     try {
         console.log(`📝 Registering user ${email}...`);
-        const regRes = await fetch(`${API_URL}/api/v1/users`, {
+        const regRes = await fetch(`${API_URL}/api/v1/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -50,7 +50,7 @@ async function main() {
                 console.log('User exists, proceeding to login...');
 
                 console.log(`🔑 Logging in...`);
-                const loginRes = await fetch(`${API_URL}/api/v1/auth/token`, {
+                const loginRes = await fetch(`${API_URL}/api/v1/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, username: email, password })
@@ -86,7 +86,7 @@ async function main() {
     const meterSerial = `SIM-${Date.now()}`;
     try {
         console.log(`🔌 Registering Meter ${meterSerial}...`);
-        const regMeterRes = await fetch(`${API_URL}/api/v1/simulator/meters/register`, {
+        const regMeterRes = await fetch(`${API_URL}/api/v1/public/meters/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -122,7 +122,7 @@ async function main() {
 
     try {
         console.log(`📤 Submitting reading: ${kwhAmount} kWh for meter ${meterSerial}...`);
-        const submitRes = await fetch(`${API_URL}/api/meters/submit-reading`, {
+        const submitRes = await fetch(`${API_URL}/api/v1/public/meters/submit-reading`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ async function main() {
         // Wait a bit for DB commit if needed (though API should be consistent)
         await new Promise(r => setTimeout(r, 1000));
 
-        const historyRes = await fetch(`${API_URL}/api/v1/meters/${meterSerial}/readings`, {
+        const historyRes = await fetch(`${API_URL}/api/v1/public/meters/${meterSerial}/readings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -173,7 +173,7 @@ async function main() {
 
             // Try fallback API (Users profile/energy-profile)
             console.log('🔄 Trying fallback API (Energy Profile)...');
-            const profileRes = await fetch(`${API_URL}/api/v1/users/me/energy-profile`, { // Hypothetical endpoint
+            const profileRes = await fetch(`${API_URL}/api/v1/profile`, { // Updated to flatter path
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (profileRes.ok) {
