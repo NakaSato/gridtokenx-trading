@@ -1,14 +1,43 @@
 
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 
-
-const API_URL = process.env.API_URL || 'http://localhost:4000'; // Adjust port if needed
+const API_URL = process.env.API_URL || 'http://localhost:4000';
 const SOLANA_RPC = process.env.SOLANA_RPC || 'http://127.0.0.1:8899';
+
+async function safeJson(res: Response): Promise<any> {
+    const text = await res.text();
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+        if (res.status === 502 || res.status === 503 || res.status === 504) {
+            throw new Error(`API gateway error (${res.status}): backend service is down. Run: just orb-up`);
+        }
+        throw new Error(`Expected JSON but got ${ct || 'unknown content-type'} (HTTP ${res.status}): ${text.slice(0, 200)}`);
+    }
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(`Malformed JSON (HTTP ${res.status}): ${text.slice(0, 200)}`);
+    }
+}
+
+async function checkApi(): Promise<void> {
+    try {
+        const res = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e: any) {
+        if (e.name === 'TimeoutError' || e.code === 'ECONNREFUSED') {
+            throw new Error(`Cannot reach API at ${API_URL}. Start the backend first: just orb-up`);
+        }
+        // Non-2xx from /health is still reachable — proceed
+    }
+}
 
 async function main() {
     console.log('🚀 Starting Smart Meter Simulator Verification...');
     console.log(`📡 API: ${API_URL}`);
     console.log(`🔗 Solana: ${SOLANA_RPC}`);
+
+    await checkApi();
 
     const connection = new Connection(SOLANA_RPC, 'confirmed');
 
@@ -38,7 +67,7 @@ async function main() {
                 role: 'prosumer'
             })
         });
-        const regData = await regRes.json();
+        const regData = await safeJson(regRes);
         console.log('Registration Response:', JSON.stringify(regData, null, 2));
 
         if (regData.auth && regData.auth.access_token) {
@@ -56,16 +85,11 @@ async function main() {
                     body: JSON.stringify({ email, username: email, password })
                 });
 
-                const loginText = await loginRes.text();
-                if (!loginRes.ok) throw new Error(`Login failed: ${loginRes.status} ${loginText}`);
-
-                let loginData;
-                try {
-                    loginData = JSON.parse(loginText);
-                } catch (e) {
-                    throw new Error(`Invalid JSON: ${loginText}`);
+                if (!loginRes.ok) {
+                    const body = await loginRes.text();
+                    throw new Error(`Login failed (HTTP ${loginRes.status}): ${body.slice(0, 200)}`);
                 }
-
+                const loginData = await safeJson(loginRes);
                 token = loginData.access_token || loginData.token;
             } else {
                 throw new Error(`Registration failed without auth token: ${regData.message}`);
@@ -133,7 +157,7 @@ async function main() {
 
         if (!submitRes.ok) throw new Error(`Submit failed: ${await submitRes.text()}`);
 
-        const result = await submitRes.json();
+        const result = await safeJson(submitRes);
         console.log('✅ Reading submitted successfully!');
         console.log('📄 Response:', JSON.stringify(result, null, 2));
 
@@ -154,7 +178,7 @@ async function main() {
         });
 
         if (historyRes.ok) {
-            const data = await historyRes.json();
+            const data = await safeJson(historyRes);
             const readings = data.readings || (Array.isArray(data) ? data : []);
             console.log(`📊 History fetched. Count: ${readings.length}`);
             if (readings.length > 0) {

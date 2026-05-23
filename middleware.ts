@@ -5,9 +5,11 @@ import { createClient } from "@/utils/supabase/middleware";
 const PUBLIC_PATHS = ["/", "/login", "/auth/callback", "/supabase-signup"];
 
 export async function middleware(request: NextRequest) {
-  const response = createClient(request);
+  if (process.env.NEXT_PUBLIC_AUTH_MODE !== "supabase") {
+    return NextResponse.next();
+  }
 
-  if (process.env.NEXT_PUBLIC_AUTH_MODE !== "supabase") return response;
+  const response = createClient(request);
 
   const { pathname } = request.nextUrl;
   if (PUBLIC_PATHS.includes(pathname)) return response;

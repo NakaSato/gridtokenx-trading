@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {},
-  allowedDevOrigins: ['10.1.1.204:3000', 'localhost:3000'],
+  allowedDevOrigins: ['10.1.1.204:3000', 'localhost:3000', 'localhost:11001'],
 }
 
 export default withBundleAnalyzer(nextConfig)

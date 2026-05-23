@@ -80,7 +80,18 @@ export class MetersApi {
     }
 
     async getPublicMeters(): Promise<ApiResponse<PublicMeterResponse[]>> {
-        return apiRequest<PublicMeterResponse[]>('/api/v1/public/meters', { method: 'GET' })
+        const response = await apiRequest<any>('/api/v1/public/meters', { method: 'GET' })
+        if (response.data && !Array.isArray(response.data) && Array.isArray(response.data.meters)) {
+            const normalizedMeters = response.data.meters.map((meter: any) => ({
+                ...meter,
+                is_verified: meter.is_verified !== undefined ? meter.is_verified : (meter.status === 'active')
+            }))
+            return {
+                ...response,
+                data: normalizedMeters
+            }
+        }
+        return response
     }
 
     async getGridHistory(limit = 30): Promise<ApiResponse<GridHistoryStatus[]>> {

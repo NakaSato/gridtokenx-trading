@@ -45,17 +45,20 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
 
             ws.onmessage = (event) => {
                 try {
-                    const data = JSON.parse(event.data)
-                    if (data.type === 'grid_status_updated') {
+                    const parsed = JSON.parse(event.data)
+                    if (parsed.type === 'grid_status_updated' || parsed.type === 'grid_status') {
+                        // If it's the simulator's structure, the actual status fields are inside parsed.data
+                        const data = parsed.type === 'grid_status' && parsed.data ? parsed.data : parsed
+                        
                         const updatedStatus: GridStatus = {
                             total_generation: data.total_generation,
                             total_consumption: data.total_consumption,
                             net_balance: data.net_balance,
                             active_meters: data.active_meters,
                             co2_saved_kg: data.co2_saved_kg,
-                            timestamp: data.timestamp,
+                            timestamp: data.timestamp || parsed.timestamp,
                             zones: data.zones,
-                            frequency: data.frequency,
+                            frequency: typeof data.frequency === 'object' && data.frequency !== null ? data.frequency.value : data.frequency,
                             island_status: data.island_status,
                             health_score: data.health_score,
                             is_under_attack: data.is_under_attack,
