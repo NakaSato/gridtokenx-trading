@@ -41,11 +41,11 @@ const nextConfig: NextConfig = {
       afterFiles: [
         {
           source: '/api/:path*',
-          destination: 'http://localhost:4000/api/:path*',
+          destination: 'http://apisix.gridtokenx-coresystem.orb.local/api/:path*',
         },
         {
           source: '/health',
-          destination: 'http://localhost:4000/health',
+          destination: 'http://apisix.gridtokenx-coresystem.orb.local/health',
         },
       ],
       fallback: [],

@@ -1,7 +1,7 @@
 
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 
-const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_URL = process.env.API_URL || 'http://apisix.gridtokenx-coresystem.orb.local';
 const SOLANA_RPC = process.env.SOLANA_RPC || 'http://127.0.0.1:8899';
 
 async function safeJson(res: Response): Promise<any> {
@@ -197,7 +197,7 @@ async function main() {
 
             // Try fallback API (Users profile/energy-profile)
             console.log('🔄 Trying fallback API (Energy Profile)...');
-            const profileRes = await fetch(`${API_URL}/api/v1/users/me/energy-profile`, { // Hypothetical endpoint
+            const profileRes = await fetch(`${API_URL}/api/v1/me/energy-profile`, { // Hypothetical endpoint
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (profileRes.ok) {

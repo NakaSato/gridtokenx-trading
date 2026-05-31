@@ -18,7 +18,7 @@ export default function DevFaucet() {
 
     // Use connected wallet's publicKey first, fallback to user's stored wallet_address
     const walletAddress = connected && publicKey ? publicKey.toBase58() : user?.wallet_address;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://apisix.gridtokenx-coresystem.orb.local";
 
     const requestFunds = useCallback(async (amountSol: number, amountTokens: number) => {
         if (!walletAddress) {

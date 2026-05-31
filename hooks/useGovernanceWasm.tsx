@@ -76,7 +76,7 @@ export interface GovernanceWasmProviderProps {
  */
 export const GovernanceWasmProvider: React.FC<GovernanceWasmProviderProps> = ({
   children,
-  rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://127.0.0.1:4000/api/v1/rpc',
+  rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://apisix.gridtokenx-coresystem.orb.local/api/v1/rpc',
   programId = 'DuLg6buhqs78SRj1qDp5vSyGrSfG9FF4nPKm8Tn8hSJL',
 }) => {
   const [client, setClient] = useState<GovernanceClient | null>(null);

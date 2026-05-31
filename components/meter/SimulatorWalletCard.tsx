@@ -29,16 +29,16 @@ export function SimulatorWalletCard() {
         try {
             if (!silent) setRefreshing(true)
             // Use environment variable for simulator URL, fallback to localhost for development
-            const simulatorUrl = process.env.NEXT_PUBLIC_SIMULATOR_URL || 'http://localhost:4000'
-            const response = await fetch(`${simulatorUrl}/api/status`)
+            const simulatorUrl = process.env.NEXT_PUBLIC_SIMULATOR_URL || 'http://apisix.gridtokenx-coresystem.orb.local'
+            const response = await fetch(`${simulatorUrl}/api/v1/simulation/status`)
             if (response.ok) {
                 const data: SimulatorStatusResponse = await response.json()
                 const walletMeters = data.meters.map((m: any) => ({
-                    meter_id: m.meter_id,
-                    wallet_address: m.wallet_address,
+                    meter_id: m.meter_id || m.id,
+                    wallet_address: m.wallet_address || '',
                     balance_gtx: m.balance_gtx || 0,
                     balance_nrg: m.balance_nrg || 0,
-                    is_connected: m.is_connected
+                    is_connected: m.is_connected !== undefined ? m.is_connected : true
                 }))
                 setMeters(walletMeters)
             }

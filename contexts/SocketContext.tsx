@@ -33,7 +33,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         if (!isValidToken) return;
 
-        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://127.0.0.1:4000';
+        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://apisix.gridtokenx-coresystem.orb.local';
         const wsUrl = `${wsBaseUrl}/ws`;
         const urlWithToken = `${wsUrl}?token=${token}`;
 

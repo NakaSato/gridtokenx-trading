@@ -16,14 +16,14 @@ export class FuturesApi {
     // ==========================================
 
     async getFuturesProducts(): Promise<ApiResponse<FuturesProduct[]>> {
-        return apiRequest<FuturesProduct[]>('/api/v1/markets/futures/products', {
+        return apiRequest<FuturesProduct[]>('/api/v1/futures/products', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async createFuturesOrder(data: CreateFuturesOrderRequest): Promise<ApiResponse<{ order_id: string }>> {
-        return apiRequest<{ order_id: string }>('/api/v1/users/me/futures/orders', {
+        return apiRequest<{ order_id: string }>('/api/v1/futures/orders', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -31,14 +31,14 @@ export class FuturesApi {
     }
 
     async getPositions(): Promise<ApiResponse<any>> {
-        return apiRequest('/api/v1/users/me/futures/positions', {
+        return apiRequest('/api/v1/futures/positions', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getFuturesPositions(): Promise<ApiResponse<FuturesPosition[]>> {
-        return apiRequest<FuturesPosition[]>('/api/v1/users/me/futures/positions', {
+        return apiRequest<FuturesPosition[]>('/api/v1/futures/positions', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -46,7 +46,7 @@ export class FuturesApi {
 
     async getFuturesCandles(productId: string, interval: string = '1m'): Promise<ApiResponse<Candle[]>> {
         const params = newSearchParams({ product_id: productId, interval })
-        return apiRequest<Candle[]>(`/api/v1/markets/futures/candles?${params.toString()}`, {
+        return apiRequest<Candle[]>(`/api/v1/futures/candles?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -54,22 +54,22 @@ export class FuturesApi {
 
     async getFuturesOrderBook(productId: string): Promise<ApiResponse<OrderBook>> {
         const params = new URLSearchParams({ product_id: productId })
-        return apiRequest<OrderBook>(`/api/v1/markets/futures/order-book?${params.toString()}`, {
+        return apiRequest<OrderBook>(`/api/v1/futures/book?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getFuturesOrders(): Promise<ApiResponse<FuturesOrder[]>> {
-        return apiRequest<FuturesOrder[]>('/api/v1/users/me/futures/orders', {
+        return apiRequest<FuturesOrder[]>('/api/v1/futures/orders', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async closeFuturesPosition(positionId: string): Promise<ApiResponse<{ order_id: string }>> {
-        return apiRequest<{ order_id: string }>(`/api/v1/users/me/futures/positions/${positionId}/close`, {
-            method: 'POST',
+        return apiRequest<{ order_id: string }>(`/api/v1/futures/positions/${positionId}`, {
+            method: 'DELETE',
             token: this.getToken(),
         })
     }

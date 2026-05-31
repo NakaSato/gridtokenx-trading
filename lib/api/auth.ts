@@ -50,7 +50,7 @@ export class AuthApi {
     walletAddress: string,
     verifyOwnership?: boolean
   ): Promise<ApiResponse<UserProfile>> {
-    return apiRequest<UserProfile>('/api/v1/users/me/wallets', {
+    return apiRequest<UserProfile>('/api/v1/me/wallets', {
       method: 'POST',
       body: {
         wallet_address: walletAddress,

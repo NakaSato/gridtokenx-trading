@@ -11,7 +11,7 @@ export class UserApi {
     constructor(private getToken: () => string | undefined) { }
 
     async getProfile(): Promise<ApiResponse<any>> {
-        return apiRequest('/api/v1/users/me', {
+        return apiRequest('/api/v1/me', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -23,7 +23,7 @@ export class UserApi {
         last_name?: string
         wallet_address?: string
     }): Promise<ApiResponse<any>> {
-        return apiRequest('/api/v1/users/me', {
+        return apiRequest('/api/v1/me', {
             method: 'PATCH',
             body: profileData,
             token: this.getToken(),
@@ -46,21 +46,21 @@ export class UserApi {
             } as ApiResponse<any>
         }
 
-        return apiRequest(`/api/v1/users/me/wallets/${walletAddress}/balance`, {
+        return apiRequest(`/api/v1/wallets/${walletAddress}/balance`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getUserAnalytics(params: { timeframe: string }): Promise<ApiResponse<any>> {
-        return apiRequest<any>(`/api/v1/users/me/analytics/stats?timeframe=${params.timeframe}`, {
+        return apiRequest<any>(`/api/v1/analytics/stats?timeframe=${params.timeframe}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getUserHistory(params: { timeframe: string }): Promise<ApiResponse<any>> {
-        return apiRequest<any>(`/api/v1/users/me/analytics/history?timeframe=${params.timeframe}`, {
+        return apiRequest<any>(`/api/v1/analytics/history?timeframe=${params.timeframe}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -86,8 +86,8 @@ export class UserApi {
         }
         const queryString = params.toString()
         const endpoint = queryString
-            ? `/api/v1/users/me/transactions?${queryString}`
-            : '/api/v1/users/me/transactions'
+            ? `/api/v1/transactions?${queryString}`
+            : '/api/v1/transactions'
 
         return apiRequest<import('../../types/transactions').UserTransactionsResponse>(
             endpoint,
@@ -96,14 +96,14 @@ export class UserApi {
     }
 
     async listWallets(): Promise<ApiResponse<UserWallet[]>> {
-        return apiRequest<UserWallet[]>('/api/v1/users/me/wallets', {
+        return apiRequest<UserWallet[]>('/api/v1/me/wallets', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async linkWallet(data: LinkWalletRequest): Promise<ApiResponse<UserWallet>> {
-        return apiRequest<UserWallet>('/api/v1/users/me/wallets', {
+        return apiRequest<UserWallet>('/api/v1/me/wallets', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -111,14 +111,14 @@ export class UserApi {
     }
 
     async removeWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/wallets/${walletId}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/me/wallets/${walletId}`, {
             method: 'DELETE',
             token: this.getToken(),
         })
     }
 
     async setPrimaryWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/wallets/${walletId}/primary`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/me/wallets/${walletId}/primary`, {
             method: 'PUT',
             token: this.getToken(),
         })
@@ -130,14 +130,14 @@ export class UserApi {
         total: number
     }>> {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/users/me/notifications?${params.toString()}`, {
+        return apiRequest(`/api/v1/notifications?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async markNotificationAsRead(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/users/me/notifications/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}`, {
             method: 'PATCH',
             body: { is_read: true },
             token: this.getToken(),
@@ -145,21 +145,21 @@ export class UserApi {
     }
 
     async markAllNotificationsAsRead(): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>('/api/v1/users/me/notifications/mark-all-read', {
+        return apiRequest<{ success: boolean }>('/api/v1/notifications/read-all', {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async getNotificationPreferences(): Promise<ApiResponse<NotificationPreferences>> {
-        return apiRequest<NotificationPreferences>('/api/v1/users/me/notification-preferences', {
+        return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<NotificationPreferences>> {
-        return apiRequest<NotificationPreferences>('/api/v1/users/me/notification-preferences', {
+        return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
             method: 'PUT',
             body: data,
             token: this.getToken(),

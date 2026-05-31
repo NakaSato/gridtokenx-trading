@@ -36,7 +36,7 @@ export const SystemConfigProvider: React.FC<{ children: ReactNode }> = ({ childr
     const fetchConfig = async () => {
       try {
         // Use the public API gateway to fetch system configuration
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4001'
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://apisix.gridtokenx-coresystem.orb.local'
         const response = await fetch(`${apiBase}/api/v1/system/config`)
         
         if (!response.ok) {
