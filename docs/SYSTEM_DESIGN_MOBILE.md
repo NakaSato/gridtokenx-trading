@@ -536,7 +536,10 @@ impl GridTokenXCore {
 | `/api/v1/meter/mint` | POST | Mint energy tokens | Yes |
 | `/api/v1/governance/proposals` | GET/POST | List/Create proposals | Yes |
 | `/api/v1/governance/vote` | POST | Vote on proposal | Yes |
-| `/api/v1/notifications/preferences` | GET/PUT | Notification settings | Yes |
+| `/api/v1/noti` | GET | List notification history (params: limit, offset) | Yes |
+| `/api/v1/noti/:id` | PATCH | Mark a specific notification as read | Yes |
+| `/api/v1/noti/read-all` | POST | Mark all user notifications as read | Yes |
+| `/api/v1/noti/preferences` | GET/PUT | Notification settings | Yes |
 
 ### 5.2 Rate Limiting
 
