@@ -89,7 +89,7 @@ export const API_ENDPOINTS = {
     onchain: `${API_CONFIG.baseUrl}/api/v1/me/onchain-profile`,
     balance: `${API_CONFIG.baseUrl}/api/v1/me/wallets`,
     transactions: `${API_CONFIG.baseUrl}/api/v1/transactions`,
-    notifications: `${API_CONFIG.baseUrl}/api/v1/notifications`,
+    notifications: `${API_CONFIG.baseUrl}/api/v1/noti`,
     carbon: `${API_CONFIG.baseUrl}/api/v1/carbon`,
   },
   // Meters
