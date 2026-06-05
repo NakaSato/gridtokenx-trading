@@ -130,14 +130,14 @@ export class UserApi {
         total: number
     }>> {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/notifications?${params.toString()}`, {
+        return apiRequest(`/api/v1/noti?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async markNotificationAsRead(id: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/notifications/${id}`, {
+        return apiRequest<{ success: boolean }>(`/api/v1/noti/${id}`, {
             method: 'PATCH',
             body: { is_read: true },
             token: this.getToken(),
@@ -145,21 +145,21 @@ export class UserApi {
     }
 
     async markAllNotificationsAsRead(): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>('/api/v1/notifications/read-all', {
+        return apiRequest<{ success: boolean }>('/api/v1/noti/read-all', {
             method: 'POST',
             token: this.getToken(),
         })
     }
 
     async getNotificationPreferences(): Promise<ApiResponse<NotificationPreferences>> {
-        return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
+        return apiRequest<NotificationPreferences>('/api/v1/noti/preferences', {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async updateNotificationPreferences(data: Partial<NotificationPreferences>): Promise<ApiResponse<NotificationPreferences>> {
-        return apiRequest<NotificationPreferences>('/api/v1/notifications/preferences', {
+        return apiRequest<NotificationPreferences>('/api/v1/noti/preferences', {
             method: 'PUT',
             body: data,
             token: this.getToken(),
