@@ -35,16 +35,16 @@ export interface FeatureFlags {
 // =============================================================================
 export const SOLANA_CONFIG = {
   network: process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'localnet',
-  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'http://apisix.gridtokenx-coresystem.orb.local/api/v1/rpc',
-  wsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || 'ws://localhost:8900',
+  rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://apisix.gridtokenx-coresystem.orb.local/api/v1/rpc',
+  wsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || 'wss://apisix.gridtokenx-coresystem.orb.local/api/v1/rpc-ws',
 } as const
 
 // -----------------------------------------------------------------------------
 // API Gateway Configuration
 // -----------------------------------------------------------------------------
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://apisix.gridtokenx-coresystem.orb.local',
-  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://apisix.gridtokenx-coresystem.orb.local',
+  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://apisix.gridtokenx-coresystem.orb.local',
+  wsBaseUrl: process.env.NEXT_PUBLIC_WS_BASE_URL || 'wss://apisix.gridtokenx-coresystem.orb.local',
 } as const
 
 // -----------------------------------------------------------------------------
