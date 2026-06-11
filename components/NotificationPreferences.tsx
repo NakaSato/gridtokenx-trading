@@ -9,6 +9,58 @@ import { Loader2, Settings2, Bell, Mail, Smartphone, ShieldCheck } from 'lucide-
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
+type PreferenceToggleProps = {
+    label: string
+    description: string
+    icon: any
+    active: boolean
+    saving: boolean
+    onToggle: () => void
+}
+
+function PreferenceToggle({
+    label,
+    description,
+    icon: Icon,
+    active,
+    saving,
+    onToggle,
+}: PreferenceToggleProps) {
+    return (
+        <div className="flex items-start justify-between p-4 rounded-sm border bg-background group hover:border-primary/30 transition-all">
+            <div className="flex gap-3">
+                <div className={cn(
+                    "p-2 rounded-full h-fit",
+                    active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                )}>
+                    <Icon size={18} />
+                </div>
+                <div className="flex flex-col space-y-1">
+                    <span className="text-sm font-semibold">{label}</span>
+                    <span className="text-[10px] text-muted-foreground leading-relaxed max-w-[200px]">
+                        {description}
+                    </span>
+                </div>
+            </div>
+            <button
+                onClick={onToggle}
+                disabled={saving}
+                className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+                    active ? "bg-primary" : "bg-muted-foreground/30"
+                )}
+            >
+                <span
+                    className={cn(
+                        "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                        active ? "translate-x-4" : "translate-x-1"
+                    )}
+                />
+            </button>
+        </div>
+    )
+}
+
 export default function NotificationPreferences() {
     const { token } = useAuth()
     const [prefs, setPrefs] = useState<NotificationPreferences | null>(null)
@@ -67,52 +119,6 @@ export default function NotificationPreferences() {
 
     if (!prefs) return null
 
-    const PreferenceToggle = ({
-        label,
-        description,
-        icon: Icon,
-        active,
-        onToggle
-    }: {
-        label: string,
-        description: string,
-        icon: any,
-        active: boolean,
-        onToggle: () => void
-    }) => (
-        <div className="flex items-start justify-between p-4 rounded-sm border bg-background group hover:border-primary/30 transition-all">
-            <div className="flex gap-3">
-                <div className={cn(
-                    "p-2 rounded-full h-fit",
-                    active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                )}>
-                    <Icon size={18} />
-                </div>
-                <div className="flex flex-col space-y-1">
-                    <span className="text-sm font-semibold">{label}</span>
-                    <span className="text-[10px] text-muted-foreground leading-relaxed max-w-[200px]">
-                        {description}
-                    </span>
-                </div>
-            </div>
-            <button
-                onClick={onToggle}
-                disabled={saving}
-                className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-                    active ? "bg-primary" : "bg-muted-foreground/30"
-                )}
-            >
-                <span
-                    className={cn(
-                        "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
-                        active ? "translate-x-4" : "translate-x-1"
-                    )}
-                />
-            </button>
-        </div>
-    )
-
     return (
         <div className="space-y-6">
             <div className="space-y-3">
@@ -122,6 +128,7 @@ export default function NotificationPreferences() {
                 </h4>
                 <div className="grid gap-3">
                     <PreferenceToggle
+                        saving={saving}
                         icon={Mail}
                         label="Email Notifications"
                         description="Receive trading summaries and security alerts via email."
@@ -129,6 +136,7 @@ export default function NotificationPreferences() {
                         onToggle={() => togglePref('email_enabled')}
                     />
                     <PreferenceToggle
+                        saving={saving}
                         icon={Smartphone}
                         label="Push Notifications"
                         description="Real-time alerts directly on your browser or device."
@@ -145,6 +153,7 @@ export default function NotificationPreferences() {
                 </h4>
                 <div className="grid gap-3">
                     <PreferenceToggle
+                        saving={saving}
                         icon={ShieldCheck}
                         label="Trade Alerts"
                         description="Get notified when your P2P or Recurring orders are executed."
@@ -152,6 +161,7 @@ export default function NotificationPreferences() {
                         onToggle={() => togglePref('trade_notifications')}
                     />
                     <PreferenceToggle
+                        saving={saving}
                         icon={Bell}
                         label="Price Alerts"
                         description="Notifications for custom price targets you've set."
@@ -159,6 +169,7 @@ export default function NotificationPreferences() {
                         onToggle={() => togglePref('alert_notifications')}
                     />
                     <PreferenceToggle
+                        saving={saving}
                         icon={Settings2}
                         label="System Notifications"
                         description="Core platform updates, maintenance, and security announcements."

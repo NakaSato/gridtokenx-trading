@@ -81,13 +81,18 @@ export function WasmProvider({ children }: WasmProviderProps) {
     }
 
     // Use requestIdleCallback for better performance
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined
     if ('requestIdleCallback' in window) {
       ;(
         window as Window & { requestIdleCallback: (cb: () => void) => void }
       ).requestIdleCallback(loadWasm)
     } else {
       // Fallback: load after a short delay to not block paint
-      setTimeout(loadWasm, 100)
+      fallbackTimer = setTimeout(loadWasm, 100)
+    }
+
+    return () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer)
     }
   }, [])
 

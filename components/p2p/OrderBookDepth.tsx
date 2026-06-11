@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { defaultApiClient } from '@/lib/api-client'
@@ -50,7 +50,6 @@ export default function OrderBookDepth({
     const { token } = useAuth()
     const [orderBook, setOrderBook] = useState<OrderBookSnapshot | null>(null)
     const [loading, setLoading] = useState(false)
-    const [priceImpact, setPriceImpact] = useState<number | null>(null)
     const [isFlashing, setIsFlashing] = useState<boolean>(false)
 
     const processOrderBookData = useCallback((bids: any[], asks: any[]) => {
@@ -122,11 +121,10 @@ export default function OrderBookDepth({
         }
     }, [latestSnapshot, processOrderBookData])
 
-    // Calculate price impact
-    useEffect(() => {
+    // Calculate price impact (derived — compute during render, no state/effect)
+    const priceImpact = useMemo<number | null>(() => {
         if (!orderBook || !amount || amount <= 0) {
-            setPriceImpact(null)
-            return
+            return null
         }
 
         if (side === 'buy' && orderBook.asks.length > 0) {
@@ -145,8 +143,7 @@ export default function OrderBookDepth({
 
             if (filledAmount > 0) {
                 const avgPrice = totalCost / filledAmount
-                const impact = ((avgPrice - orderBook.bestAsk) / orderBook.bestAsk) * 100
-                setPriceImpact(impact)
+                return ((avgPrice - orderBook.bestAsk) / orderBook.bestAsk) * 100
             }
         } else if (side === 'sell' && orderBook.bids.length > 0) {
             // For sell: calculate average price when selling 'amount' to bids
@@ -164,10 +161,11 @@ export default function OrderBookDepth({
 
             if (filledAmount > 0) {
                 const avgPrice = totalValue / filledAmount
-                const impact = ((orderBook.bestBid - avgPrice) / orderBook.bestBid) * 100
-                setPriceImpact(impact)
+                return ((orderBook.bestBid - avgPrice) / orderBook.bestBid) * 100
             }
         }
+
+        return null
     }, [orderBook, amount, side])
 
     if (loading && !orderBook) {

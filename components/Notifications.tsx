@@ -16,6 +16,52 @@ import { formatDistanceToNow } from 'date-fns'
 import NotificationPreferences from './NotificationPreferences'
 import { cn } from '@/lib/utils'
 
+function NotificationItem({
+  item,
+  isMobile = false,
+  onMarkRead,
+}: {
+  item: Notification
+  isMobile?: boolean
+  onMarkRead: (id: string) => void
+}) {
+  return (
+    <div className={cn("w-full p-4 transition-colors hover:bg-secondary/30", !item.is_read && "bg-primary/5")}>
+      <div className="flex w-full space-x-3">
+        <div className={cn(
+          "h-fit rounded-sm p-[9px]",
+          item.is_read ? "bg-secondary text-secondary-foreground" : "bg-primary/20 text-primary"
+        )}>
+          <InfoIcon />
+        </div>
+        <div className="flex-1 space-y-1">
+          <p className="text-xs font-normal text-foreground leading-relaxed">
+            {item.message}
+          </p>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[10px] text-secondary-foreground opacity-70">
+              {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+            </span>
+            {!item.is_read && (
+              <button
+                onClick={() => onMarkRead(item.id)}
+                className="text-[10px] text-primary hover:underline font-medium"
+              >
+                Mark read
+              </button>
+            )}
+          </div>
+        </div>
+        {!item.is_read && (
+          <div className="pt-1">
+            <RedCircle />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Notifications() {
   const { token, isAuthenticated } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
@@ -72,42 +118,6 @@ export default function Notifications() {
       console.error('Failed to mark all as read:', error)
     }
   }
-
-  const NotificationItem = ({ item, isMobile = false }: { item: Notification, isMobile?: boolean }) => (
-    <div className={cn("w-full p-4 transition-colors hover:bg-secondary/30", !item.is_read && "bg-primary/5")}>
-      <div className="flex w-full space-x-3">
-        <div className={cn(
-          "h-fit rounded-sm p-[9px]",
-          item.is_read ? "bg-secondary text-secondary-foreground" : "bg-primary/20 text-primary"
-        )}>
-          <InfoIcon />
-        </div>
-        <div className="flex-1 space-y-1">
-          <p className="text-xs font-normal text-foreground leading-relaxed">
-            {item.message}
-          </p>
-          <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-secondary-foreground opacity-70">
-              {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-            </span>
-            {!item.is_read && (
-              <button
-                onClick={() => markAsRead(item.id)}
-                className="text-[10px] text-primary hover:underline font-medium"
-              >
-                Mark read
-              </button>
-            )}
-          </div>
-        </div>
-        {!item.is_read && (
-          <div className="pt-1">
-            <RedCircle />
-          </div>
-        )}
-      </div>
-    </div>
-  )
 
   return (
     <>
@@ -186,7 +196,7 @@ export default function Notifications() {
                   <div className="-m-3">
                     {notifications.map((n) => (
                       <div key={n.id}>
-                        <NotificationItem item={n} />
+                        <NotificationItem item={n} onMarkRead={markAsRead} />
                         <Separator className="opacity-30" />
                       </div>
                     ))}
@@ -248,7 +258,7 @@ export default function Notifications() {
             {notifications.length > 0 ? (
               notifications.map((n) => (
                 <div key={n.id}>
-                  <NotificationItem item={n} isMobile />
+                  <NotificationItem item={n} isMobile onMarkRead={markAsRead} />
                   <Separator className="opacity-50" />
                 </div>
               ))

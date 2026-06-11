@@ -91,6 +91,7 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
     const { latestSnapshot } = useOrderBookUpdates({ token: token || undefined })
 
     useEffect(() => {
+        let animationTimer: ReturnType<typeof setTimeout> | undefined
         if (latestSnapshot) {
             // When we receive a WebSocket snapshot, process it
             const bids = latestSnapshot.bids || []
@@ -124,7 +125,7 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
                     if (newAnimated.size > 0) {
                         setAnimatedRows(newAnimated)
                         // Clear the animation class after 800ms (matches CSS duration)
-                        setTimeout(() => setAnimatedRows(new Set()), 800)
+                        animationTimer = setTimeout(() => setAnimatedRows(new Set()), 800)
                     }
                     
                     return unified
@@ -133,6 +134,9 @@ export const OrderBook = ({ myOrdersOnly = false }: { myOrdersOnly?: boolean }) 
                 // Snapshot with no orders — trigger a REST refetch for full data
                 fetchOffchainOrders()
             }
+        }
+        return () => {
+            if (animationTimer) clearTimeout(animationTimer)
         }
     }, [latestSnapshot, fetchOffchainOrders])
 
