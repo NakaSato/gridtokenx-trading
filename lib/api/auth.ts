@@ -2,6 +2,7 @@ import { apiRequest, ApiResponse } from './core'
 import type {
   LoginRequest,
   LoginResponse,
+  RefreshResponse,
   RegisterRequest,
   RegisterResponse,
   VerifyEmailResponse,
@@ -41,6 +42,16 @@ export class AuthApi {
 
   async logout() {
     return apiRequest('/api/v1/auth/logout', {
+      method: 'POST',
+      token: this.getToken(),
+    })
+  }
+
+  // Exchanges the current (still-valid) token for a fresh one. Must be called
+  // BEFORE expiry — the backend rejects expired tokens, so this is driven by a
+  // proactive timer in AuthProvider, not reactively after a 401.
+  async refreshToken(): Promise<ApiResponse<RefreshResponse>> {
+    return apiRequest<RefreshResponse>('/api/v1/auth/refresh', {
       method: 'POST',
       token: this.getToken(),
     })

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
+import { isJwtExpired } from '@/lib/jwt';
 
 interface SocketContextType {
     socket: WebSocket | null;
@@ -33,6 +34,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         if (!isValidToken) return;
 
+        // Don't open a socket with an expired token — the gateway 401s the upgrade
+        // and we'd reconnect-loop forever. Wait for useAuth() to supply a fresh
+        // token; the `token` dependency re-runs connect() when it does.
+        if (isJwtExpired(token)) {
+            console.warn('🔒 WS connect skipped: JWT expired — awaiting token refresh');
+            return;
+        }
+
         const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://apisix.gridtokenx-coresystem.orb.local';
         const wsUrl = `${wsBaseUrl}/ws`;
         const urlWithToken = `${wsUrl}?token=${token}`;
@@ -53,8 +62,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setSocket(null);
             socketRef.current = null;
 
-            // Simple exponential backoff or 3s retry
-            if (token) {
+            // Reconnect only with a still-valid token. Retrying an expired token
+            // just reproduces the 401 that closed us — let the auth layer refresh
+            // first (a new `token` re-runs connect() via the effect dependency).
+            if (token && !isJwtExpired(token)) {
                 reconnectTimeoutRef.current = setTimeout(connect, 3000);
             }
         };

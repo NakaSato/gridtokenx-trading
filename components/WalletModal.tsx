@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button'
 import { XIcon, Eye, EyeOff } from 'lucide-react'
@@ -12,7 +12,6 @@ import {
   DialogDescription,
 } from './ui/dialog'
 import WalletList from './WalletList'
-import { useWallet } from '@solana/wallet-adapter-react'
 import toast from 'react-hot-toast'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -20,10 +19,9 @@ import { Separator } from './ui/separator'
 import { Checkbox } from './ui/checkbox'
 import type { Wallet } from '../types/wallet'
 import { defaultApiClient } from '../lib/api-client'
-import type { LoginResponse, RegisterResponse } from '../types/auth'
+import type { RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
-import bs58 from 'bs58'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
+import { useWalletAuth } from '@/hooks/useWalletAuth'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -40,17 +38,8 @@ export const allWallets: Wallet[] = [
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter()
-  const { select, wallets } = useWallet()
-  const {
-    login,
-    loginWithWallet,
-    register,
-    isLoading: authLoading,
-    user,
-    isAuthenticated,
-    updateWallet,
-  } = useAuth()
-  const [isConnecting, setIsConnecting] = useState(false)
+  const { login, isLoading: authLoading, isAuthenticated } = useAuth()
+  const { connectAndLogin } = useWalletAuth()
   const [authMode, setAuthMode] = useState<'wallet' | 'signin' | 'signup'>(
     'wallet'
   )
@@ -76,166 +65,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
   }, [isAuthenticated, isOpen, onClose])
 
-  const handleWalletConnect = useCallback(
-    async (walletName: string, iconPath: string) => {
-      if (isConnecting) return
-
-      setIsConnecting(true)
-      let walletConnected = false
-
-      try {
-        const wallet = wallets.find(
-          (value) => value.adapter.name === walletName
-        )
-
-        if (!wallet) {
-          toast.error(`Wallet "${walletName}" not found`)
-          return
-        }
-
-        // Check if wallet is ready
-        if (
-          !wallet.adapter.readyState ||
-          wallet.adapter.readyState === 'Unsupported'
-        ) {
-          toast.error(
-            `${walletName} wallet is not installed. Please install it first.`
-          )
-          // Open wallet installation page
-          if (walletName === 'Phantom') {
-            window.open('https://phantom.app/', '_blank')
-          } else if (walletName === 'Solflare') {
-            window.open('https://solflare.com/', '_blank')
-          } else if (walletName === 'Trust') {
-            window.open('https://trustwallet.com/', '_blank')
-          } else if (walletName === 'SafePal') {
-            window.open('https://www.safepal.io/download', '_blank')
-          }
-          return
-        }
-
-        if (wallet.adapter.readyState === 'NotDetected') {
-          toast.error(
-            `${walletName} wallet not detected. Please install the extension.`
-          )
-          return
-        }
-
-        select(wallet.adapter.name)
-        await wallet.adapter.connect()
-        walletConnected = true
-
-        // Wait for publicKey to be available with retry logic
-        let publicKey = wallet.adapter.publicKey
-        let retries = 0
-        const maxRetries = 10
-
-        while (!publicKey && retries < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          publicKey = wallet.adapter.publicKey
-          retries++
-        }
-
-        if (!publicKey) {
-          toast.error(
-            'Wallet connected but public key not available. Please try again.'
-          )
-          return
-        }
-
-        toast.success(`${walletName} Wallet Connected`)
-
-        // If user is logged in, update their wallet address in the backend
-        if (user) {
-          try {
-            await updateWallet(publicKey.toString())
-            toast.success('Wallet linked to your account')
-          } catch (error) {
-            console.error('Failed to link wallet:', error)
-            const errorMsg =
-              error instanceof Error ? error.message : 'Unknown error'
-            toast.error(`Failed to link wallet to account: ${errorMsg}`)
-            // Don't return here - wallet is still connected, just not linked
-          }
-        } else if (!isAuthenticated) {
-          // If not logged in, try to sign in with wallet
-          try {
-            const adapter = wallet.adapter as {
-              signMessage?: (message: Uint8Array) => Promise<Uint8Array>
-            }
-
-            if (!adapter.signMessage) {
-              toast.error(
-                'Wallet does not support message signing. Cannot sign in.'
-              )
-              return
-            }
-
-            const timestamp = Date.now()
-            const messageStr = `Sign in to GridTokenX. Timestamp: ${timestamp}`
-            const message = new TextEncoder().encode(messageStr)
-
-            toast.loading('Please sign the message to log in...', {
-              id: 'signing-message',
-            })
-
-            const signature = await adapter.signMessage(message)
-            toast.dismiss('signing-message')
-
-            const signatureStr = bs58.encode(signature)
-
-            await loginWithWallet({
-              wallet_address: publicKey.toString(),
-              signature: signatureStr,
-              message: messageStr,
-              timestamp,
-            })
-
-            toast.success('Signed in successfully')
-            // Add a small delay for state update
-            await new Promise((resolve) => setTimeout(resolve, 500))
-            router.refresh()
-          } catch (error: unknown) {
-            toast.dismiss('signing-message')
-            console.error('Wallet login failed:', error)
-
-            // If user rejected signature, we should probably disconnect to reset state
-            // or just let them be "connected" but not "signed in"
-            const errorMessage =
-              error instanceof Error ? error.message : 'Unknown error'
-            if (errorMessage.includes('User rejected')) {
-              toast.error('Login cancelled: Signature rejected')
-            } else {
-              toast.error(`Wallet login failed: ${errorMessage}`)
-            }
-          }
-        }
-
-        onClose()
-      } catch (error: unknown) {
-        console.error('Wallet connection error:', error)
-
-        // Handle specific wallet errors
-        let errorMessage = 'Failed to connect'
-        const err = error as { name?: string; message?: string }
-
-        if (err?.name === 'WalletNotReadyError') {
-          errorMessage = `${walletName} wallet is not ready. Please make sure it's installed and unlocked.`
-        } else if (err?.name === 'WalletConnectionError') {
-          errorMessage = 'Connection failed. Please try again.'
-        } else if (err?.name === 'WalletDisconnectedError') {
-          errorMessage = 'Wallet was disconnected. Please try again.'
-        } else if (err?.message) {
-          errorMessage = err.message
-        }
-
-        toast.error(errorMessage)
-      } finally {
-        setIsConnecting(false)
-      }
-    },
-    [isConnecting, wallets, select, onClose, user, updateWallet]
-  )
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -259,15 +88,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     try {
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
-
-      // Sync Supabase session when auth mode is supabase
-      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase' && loginData.user.email) {
-        const supabase = createSupabaseClient()
-        await supabase.auth.signInWithPassword({
-          email: loginData.user.email,
-          password,
-        })
-      }
 
       // Small delay to ensure auth state is updated before closing and redirecting
       setTimeout(() => {
@@ -417,12 +237,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
 
       const registerData: RegisterResponse = response.data
 
-      // Sync Supabase account when auth mode is supabase
-      if (process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase') {
-        const supabase = createSupabaseClient()
-        await supabase.auth.signUp({ email, password })
-      }
-
       toast.success(
         registerData.message ||
           'Registration successful! Please check your email to verify your account.'
@@ -474,7 +288,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
           <div className="flex w-full flex-col justify-between space-y-5">
             <WalletList
               wallets={allWallets}
-              onWalletConnect={handleWalletConnect}
+              onWalletConnect={connectAndLogin}
             />
             <div className="text-center">
               <button
@@ -592,14 +406,14 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
               <div className="mt-6">
                 <WalletList
                   wallets={allWallets}
-                  onWalletConnect={handleWalletConnect}
+                  onWalletConnect={connectAndLogin}
                   className="grid grid-cols-3 gap-3"
                 />
               </div>
 
               <div className="mt-6 border-t border-border pt-6">
                 <p className="text-center text-sm text-secondary-foreground">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <button
                     onClick={() => setAuthMode('signup')}
                     className="font-semibold text-primary transition-colors hover:text-primary/80"

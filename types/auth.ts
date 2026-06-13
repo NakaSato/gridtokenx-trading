@@ -52,6 +52,12 @@ export interface LoginResponse {
   user: UserResponse;
 }
 
+export interface RefreshResponse {
+  access_token: string;
+  expires_in: number; // seconds
+  token_type: string;
+}
+
 export interface UserResponse {
   id: string;
   username: string;

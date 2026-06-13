@@ -31,7 +31,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { AuthButton } from './auth'
-import SupabaseAuthButton from './auth/SupabaseAuthButton'
 import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Logo } from './Logo'
 import dynamic from 'next/dynamic'
@@ -378,8 +377,6 @@ export default function NavBar() {
           </div>
         )}
         {isAuthenticated && <Notifications />}
-
-        {process.env.NEXT_PUBLIC_AUTH_MODE === 'supabase' && <SupabaseAuthButton />}
 
         {connected || isAuthenticated ? (
           <WalletSideBar />

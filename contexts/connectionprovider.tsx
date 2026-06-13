@@ -7,7 +7,11 @@ import { WalletAdapterNetwork, Adapter } from '@solana/wallet-adapter-base'
 import { useMemo, useState, useEffect } from 'react'
 import { ContractProvider } from './contractProvider'
 
-export default ({ children }: { children: React.ReactNode }) => {
+function SolanaConnectionProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const network = WalletAdapterNetwork.Mainnet
 
   // Start with empty wallets to avoid including heavy libraries in initial bundle
@@ -58,3 +62,5 @@ export default ({ children }: { children: React.ReactNode }) => {
     </ConnectionProvider>
   )
 }
+
+export default SolanaConnectionProvider

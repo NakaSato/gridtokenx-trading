@@ -4,10 +4,12 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from 'react'
 import { useApiClient } from '@/hooks/useApi'
+import { computeRefreshDelay } from '@/lib/jwt'
 import type {
   LoginResponse,
   RegisterResponse,
@@ -75,9 +77,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
   const apiClient = useApiClient()
 
+  // Proactive token refresh: a timer fires before the access token expires and
+  // swaps it for a fresh one. Without this the 24h token silently expires
+  // mid-session and every subsequent request 401s. The ref breaks the
+  // scheduleRefresh ⇄ refreshToken cycle (both are recreated each render).
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const refreshTokenRef = useRef<() => Promise<boolean>>(async () => false)
+
+  const scheduleRefresh = (expiresAtMs: number) => {
+    if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current)
+    const delay = computeRefreshDelay(expiresAtMs - Date.now())
+    if (delay === null) return
+    refreshTimeoutRef.current = setTimeout(() => {
+      void refreshTokenRef.current()
+    }, delay)
+  }
+
   // Check authentication status on mount
   useEffect(() => {
     checkAuth()
+    return () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current)
+    }
   }, [])
 
   const checkAuth = async () => {
@@ -117,6 +138,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Set token in API client
         apiClient.setToken(storedToken)
+
+        // Arm proactive refresh against the restored token's expiry.
+        if (expiresAt) {
+          scheduleRefresh(parseInt(expiresAt))
+        }
 
         // Validate token with backend and update user state with latest profile
         try {
@@ -180,6 +206,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(loginData.access_token)
       setUser(loginData.user)
       apiClient.setToken(loginData.access_token)
+      scheduleRefresh(expirationTime)
 
       return loginData
     } finally {
@@ -196,6 +223,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
+      // Stop any pending proactive refresh.
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = undefined
+      }
       // Clear local storage regardless of backend response
       localStorage.removeItem('access_token')
       localStorage.removeItem('token_expires_at')
@@ -259,6 +291,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(loginData.access_token)
       setUser(loginData.user)
       apiClient.setToken(loginData.access_token)
+      scheduleRefresh(expirationTime)
 
       return loginData
     } finally {
@@ -354,15 +387,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshToken = async (): Promise<boolean> => {
     try {
-      // This would implement token refresh logic
-      // For now, we'll just check if current token is still valid
-      const response = await apiClient.getProfile()
-      return !response.error && !!response.data
+      const response = await apiClient.refreshToken()
+      if (response.error || !response.data) {
+        console.warn('Token refresh failed:', response.error)
+        // 401 means the token already expired — nothing to refresh, force re-login.
+        if (response.status === 401) {
+          await logout()
+        }
+        return false
+      }
+
+      const { access_token, expires_in } = response.data
+      const expirationTime = Date.now() + expires_in * 1000
+
+      // Persist into whichever storage currently holds the session.
+      const storage = localStorage.getItem('access_token')
+        ? localStorage
+        : sessionStorage.getItem('access_token')
+          ? sessionStorage
+          : null
+      if (storage) {
+        storage.setItem('access_token', access_token)
+        storage.setItem('token_expires_at', String(expirationTime))
+      }
+
+      setToken(access_token)
+      apiClient.setToken(access_token)
+      scheduleRefresh(expirationTime)
+      return true
     } catch (error) {
       console.error('Token refresh failed:', error)
       return false
     }
   }
+
+  // Keep the ref pointing at the latest closure so the scheduled timer always
+  // calls the current refreshToken (with up-to-date apiClient/state).
+  refreshTokenRef.current = refreshToken
 
   const value: AuthContextType = {
     user,

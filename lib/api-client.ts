@@ -57,6 +57,7 @@ export class ApiClient {
   async register(userData: any) { return this.authApi.register(userData) }
   async verifyWalletSignature(data: any) { return this.authApi.verifyWalletSignature(data) }
   async logout() { return this.authApi.logout() }
+  async refreshToken() { return this.authApi.refreshToken() }
   async updateWallet(walletAddress: string, verifyOwnership?: boolean) { return this.authApi.updateWallet(walletAddress, verifyOwnership) }
   async verifyEmail(token: string) { return this.authApi.verifyEmail(token) }
   async resendVerification(email: string) { return this.authApi.resendVerification(email) }

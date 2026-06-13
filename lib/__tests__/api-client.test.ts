@@ -161,6 +161,56 @@ describe('ApiClient', () => {
     })
   })
 
+  describe('refreshToken', () => {
+    it('POSTs to /api/v1/auth/refresh with the Bearer header and no body', async () => {
+      const mockResponse = {
+        access_token: 'fresh-token',
+        expires_in: 86400,
+        token_type: 'Bearer',
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(mockResponse),
+        json: async () => mockResponse,
+      } as Response)
+
+      const client = new ApiClient('current-token')
+      const result = await client.refreshToken()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/auth/refresh'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer current-token',
+          }),
+          // Backend reads the token from the header only — refresh sends no body.
+          body: undefined,
+        })
+      )
+      expect(result.status).toBe(200)
+      expect(result.data).toEqual(mockResponse)
+    })
+
+    it('surfaces a 401 (expired token) without throwing', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ error: 'token expired' }),
+        json: async () => ({ error: 'token expired' }),
+      } as Response)
+
+      const client = new ApiClient('expired-token')
+      const result = await client.refreshToken()
+
+      expect(result.status).toBe(401)
+      expect(result.error).toBe('token expired')
+      expect(result.data).toBeUndefined()
+    })
+  })
+
   describe('ApiClient instance', () => {
     it('can be created with a token', () => {
       const client = new ApiClient('test-token')
