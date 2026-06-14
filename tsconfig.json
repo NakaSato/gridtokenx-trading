@@ -33,8 +33,6 @@
       "react-dom",
       "jest",
       "mapbox-gl",
-      "react-map-gl",
-      "react-window",
       "supercluster",
       "@testing-library/jest-dom"
     ]
