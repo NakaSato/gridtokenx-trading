@@ -62,7 +62,7 @@ export function GridFrequencyChart({ currentFrequency, maxPoints = 30 }: GridFre
                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '9px', padding: '4px' }}
                         itemStyle={{ padding: '0px', color: '#10b981' }}
                         labelStyle={{ display: 'none' }}
-                        formatter={(value: number) => [`${value.toFixed(3)} Hz`, 'Freq']}
+                        formatter={(value) => [`${Number(value).toFixed(3)} Hz`, 'Freq']}
                     />
                     <ReferenceLine y={50} stroke="#10b981" strokeDasharray="3 3" strokeOpacity={0.3} />
                     <Line

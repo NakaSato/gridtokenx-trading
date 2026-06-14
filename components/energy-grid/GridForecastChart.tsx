@@ -40,8 +40,8 @@ export function GridForecastChart({ forecast }: GridForecastChartProps) {
                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '4px', fontSize: '9px', padding: '4px' }}
                         itemStyle={{ padding: '0px' }}
                         labelStyle={{ display: 'none' }}
-                        formatter={(value: number, name: string) => [
-                            `${value.toFixed(2)} MW`,
+                        formatter={(value, name) => [
+                            `${Number(value).toFixed(2)} MW`,
                             name === 'consumption' ? 'Demand' : 'Solar'
                         ]}
                     />

@@ -280,8 +280,8 @@ export function TradingHistoryChart({ className }: TradingHistoryChartProps) {
                                     fontSize: '12px',
                                 }}
                                 labelStyle={{ color: 'hsl(var(--primary))' }}
-                                formatter={(value: number, name: string) => [
-                                    name === 'volume' ? `${value.toFixed(2)} kWh` : `฿${value.toFixed(2)}`,
+                                formatter={(value, name) => [
+                                    name === 'volume' ? `${Number(value).toFixed(2)} kWh` : `฿${Number(value).toFixed(2)}`,
                                     name === 'volume' ? 'Volume' : 'Value'
                                 ]}
                             />

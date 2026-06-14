@@ -137,7 +137,7 @@ export default function PriceChart({ symbol = 'GRX', productId, type = 'spot' }:
                                 contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                                 itemStyle={{ color: 'hsl(var(--foreground))' }}
                                 labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-                                formatter={(value: number) => [value.toFixed(4), 'Price']}
+                                formatter={(value) => [Number(value).toFixed(4), 'Price']}
                             />
                             <Area
                                 type="monotone"

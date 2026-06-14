@@ -146,7 +146,7 @@ export default memo(function PositionOverview({
                         setCustomDate(date)
                         setIsCalendarOpen(false)
                       }}
-                      initialFocus
+                      autoFocus
                       disabled={(date) => date < new Date()}
                     />
                   </PopoverContent>
