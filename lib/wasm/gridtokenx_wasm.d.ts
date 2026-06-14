@@ -6,7 +6,7 @@ export class AuctionSimulator {
     [Symbol.dispose](): void;
     add_order(id: number, price: number, amount: number, is_bid: boolean): void;
     /**
-     * Calculate Uniform Clearing Price (MCP)
+     * Calculate Uniform Clearing Price (MCP) - Optimized to O(n log n)
      * Returns [clearing_price, clearing_volume]
      */
     calculate_clearing_price(): Float64Array;
@@ -121,27 +121,39 @@ export class OrderBook {
     free(): void;
     [Symbol.dispose](): void;
     /**
-     * Add an order to the book
+     * Add an order to the book - O(log n) insertion
      */
     add_order(id: number, side: number, price: number, quantity: number, timestamp: bigint): void;
     ask_count(): number;
+    /**
+     * Get best ask price - O(1) with BTreeMap
+     */
     best_ask_price(): number;
+    /**
+     * Get best bid price - O(1) with BTreeMap
+     */
     best_bid_price(): number;
     bid_count(): number;
+    /**
+     * Cancel order - O(1) lookup with HashMap index
+     */
     cancel_order(order_id: number): boolean;
     /**
      * Clear all orders
      */
     clear(): void;
     /**
-     * Get depth data for visualization
+     * Get depth data for visualization - optimized iteration
      * Returns: { bids: [[price, cum_qty], ...], asks: [[price, cum_qty], ...] }
      */
     get_depth(levels: number): any;
     /**
-     * Bulk check/add orders (not strictly necessary with wasm-bindgen if we just loop in JS, but nice for perf)
+     * Bulk load orders - optimized to avoid per-insert overhead
      */
     load_orders(orders: any): void;
+    /**
+     * Match orders - optimized with BTreeMap
+     */
     match_orders(): any;
     mid_price(): number;
     constructor();
@@ -331,55 +343,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly __wbg_orderbook_free: (a: number, b: number) => void;
-    readonly orderbook_add_order: (a: number, b: number, c: number, d: number, e: number, f: bigint) => void;
-    readonly orderbook_ask_count: (a: number) => number;
-    readonly orderbook_best_ask_price: (a: number) => number;
-    readonly orderbook_best_bid_price: (a: number) => number;
-    readonly orderbook_bid_count: (a: number) => number;
-    readonly orderbook_cancel_order: (a: number, b: number) => number;
-    readonly orderbook_clear: (a: number) => void;
-    readonly orderbook_get_depth: (a: number, b: number) => [number, number, number];
-    readonly orderbook_load_orders: (a: number, b: any) => [number, number];
-    readonly orderbook_match_orders: (a: number) => [number, number, number];
-    readonly orderbook_mid_price: (a: number) => number;
-    readonly orderbook_new: () => number;
-    readonly orderbook_spread: (a: number) => number;
-    readonly perform_clustering: (a: any) => [number, number, number];
-    readonly __wbg_get_greeks_delta: (a: number) => number;
-    readonly __wbg_get_greeks_gamma: (a: number) => number;
-    readonly __wbg_get_greeks_rho: (a: number) => number;
-    readonly __wbg_get_greeks_theta: (a: number) => number;
-    readonly __wbg_get_greeks_vega: (a: number) => number;
-    readonly __wbg_greeks_free: (a: number, b: number) => void;
-    readonly __wbg_set_greeks_delta: (a: number, b: number) => void;
-    readonly __wbg_set_greeks_gamma: (a: number, b: number) => void;
-    readonly __wbg_set_greeks_rho: (a: number, b: number) => void;
-    readonly __wbg_set_greeks_theta: (a: number, b: number) => void;
-    readonly __wbg_set_greeks_vega: (a: number, b: number) => void;
-    readonly black_scholes: (a: number, b: number, c: number, d: number) => number;
-    readonly calculate_greeks: (a: number, b: number, c: number, d: number) => number;
-    readonly delta_calc: (a: number, b: number, c: number, d: number) => number;
-    readonly rho_calc: (a: number, b: number, c: number, d: number) => number;
-    readonly theta_calc: (a: number, b: number, c: number, d: number) => number;
-    readonly gamma_calc: (a: number, b: number, c: number) => number;
-    readonly vega_calc: (a: number, b: number, c: number) => number;
-    readonly calculate_portfolio_risk: (a: any) => [number, number, number];
-    readonly init_panic_hook: () => void;
-    readonly crypto_msg_hash: (a: number, b: number) => [number, number];
-    readonly crypto_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly hmac_sha256: (a: number, b: number, c: number, d: number) => [number, number, number, number];
-    readonly sha256: (a: number, b: number) => [number, number];
-    readonly sign_p2p_order: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint, h: number, i: number) => [number, number, number, number];
-    readonly aggregate_readings: (a: any) => [number, number, number];
-    readonly __wbg_simulation_free: (a: number, b: number) => void;
-    readonly simulation_get_flows: (a: number) => [number, number, number];
-    readonly simulation_get_grid_totals: (a: number) => [number, number, number];
-    readonly simulation_get_nodes: (a: number) => [number, number, number];
-    readonly simulation_new: () => number;
-    readonly simulation_set_flows: (a: number, b: any) => [number, number];
-    readonly simulation_set_nodes: (a: number, b: any) => [number, number];
-    readonly simulation_update: (a: number, b: number, c: number) => void;
     readonly __wbg_governanceclient_free: (a: number, b: number) => void;
     readonly compute_poa_config_pda: (a: number, b: number) => [number, number, number, number];
     readonly decode_fixed_string: (a: number, b: number, c: number) => [number, number];
@@ -396,16 +359,6 @@ export interface InitOutput {
     readonly governanceclient_rpc_url: (a: number) => [number, number];
     readonly governanceclient_vote_private: (a: number, b: number, c: number, d: number, e: bigint, f: number, g: number) => [number, number, number, number];
     readonly verify_zk_vote_proof: (a: number, b: number, c: number, d: number) => number;
-    readonly __wbg_auctionsimulator_free: (a: number, b: number) => void;
-    readonly auction_add_order: (a: number, b: number, c: number, d: number) => void;
-    readonly auction_calculate_clearing_price: () => number;
-    readonly auction_clear: () => void;
-    readonly auction_init: () => void;
-    readonly auctionsimulator_add_order: (a: number, b: number, c: number, d: number, e: number) => void;
-    readonly auctionsimulator_calculate_clearing_price: (a: number) => [number, number];
-    readonly auctionsimulator_clear: (a: number) => void;
-    readonly auctionsimulator_new: () => number;
-    readonly calculate_bezier: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly __wbg_wasmelgamalkeypair_free: (a: number, b: number) => void;
     readonly create_commitment: (a: bigint, b: number, c: number) => [number, number, number];
     readonly create_range_proof: (a: bigint, b: number, c: number) => [number, number, number];
@@ -417,6 +370,65 @@ export interface InitOutput {
     readonly wasmelgamalkeypair_new: () => number;
     readonly wasmelgamalkeypair_pubkey: (a: number) => [number, number];
     readonly wasmelgamalkeypair_secret: (a: number) => [number, number];
+    readonly calculate_portfolio_risk: (a: any) => [number, number, number];
+    readonly __wbg_auctionsimulator_free: (a: number, b: number) => void;
+    readonly auction_add_order: (a: number, b: number, c: number, d: number) => void;
+    readonly auction_calculate_clearing_price: () => number;
+    readonly auction_clear: () => void;
+    readonly auction_init: () => void;
+    readonly auctionsimulator_add_order: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly auctionsimulator_calculate_clearing_price: (a: number) => [number, number];
+    readonly auctionsimulator_clear: (a: number) => void;
+    readonly auctionsimulator_new: () => number;
+    readonly crypto_msg_hash: (a: number, b: number) => [number, number];
+    readonly crypto_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly hmac_sha256: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly sha256: (a: number, b: number) => [number, number];
+    readonly sign_p2p_order: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint, h: number, i: number) => [number, number, number, number];
+    readonly init_panic_hook: () => void;
+    readonly __wbg_orderbook_free: (a: number, b: number) => void;
+    readonly orderbook_add_order: (a: number, b: number, c: number, d: number, e: number, f: bigint) => void;
+    readonly orderbook_ask_count: (a: number) => number;
+    readonly orderbook_best_ask_price: (a: number) => number;
+    readonly orderbook_best_bid_price: (a: number) => number;
+    readonly orderbook_bid_count: (a: number) => number;
+    readonly orderbook_cancel_order: (a: number, b: number) => number;
+    readonly orderbook_clear: (a: number) => void;
+    readonly orderbook_get_depth: (a: number, b: number) => [number, number, number];
+    readonly orderbook_load_orders: (a: number, b: any) => [number, number];
+    readonly orderbook_match_orders: (a: number) => [number, number, number];
+    readonly orderbook_mid_price: (a: number) => number;
+    readonly orderbook_new: () => number;
+    readonly orderbook_spread: (a: number) => number;
+    readonly __wbg_simulation_free: (a: number, b: number) => void;
+    readonly simulation_get_flows: (a: number) => [number, number, number];
+    readonly simulation_get_grid_totals: (a: number) => [number, number, number];
+    readonly simulation_get_nodes: (a: number) => [number, number, number];
+    readonly simulation_new: () => number;
+    readonly simulation_set_flows: (a: number, b: any) => [number, number];
+    readonly simulation_set_nodes: (a: number, b: any) => [number, number];
+    readonly simulation_update: (a: number, b: number, c: number) => void;
+    readonly __wbg_get_greeks_delta: (a: number) => number;
+    readonly __wbg_get_greeks_gamma: (a: number) => number;
+    readonly __wbg_get_greeks_rho: (a: number) => number;
+    readonly __wbg_get_greeks_theta: (a: number) => number;
+    readonly __wbg_get_greeks_vega: (a: number) => number;
+    readonly __wbg_greeks_free: (a: number, b: number) => void;
+    readonly __wbg_set_greeks_delta: (a: number, b: number) => void;
+    readonly __wbg_set_greeks_gamma: (a: number, b: number) => void;
+    readonly __wbg_set_greeks_rho: (a: number, b: number) => void;
+    readonly __wbg_set_greeks_theta: (a: number, b: number) => void;
+    readonly __wbg_set_greeks_vega: (a: number, b: number) => void;
+    readonly black_scholes: (a: number, b: number, c: number, d: number) => number;
+    readonly calculate_greeks: (a: number, b: number, c: number, d: number) => number;
+    readonly delta_calc: (a: number, b: number, c: number, d: number) => number;
+    readonly gamma_calc: (a: number, b: number, c: number) => number;
+    readonly perform_clustering: (a: any) => [number, number, number];
+    readonly rho_calc: (a: number, b: number, c: number, d: number) => number;
+    readonly theta_calc: (a: number, b: number, c: number, d: number) => number;
+    readonly vega_calc: (a: number, b: number, c: number) => number;
+    readonly aggregate_readings: (a: any) => [number, number, number];
+    readonly calculate_bezier: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly __wbg_instruction_free: (a: number, b: number) => void;
     readonly __wbg_instructions_free: (a: number, b: number) => void;
     readonly instructions_constructor: () => number;
