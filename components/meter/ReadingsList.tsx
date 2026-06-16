@@ -43,8 +43,8 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
     const filteredReadings = useMemo(() => {
         return readings.filter(reading => {
             // Status filter
-            if (statusFilter === 'minted' && !reading.minted) return false
-            if (statusFilter === 'pending' && reading.minted) return false
+            if (statusFilter === 'minted' && reading.mint_status !== 'minted') return false
+            if (statusFilter === 'pending' && reading.mint_status === 'minted') return false
 
             // Type filter  
             if (typeFilter === 'generation' && reading.kwh <= 0) return false
@@ -160,9 +160,13 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                                     {Math.abs(reading.kwh).toFixed(2)} kWh
                                                 </div>
                                                 <div className="flex items-center">
-                                                    {reading.minted ? (
+                                                    {reading.mint_status === 'minted' ? (
                                                         <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
                                                             Minted
+                                                        </span>
+                                                    ) : reading.mint_status === 'denied' ? (
+                                                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
+                                                            Denied
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
@@ -171,13 +175,13 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
-                                                    {reading.tx_signature ? (
+                                                    {reading.mint_tx_signature ? (
                                                         <>
-                                                            <span className="truncate">{reading.tx_signature.slice(0, 12)}...</span>
+                                                            <span className="truncate">{reading.mint_tx_signature.slice(0, 12)}...</span>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                onClick={() => onCopy(reading.tx_signature!)}
+                                                                onClick={() => onCopy(reading.mint_tx_signature!)}
                                                                 className="h-5 w-5 p-0 hover:bg-accent"
                                                                 title="Copy full signature"
                                                             >
@@ -187,7 +191,7 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                                     ) : '-'}
                                                 </div>
                                                 <div className="flex items-center justify-end">
-                                                    {reading.minted ? (
+                                                    {reading.mint_status === 'minted' ? (
                                                         <span className="text-xs text-muted-foreground flex items-center">
                                                             <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
                                                             Done

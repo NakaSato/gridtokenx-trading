@@ -161,7 +161,7 @@ async function main() {
         console.log('✅ Reading submitted successfully!');
         console.log('📄 Response:', JSON.stringify(result, null, 2));
 
-        if (result.minted && result.mint_tx_signature) {
+        if (result.mint_status === 'minted' && result.mint_tx_signature) {
             console.log(`🎉 Minting Triggered! TX: ${result.mint_tx_signature}`);
             // ... (Chain verification omitted for brevity as it is known to fail in current env)
         } else {

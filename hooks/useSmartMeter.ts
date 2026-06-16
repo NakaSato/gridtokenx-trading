@@ -113,8 +113,8 @@ export function useSmartMeter() {
         const totalConsumed = readings.reduce((acc, r) => r.kwh < 0 ? acc + Math.abs(r.kwh) : acc, 0)
         const netEnergy = totalProduced - totalConsumed
 
-        const mintedReadings = readings.filter(r => r.minted)
-        const pendingReadings = readings.filter(r => !r.minted && r.kwh > 0)
+        const mintedReadings = readings.filter(r => r.mint_status === 'minted')
+        const pendingReadings = readings.filter(r => r.mint_status !== 'minted' && r.kwh > 0)
         const totalMinted = mintedReadings.reduce((acc, r) => acc + r.kwh, 0)
         const pendingToMint = pendingReadings.reduce((acc, r) => acc + r.kwh, 0)
 
@@ -124,10 +124,11 @@ export function useSmartMeter() {
             totalGenerated: fetchedStats?.total_produced ?? totalProduced,
             totalConsumed: fetchedStats?.total_consumed ?? totalConsumed,
             netEnergy: fetchedStats ? (fetchedStats.total_produced - fetchedStats.total_consumed) : netEnergy,
-            totalMinted: fetchedStats?.total_minted ?? totalMinted,
-            pendingToMint: fetchedStats?.pending_mint ?? pendingToMint,
-            mintedCount: fetchedStats?.total_minted_count ?? mintedReadings.length,
-            pendingCount: fetchedStats?.pending_mint_count ?? pendingReadings.length,
+            // meter-service stats expose counts only; kWh sums stay client-derived.
+            totalMinted,
+            pendingToMint,
+            mintedCount: fetchedStats?.minted_count ?? mintedReadings.length,
+            pendingCount: fetchedStats?.pending_count ?? pendingReadings.length,
             lastUpdate
         }
     }, [readings, fetchedStats])

@@ -4,9 +4,10 @@ export interface MeterReading {
     kwh: number
     timestamp: string
     submitted_at: string
-    minted: boolean
-    tx_signature?: string
-    message?: string
+    /** Read-only token-mint status derived by meter-service: 'minted' | 'pending' | 'denied'. */
+    mint_status: 'minted' | 'pending' | 'denied'
+    /** On-chain mint tx signature, present when mint_status === 'minted'. */
+    mint_tx_signature?: string
 
     // Energy Data
     energy_generated?: number
@@ -129,10 +130,12 @@ export interface MeterStats {
     total_produced: number
     total_consumed: number
     last_reading_time: string | null
-    total_minted: number
-    total_minted_count: number
-    pending_mint: number
-    pending_mint_count: number
+    /** Count of readings whose tokens are minted on-chain. */
+    minted_count: number
+    /** Count of readings not yet minted. */
+    pending_count: number
+    /** Count of readings whose mint was denied/failed. */
+    denied_count: number
 }
 
 export interface RegisterMeterResponse {

@@ -59,25 +59,26 @@ export function SubmitReadingModal({ isOpen, onClose, onSuccess, meterSerial }: 
         return;
       }
 
-      const msg = response.data?.message || '';
+      // meter-service persists the reading and returns its mint_status. It does
+      // no minting itself — a fresh reading is always 'pending'; mint/deny
+      // transitions are applied later by other services and surfaced on refetch.
+      const mintStatus = response.data?.mint_status;
 
-      if (response.data?.minted) {
-        // Synchronous mint completed
+      if (mintStatus === 'minted') {
         toast.success(
           `Reading submitted and ${kwh > 0 ? 'minted' : 'burned'} successfully!`,
           { duration: 5000 }
         );
-      } else if (msg.toLowerCase().includes('queued') || msg.toLowerCase().includes('processing')) {
-        // Async queue accepted – this is the normal happy path
+      } else if (mintStatus === 'denied') {
+        toast.error(
+          `Reading submitted, but minting was denied. You can retry from the dashboard.`,
+          { duration: 6000 }
+        );
+      } else {
+        // Normal happy path: persisted, awaiting minting.
         toast.success(
           `Reading submitted! Minting is being processed in the background.`,
           { duration: 5000 }
-        );
-      } else {
-        // Genuine failure (e.g. Oracle validation, queue push error)
-        toast.error(
-          `Reading submitted, but minting failed: ${msg || 'unknown error'}. You can retry from the dashboard.`,
-          { duration: 6000 }
         );
       }
 
