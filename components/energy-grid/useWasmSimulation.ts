@@ -52,16 +52,15 @@ export function useWasmSimulation({
 
             const base = getInitialLiveValue(n)
 
+            // Keys must match the WASM `SimulationNode` serde field names exactly.
+            // The struct renames node_type→"type" etc. with an alias for the
+            // snake_case form, so sending BOTH triggers serde "duplicate field".
             return {
                 type,
-                node_type: type, // Provide both for compatibility
                 base,
-                base_value: base,
                 current: base,
-                current_value: base,
                 status,
                 isReal: n.id.startsWith('meter-') ? 1 : 0,
-                is_real: n.id.startsWith('meter-') ? 1 : 0
             }
         })
 
@@ -70,11 +69,8 @@ export function useWasmSimulation({
         // Map flows
         const flowsFlat = energyTransfers.map((t, i) => ({
             index: i,
-            flow_index: i,
             base: t.power,
-            base_power: t.power,
             current: t.power,
-            current_power: t.power
         }))
 
         initSimulationFlowsWasm(flowsFlat)
