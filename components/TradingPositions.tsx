@@ -232,9 +232,11 @@ export default memo(function TradingPositions() {
             token: 'GRID',
             logo: '/images/grid.png',
             symbol: 'GRX',
-            type: 'Limit',
+            type: order.order_type === 'market' ? 'Market' : 'Limit',
             transaction: order.side.toLowerCase(),
-            limitPrice: parseFloat(order.price_per_kwh),
+            // Market orders have no user-set price (price_per_kwh is null); they
+            // fill at the resting ask, so there's no limit price to show.
+            limitPrice: order.price_per_kwh != null ? parseFloat(order.price_per_kwh) : 0,
             strikePrice: 0,
             expiry: 'N/A',
             orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
@@ -351,7 +353,7 @@ export default memo(function TradingPositions() {
 
   return (
     <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-      <CardHeader className="bg-muted/20 border-b p-0">
+      <CardHeader className="bg-muted/20 p-0">
         <div className="flex w-full items-center justify-between">
           <Tabs
             value={activeTab}
@@ -583,7 +585,7 @@ export default memo(function TradingPositions() {
               )}
 
               {activeTab === 'DCA' && (
-                <div className="flex h-full flex-col gap-4 overflow-y-auto">
+                <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
                   <RecurringOrderForm />
                   <RecurringOrdersList />
                 </div>

@@ -20,9 +20,12 @@ export interface ApiOrder {
     id: string;
     zone_id: number;
     side: string;
+    order_type: string;
     status: string;
     energy_amount_kwh: string;
-    price_per_kwh: string;
+    // null for market orders: the backend stores a synthetic ceiling/cap bid for
+    // them, not a real price, so it omits it. Limit orders carry a real price.
+    price_per_kwh: string | null;
     filled_amount_kwh: string;
     created_at: string;
 }

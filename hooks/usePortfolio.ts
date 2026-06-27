@@ -120,9 +120,11 @@ export function usePortfolioOrders() {
                 token: 'GRID',
                 logo: '/images/grid.png',
                 symbol: 'GRX',
-                type: 'Limit',
+                type: order.order_type === 'market' ? 'Market' : 'Limit',
                 transaction: order.side.toLowerCase(),
-                limitPrice: parseFloat(order.price_per_kwh),
+                // Market orders have no user-set price (price_per_kwh is null);
+                // they fill at the resting ask, so there's no limit price to show.
+                limitPrice: order.price_per_kwh != null ? parseFloat(order.price_per_kwh) : 0,
                 strikePrice: 0,
                 expiry: 'N/A',
                 orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
