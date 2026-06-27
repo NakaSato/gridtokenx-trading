@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import type { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 import type { UserProfile, TokenBalance } from '@/types/auth'
 import type { Position, Order } from '@/lib/data/Positions'
+import { mapApiOrderToOrder } from '@/lib/data/Positions'
 import type { Transaction } from '@/lib/data/WalletActivity'
 
 /**
@@ -115,21 +116,7 @@ export function usePortfolioOrders() {
             const response = await apiClient.getOrders({ status: 'active' })
             const data = (response.data as { data?: ApiOrder[] })?.data || response.data || []
 
-            return data.map((order: ApiOrder) => ({
-                index: order.id,
-                token: 'GRID',
-                logo: '/images/grid.png',
-                symbol: 'GRX',
-                type: order.order_type === 'market' ? 'Market' : 'Limit',
-                transaction: order.side.toLowerCase(),
-                // Market orders have no user-set price (price_per_kwh is null);
-                // they fill at the resting ask, so there's no limit price to show.
-                limitPrice: order.price_per_kwh != null ? parseFloat(order.price_per_kwh) : 0,
-                strikePrice: 0,
-                expiry: 'N/A',
-                orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
-                size: parseFloat(order.energy_amount_kwh),
-            }))
+            return data.map(mapApiOrderToOrder)
         },
         enabled: !!token,
     })

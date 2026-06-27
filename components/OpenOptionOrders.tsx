@@ -10,7 +10,8 @@ interface OpenOptionOrdersProps {
   token: string
   symbol: string
   type: string
-  limitPrice: number
+  // null for market orders (no user-set price) — rendered as "Market".
+  limitPrice: number | null
   transaction: string
   strikePrice: number
   expiry: string
@@ -49,7 +50,10 @@ export default function OpenOptionOrders({
             </Badge>
           </div>
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
-            <span>{transaction === 'buy' ? 'Buy' : 'Sell'} @ ${limitPrice.toFixed(4)}</span>
+            <span>
+              {transaction === 'buy' ? 'Buy' : 'Sell'}
+              {limitPrice != null ? ` @ $${limitPrice.toFixed(4)}` : ' · Market'}
+            </span>
             <span>·</span>
             <span>Size: {size.toFixed(2)}</span>
           </div>

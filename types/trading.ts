@@ -20,7 +20,7 @@ export interface ApiOrder {
     id: string;
     zone_id: number;
     side: string;
-    order_type: string;
+    order_type: 'market' | 'limit';
     status: string;
     energy_amount_kwh: string;
     // null for market orders: the backend stores a synthetic ceiling/cap bid for

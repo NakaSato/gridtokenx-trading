@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
-import { Position } from '@/lib/data/Positions'
+import { Position, mapApiOrderToOrder } from '@/lib/data/Positions'
 import LiveGridStats from './LiveGridStats'
 import ExpiredOptions from './ExpiredOptions'
 import PriceAlerts from './trading/PriceAlerts'
@@ -226,23 +226,7 @@ export default memo(function TradingPositions() {
         status: 'active',
       })) as unknown as { data: { data: ApiOrder[] } }
       if (ordersRes.data?.data) {
-        const mappedOrders: Order[] = ordersRes.data.data.map(
-          (order: ApiOrder) => ({
-            index: order.id,
-            token: 'GRID',
-            logo: '/images/grid.png',
-            symbol: 'GRX',
-            type: order.order_type === 'market' ? 'Market' : 'Limit',
-            transaction: order.side.toLowerCase(),
-            // Market orders have no user-set price (price_per_kwh is null); they
-            // fill at the resting ask, so there's no limit price to show.
-            limitPrice: order.price_per_kwh != null ? parseFloat(order.price_per_kwh) : 0,
-            strikePrice: 0,
-            expiry: 'N/A',
-            orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
-            size: parseFloat(order.energy_amount_kwh),
-          })
-        )
+        const mappedOrders: Order[] = ordersRes.data.data.map(mapApiOrderToOrder)
         setOrderInfos(mappedOrders)
       }
 
