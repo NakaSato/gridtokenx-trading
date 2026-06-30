@@ -49,6 +49,7 @@ export function OrderTypeTabs({
         {/* DCA Tab */}
         <button
           type="button"
+          data-testid="order-type-tab-dca"
           onClick={() => setOrderType('recurring')}
           className={cn(
             'relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 flex-1 justify-center',

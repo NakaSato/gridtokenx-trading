@@ -46,6 +46,7 @@ export function SubmitButton({
 
   return (
     <Button
+      data-testid="order-submit-button"
       type="submit"
       size="lg"
       className={cn(

@@ -33,6 +33,7 @@ export function PriceInput({
       </div>
       <div className="relative">
         <Input
+          data-testid="order-price-input"
           type="number"
           placeholder="4.00"
           value={price}

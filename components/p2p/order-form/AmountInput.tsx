@@ -36,6 +36,7 @@ export function AmountInput({
       </div>
       <div className="relative">
         <Input
+          data-testid="order-amount-input"
           type="number"
           placeholder="0.00"
           value={amount}
