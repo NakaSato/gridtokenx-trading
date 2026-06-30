@@ -80,7 +80,11 @@ export class TradingApi {
             method: 'POST',
             body: {
                 side: orderData.side,
-                energy_amount: orderData.amount,
+                // trading-api/src/rest.rs CreateOrderRequest expects energy_amount_kwh
+                // (Decimal::from_str on this exact field name) — `energy_amount` alone
+                // 400s as "missing field `energy_amount_kwh`" and every order placed
+                // through this method (the live OrderForm.tsx Buy/Sell flow) failed.
+                energy_amount_kwh: orderData.amount,
                 price_per_kwh: orderData.price_per_kwh,
                 order_type: 'limit',
                 zone_id: orderData.zone_id,

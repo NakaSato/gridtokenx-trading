@@ -8,6 +8,9 @@ import ProtectedRoute from '../ProtectedRoute'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { usePortfolioPositions, usePortfolioOrders, usePortfolioTradeHistory, useExpiredOptions, useOptionSettlement } from '@/hooks/usePortfolio'
+import { useQueryClient } from '@tanstack/react-query'
+import { createApiClient } from '@/lib/api-client'
+import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import OpenPositions from '../OpenPositions'
 import OpenOptionOrders from '../OpenOptionOrders'
@@ -21,6 +24,8 @@ import { CarbonCredits } from './carbon-credits'
 
 export function PortfolioTabs() {
   const [activeTab, setActiveTab] = useState('positions')
+  const { token } = useAuth()
+  const queryClient = useQueryClient()
   const { data: positions = [], isLoading: positionsLoading } = usePortfolioPositions()
   const { data: orders = [], isLoading: ordersLoading } = usePortfolioOrders()
   const { data: history = [], isLoading: historyLoading } = usePortfolioTradeHistory()
@@ -36,6 +41,22 @@ export function PortfolioTabs() {
   }
   const onExercise = (index: string | number) => {
     exerciseMutation.mutate(index as any)
+  }
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!token) return
+    try {
+      const apiClient = createApiClient(token)
+      const res = await apiClient.cancelOrder(orderId)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Order canceled successfully')
+        queryClient.invalidateQueries({ queryKey: ['portfolio-orders'] })
+      }
+    } catch {
+      toast.error('Failed to cancel order')
+    }
   }
 
   const loading = positionsLoading || ordersLoading || historyLoading || expiredLoading
@@ -104,7 +125,7 @@ export function PortfolioTabs() {
             <div className="flex flex-col gap-3">
               {orders.length > 0 ? (
                 orders.map((order, idx) => (
-                  <OpenOptionOrders key={idx} {...order} />
+                  <OpenOptionOrders key={idx} {...order} orderId={order.index} onCancel={handleCancelOrder} />
                 ))
               ) : renderEmptyState("No open orders", "Your pending orders will appear here")}
             </div>

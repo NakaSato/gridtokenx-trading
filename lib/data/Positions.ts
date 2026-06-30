@@ -34,6 +34,7 @@ export interface Order {
   expiry: string
   orderDate: string
   size: number
+  status: string
 }
 
 /// Single source of truth for projecting a trading-service `ApiOrder` into the
@@ -56,6 +57,7 @@ export function mapApiOrderToOrder(order: ApiOrder): Order {
     expiry: 'N/A',
     orderDate: format(new Date(order.created_at), 'MM/dd/yyyy'),
     size: parseFloat(order.energy_amount_kwh),
+    status: order.status,
   }
 }
 
@@ -143,6 +145,7 @@ export const orders: Order[] = [
     expiry: '1/5/2025',
     orderDate: '1/4/2025',
     size: 500,
+    status: 'active',
   },
   {
     index: "2",
@@ -156,6 +159,7 @@ export const orders: Order[] = [
     expiry: '1/5/2025',
     orderDate: '1/4/2025',
     size: 500,
+    status: 'active',
   },
   {
     index: "3",
@@ -169,6 +173,7 @@ export const orders: Order[] = [
     expiry: '1/5/2025',
     orderDate: '1/4/2025',
     size: 500,
+    status: 'active',
   },
   {
     index: "4",
@@ -182,6 +187,7 @@ export const orders: Order[] = [
     expiry: '1/5/2025',
     orderDate: '1/4/2025',
     size: 500,
+    status: 'active',
   },
   {
     index: "5",
@@ -195,5 +201,6 @@ export const orders: Order[] = [
     expiry: '1/5/2025',
     orderDate: '1/4/2025',
     size: 500,
+    status: 'active',
   },
 ]

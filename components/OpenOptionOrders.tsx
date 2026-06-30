@@ -6,6 +6,7 @@ import { Button } from './ui/button'
 import { X } from 'lucide-react'
 
 interface OpenOptionOrdersProps {
+  orderId: string
   logo: string
   token: string
   symbol: string
@@ -17,9 +18,11 @@ interface OpenOptionOrdersProps {
   expiry: string
   size: number
   orderDate: string
+  onCancel: (orderId: string) => void
 }
 
 export default function OpenOptionOrders({
+  orderId,
   logo,
   token,
   symbol,
@@ -30,9 +33,14 @@ export default function OpenOptionOrders({
   expiry,
   size,
   orderDate,
+  onCancel,
 }: OpenOptionOrdersProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+    <div
+      data-testid="open-order-card"
+      data-order-id={orderId}
+      className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+    >
       <div className="flex items-center gap-3">
         <div className="relative h-10 w-10 overflow-hidden rounded-full">
           <Image
@@ -64,7 +72,14 @@ export default function OpenOptionOrders({
           <span className="text-xs text-muted-foreground">{expiry}</span>
           <span className="text-xs text-muted-foreground">{orderDate}</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button
+          data-testid="cancel-order-button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          title="Cancel Order"
+          onClick={() => onCancel(orderId)}
+        >
           <X className="h-4 w-4" />
         </Button>
       </div>

@@ -137,7 +137,10 @@ const OrderForm = React.memo(function OrderForm({
         side: orderPayload.side,
         amount: orderPayload.amount,
         price_per_kwh: orderPayload.price_per_kwh,
-        zone_id: orderPayload.zone_id || undefined,
+        // zone_id 0 ("Main Grid") is a valid zone, not "unset" — `|| undefined` was
+        // dropping it from the request, and trading-service requires the field
+        // (400 "missing field `zone_id`"), so every order at the default zone failed.
+        zone_id: orderPayload.zone_id,
       })
 
       if (apiResult.error) {

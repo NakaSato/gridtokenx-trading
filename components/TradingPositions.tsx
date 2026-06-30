@@ -36,6 +36,7 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
+import toast from 'react-hot-toast'
 import { useOptionPositions } from '@/hooks/useOptions'
 import {
   ApiFuturesPosition,
@@ -222,11 +223,17 @@ export default memo(function TradingPositions() {
       }
 
       // 2. Fetch Trading Orders
-      const ordersRes = (await apiClient.getOrders({
-        status: 'active',
-      })) as unknown as { data: { data: ApiOrder[] } }
+      // No status filter server-side — a freshly placed order starts 'pending'
+      // and only becomes 'active' once the matcher processes it (trading-api
+      // rest.rs submit_order), so filtering to status=active hid every order
+      // until that async promotion happened. Fetch everything and keep the
+      // still-open statuses client-side instead.
+      const OPEN_STATUSES = new Set(['pending', 'active', 'partially_filled'])
+      const ordersRes = (await apiClient.getOrders({})) as unknown as { data: { data: ApiOrder[] } }
       if (ordersRes.data?.data) {
-        const mappedOrders: Order[] = ordersRes.data.data.map(mapApiOrderToOrder)
+        const mappedOrders: Order[] = ordersRes.data.data
+          .filter((o) => OPEN_STATUSES.has(o.status))
+          .map(mapApiOrderToOrder)
         setOrderInfos(mappedOrders)
       }
 
@@ -314,6 +321,25 @@ export default memo(function TradingPositions() {
     return () => clearInterval(interval)
   }, [fetchData])
 
+  const handleCancelOrder = useCallback(
+    async (orderId: string) => {
+      if (!token) return
+      try {
+        const apiClient = createApiClient(token)
+        const res = await apiClient.cancelOrder(orderId)
+        if (res.error) {
+          toast.error(res.error)
+        } else {
+          toast.success('Order canceled successfully')
+          fetchData()
+        }
+      } catch {
+        toast.error('Failed to cancel order')
+      }
+    },
+    [token, fetchData]
+  )
+
   // Consolidate positions: futures + blockchain options
   const allPositions = [...optioninfos, ...(blockchainPositions?.active || [])]
   const expiredInfos = blockchainPositions?.expired || []
@@ -351,6 +377,7 @@ export default memo(function TradingPositions() {
                   <TabsTrigger
                     key={value}
                     value={value}
+                    data-testid={`positions-tab-${value.toLowerCase()}`}
                     className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
                   >
                     <div className="flex items-center gap-1">
@@ -489,6 +516,7 @@ export default memo(function TradingPositions() {
                             .map((pos, idx) => (
                               <OpenOptionOrders
                                 key={pos.index ?? idx}
+                                orderId={pos.index}
                                 logo={pos.logo}
                                 token={pos.token}
                                 symbol={pos.symbol}
@@ -499,6 +527,7 @@ export default memo(function TradingPositions() {
                                 expiry={pos.expiry}
                                 size={pos.size}
                                 orderDate={pos.orderDate}
+                                onCancel={handleCancelOrder}
                               />
                             ))}
                         </div>

@@ -112,11 +112,16 @@ export function usePortfolioOrders() {
         queryKey: ['portfolio-orders', token],
         queryFn: async () => {
             if (!token) throw new Error('Authentication required')
+            // No status filter — a freshly placed order starts 'pending' and only
+            // becomes 'active' once the matcher processes it, so status=active hid
+            // every order until that async promotion happened. Keep open statuses
+            // client-side instead (mirrors TradingPositions.tsx fetchData).
+            const OPEN_STATUSES = new Set(['pending', 'active', 'partially_filled'])
             // Match the envelope seen in legacy code
-            const response = await apiClient.getOrders({ status: 'active' })
-            const data = (response.data as { data?: ApiOrder[] })?.data || response.data || []
+            const response = await apiClient.getOrders({})
+            const data = ((response.data as { data?: ApiOrder[] })?.data || response.data || []) as ApiOrder[]
 
-            return data.map(mapApiOrderToOrder)
+            return data.filter((o) => OPEN_STATUSES.has(o.status)).map(mapApiOrderToOrder)
         },
         enabled: !!token,
     })
