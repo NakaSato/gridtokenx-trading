@@ -176,6 +176,7 @@ export function RecurringOrderForm() {
                     </Label>
                     <div className="relative">
                         <Input
+                            data-testid="dca-amount-input"
                             type="number"
                             placeholder="0.00"
                             value={amount}
