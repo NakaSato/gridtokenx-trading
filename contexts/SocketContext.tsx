@@ -44,7 +44,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
         const wsBaseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL || 'ws://apisix.gridtokenx-coresystem.orb.local';
         const wsUrl = `${wsBaseUrl}/ws`;
-        const urlWithToken = `${wsUrl}?token=${token}`;
+        // /ws is its own APISIX route (apisix.yaml id 33) with no gateway-level
+        // jwt-auth — noti-service's own ws_handler (websocket.rs WsQuery) validates
+        // this token itself via the `token` query param.
+        const urlWithToken = `${wsUrl}?token=${encodeURIComponent(token)}`;
 
         const ws = new WebSocket(urlWithToken);
         socketRef.current = ws;
