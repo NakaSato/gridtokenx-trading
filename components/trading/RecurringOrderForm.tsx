@@ -1,14 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Sun, CalendarDays, CalendarRange, Clock, Hash, Sparkles, Zap, Coins, Shield, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Clock, Sun, CalendarDays, CalendarRange, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Card } from '@/components/ui/card'
 import type { IntervalType } from '@/types/features'
 import { P2PCostBreakdown } from './P2PCostBreakdown'
 import { useMeters } from '@/hooks/useApi'
@@ -27,9 +25,8 @@ export function RecurringOrderForm() {
     const [isSuccess, setIsSuccess] = useState(false)
     const { meters } = useMeters(token ?? undefined)
     const [sellerZoneId, setSellerZoneId] = useState(1)
-    const [isCollapsed, setIsCollapsed] = useState(false)
 
-    // Quick amount presets
+    // Quick amount presets (kWh)
     const amountPresets = ['10', '50', '100', '500']
 
     const buyerZoneId = useMemo(() => {
@@ -37,16 +34,19 @@ export function RecurringOrderForm() {
         return m?.[0]?.zone_id || 1
     }, [meters])
 
-    const frequencyConfig: Record<IntervalType, { label: string; icon: string; desc: string; color: string; bg: string }> = {
-        hourly: { label: 'Hourly', icon: 'Clock', desc: 'Every N hours', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
-        daily: { label: 'Daily', icon: 'Sun', desc: 'Every N days', color: 'text-amber-500', bg: 'bg-amber-500/10' },
-        weekly: { label: 'Weekly', icon: 'CalendarDays', desc: 'Every N weeks', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        monthly: { label: 'Monthly', icon: 'CalendarRange', desc: 'Every N months', color: 'text-purple-500', bg: 'bg-purple-500/10' }
+    const frequencyConfig: Record<IntervalType, { label: string; icon: keyof typeof freqIcons; color: string; bg: string }> = {
+        hourly: { label: 'Hourly', icon: 'Clock', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+        daily: { label: 'Daily', icon: 'Sun', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+        weekly: { label: 'Weekly', icon: 'CalendarDays', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+        monthly: { label: 'Monthly', icon: 'CalendarRange', color: 'text-purple-500', bg: 'bg-purple-500/10' }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.SyntheticEvent, sideOverride?: 'buy' | 'sell') => {
         e.preventDefault()
         if (!token) return
+
+        const effSide = sideOverride ?? side
+        if (sideOverride && sideOverride !== side) setSide(sideOverride)
 
         setLoading(true)
         setMessage('')
@@ -55,7 +55,7 @@ export function RecurringOrderForm() {
         try {
             const apiClient = createApiClient(token)
             const payload: any = {
-                side,
+                side: effSide,
                 energy_amount: amount,
                 interval_type: intervalType,
                 interval_value: parseInt(intervalValue) || 1,
@@ -63,7 +63,7 @@ export function RecurringOrderForm() {
 
             // Add price limit based on side
             if (priceLimit) {
-                if (side === 'buy') {
+                if (effSide === 'buy') {
                     payload.max_price_per_kwh = priceLimit
                 } else {
                     payload.min_price_per_kwh = priceLimit
@@ -101,323 +101,389 @@ export function RecurringOrderForm() {
     }
 
     const intervalLabel = intervalType === 'hourly' ? 'hour' : intervalType === 'daily' ? 'day' : intervalType === 'weekly' ? 'week' : 'month'
+    const scheduleSummary = `Every ${intervalValue !== '1' ? `${intervalValue} ` : ''}${frequencyConfig[intervalType].label.toLowerCase()}${intervalValue !== '1' ? 's' : ''}`
+    const isBuy = side === 'buy'
 
     return (
         <div className="flex flex-col h-full">
-            {/* Collapsible Header */}
-            <div className="flex items-center justify-between p-2 border-b border-border/50 bg-muted/20 rounded-t-xl">
-                <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
-                        <Repeat className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span className="text-xs font-semibold text-foreground">DCA Strategy</span>
+            {/* Header — title + subtitle; padding inherited from parent (matches Buy/Sell) */}
+            <div className="flex items-center gap-3 pb-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-secondary">
+                    <Repeat className="h-4 w-4 text-primary" />
+                </span>
+                <div className="flex flex-col">
+                    <span className="text-sm font-semibold leading-tight text-foreground">DCA Strategy</span>
+                    <span className="text-[11px] leading-tight text-muted-foreground">Automated recurring orders</span>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-primary"
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                >
-                    {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
-                </Button>
             </div>
 
-            {!isCollapsed && (
-                <div className="flex-1 overflow-y-auto p-3 space-y-4" style={{ minHeight: '380px' }}>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Side Selector */}
-                        <div className="flex gap-1 p-1 bg-background rounded-xl border border-border/50 shadow-sm">
-                            <button
-                                type="button"
-                                onClick={() => setSide('buy')}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: '380px' }}>
+                    {/* Strategy Name */}
+                    <Field label="Strategy Name" hint="optional">
+                        <Input
+                            type="text"
+                            placeholder="e.g. Daily Solar Buy"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className={cn(inputBase, "h-10 text-sm")}
+                        />
+                    </Field>
+
+                    {/* Amount */}
+                    <Field label="Amount per execution" hint="min 0.1 kWh">
+                        <div className="relative">
+                            <Input
+                                data-testid="dca-amount-input"
+                                type="number"
+                                placeholder="0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                min="0.01"
+                                step="0.01"
                                 className={cn(
-                                    "relative flex items-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
-                                    side === 'buy'
-                                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30"
-                                        : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10"
+                                    inputBase,
+                                    "h-14 pr-14 text-right font-mono text-xl font-bold",
+                                    amount ? "text-primary border-primary" : "text-foreground"
                                 )}
-                            >
-                                <TrendingDown className="h-3.5 w-3.5" />
-                                <span>Buy</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSide('sell')}
-                                className={cn(
-                                    "relative flex items-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-lg transition-all duration-200 flex-1 justify-center",
-                                    side === 'sell'
-                                        ? "bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/30"
-                                        : "text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10"
-                                )}
-                            >
-                                <TrendingUp className="h-3.5 w-3.5" />
-                                <span>Sell</span>
-                            </button>
+                            />
+                            <span className={cn(
+                                "absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold",
+                                amount ? "text-primary/70" : "text-muted-foreground"
+                            )}>kWh</span>
                         </div>
-
-            <div className="space-y-4">
-                {/* Strategy Name */}
-                <div className="space-y-2">
-                    <Label className="text-sm font-medium text-foreground">Strategy Name <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                    <Input
-                        type="text"
-                        placeholder="e.g. Daily Solar Buy"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="h-10 rounded-xl border-border bg-muted/30 text-sm"
-                    />
-                </div>
-
-                {/* Amount Input */}
-                <div className="space-y-2">
-                    <Label className="text-sm font-medium text-foreground flex items-center justify-between">
-                        <span>Amount per execution</span>
-                        <span className="text-xs text-muted-foreground">Min: 0.1 kWh</span>
-                    </Label>
-                    <div className="relative">
-                        <Input
-                            data-testid="dca-amount-input"
-                            type="number"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                            className={cn(
-                                "h-14 rounded-xl border-border bg-muted/30 pr-14 text-right font-mono text-xl font-bold transition-colors duration-200",
-                                "placeholder:text-muted-foreground/60",
-                                "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-                                amount
-                                    ? "text-primary bg-primary/5 border-primary/30"
-                                    : "text-foreground bg-muted/30"
-                            )}
-                        />
-                        <span className={cn(
-                            "absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold transition-colors duration-200",
-                            amount ? "text-primary/70" : "text-muted-foreground"
-                        )}>
-                            kWh
-                        </span>
-                    </div>
-                </div>
-
-                {/* Price Limit */}
-                <div className="space-y-2">
-                    <Label className="text-sm font-medium text-foreground flex items-center justify-between">
-                        <span>{side === 'buy' ? 'Max Price' : 'Min Price'} <span className="text-muted-foreground text-xs">(optional)</span></span>
-                        <span className="text-xs text-muted-foreground">{side === 'buy' ? 'Skip if price exceeds' : 'Skip if price below'}</span>
-                    </Label>
-                    <div className="relative">
-                        <Input
-                            type="number"
-                            placeholder="No limit"
-                            value={priceLimit}
-                            onChange={(e) => setPriceLimit(e.target.value)}
-                            min="0.01"
-                            step="0.01"
-                            className="h-10 rounded-xl border-border bg-muted/30 pr-16 text-right font-mono text-sm"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            ฿/kWh
-                        </span>
-                    </div>
-                </div>
-
-                {/* Frequency */}
-                <div className="space-y-3">
-                    <Label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Repeat className="h-4 w-4 text-muted-foreground" />
-                        Frequency
-                    </Label>
-                    <div className="grid grid-cols-4 gap-2">
-                        {(Object.keys(frequencyConfig) as IntervalType[]).map((key) => {
-                            const config = frequencyConfig[key]
-                            const isActive = intervalType === key
-                            const Icon = { Clock, Sun, CalendarDays, CalendarRange }[config.icon] || Sun
-                            return (
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {amountPresets.map((preset) => (
                                 <button
-                                    key={key}
+                                    key={preset}
                                     type="button"
-                                    onClick={() => setIntervalType(key)}
+                                    onClick={() => setAmount(preset)}
                                     className={cn(
-                                        "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200",
-                                        isActive
-                                            ? cn("border-primary bg-primary/5 shadow-md shadow-primary/10", config.color)
-                                            : "border-border bg-muted/30 text-muted-foreground hover:border-primary/30 hover:bg-muted/50"
+                                        "h-7 rounded-md border text-[11px] font-semibold font-mono transition-colors",
+                                        amount === preset
+                                            ? "border-primary bg-primary/10 text-primary"
+                                            : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                                    )}
+                                >{preset}</button>
+                            ))}
+                        </div>
+                    </Field>
+
+                    {/* Price Limit */}
+                    <Field label={isBuy ? 'Max Price' : 'Min Price'} hint={isBuy ? 'skip if higher' : 'skip if lower'}>
+                        <div className="relative">
+                            <Input
+                                type="number"
+                                placeholder="No limit"
+                                value={priceLimit}
+                                onChange={(e) => setPriceLimit(e.target.value)}
+                                min="0.01"
+                                step="0.01"
+                                className={cn(inputBase, "h-10 pr-16 text-right font-mono text-sm")}
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">฿/kWh</span>
+                        </div>
+                    </Field>
+
+                    {/* Frequency */}
+                    <Field label="Frequency">
+                        <div className="grid grid-cols-4 gap-2">
+                            {(Object.keys(frequencyConfig) as IntervalType[]).map((key) => {
+                                const config = frequencyConfig[key]
+                                const isActive = intervalType === key
+                                const Icon = freqIcons[config.icon]
+                                return (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() => setIntervalType(key)}
+                                        className={cn(
+                                            "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                                            isActive
+                                                ? "border-primary bg-background shadow-sm"
+                                                : "border-border bg-secondary hover:border-muted"
+                                        )}
+                                    >
+                                        <span className={cn(
+                                            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                                            isActive ? config.bg : "bg-muted"
+                                        )}>
+                                            <Icon className={cn("h-4 w-4", isActive ? config.color : "text-muted-foreground")} />
+                                        </span>
+                                        <span className={cn(
+                                            "text-[11px] font-semibold",
+                                            isActive ? "text-foreground" : "text-muted-foreground"
+                                        )}>{config.label}</span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </Field>
+
+                    {/* Interval value + Max executions */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label={`Every N ${intervalLabel}s`} icon={Hash}>
+                            <Input
+                                type="number"
+                                value={intervalValue}
+                                onChange={(e) => setIntervalValue(e.target.value)}
+                                min="1"
+                                max="30"
+                                className={cn(inputBase, "h-10 text-center font-mono text-sm")}
+                            />
+                        </Field>
+                        <Field label="Max Runs" hint="∞">
+                            <Input
+                                type="number"
+                                placeholder="∞"
+                                value={maxExecutions}
+                                onChange={(e) => setMaxExecutions(e.target.value)}
+                                min="1"
+                                className={cn(inputBase, "h-10 text-center font-mono text-sm")}
+                            />
+                        </Field>
+                    </div>
+
+                    {/* Compact summary */}
+                    <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 space-y-1.5 text-xs">
+                        <SummaryRow label="Action">
+                            <span className={cn("font-semibold", isBuy ? "text-emerald-500" : "text-rose-500")}>
+                                {isBuy ? 'Buy' : 'Sell'}
+                            </span>
+                        </SummaryRow>
+                        <SummaryRow label="Amount">
+                            <span className="font-mono font-semibold text-foreground">{amount || '0'} kWh</span>
+                        </SummaryRow>
+                        <SummaryRow label="Schedule">
+                            <span className="font-semibold text-foreground">{scheduleSummary}</span>
+                        </SummaryRow>
+                        {priceLimit && (
+                            <SummaryRow label={isBuy ? 'Max Price' : 'Min Price'}>
+                                <span className="font-mono font-semibold text-foreground">฿{priceLimit}/kWh</span>
+                            </SummaryRow>
+                        )}
+                        {maxExecutions && (
+                            <SummaryRow label="Limit">
+                                <span className="font-mono font-semibold text-foreground">{maxExecutions} runs</span>
+                            </SummaryRow>
+                        )}
+                    </div>
+
+                    {/* Matching scenario */}
+                    <div className="space-y-2">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center justify-between">
+                            <span>Simulated Matching</span>
+                            <span className="text-primary italic normal-case">Affects fees</span>
+                        </Label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                                { id: buyerZoneId, label: 'Intra-zone', desc: 'Neighbor' },
+                                { id: (buyerZoneId % 3) + 1, label: 'Inter-zone', desc: 'Nearby' },
+                                { id: 0, label: 'Main Grid', desc: 'Import' }
+                            ].map((scenario) => (
+                                <button
+                                    key={scenario.label}
+                                    type="button"
+                                    onClick={() => setSellerZoneId(scenario.id)}
+                                    className={cn(
+                                        "flex flex-col items-center py-2 px-1 rounded-lg border transition-all",
+                                        sellerZoneId === scenario.id
+                                            ? "bg-primary/5 border-primary shadow-sm"
+                                            : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
                                     )}
                                 >
-                                    <div className={cn(
-                                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
-                                        isActive ? config.bg : "bg-muted"
-                                    )}>
-                                        <Icon className={cn("h-4 w-4", isActive ? config.color : "text-muted-foreground")} />
-                                    </div>
-                                    <span className={cn(
-                                        "text-xs font-bold transition-colors",
-                                        isActive ? "text-foreground" : "text-muted-foreground"
-                                    )}>{config.label}</span>
+                                    <span className="text-[10px] font-bold">{scenario.label}</span>
+                                    <span className="text-[9px] opacity-70 leading-none">{scenario.desc}</span>
                                 </button>
-                            )
-                        })}
-                    </div>
-                </div>
-
-                {/* Interval Value + Max Executions */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            <Hash className="h-3 w-3" />
-                            Every N {intervalLabel}s
-                        </Label>
-                        <Input
-                            type="number"
-                            value={intervalValue}
-                            onChange={(e) => setIntervalValue(e.target.value)}
-                            min="1"
-                            max="30"
-                            className="h-10 rounded-xl border-border bg-muted/30 text-center font-mono text-sm"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-xs font-medium text-muted-foreground">
-                            Max Executions <span className="text-muted-foreground/60">(∞ if empty)</span>
-                        </Label>
-                        <Input
-                            type="number"
-                            placeholder="∞"
-                            value={maxExecutions}
-                            onChange={(e) => setMaxExecutions(e.target.value)}
-                            min="1"
-                            className="h-10 rounded-xl border-border bg-muted/30 text-center font-mono text-sm"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Strategy Summary Card */}
-            <div className="rounded-xl border border-border bg-muted/20 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                        <Repeat className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                        <h4 className="text-sm font-semibold text-foreground">Strategy Summary</h4>
-                        <p className="text-xs text-muted-foreground">Automated DCA orders</p>
-                    </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Action</span>
-                        <span className={cn(
-                            "font-semibold",
-                            side === 'buy' ? "text-emerald-500" : "text-rose-500"
-                        )}>
-                            {side === 'buy' ? 'Buy' : 'Sell'}
-                        </span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Amount</span>
-                        <span className="font-mono font-semibold text-foreground">{amount || '0'} kWh</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Schedule</span>
-                        <span className="font-semibold text-foreground">
-                            Every {intervalValue !== '1' ? `${intervalValue} ` : ''}{frequencyConfig[intervalType].label.toLowerCase()}{intervalValue !== '1' ? 's' : ''}
-                        </span>
-                    </div>
-                    {priceLimit && (
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">{side === 'buy' ? 'Max Price' : 'Min Price'}</span>
-                            <span className="font-mono font-semibold text-foreground">฿{priceLimit}/kWh</span>
+                            ))}
                         </div>
-                    )}
-                    {maxExecutions && (
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">Limit</span>
-                            <span className="font-mono font-semibold text-foreground">{maxExecutions} executions</span>
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </div>
 
-            {/* Seller Scenario Selector */}
-            <div className="space-y-2 px-1">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center justify-between">
-                    <span>Simulated Matching Scenario</span>
-                    <span className="text-primary italic normal-case">Affects fees</span>
-                </Label>
-                <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                        { id: buyerZoneId, label: 'Intra-zone', desc: 'Neighbor' },
-                        { id: (buyerZoneId % 3) + 1, label: 'Inter-zone', desc: 'Nearby' },
-                        { id: 0, label: 'Main Grid', desc: 'Import' }
-                    ].map((scenario) => (
-                        <button
-                            key={scenario.label}
-                            type="button"
-                            onClick={() => setSellerZoneId(scenario.id)}
-                            className={cn(
-                                "flex flex-col items-center py-2 px-1 rounded-xl border transition-all duration-200",
-                                sellerZoneId === scenario.id
-                                    ? "bg-primary/5 border-primary shadow-sm"
-                                    : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
-                            )}
-                        >
-                            <span className="text-[10px] font-bold">{scenario.label}</span>
-                            <span className="text-[9px] opacity-70 leading-none">{scenario.desc}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+                    {/* Cost breakdown */}
+                    <P2PCostBreakdown
+                        amount={parseFloat(amount) || 0}
+                        agreedPrice={parseFloat(priceLimit) || undefined}
+                        buyerZoneId={buyerZoneId}
+                        sellerZoneId={sellerZoneId}
+                    />
 
-            {/* P2P Cost Breakdown */}
-            <P2PCostBreakdown
-                amount={parseFloat(amount) || 0}
-                agreedPrice={parseFloat(priceLimit) || undefined}
-                buyerZoneId={buyerZoneId}
-                sellerZoneId={sellerZoneId}
+                    {/* Slide to confirm: right = Buy, left = Sell */}
+                    <SlideToConfirm
+                        loading={loading}
+                        disabled={loading || !token || !amount}
+                        onConfirm={(s) => handleSubmit({ preventDefault() {} } as React.SyntheticEvent, s)}
+                    />
+
+                    {message && <FormAlert success={isSuccess} message={message} />}
+            </form>
+        </div>
+    )
+}
+
+const freqIcons = { Clock, Sun, CalendarDays, CalendarRange }
+
+// Single alert style — one layout, accent swaps by success/error only
+function FormAlert({ success, message }: { success: boolean; message: string }) {
+    const Icon = success ? CheckCircle2 : AlertCircle
+    const accent = success ? "text-emerald-500" : "text-rose-500"
+    return (
+        <div className="flex items-start gap-2.5 rounded-xl border border-border bg-secondary p-3 text-xs">
+            <Icon className={cn("mt-0.5 h-4 w-4 flex-shrink-0", accent)} />
+            <span className="leading-relaxed text-foreground">{message}</span>
+        </div>
+    )
+}
+
+// Shared input styling. NOTE: theme color vars are hex, so Tailwind alpha modifiers
+// (bg-muted/30 etc.) compile to invalid CSS and get dropped -> inputs fall back to UA
+// white. Use solid color utilities only.
+const inputBase = "appearance-none rounded-xl border border-border bg-secondary text-foreground transition-colors duration-200 placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary focus-visible:bg-background"
+
+const THUMB_W = 48 // px, matches w-12
+const SLIDE_THRESHOLD = 0.7 // fraction of max travel to trigger
+
+function SlideToConfirm({ loading, disabled, onConfirm }: {
+    loading: boolean
+    disabled: boolean
+    onConfirm: (side: 'buy' | 'sell') => void
+}) {
+    const trackRef = useRef<HTMLDivElement>(null)
+    const drag = useRef({ startX: 0, max: 1, active: false })
+    const [offset, setOffset] = useState(0)
+    const [dragging, setDragging] = useState(false)
+    const [maxPx, setMaxPx] = useState(1)
+
+    const maxTravel = () => {
+        const w = trackRef.current?.clientWidth ?? 0
+        return Math.max(1, (w - THUMB_W) / 2 - 4)
+    }
+
+    const onDown = (e: React.PointerEvent) => {
+        if (disabled || loading) return
+        const max = maxTravel()
+        drag.current = { startX: e.clientX, max, active: true }
+        setMaxPx(max)
+        setDragging(true)
+        e.currentTarget.setPointerCapture(e.pointerId)
+    }
+    const onMove = (e: React.PointerEvent) => {
+        if (!drag.current.active) return
+        const { startX, max } = drag.current
+        const dx = Math.max(-max, Math.min(max, e.clientX - startX))
+        setOffset(dx)
+    }
+    const onUp = (e: React.PointerEvent) => {
+        if (!drag.current.active) return
+        drag.current.active = false
+        setDragging(false)
+        try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { }
+        const ratio = offset / drag.current.max
+        if (ratio >= SLIDE_THRESHOLD) onConfirm('buy')
+        else if (ratio <= -SLIDE_THRESHOLD) onConfirm('sell')
+        setOffset(0)
+    }
+
+    const ratio = offset / maxPx
+    const towardBuy = offset > 0
+    const intensity = Math.min(1, Math.abs(ratio))
+
+    return (
+        <div
+            ref={trackRef}
+            data-testid="slide-to-confirm-track"
+            className={cn(
+                "relative h-12 rounded-full border border-border/60 bg-muted/40 overflow-hidden select-none",
+                disabled && "opacity-50"
+            )}
+        >
+            {/* Fill that grows toward the dragged side */}
+            <div
+                className={cn(
+                    "absolute inset-y-0 w-1/2 transition-colors",
+                    towardBuy
+                        ? "right-0 bg-gradient-to-r from-transparent to-emerald-500/30"
+                        : "left-0 bg-gradient-to-l from-transparent to-rose-500/30"
+                )}
+                style={{ opacity: dragging ? intensity : 0 }}
             />
 
-            <Button
-                type="submit"
-                size="lg"
+            {/* Side hints */}
+            <div className="absolute inset-0 flex items-center justify-between px-5 text-xs font-semibold pointer-events-none">
+                <span className={cn("flex items-center gap-1 transition-colors", !towardBuy && dragging ? "text-rose-500" : "text-muted-foreground")}>
+                    <TrendingUp className="h-3.5 w-3.5" /> Sell
+                </span>
+                <span className={cn("flex items-center gap-1 transition-colors", towardBuy && dragging ? "text-emerald-500" : "text-muted-foreground")}>
+                    Buy <TrendingDown className="h-3.5 w-3.5" />
+                </span>
+            </div>
+
+            {/* Center label */}
+            {!dragging && !loading && (
+                <span className="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-muted-foreground/70 pointer-events-none">
+                    Slide to confirm
+                </span>
+            )}
+
+            {/* Thumb */}
+            <div
+                data-testid="slide-to-confirm-thumb"
+                onPointerDown={onDown}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
                 className={cn(
-                    "w-full h-12 font-semibold text-sm shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 rounded-xl",
-                    side === 'buy'
-                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/50"
-                        : "bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-rose-500/25 hover:from-rose-400 hover:to-rose-500 hover:shadow-rose-500/30 focus-visible:ring-rose-500/50"
+                    "absolute top-1/2 left-1/2 flex h-10 w-12 -mt-5 -ml-6 items-center justify-center rounded-full shadow-lg touch-none",
+                    disabled || loading ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing",
+                    !dragging && "transition-transform duration-200",
+                    towardBuy && dragging
+                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white"
+                        : !towardBuy && dragging
+                            ? "bg-gradient-to-b from-rose-500 to-rose-600 text-white"
+                            : "bg-primary text-primary-foreground"
                 )}
-                disabled={loading || !token || !amount}
+                style={{ transform: `translateX(${offset}px)` }}
             >
                 {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
+                ) : towardBuy && dragging ? (
+                    <ArrowRight className="h-4 w-4" />
+                ) : !towardBuy && dragging ? (
+                    <ArrowRight className="h-4 w-4 rotate-180" />
                 ) : (
-                    <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        <span>Start {side === 'buy' ? 'Buying' : 'Selling'}</span>
+                    <span className="flex items-center text-muted-foreground/60">
+                        <ArrowRight className="h-3.5 w-3.5 rotate-180 -mr-1" />
                         <ArrowRight className="h-3.5 w-3.5" />
-                    </div>
+                    </span>
                 )}
-            </Button>
+            </div>
+        </div>
+    )
+}
 
-            {message && (
-                <div className={cn(
-                    "flex items-start gap-3 rounded-xl p-3 text-xs",
-                    isSuccess
-                        ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                        : "border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400"
-                )}>
-                    {isSuccess ? (
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
-                    ) : (
-                        <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-500" />
-                    )}
-                    <span className="leading-relaxed">{message}</span>
-                </div>
-            )}
-                    </form>
-                </div>
-            )}
+function Field({ label, hint, icon: Icon, children }: {
+    label: string
+    hint?: string
+    icon?: typeof Hash
+    children: React.ReactNode
+}) {
+    return (
+        <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                    {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+                    {label}
+                </span>
+                {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
+            </Label>
+            {children}
+        </div>
+    )
+}
+
+function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="flex justify-between">
+            <span className="text-muted-foreground">{label}</span>
+            {children}
         </div>
     )
 }
