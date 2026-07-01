@@ -216,7 +216,10 @@ const P2PStatus = React.memo(function P2PStatus() {
                                 ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
                                 : "bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20"
                         )}>
-                            {matchingStatus?.can_match ? "Active" : "Paused"}
+                            {/* "Idle" not "Paused" — the worker always runs (bin/trading-service
+                                MatcherWorker, 1s tick); this just reflects whether the current
+                                order book has a crossing bid/ask, not engine health. */}
+                            {matchingStatus?.can_match ? "Active" : "Idle"}
                         </Badge>
                     </div>
                 </CardHeader>
