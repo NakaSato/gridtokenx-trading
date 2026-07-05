@@ -15,11 +15,11 @@ const TradingPositionsPanel = React.memo(function TradingPositionsPanel() {
   const balance = rawBalance != null ? Number(rawBalance) : null
 
   return (
-    <div className="border-border/50 w-full flex-shrink-0 border-t bg-card delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
+    <div className="w-full flex-shrink-0 delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
       <div className="p-0">
         {/* Available Balance from API */}
         {token && (
-          <div className="flex items-center justify-end gap-2 border-b border-border/50 px-4 py-1.5">
+          <div className="flex items-center justify-end gap-2 px-4 py-1.5">
             <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Available Balance:</span>
             <span className="font-mono text-xs font-semibold text-foreground">

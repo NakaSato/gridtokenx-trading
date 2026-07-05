@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { NavigationControl, MapRef, MapMouseEvent } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon, ArrowRightLeft, Database } from 'lucide-react'
+import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon, ArrowRightLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import throttle from 'lodash.throttle'
 
@@ -17,18 +17,19 @@ import {
   ClusterMarker,
   GridStatsPanel,
   MapLegend,
-  useWasmSimulation,
+  useLiveMeterData,
   useMeterMapData,
   useMeterClusters,
   useGridStatus,
   useGridTopology,
+  useGridFlows,
+  useMeterTelemetry,
 } from './energy-grid'
 import { useTopology } from './energy-grid/useTopology'
-import type { EnergyNode, EnergyTransfer, ClusterOrPoint, ClusterFeature } from './energy-grid'
+import type { EnergyNode, ClusterOrPoint, ClusterFeature } from './energy-grid'
 
 // Load config
 import { CAMPUS_CONFIG } from '@/lib/constants'
-import { getMockEnergyNodes, MOCK_TRANSFORMER, MOCK_TRANSFERS } from '@/lib/mock-meters'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
@@ -86,7 +87,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const [showZones, setShowZones] = useState(true) // Toggle for zone polygons
   const [showTrades, setShowTrades] = useState(true) // Toggle for trade flows
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
-  const [useMockData, setUseMockData] = useState(false) // DEV: Toggle for mock meters
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
     description: string
@@ -102,18 +102,13 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
   // Fetch real meter data only (no static mock nodes)
-  const { realMeterNodes, isLoading: metersLoading, error: metersError, refresh: refreshMeters } = useMeterMapData({
+  const { realMeterNodes: displayMeterNodes, isLoading: displayLoading, error: displayError, refresh: refreshMeters } = useMeterMapData({
     includeStaticNodes: false,
     refreshIntervalMs: 30000,
   })
 
-  // Get mock meters for dev testing
-  const mockMeterNodes = useMemo(() => getMockEnergyNodes(), [])
-
-  // Use mock or real meters based on toggle
-  const displayMeterNodes = useMockData ? mockMeterNodes : realMeterNodes
-  const displayLoading = useMockData ? false : metersLoading
-  const displayError = useMockData ? null : metersError
+  // Combined API error state for retry
+  const metersError = displayError
 
   // Fetch aggregate grid status from the API
   const { status: apiGridStatus, isLoading: gridStatusLoading, error: gridStatusError, refresh: refreshGridStatus } = useGridStatus(10000)
@@ -125,18 +120,11 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     if (gridStatusError) refreshGridStatus()
   }
 
-  // Fetch dynamic grid topology (transformers and lines)
-  const { transformers, transfers: realTransfers } = useGridTopology()
+  // Fetch real grid topology (transformers + zones) from the backend.
+  const { transformers: displayTransformers } = useGridTopology()
 
-  // Use mock transfers and transformer when in mock mode (must be after useGridTopology)
-  const displayTransformers = useMemo(
-    () => (useMockData ? [MOCK_TRANSFORMER] : transformers),
-    [useMockData, transformers]
-  )
-  const displayTransfers = useMemo(
-    () => (useMockData ? MOCK_TRANSFERS : realTransfers),
-    [useMockData, realTransfers]
-  )
+  // Real instantaneous line flows from the backend (no synthetic routing).
+  const { transfers: realEnergyTransfers } = useGridFlows(30000)
 
   // Use WASM topology for path finding
   const { isLoaded: topologyLoaded, loadNetwork, findPath } = useTopology()
@@ -148,10 +136,11 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       : []
   }, [showRealMeters, displayMeterNodes, displayTransformers])
 
-  // Use dynamic transfers if showing real meters
+  // Telemetry-derived flows (surplus/deficit) when showing real meters.
   const energyTransfers = useMemo(() => {
-    return showRealMeters ? displayTransfers : []
-  }, [showRealMeters, displayTransfers])
+    if (!showRealMeters) return []
+    return realEnergyTransfers
+  }, [showRealMeters, realEnergyTransfers])
 
   // Cluster markers for performance (266+ meters)
   const { clusters, getClusterExpansionZoom } = useMeterClusters({
@@ -162,11 +151,14 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     maxZoom: 16,
   })
 
-  // Use the simulation hook with combined nodes
-  const { liveNodeData, liveTransferData, gridTotals } = useWasmSimulation({
+  // Live per-meter telemetry from WS (empty until backend emits it).
+  const meterTelemetry = useMeterTelemetry()
+
+  // Map real meter telemetry to live marker/flow data (no client simulation).
+  const { liveNodeData, liveTransferData, gridTotals } = useLiveMeterData({
     energyNodes,
     energyTransfers,
-    updateIntervalMs: 10000, // Optimized from 3000ms
+    telemetry: meterTelemetry,
   })
 
   // Load topology network when nodes/transfers change
@@ -429,7 +421,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 
         {/* Trade Flow Layers - Animated trades between zones */}
         <TradeFlowLayersWrapper
-          transformers={transformers}
+          transformers={displayTransformers}
           visible={showTrades}
         />
 
@@ -493,18 +485,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
               <Maximize2 className="h-4 w-4 text-primary" />
             )}
           </Button>
-
-          {/* DEV: Mock data toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${useMockData ? 'border-orange-500/50 text-orange-500' : 'border-primary/30 text-primary'
-              }`}
-            onClick={() => setUseMockData(!useMockData)}
-            title={useMockData ? 'Using mock data (click for real)' : 'Using real data (click for mock)'}
-          >
-            <Database className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Node Markers - Clustered and Virtualized for performance */}
@@ -560,7 +540,11 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       </Map>
 
       {/* Legend */}
-      <MapLegend showFlowLines={showFlowLines} showZones={showZones} showTrades={showTrades} />
+      <MapLegend
+        showFlowLines={showFlowLines}
+        showZones={showZones}
+        showTrades={showTrades}
+      />
 
       {/* Grid Stats Panel */}
       <GridStatsPanel
@@ -578,6 +562,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         adrEvent={apiGridStatus?.adr_event}
         loadForecast={apiGridStatus?.load_forecast}
         evFleet={apiGridStatus?.ev_fleet}
+        peakCapacityKw={apiGridStatus?.peak_capacity_kw}
       />
 
       {/* Flow Line Hover Tooltip */}

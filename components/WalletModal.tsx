@@ -40,6 +40,7 @@ import { ApiClientError } from '../lib/api/core'
 import type { RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
+import { useResendVerification } from '@/hooks/useResendVerification'
 
 interface WalletModalProps {
   isOpen: boolean
@@ -61,8 +62,8 @@ const ROLE_OPTIONS = [
   { value: 'producer', label: 'Producer', hint: 'Sell energy only' },
 ] as const
 
-// Live password-strength rules. Mirrors the submit-time validation in
-// handleEmailSignUp so the meter never disagrees with the final check.
+// Password rules — single source for both the live strength meter and the
+// submit-time validation in handleEmailSignUp.
 function getPasswordChecks(password: string) {
   return {
     length: password.length >= 8,
@@ -86,8 +87,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter()
   const { login, isLoading: authLoading, isAuthenticated } = useAuth()
   const { connectAndLogin } = useWalletAuth()
+  // Default to email sign-in: IAM has no wallet-signature login endpoint
+  // (verifyWalletSignature 501s locally), so the wallet tab can only link a
+  // wallet to an already-authenticated session.
   const [authMode, setAuthMode] = useState<'wallet' | 'signin' | 'signup'>(
-    'wallet'
+    'signin'
   )
 
   // Email/Password form states
@@ -105,7 +109,11 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   // Login rejected with AUTH_1005 (correct password, email unverified).
   const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
-  const [isResendingVerification, setIsResendingVerification] = useState(false)
+  const {
+    canResend: canResendVerification,
+    isResending: isResendingVerification,
+    resendVerification: handleResendVerification,
+  } = useResendVerification(username)
 
   // Close modal when user becomes authenticated
   useEffect(() => {
@@ -159,31 +167,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
   }
 
-  // IAM's resend endpoint takes an email; only offer resend when the
-  // identifier field holds one (users can also sign in by username).
-  const canResendVerification = username.includes('@')
-
-  const handleResendVerification = async () => {
-    if (isResendingVerification || !canResendVerification) return
-
-    setIsResendingVerification(true)
-    try {
-      const response = await defaultApiClient.resendVerification(username)
-      if (response.data?.success) {
-        toast.success('Verification email sent! Check your inbox.')
-      } else {
-        toast.error(
-          response.data?.message || 'Failed to send verification email'
-        )
-      }
-    } catch (error) {
-      console.error('Resend verification error:', error)
-      toast.error('Failed to send verification email. Please try again.')
-    } finally {
-      setIsResendingVerification(false)
-    }
-  }
-
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -229,13 +212,9 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       return
     }
 
-    // Password strength validation
-    const hasLowercase = /[a-z]/.test(password)
-    const hasUppercase = /[A-Z]/.test(password)
-    const hasDigit = /\d/.test(password)
-    const hasSpecial = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)
-
-    if (!hasLowercase || !hasUppercase || !hasDigit || !hasSpecial) {
+    // Password strength validation — same rules as the live meter, one source.
+    const checks = getPasswordChecks(password)
+    if (!checks.lower || !checks.upper || !checks.digit || !checks.special) {
       toast.error(
         'Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character'
       )

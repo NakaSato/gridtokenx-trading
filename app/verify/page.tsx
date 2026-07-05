@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { defaultApiClient } from '@/lib/api-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,13 +18,30 @@ import {
   Mail,
   AlertCircle,
   Clock,
-  XCircle,
   ArrowRight,
+  ArrowLeft,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 type VerificationState = 'loading' | 'success' | 'error' | 'expired' | 'invalid'
+
+// Extract a human-readable message from an unknown thrown/returned error.
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message: unknown }).message)
+  }
+  return String(error)
+}
+
+const formatCooldown = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -65,8 +83,8 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (state !== 'success' || countdown === 0) {
       if (state === 'success' && countdown === 0) {
-        toast.success('Welcome to GridTokenX! Redirecting to home...')
-        window.location.href = '/'
+        toast.success('Email verified! Redirecting to login...')
+        window.location.href = '/login'
       }
       return
     }
@@ -83,17 +101,6 @@ function VerifyEmailContent() {
     const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
     return () => clearTimeout(timer)
   }, [resendCooldown, canResend])
-
-  // Helper: Extract error message
-  const getErrorMessage = (error: unknown): string => {
-    if (error instanceof Error) {
-      return error.message
-    }
-    if (typeof error === 'object' && error !== null && 'message' in error) {
-      return String((error as { message: unknown }).message)
-    }
-    return String(error)
-  }
 
   // Helper: Handle verification errors
   const handleVerificationError = (response: { status?: number; error?: unknown; retry_after?: number }) => {
@@ -235,23 +242,15 @@ function VerifyEmailContent() {
     }
   }
 
-  const formatCooldown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
   return (
-    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
-      <Card className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-lg border-border/50 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <StatusIcon state={state} />
-          </div>
-          <CardTitle className="text-2xl font-bold tracking-tight">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <StatusBadge state={state} />
+          <CardTitle className="text-2xl font-bold">
             <StatusTitle state={state} />
           </CardTitle>
-          <CardDescription className="text-muted-foreground mt-2">
+          <CardDescription>
             {message || <StatusMessage state={state} />}
           </CardDescription>
         </CardHeader>
@@ -263,7 +262,7 @@ function VerifyEmailContent() {
               copied={copied}
               countdown={countdown}
               onCopyWallet={handleCopyWallet}
-              onGoHome={() => (router.push('/'))}
+              onGoHome={() => router.push('/login')}
             />
           )}
 
@@ -276,30 +275,33 @@ function VerifyEmailContent() {
               onEmailChange={setEmail}
               onSubmit={handleResendVerification}
               formatCooldown={formatCooldown}
-              state={state}
             />
           )}
 
           {state === 'loading' && (
-            <div className="space-y-4 py-4">
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div className="space-y-3 py-2">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div className="h-full w-2/3 animate-pulse rounded-full bg-primary" />
               </div>
               <p className="text-center text-xs text-muted-foreground">
-                Initializing secure verification...
+                Securing your connection to the energy grid…
               </p>
             </div>
           )}
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-4 border-t pt-6">
+        <CardFooter className="flex flex-col gap-3 border-t pt-6">
           {state !== 'success' && (
             <Button variant="ghost" className="w-full" onClick={() => router.push('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Marketplace
             </Button>
           )}
-          <p className="text-xs text-center text-muted-foreground">
-            Having trouble? <a href="/contact" className="text-primary hover:underline font-medium">Contact support</a>
+          <p className="text-center text-xs text-muted-foreground">
+            Having trouble?{' '}
+            <Link href="/contact" className="font-medium text-primary hover:underline">
+              Contact support
+            </Link>
           </p>
         </CardFooter>
       </Card>
@@ -307,41 +309,49 @@ function VerifyEmailContent() {
   )
 }
 
-function StatusIcon({ state }: { state: VerificationState }) {
-  const iconClass = "h-12 w-12"
-  switch (state) {
-    case 'loading':
-      return <Loader2 className={`${iconClass} animate-spin text-primary`} />
-    case 'success':
-      return <CheckCircle2 className={`${iconClass} text-green-500`} />
-    case 'expired':
-      return <Clock className={`${iconClass} text-amber-500`} />
-    case 'invalid':
-    case 'error':
-      return <AlertCircle className={`${iconClass} text-red-500`} />
-  }
+const BADGE = {
+  loading: { bg: 'bg-primary/10', fg: 'text-primary' },
+  success: { bg: 'bg-green-500/10', fg: 'text-green-500' },
+  expired: { bg: 'bg-amber-500/10', fg: 'text-amber-500' },
+  invalid: { bg: 'bg-red-500/10', fg: 'text-red-500' },
+  error: { bg: 'bg-red-500/10', fg: 'text-red-500' },
+} as const
+
+function StatusBadge({ state }: { state: VerificationState }) {
+  const { bg, fg } = BADGE[state]
+  const iconClass = `h-7 w-7 ${fg}`
+  return (
+    <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${bg}`}>
+      {state === 'loading' && <Loader2 className={`${iconClass} animate-spin`} />}
+      {state === 'success' && <CheckCircle2 className={iconClass} />}
+      {state === 'expired' && <Clock className={iconClass} />}
+      {(state === 'invalid' || state === 'error') && <AlertCircle className={iconClass} />}
+    </div>
+  )
+}
+
+const STATUS_TITLES: Record<VerificationState, string> = {
+  loading: 'Verifying Email',
+  success: 'Verification Successful',
+  expired: 'Link Expired',
+  invalid: 'Invalid Link',
+  error: 'Verification Error',
+}
+
+const STATUS_MESSAGES: Record<VerificationState, string> = {
+  loading: 'Securing your connection to the energy grid…',
+  success: 'Your account is now fully activated and ready for trading.',
+  expired: 'This secure link is no longer valid. Please request a new one.',
+  invalid: 'The verification parameters provided do not match our records.',
+  error: 'An unexpected error occurred. Please try again later.',
 }
 
 function StatusTitle({ state }: { state: VerificationState }) {
-  const titles = {
-    loading: 'Verifying Email',
-    success: 'Verification Successful',
-    expired: 'Link Expired',
-    invalid: 'Invalid Link',
-    error: 'Verification Error'
-  }
-  return titles[state]
+  return STATUS_TITLES[state]
 }
 
 function StatusMessage({ state }: { state: VerificationState }) {
-  const messages = {
-    loading: 'Securing your connection to the energy grid...',
-    success: 'Your account is now fully activated and ready for trading.',
-    expired: 'This secure link is no longer valid. Please request a new one.',
-    invalid: 'The verification parameters provided do not match our records.',
-    error: 'An unexpected error occurred. Please try again later.'
-  }
-  return messages[state]
+  return STATUS_MESSAGES[state]
 }
 
 function SuccessView({
@@ -360,28 +370,32 @@ function SuccessView({
   return (
     <div className="space-y-6">
       {walletAddress && (
-        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-          <div className="flex items-center gap-2 text-primary font-semibold">
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+          <div className="flex items-center gap-2 font-semibold text-primary">
             <Wallet className="h-5 w-5" />
             <span>Solana Wallet Generated</span>
           </div>
-          <div className="font-mono text-[10px] break-all p-2 bg-background rounded border cursor-pointer hover:bg-muted/50 transition-colors" onClick={onCopyWallet}>
+          <button
+            type="button"
+            onClick={onCopyWallet}
+            className="w-full break-all rounded border bg-background p-2 text-left font-mono text-[10px] transition-colors hover:bg-muted/50"
+          >
             {walletAddress}
-          </div>
-          <Button variant="secondary" size="sm" className="w-full h-8 text-xs" onClick={onCopyWallet}>
-            {copied ? <Check className="h-3 w-3 mr-2" /> : <Copy className="h-3 w-3 mr-2" />}
+          </button>
+          <Button variant="secondary" size="sm" className="h-8 w-full text-xs" onClick={onCopyWallet}>
+            {copied ? <Check className="mr-2 h-3 w-3" /> : <Copy className="mr-2 h-3 w-3" />}
             {copied ? 'Copied' : 'Copy Address'}
           </Button>
         </div>
       )}
 
       <div className="space-y-2">
-        <Button onClick={onGoHome} className="w-full h-11">
+        <Button onClick={onGoHome} className="h-11 w-full">
           Launch Dashboard
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-        <p className="text-[10px] text-center text-muted-foreground">
-          Auto-launching in {countdown}s...
+        <p className="text-center text-[10px] text-muted-foreground">
+          Auto-launching in {countdown}s…
         </p>
       </div>
     </div>
@@ -396,7 +410,6 @@ function ResendForm({
   onEmailChange,
   onSubmit,
   formatCooldown,
-  state,
 }: {
   email: string
   isResending: boolean
@@ -405,34 +418,27 @@ function ResendForm({
   onEmailChange: (email: string) => void
   onSubmit: (e: React.FormEvent) => void
   formatCooldown: (seconds: number) => string
-  state: VerificationState
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Email Address
-        </Label>
+        <Label htmlFor="email">Email Address</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
             placeholder="name@example.com"
-            className="pl-9 h-11"
+            className="pl-9"
             required
             disabled={isResending || !canResend}
           />
         </div>
       </div>
 
-      <Button
-        type="submit"
-        disabled={isResending || !canResend}
-        className="w-full h-11"
-      >
+      <Button type="submit" disabled={isResending || !canResend} className="w-full">
         {isResending ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
@@ -449,23 +455,8 @@ export default function VerifyEmailPage() {
     <ErrorBoundary name="Email Verification">
       <Suspense
         fallback={
-          <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
-            <Card className="w-full max-w-md border-border/50 bg-card/50 backdrop-blur-sm animate-pulse">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-muted" />
-                </div>
-                <CardTitle className="h-8 w-3/4 mx-auto bg-muted rounded" />
-                <CardDescription className="h-4 w-1/2 mx-auto mt-2 bg-muted rounded" />
-              </CardHeader>
-              <CardContent className="space-y-4 py-4">
-                <div className="h-2 w-full rounded-full bg-muted" />
-                <div className="h-4 w-2/3 mx-auto bg-muted rounded" />
-              </CardContent>
-              <CardFooter className="border-t pt-6">
-                <div className="h-10 w-full bg-muted rounded" />
-              </CardFooter>
-            </Card>
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         }
       >

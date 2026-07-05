@@ -251,35 +251,35 @@ export function TradingHistoryChart({ className }: TradingHistoryChartProps) {
                         <AreaChart data={chartData}>
                             <defs>
                                 <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                    <stop offset="5%" stopColor="rgb(var(--primary))" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="rgb(var(--primary))" stopOpacity={0} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid
                                 strokeDasharray="3 3"
-                                stroke="hsl(var(--border))"
+                                stroke="rgb(var(--border))"
                                 vertical={false}
                             />
                             <XAxis
                                 dataKey="date"
-                                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                                tick={{ fontSize: 10, fill: 'rgb(var(--muted-foreground))' }}
                                 tickLine={false}
                                 axisLine={false}
                             />
                             <YAxis
-                                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                                tick={{ fontSize: 10, fill: 'rgb(var(--muted-foreground))' }}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(value) => `${value}`}
                             />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'hsl(var(--background))',
-                                    border: '1px solid hsl(var(--border))',
+                                    backgroundColor: 'rgb(var(--background))',
+                                    border: '1px solid rgb(var(--border))',
                                     borderRadius: '8px',
                                     fontSize: '12px',
                                 }}
-                                labelStyle={{ color: 'hsl(var(--primary))' }}
+                                labelStyle={{ color: 'rgb(var(--primary))' }}
                                 formatter={(value, name) => [
                                     name === 'volume' ? `${Number(value).toFixed(2)} kWh` : `฿${Number(value).toFixed(2)}`,
                                     name === 'volume' ? 'Volume' : 'Value'
@@ -288,7 +288,7 @@ export function TradingHistoryChart({ className }: TradingHistoryChartProps) {
                             <Area
                                 type="monotone"
                                 dataKey="volume"
-                                stroke="hsl(var(--primary))"
+                                stroke="rgb(var(--primary))"
                                 strokeWidth={2}
                                 fill="url(#colorVolume)"
                             />

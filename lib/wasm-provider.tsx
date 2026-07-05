@@ -66,7 +66,7 @@ export function WasmProvider({ children }: WasmProviderProps) {
     // Defer WASM loading to not block initial render
     const loadWasm = async () => {
       try {
-        await initWasm('/gridtokenx_wasm.wasm')
+        await initWasm('/main.wasm')
         setIsLoaded(true)
         console.log('[WasmProvider] WASM module loaded successfully')
       } catch (err) {

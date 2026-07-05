@@ -154,6 +154,7 @@ export default function Homepage() {
               <>
                 <ResizablePanel
                   id="left-sidebar"
+                  order={1}
                   defaultSize={15}
                   minSize={10}
                   maxSize={25}
@@ -170,9 +171,10 @@ export default function Homepage() {
             )}
 
             {/* CENTER - MAP & POSITIONS */}
-            <ResizablePanel 
-              id="center-area" 
-              defaultSize={showLeftSidebar && showRightSidebar ? 65 : showLeftSidebar || showRightSidebar ? 80 : 100} 
+            <ResizablePanel
+              id="center-area"
+              order={2}
+              defaultSize={showLeftSidebar && showRightSidebar ? 65 : showLeftSidebar || showRightSidebar ? 80 : 100}
               minSize={40}
             >
               <ResizablePanelGroup
@@ -181,7 +183,12 @@ export default function Homepage() {
                 id="center-vertical-group"
               >
                 {/* MAP - No Tabs */}
-                <ResizablePanel id="center-map" defaultSize={85} minSize={30}>
+                <ResizablePanel
+                  id="center-map"
+                  order={1}
+                  defaultSize={showPositionsPanel ? 85 : 100}
+                  minSize={30}
+                >
                   <div className="flex h-full flex-col overflow-hidden">
                     <div className="relative mt-1 min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
                       <EnergyGridMapWrapper
@@ -200,6 +207,7 @@ export default function Homepage() {
                     {/* POSITIONS */}
                     <ResizablePanel
                       id="center-positions"
+                      order={2}
                       defaultSize={15}
                       minSize={10}
                       maxSize={40}
@@ -220,12 +228,13 @@ export default function Homepage() {
                 {/* RIGHT SIDEBAR */}
                 <ResizablePanel
                   id="right-sidebar"
+                  order={3}
                   defaultSize={20}
                   minSize={12}
                   maxSize={30}
                 >
                   <div className="flex h-full flex-col overflow-y-auto pl-2 text-xs duration-700 animate-in fade-in slide-in-from-right-4">
-                    <div className="flex-1 rounded-lg border border-border bg-card p-3 shadow-sm">
+                    <div className="flex-1">
                       <P2POrderForm
                         selectedNode={selectedMeterNode}
                         onClearNode={handleClearNode}

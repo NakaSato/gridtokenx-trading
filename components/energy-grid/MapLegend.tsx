@@ -90,6 +90,14 @@ export function MapLegend({ showFlowLines, showZones = true, showTrades = true }
                             <div className="h-0.5 w-4 rounded bg-red-500" />
                             <span className="text-[9px] text-secondary-foreground">&lt;100 kW</span>
                         </div>
+                        {/* Live meter packet (comet dot animation) */}
+                        <div className="flex items-center gap-1.5 p-0.5">
+                            <span className="relative flex h-1.5 w-1.5">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
+                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
+                            </span>
+                            <span className="text-[9px] text-secondary-foreground">Live packet · meter↔grid</span>
+                        </div>
                     </div>
                 </>
             )}

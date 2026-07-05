@@ -65,6 +65,8 @@ export interface GridStatus {
     ev_fleet?: EVFleetStatus
     avg_nodal_price?: number
     carbon_intensity?: number
+    /** Real peak grid capacity (kW) — scales the stats-panel progress bars. */
+    peak_capacity_kw?: number
 }
 
 export interface ZoneTopologyData {
@@ -73,6 +75,24 @@ export interface ZoneTopologyData {
     centroid_lon: number
     meter_count: number
     transformer_name: string
+    /** Real transformer rating (replaces hardcoded "500 kVA"). */
+    capacity_kva?: number
+    /** Optional zone polygon ring [[lng, lat], ...]; if absent map hulls real meter positions. */
+    boundary_geojson?: [number, number][]
+}
+
+/** A single instantaneous line flow from GET /api/v1/public/grid-flows. */
+export interface GridFlow {
+    /** Node id: a meter id ("meter-...") or a transformer id ("transformer-<zone>"). */
+    from: string
+    to: string
+    /** kW magnitude; drives flow-line color/particle speed. */
+    power_kw: number
+    description?: string
+}
+
+export interface GridFlowsResponse {
+    flows: GridFlow[]
 }
 
 export interface MeterLink {

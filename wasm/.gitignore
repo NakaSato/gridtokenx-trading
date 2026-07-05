@@ -1,0 +1,19 @@
+# Rust
+/target
+Cargo.lock
+
+# WASM (wasm-pack)
+/pkg
+
+# Web Application
+node_modules
+dist
+*.local
+
+# OS
+.DS_Store
+
+# IDE
+.vscode
+.idea
+*.swp

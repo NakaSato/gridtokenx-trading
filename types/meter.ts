@@ -61,6 +61,12 @@ export interface MeterResponse {
  * Contains only privacy-safe fields - no id, serial_number, or wallet_address.
  */
 export interface PublicMeterResponse {
+    /**
+     * Backend meter/node id (opaque, not the serial number). Used as the map
+     * node id so grid-flow endpoints (from_meter_id) and WS telemetry keys
+     * match nodes — see docs/MAP_REAL_DATA_API.md.
+     */
+    meter_id?: string
     location: string
     meter_type: string
     is_verified: boolean
@@ -86,6 +92,10 @@ export interface PublicMeterResponse {
     deficit_energy?: number
     /** Zone ID for grid topology and pricing */
     zone_id?: number
+    /** Rated capacity in kWh (replaces hardcoded map default). */
+    capacity_kwh?: number
+    /** Generator efficiency 0-100 (replaces hardcoded map default). */
+    efficiency_pct?: number
 }
 
 export interface SubmitReadingRequest {

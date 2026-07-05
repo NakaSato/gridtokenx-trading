@@ -134,9 +134,9 @@ export default function PriceChart({ symbol = 'GRX', productId, type = 'spot' }:
                             />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
-                                itemStyle={{ color: 'hsl(var(--foreground))' }}
-                                labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                                contentStyle={{ backgroundColor: 'rgb(var(--card))', borderColor: 'rgb(var(--border))' }}
+                                itemStyle={{ color: 'rgb(var(--foreground))' }}
+                                labelStyle={{ color: 'rgb(var(--muted-foreground))' }}
                                 formatter={(value) => [Number(value).toFixed(4), 'Price']}
                             />
                             <Area

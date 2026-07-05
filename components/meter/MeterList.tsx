@@ -2,17 +2,15 @@
 
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { CheckCircle2, AlertCircle, Upload } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { MeterResponse } from '@/types/meter'
 
 interface MeterListProps {
     meters: MeterResponse[]
     loading: boolean
-    onOpenSubmit: (serial: string) => void
 }
 
-export function MeterList({ meters, loading, onOpenSubmit }: MeterListProps) {
+export function MeterList({ meters, loading }: MeterListProps) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {meters.length > 0 ? (
@@ -40,23 +38,6 @@ export function MeterList({ meters, loading, onOpenSubmit }: MeterListProps) {
                                     <span className={meter.is_verified ? "text-green-600 font-medium" : "text-yellow-600 font-medium"}>
                                         {meter.is_verified ? "Active" : "Unverified"}
                                     </span>
-                                </div>
-
-                                <div className="pt-4">
-                                    <Button
-                                        className="w-full"
-                                        variant="outline"
-                                        onClick={() => onOpenSubmit(meter.serial_number)}
-                                        disabled={!meter.is_verified}
-                                    >
-                                        <Upload className="mr-2 h-4 w-4" />
-                                        Submit Reading
-                                    </Button>
-                                    {!meter.is_verified && (
-                                        <p className="text-[10px] text-muted-foreground text-center mt-1">
-                                            Meter must be verified to submit data
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                         </CardContent>

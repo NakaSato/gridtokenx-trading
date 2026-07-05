@@ -31,9 +31,20 @@ export default memo(function OrderHistory({
       const apiClient = createApiClient(token)
       const response = await apiClient.exportTradingHistory(format)
 
-      if (response.data) {
-        // Create a download link for the blob
-        const url = window.URL.createObjectURL(response.data as Blob)
+      if (response.error) {
+        toast.error(`Export failed: ${response.error}`)
+      } else if (response.data == null) {
+        toast.error('Export failed: empty response')
+      } else if (typeof response.data === 'string' && response.data.trim() === '') {
+        // 200 with an empty CSV body — nothing to download, but don't go silent
+        toast('No trade history to export')
+      } else {
+        // csv arrives as raw text, json as a parsed array — serialize either into a Blob
+        const blob = new Blob(
+          [typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)],
+          { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json' }
+        )
+        const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.setAttribute('download', `trade-history-${new Date().toISOString().split('T')[0]}.${format}`)
@@ -41,8 +52,6 @@ export default memo(function OrderHistory({
         link.click()
         link.parentNode?.removeChild(link)
         toast.success(`History exported as ${format.toUpperCase()}`)
-      } else if (response.error) {
-        toast.error(`Export failed: ${response.error}`)
       }
     } catch (error) {
       toast.error('Failed to export history')

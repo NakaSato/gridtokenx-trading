@@ -36,8 +36,11 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
     // WebSocket connection logic
     useEffect(() => {
         const wsUrl = `${API_CONFIG.wsBaseUrl}/api/market/ws`
+        let disposed = false
+        let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
         const connectWs = () => {
+            if (disposed) return
             if (wsRef.current?.readyState === WebSocket.OPEN) return
 
             const ws = new WebSocket(wsUrl)
@@ -67,7 +70,8 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                             load_forecast: data.load_forecast,
                             ev_fleet: data.ev_fleet,
                             avg_nodal_price: data.avg_nodal_price,
-                            carbon_intensity: data.carbon_intensity
+                            carbon_intensity: data.carbon_intensity,
+                            peak_capacity_kw: data.peak_capacity_kw
                         }
                         // Update cache immediately on WS message
                         queryClient.setQueryData(['grid-status'], updatedStatus)
@@ -77,8 +81,11 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                 }
             }
 
+            // Unmount cleanup close() also fires onclose — the disposed flag
+            // stops it from resurrecting the connection after the hook is gone.
             ws.onclose = () => {
-                setTimeout(connectWs, 5000)
+                if (disposed) return
+                reconnectTimer = setTimeout(connectWs, 5000)
             }
 
             ws.onerror = () => {
@@ -89,6 +96,8 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
         connectWs()
 
         return () => {
+            disposed = true
+            if (reconnectTimer) clearTimeout(reconnectTimer)
             if (wsRef.current) {
                 wsRef.current.close()
             }

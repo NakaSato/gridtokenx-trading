@@ -21,6 +21,8 @@ interface GridStatsPanelProps {
     adrEvent?: ADREvent
     loadForecast?: LoadForecast
     evFleet?: EVFleetStatus
+    /** Real peak grid capacity (kW) for progress-bar scaling; falls back to config. */
+    peakCapacityKw?: number
 }
 
 export const GridStatsPanel = memo(function GridStatsPanel({
@@ -38,12 +40,18 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     adrEvent,
     loadForecast,
     evFleet,
+    peakCapacityKw,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
 
     const netBalance = totalGeneration - totalConsumption
     const totalLoad = totalGeneration + totalConsumption
     const balancePercentage = totalLoad > 0 ? (totalGeneration / totalLoad) * 100 : 50
+    // `> 0` (not `??`): a backend peak_capacity_kw of 0 must also fall back,
+    // or the progress bars divide by zero (NaN%/pinned-100% widths).
+    const maxCapacity = peakCapacityKw && peakCapacityKw > 0
+        ? peakCapacityKw
+        : ENERGY_GRID_CONFIG.progressBar.maxCapacity
 
     return (
         <div
@@ -134,7 +142,7 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                     <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
                         <div
                             className="h-full bg-yellow-400/80 transition-all duration-1000 ease-out"
-                            style={{ width: `${Math.min(100, (totalGeneration / ENERGY_GRID_CONFIG.progressBar.maxCapacity) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (totalGeneration / maxCapacity) * 100)}%` }}
                         />
                     </div>
                 </div>
@@ -153,7 +161,7 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                     <div className="h-1 w-full rounded-full bg-white/5 overflow-hidden">
                         <div
                             className="h-full bg-blue-400/80 transition-all duration-1000 ease-out"
-                            style={{ width: `${Math.min(100, (totalConsumption / ENERGY_GRID_CONFIG.progressBar.maxCapacity) * 100)}%` }}
+                            style={{ width: `${Math.min(100, (totalConsumption / maxCapacity) * 100)}%` }}
                         />
                     </div>
                 </div>
@@ -232,7 +240,6 @@ export const GridStatsPanel = memo(function GridStatsPanel({
                 {/* Footer Info */}
                 <div className="flex items-center justify-between pt-1 text-[8px] sm:text-[9px] text-white/30 italic">
                     <span>{activeMeters} Active Meters</span>
-                    <span className="hidden sm:inline">v2.2.0-dev</span>
                 </div>
             </div >
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { PublicMeterResponse } from '@/types/meter'
 import type { EnergyNode } from './types'
-import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 import { useQuery } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
 
@@ -32,10 +31,12 @@ export interface UseMeterMapDataResult {
 }
 
 /**
- * Generate a unique ID from meter data since public API no longer exposes id/serial_number.
- * Uses location + coordinates to create a deterministic unique identifier.
+ * Node id for a meter. Prefers the backend meter id so grid-flow endpoints
+ * (from_meter_id) and WS telemetry keys match nodes directly; falls back to a
+ * deterministic synthetic id when the backend omits it.
  */
 function generateMeterId(meter: PublicMeterResponse, index: number): string {
+    if (meter.meter_id) return meter.meter_id
     // Create a unique ID from location and coordinates
     const locationKey = meter.location.replace(/\s+/g, '_').toLowerCase()
     const latKey = meter.latitude?.toFixed(4) || '0'
@@ -45,18 +46,11 @@ function generateMeterId(meter: PublicMeterResponse, index: number): string {
 
 /**
  * Convert a PublicMeterResponse to an EnergyNode for map display.
- * Uses default UTCC campus coordinates if meter has no location data.
+ * Requires real coordinates — callers filter out meters without them.
  */
 function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNode {
-    const { defaultLocation } = ENERGY_GRID_CONFIG
-
-    // Use meter coordinates if available, otherwise use default location
-    const lat = (meter.latitude !== undefined && meter.latitude !== null)
-        ? meter.latitude
-        : defaultLocation.latitude
-    const lng = (meter.longitude !== undefined && meter.longitude !== null)
-        ? meter.longitude
-        : defaultLocation.longitude
+    const lat = meter.latitude as number
+    const lng = meter.longitude as number
 
     // Determine node type based on meter_type
     let nodeType: 'generator' | 'consumer' | 'storage' = 'consumer'
@@ -74,7 +68,7 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         type: nodeType,
         longitude: lng,
         latitude: lat,
-        capacity: '100 kWh',
+        capacity: meter.capacity_kwh != null ? `${meter.capacity_kwh} kWh` : '',
         status: meter.is_verified ? 'active' : 'idle',
         // Telemetry from real meters
         voltage: meter.voltage,
@@ -84,18 +78,13 @@ function meterToEnergyNode(meter: PublicMeterResponse, index: number): EnergyNod
         surplusEnergy: meter.surplus_energy,
         deficitEnergy: meter.deficit_energy,
         zoneId: meter.zone_id,
-        // Add type-specific defaults or real data if available
+        // Type-specific real data only (no hardcoded defaults)
         ...(nodeType === 'generator' && {
             currentOutput: `${(meter.current_generation ?? 0).toFixed(2)} kW`,
-            solarPanels: 4,
-            efficiency: meter.power_factor ? `${(meter.power_factor * 100).toFixed(0)}%` : '94%',
+            ...(meter.efficiency_pct != null && { efficiency: `${meter.efficiency_pct.toFixed(0)}%` }),
         }),
         ...(nodeType === 'consumer' && {
             currentLoad: `${(meter.current_consumption ?? 0).toFixed(2)} kW`,
-        }),
-        ...(nodeType === 'storage' && {
-            currentCharge: '50 kWh',
-            batteryType: 'Li-ion',
         }),
     }
 }
@@ -121,13 +110,19 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
         refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     })
 
-    // Convert meters to EnergyNodes with generated unique IDs - only include active (verified) meters
-    const realMeterNodes: EnergyNode[] = useMemo(() =>
-        meters
-            .filter(meter => meter.is_verified) // Only show active/verified meters on map
-            .map((meter, index) => meterToEnergyNode(meter, index)),
-        [meters]
-    )
+    // Convert meters to EnergyNodes. Only verified meters WITH real coordinates
+    // are placed on the map — meters without lat/lng from the backend are dropped
+    // (no synthetic placement). See docs/MAP_REAL_DATA_API.md.
+    const realMeterNodes: EnergyNode[] = useMemo(() => {
+        const verified = meters.filter(meter => meter.is_verified)
+        const placeable = verified.filter(meter => meter.latitude != null && meter.longitude != null)
+        if (placeable.length < verified.length) {
+            console.warn(
+                `[useMeterMapData] Dropped ${verified.length - placeable.length} verified meter(s) without coordinates from the map`
+            )
+        }
+        return placeable.map((meter, index) => meterToEnergyNode(meter, index))
+    }, [meters])
 
     // Combine with static nodes if requested
     const nodes: EnergyNode[] = useMemo(() =>

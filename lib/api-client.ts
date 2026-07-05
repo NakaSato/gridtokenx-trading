@@ -125,14 +125,14 @@ export class ApiClient {
   // METERS & GRID
   // ==========================================
 
-  async submitMeterData(data: any) { return this.metersApi.submitMeterData(data) }
   async getMeterStats() { return this.metersApi.getMeterStats() }
   async getMyReadings(limit?: number, offset?: number) { return this.metersApi.getMyReadings(limit, offset) }
+  async getMyReadingsPage(limit?: number, offset?: number) { return this.metersApi.getMyReadingsPage(limit, offset) }
   async getMyMeters() { return this.metersApi.getMyMeters() }
   async registerMeter(data: any) { return this.metersApi.registerMeter(data) }
-  async mintReading(readingId: string) { return this.metersApi.mintReading(readingId) }
   async getGridStatus() { return this.metersApi.getGridStatus() }
   async getGridTopology() { return this.metersApi.getGridTopology() }
+  async getGridFlows() { return this.metersApi.getGridFlows() }
   async getPublicMeters() { return this.metersApi.getPublicMeters() }
   async getGridHistory(limit?: number) { return this.metersApi.getGridHistory(limit) }
 
@@ -165,9 +165,10 @@ export class ApiClient {
     return this.tradingApi.getMarketData() // Close enough to the old implementation which didn't use timeframe anyway
   }
 
-  async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
+  async exportTradingHistory(format: 'csv' | 'json' = 'csv') {
     return this.tradingApi.exportTradingHistory(format)
   }
+  async getClearingEpochs(limit?: number) { return this.tradingApi.getClearingEpochs(limit) }
 }
 
 /**

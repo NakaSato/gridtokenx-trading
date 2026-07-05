@@ -34,9 +34,9 @@ export default function Profile() {
     totalPnl: '+0 THB'
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
 
-  // Local form state for editing
+  // Profile fields are read-only: IAM serves /api/v1/me as GET only, so there
+  // is no update endpoint to save edits to (ApiClient.updateProfile 501s).
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -122,35 +122,6 @@ export default function Profile() {
       }
       reader.readAsDataURL(file)
     }
-  }
-
-  const handleSave = async () => {
-    try {
-      const response = await client.updateProfile({
-        email,
-        first_name: firstName,
-        last_name: lastName
-      })
-      if (response.status === 200) {
-        toast.success('Profile updated successfully')
-        setIsEditing(false)
-        fetchProfileData()
-      } else {
-        toast.error(response.error || 'Failed to update profile')
-      }
-    } catch (error) {
-      toast.error('Error updating profile')
-    }
-  }
-
-  const handleCancel = () => {
-    if (profile) {
-      setUsername(profile.username || '')
-      setEmail(profile.email || '')
-      setFirstName(profile.first_name || '')
-      setLastName(profile.last_name || '')
-    }
-    setIsEditing(false)
   }
 
   const handleCopyAddress = async () => {
@@ -271,7 +242,7 @@ export default function Profile() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
-                disabled={!isEditing}
+                disabled
               />
             </div>
             <div className="flex w-full flex-col space-y-[14px]">
@@ -281,7 +252,7 @@ export default function Profile() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
-                disabled={!isEditing}
+                disabled
               />
             </div>
           </div>
@@ -294,7 +265,7 @@ export default function Profile() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="rounded-sm border bg-secondary px-3 py-2 text-xs focus:border-primary"
-              disabled={!isEditing}
+              disabled
             />
           </div>
 
@@ -339,33 +310,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            {isEditing ? (
-              <>
-                <Button
-                  onClick={handleCancel}
-                  variant="outline"
-                  className="flex-1 border-secondary text-xs hover:border-primary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  className="flex-1 bg-primary text-xs text-background hover:bg-gradient-primary"
-                >
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="w-full bg-primary text-xs text-background hover:bg-gradient-primary"
-              >
-                Edit Profile
-              </Button>
-            )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>

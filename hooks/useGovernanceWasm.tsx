@@ -24,7 +24,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { init_panic_hook, GovernanceClient } from '@/lib/wasm/gridtokenx_wasm';
+import { init_panic_hook, GovernanceClient } from '@/lib/wasm/main';
 
 // Types matching the WASM module
 export interface Proposal {

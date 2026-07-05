@@ -3,12 +3,12 @@
   "type": "module",
   "version": "0.1.1",
   "files": [
-    "gridtokenx_wasm_bg.wasm",
-    "gridtokenx_wasm.js",
-    "gridtokenx_wasm.d.ts"
+    "main_bg.wasm",
+    "main.js",
+    "main.d.ts"
   ],
-  "main": "gridtokenx_wasm.js",
-  "types": "gridtokenx_wasm.d.ts",
+  "main": "main.js",
+  "types": "main.d.ts",
   "sideEffects": [
     "./snippets/*"
   ]

@@ -21,12 +21,12 @@ Tailwind 3 + shadcn/ui (`@/*` alias → repo root).
 
 ```bash
 bun run dev              # next dev --turbopack (or: just dev)
-bun run build            # next build (output: 'standalone')
-bun run lint             # next lint (ESLint)
+bun run build            # build:wasm THEN next build (output: 'standalone') — always recompiles wasm
+bun run lint             # eslint .
 bun run format           # prettier --write .
 bun run test             # jest unit tests (jsdom)
 bun run test:e2e         # playwright e2e
-bun run build:wasm       # rebuild lib/wasm from sibling ../gridtokenx-wasm crate
+bun run build:wasm       # rebuild lib/wasm from the in-repo wasm/ crate
 bun run check:bundle     # scripts/check-bundle-size.js (bundle-size guard)
 ```
 
@@ -48,10 +48,11 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
 - **One fetch wrapper.** Every REST call goes through `lib/api/core.ts#apiRequest`, behind the
   `ApiClient` facade in `lib/api-client.ts` (per-domain modules in `lib/api/*`: `auth`, `trading`,
   `futures`, `meters`, `carbon`, `user`). Add a domain method — don't sprinkle raw `fetch`.
-- **Two auth modes, separate from wallet.** Backend session = JWT in web storage
-  (`contexts/AuthProvider.tsx`), fed to `ApiClient`. Optional edge auth via Supabase
-  (`middleware.ts`, `utils/supabase/`) when `NEXT_PUBLIC_AUTH_MODE=supabase`. Wallet signing is a
-  third, independent thing.
+- **Auth = JWT + wallet, two independent things.** Backend session = JWT in web storage
+  (`contexts/AuthProvider.tsx`), fed to `ApiClient`; login/register go through the BFF routes in
+  `app/api/auth/*`. Wallet signing is separate (see below). The old Supabase edge-auth path
+  (`middleware.ts`, `utils/supabase/`, `NEXT_PUBLIC_AUTH_MODE`) was removed in `bb26fd9` — none of
+  those exist anymore; don't reintroduce them.
 - **Non-custodial signing.** Solana wallet adapters (`contexts/connectionprovider.tsx`) sign in the
   user's extension; the app holds no private keys. Only persisted secret is the backend JWT —
   don't log it. On-chain options txs go through `contexts/contractProvider.tsx` +
@@ -60,8 +61,8 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
   channels `/ws/orderbook|trades|epochs`, surfaced via `contexts/SocketContext.tsx`). Price candles
   stream separately from Pyth/TradingView (`lib/streaming.ts`, `lib/datafeed.ts`).
 - **WASM is required for crypto/pricing.** `lib/wasm/` ships a prebuilt module (order-book/auction
-  sim, Black-Scholes + Greeks, risk, ZK/stealth helpers) compiled from the sibling
-  `../gridtokenx-wasm` crate. Rebuild with `bun run build:wasm` after changing that crate.
+  sim, Black-Scholes + Greeks, risk, ZK/stealth helpers) compiled from the in-repo
+  `wasm/` crate. Rebuild with `bun run build:wasm` after changing that crate.
   `next.config.ts` enables `asyncWebAssembly` and stubs `fs`/`path` on the client.
 - **Heavy provider stack.** State lives in `contexts/*` (`TradingProvider`, `EnergyProvider`,
   `PrivacyProvider`, `MarketplaceProvider`, …). Prefer extending an existing provider/context over
@@ -76,3 +77,9 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
 - `next.config.ts` `rewrites()` proxy `/api/:path*` and `/health` to APISIX; thin server-side BFF
   handlers live in `app/api/*` (e.g. `app/api/auth/login/route.ts`). Standalone build, image
   domains allow-listed there.
+
+## Search Tooling
+
+> **Use `rg` (ripgrep), never `grep`.** When shelling out to search files, run `rg` —
+> it respects `.gitignore`, skips binaries, and is far faster than `grep`/`find -exec grep`.
+> Reserve plain `grep` only for piping non-file streams.

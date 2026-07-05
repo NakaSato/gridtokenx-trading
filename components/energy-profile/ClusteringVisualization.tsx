@@ -93,7 +93,7 @@ export function ClusteringVisualization({ data, isLoading, className }: Clusteri
                                 <path
                                     d="M 40 0 L 0 0 0 40"
                                     fill="none"
-                                    stroke="hsl(var(--border))"
+                                    stroke="rgb(var(--border))"
                                     strokeWidth="0.5"
                                     opacity="0.3"
                                 />
@@ -176,7 +176,7 @@ export function ClusteringVisualization({ data, isLoading, className }: Clusteri
                                     cx={userPosition.cx}
                                     cy={userPosition.cy}
                                     r={16}
-                                    fill="hsl(var(--primary))"
+                                    fill="rgb(var(--primary))"
                                     opacity="0.3"
                                     className="animate-pulse"
                                 />
@@ -185,7 +185,7 @@ export function ClusteringVisualization({ data, isLoading, className }: Clusteri
                                     cx={userPosition.cx}
                                     cy={userPosition.cy}
                                     r={10}
-                                    fill="hsl(var(--primary))"
+                                    fill="rgb(var(--primary))"
                                     stroke="white"
                                     strokeWidth="3"
                                 />

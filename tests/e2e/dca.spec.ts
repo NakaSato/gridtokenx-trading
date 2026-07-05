@@ -23,7 +23,9 @@ test.describe('DCA Trading Flow', () => {
     await page.locator('button', { hasText: /^Connect$/ }).first().click();
     // Wait for modal animation
     await page.waitForTimeout(500);
-    await page.click('button:has-text("Or sign in with email")');
+    // Modal opens on the email sign-in tab (wallet-signature login is not
+    // supported by IAM, so 'signin' is the default authMode) — switch straight
+    // to the sign-up form.
     await page.click('button:has-text("Sign up")');
 
     await page.fill('#signup-username', username);

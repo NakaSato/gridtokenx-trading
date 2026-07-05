@@ -8,12 +8,6 @@ export const parseNumericValue = (value: string | undefined): number => {
     return match ? parseFloat(match[0]) : 0
 }
 
-// Helper to generate random fluctuation within percentage range
-export const fluctuate = (baseValue: number, percentRange: number = 15): number => {
-    const variance = baseValue * (percentRange / 100)
-    return baseValue + (Math.random() * 2 - 1) * variance
-}
-
 // Helper to get color based on power level
 export const getPowerColor = (power: number): string => {
     const { high, medium, low } = ENERGY_GRID_CONFIG.powerThresholds

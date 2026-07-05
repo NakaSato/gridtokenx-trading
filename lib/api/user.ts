@@ -17,17 +17,18 @@ export class UserApi {
         })
     }
 
-    async updateProfile(profileData: {
+    // IAM serves /api/v1/me as GET only — there is no profile-update endpoint.
+    // Fail locally instead of sending a request the gateway can only 405.
+    async updateProfile(_profileData: {
         email?: string
         first_name?: string
         last_name?: string
         wallet_address?: string
     }): Promise<ApiResponse<any>> {
-        return apiRequest('/api/v1/me', {
-            method: 'PATCH',
-            body: profileData,
-            token: this.getToken(),
-        })
+        return {
+            error: 'Profile updates are not supported by the IAM service',
+            status: 501,
+        }
     }
 
     async getBalance(walletAddress?: string): Promise<ApiResponse<any>> {
@@ -46,6 +47,8 @@ export class UserApi {
             } as ApiResponse<any>
         }
 
+        // Served by trading-service, not IAM: APISIX routes
+        // /api/v1/wallets/*/balance to trading-service:8093 (chain-backed read).
         return apiRequest(`/api/v1/wallets/${walletAddress}/balance`, {
             method: 'GET',
             token: this.getToken(),
@@ -117,9 +120,12 @@ export class UserApi {
         })
     }
 
-    async setPrimaryWallet(walletId: string): Promise<ApiResponse<{ success: boolean }>> {
-        return apiRequest<{ success: boolean }>(`/api/v1/me/wallets/${walletId}/primary`, {
-            method: 'PUT',
+    // IAM exposes this as PATCH /api/v1/me/wallets/{id} with `is_primary: true`
+    // (the only supported wallet update) and returns the updated wallet.
+    async setPrimaryWallet(walletId: string): Promise<ApiResponse<UserWallet>> {
+        return apiRequest<UserWallet>(`/api/v1/me/wallets/${walletId}`, {
+            method: 'PATCH',
+            body: { is_primary: true },
             token: this.getToken(),
         })
     }

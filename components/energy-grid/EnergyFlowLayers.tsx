@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect, memo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { EnergyNode, EnergyTransfer, LiveTransferData } from './types'
 import { getPowerColor, getPowerWidth } from './utils'
+import { FlowParticles } from './FlowParticles'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 // Calculate animation speed multiplier based on power (1.0 - 2.0)
@@ -214,7 +215,9 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                     },
                 }
             })
-            .filter(Boolean)
+            // Type-guard (not Boolean) so `null` is narrowed out of the element
+            // type — lets FlowParticles consume `features` without casts.
+            .filter((f): f is NonNullable<typeof f> => f !== null)
 
         console.log(`[EnergyFlow] Generated ${features.length} flow lines from ${energyTransfers.length} transfers`)
 
@@ -382,6 +385,13 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                     }}
                 />
             </Source>
+
+            {/* Animated energy packets travelling node→node (P2P flow) */}
+            <FlowParticles
+                id="energy-flow"
+                lineFeatures={flowLinesGeoJSON.features}
+                visible={visible}
+            />
 
             {/* Highlighted Path Layer - shows selected route */}
             {highlightedPath && highlightedPath.length >= 2 && (

@@ -28,23 +28,25 @@ export class AuthApi {
     })
   }
 
-  async verifyWalletSignature(data: {
+  // IAM has no wallet-signature login endpoint (/api/v1/auth/wallet/verify
+  // does not exist server-side). Fail locally with a clear message instead of
+  // a confusing gateway 404. Sessions come from email/password login only.
+  async verifyWalletSignature(_data: {
     wallet_address: string
     signature: string
     message: string
     timestamp: number
   }): Promise<ApiResponse<LoginResponse>> {
-    return apiRequest<LoginResponse>('/api/v1/auth/wallet/verify', {
-      method: 'POST',
-      body: data,
-    })
+    return {
+      error: 'Wallet-signature login is not supported by the IAM service',
+      status: 501,
+    }
   }
 
-  async logout() {
-    return apiRequest('/api/v1/auth/logout', {
-      method: 'POST',
-      token: this.getToken(),
-    })
+  // IAM issues stateless JWTs and has no /auth/logout endpoint — logout is
+  // purely client-side (AuthProvider clears the stored token).
+  async logout(): Promise<ApiResponse<Record<string, never>>> {
+    return { data: {}, status: 200 }
   }
 
   // Exchanges the current (still-valid) token for a fresh one. Must be called

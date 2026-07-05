@@ -1,9 +1,22 @@
-import { apiRequest, ApiResponse } from './core'
+import { apiRequest, apiRequestText, ApiResponse } from './core'
 import type {
     PriceAlert,
     RecurringOrder,
     CreateRecurringOrderRequest
 } from '../../types/features'
+
+// Mirrors trading-api rest.rs ClearingEpochResponse — decimals stringified.
+export interface ClearingEpoch {
+    epoch_id: string
+    epoch_number: number
+    start_time: string
+    end_time: string
+    status: string
+    clearing_price: string | null
+    total_volume: string | null
+    total_orders: number | null
+    matched_orders: number | null
+}
 
 export class TradingApi {
     constructor(private getToken: () => string | undefined) { }
@@ -307,11 +320,28 @@ export class TradingApi {
         })
     }
 
-    async exportTradingHistory(format: 'csv' | 'pdf' | 'json' = 'csv') {
-        return apiRequest<Blob>(`/api/v1/trades/export?format=${format}`, {
+    // Server supports csv (default, text/csv attachment) and ?format=json only —
+    // no pdf. CSV comes back as raw text, so it must bypass the JSON parser.
+    async exportTradingHistory(format: 'csv' | 'json' = 'csv') {
+        if (format === 'json') {
+            return apiRequest<any[]>('/api/v1/trades/export?format=json', {
+                method: 'GET',
+                token: this.getToken(),
+            })
+        }
+        return apiRequestText('/api/v1/trades/export', {
             method: 'GET',
             token: this.getToken(),
-            responseType: 'blob'
-        } as any)
+        })
+    }
+
+    // Recent uniform-price (Interval) clearing results, newest first.
+    // limit clamped server-side to 1..=100 (default 20).
+    async getClearingEpochs(limit?: number): Promise<ApiResponse<ClearingEpoch[]>> {
+        const qs = limit ? `?limit=${limit}` : ''
+        return apiRequest<ClearingEpoch[]>(`/api/v1/markets/clearing-epochs${qs}`, {
+            method: 'GET',
+            token: this.getToken(),
+        })
     }
 }

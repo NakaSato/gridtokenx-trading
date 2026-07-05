@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef, memo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
 import type { EnergyNode } from './types'
 import type { ActiveTrade } from './useActiveTrades'
+import { FlowParticles } from './FlowParticles'
 
 interface TradeFlowLayersProps {
     trades: ActiveTrade[]
@@ -255,6 +256,15 @@ export const TradeFlowLayers = memo(function TradeFlowLayers({
                     }}
                 />
             </Source>
+
+            {/* Animated energy packets travelling seller→buyer (P2P trade flow) */}
+            <FlowParticles
+                id="trade-flow"
+                lineFeatures={tradeFlowsGeoJSON.features}
+                visible={visible}
+                packetsPerLine={3}
+                speed={0.22}
+            />
 
             {/* Direction arrows */}
             <Source

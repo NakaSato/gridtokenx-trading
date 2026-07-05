@@ -42,13 +42,13 @@ export function PriceInput({
           step="0.01"
           disabled={priceType === 'market'}
           className={cn(
-            "h-14 rounded-xl border-border bg-muted/30 pr-16 text-right font-mono text-xl font-bold transition-colors duration-200",
-            "placeholder:text-muted-foreground/60",
+            "h-14 appearance-none rounded-xl border border-muted bg-secondary pr-16 text-right font-mono text-xl font-bold transition-colors duration-200",
+            "placeholder:text-muted-foreground",
             "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-            priceType === 'market' && "cursor-not-allowed bg-muted/50 text-muted-foreground",
+            priceType === 'market' && "cursor-not-allowed bg-muted text-muted-foreground",
             price && priceType !== 'market'
-              ? "text-primary bg-primary/5 border-primary/30"
-              : "text-foreground bg-muted/30"
+              ? "text-primary border-primary"
+              : "text-foreground"
           )}
         />
         <span className={cn(

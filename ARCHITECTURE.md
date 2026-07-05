@@ -20,7 +20,7 @@ icons); charts via **Chart.js** / **Recharts** / TradingView datafeed; maps via 
 
 The app is **client-heavy**: most pages are `'use client'`, with a deep stack of React Context
 providers and **TanStack Query** for server state. A compiled **WebAssembly** module
-(`lib/wasm/gridtokenx_wasm_bg.wasm`, built from the sibling `gridtokenx-wasm` crate) provides
+(`lib/wasm/main_bg.wasm`, built from the in-repo `wasm/` crate) provides
 in-browser crypto/pricing — order-book/auction simulation, Black-Scholes + Greeks, portfolio risk,
 reading aggregation, and ZK/stealth helpers (commitments, range proofs, stealth keys).
 
@@ -114,7 +114,7 @@ Session auth is separate: `contexts/AuthProvider.tsx` stores a backend-issued **
    adapter — the app holds no private keys. The only secret it persists is the backend JWT (in web
    storage). Don't log it or move keys client-side beyond the adapter.
 5. **WASM is required for crypto/pricing.** `lib/wasm` ships the prebuilt module; rebuild with
-   `bun run build:wasm` (compiles the sibling `gridtokenx-wasm` crate). `next.config.ts` enables
+   `bun run build:wasm` (compiles the in-repo `wasm/` crate). `next.config.ts` enables
    `asyncWebAssembly` and stubs `fs`/`path` on the client.
 6. **Standalone build.** `output: 'standalone'` (Dockerfile-friendly); image domains are
    allow-listed in `next.config.ts`. Bundle size is guarded by `scripts/check-bundle-size.js`
@@ -136,7 +136,7 @@ bun run test             # jest (jsdom unit tests)
 bun run test:watch       # jest --watch
 bun run test:coverage    # jest --coverage
 bun run test:e2e         # playwright test
-bun run build:wasm       # build sibling gridtokenx-wasm crate into lib/wasm
+bun run build:wasm       # build the in-repo wasm/ crate into lib/wasm
 bun run analyze          # ANALYZE=true next build (bundle analyzer)
 bun run check:bundle     # scripts/check-bundle-size.js
 bun run clean            # rm -rf .next

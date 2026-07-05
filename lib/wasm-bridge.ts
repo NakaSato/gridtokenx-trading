@@ -28,7 +28,7 @@ import init, {
   sha256 as wasm_sha256,
   theta_calc as wasm_theta_calc,
   vega_calc as wasm_vega_calc,
-} from './wasm/gridtokenx_wasm.js'
+} from './wasm/main.js'
 
 export interface Greeks {
   delta: number
@@ -94,7 +94,7 @@ export function wasWasmLoadAttempted(): boolean {
  * Falls back gracefully if WASM is not available
  */
 export async function initWasm(
-  wasmPath: string = '/gridtokenx_wasm.wasm'
+  wasmPath: string = '/main.wasm'
 ): Promise<WasmExports | null> {
   // Skip on server side
   if (typeof window === 'undefined') {

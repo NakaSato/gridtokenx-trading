@@ -135,39 +135,39 @@ export function PortfolioChart() {
               <AreaChart data={data}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    <stop offset="5%" stopColor="rgb(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="rgb(var(--primary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgb(var(--border))" />
                 <XAxis
                   dataKey="time"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 10, fill: 'rgb(var(--muted-foreground))' }}
                   minTickGap={30}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 10, fill: 'rgb(var(--muted-foreground))' }}
                   tickFormatter={(val) => `$${val}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    borderColor: 'hsl(var(--border))',
+                    backgroundColor: 'rgb(var(--background))',
+                    borderColor: 'rgb(var(--border))',
                     borderRadius: '8px',
                     fontSize: '12px'
                   }}
-                  itemStyle={{ color: 'hsl(var(--primary))' }}
-                  labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}
+                  itemStyle={{ color: 'rgb(var(--primary))' }}
+                  labelStyle={{ color: 'rgb(var(--muted-foreground))', marginBottom: '4px' }}
                   labelFormatter={(idx, payload) => payload[0]?.payload?.fullTime || idx}
                 />
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke="hsl(var(--primary))"
+                  stroke="rgb(var(--primary))"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorValue)"

@@ -8,7 +8,7 @@ import { useWalletAuth } from '@/hooks/useWalletAuth'
 import WalletList from '@/components/WalletList'
 import { allWallets } from '@/components/WalletModal'
 import { ApiClientError } from '@/lib/api/core'
-import { defaultApiClient } from '@/lib/api-client'
+import { useResendVerification } from '@/hooks/useResendVerification'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,7 +20,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   // Login rejected with AUTH_1005 (correct password, email unverified).
   const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
-  const [isResending, setIsResending] = useState(false)
+  const { canResend, isResending, resendVerification: handleResendVerification } =
+    useResendVerification(username)
 
   // Once authenticated (via password or wallet), leave the login page.
   useEffect(() => {
@@ -53,31 +54,6 @@ export default function LoginPage() {
       toast.error(message)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // IAM's resend endpoint takes an email; only offer resend when the
-  // identifier field holds one (users can also sign in by username).
-  const canResend = username.includes('@')
-
-  const handleResendVerification = async () => {
-    if (isResending || !canResend) return
-
-    setIsResending(true)
-    try {
-      const response = await defaultApiClient.resendVerification(username)
-      if (response.data?.success) {
-        toast.success('Verification email sent! Check your inbox.')
-      } else {
-        toast.error(
-          response.data?.message || 'Failed to send verification email'
-        )
-      }
-    } catch (error) {
-      console.error('Resend verification error:', error)
-      toast.error('Failed to send verification email. Please try again.')
-    } finally {
-      setIsResending(false)
     }
   }
 

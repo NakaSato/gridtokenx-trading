@@ -5,7 +5,6 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Plus, Loader2 } from 'lucide-react'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
-import { SubmitReadingModal } from '@/components/SubmitReadingModal'
 import { useSmartMeter } from '@/hooks/useSmartMeter'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import dynamic from 'next/dynamic'
@@ -48,11 +47,11 @@ export default function SmartMeterPage() {
     const {
         meters,
         readings,
+        totalReadings,
+        hasMoreReadings,
         loading,
         refreshing,
-        mintingReadingId,
         fetchData,
-        handleMintTokens,
         copyToClipboard,
         lastRefreshed,
         stats
@@ -60,13 +59,6 @@ export default function SmartMeterPage() {
 
     const [activeTab, setActiveTab] = useState("readings")
     const [isRegisterOpen, setIsRegisterOpen] = useState(false)
-    const [isSubmitOpen, setIsSubmitOpen] = useState(false)
-    const [selectedMeterSerial, setSelectedMeterSerial] = useState<string>('')
-
-    const handleOpenSubmit = (serial: string) => {
-        setSelectedMeterSerial(serial)
-        setIsSubmitOpen(true)
-    }
 
     return (
         <ProtectedRoute requireWallet={false} requireAuth={true}>
@@ -93,13 +85,6 @@ export default function SmartMeterPage() {
                 <MeterRegistrationModal
                     isOpen={isRegisterOpen}
                     onClose={() => setIsRegisterOpen(false)}
-                    onSuccess={fetchData}
-                />
-
-                <SubmitReadingModal
-                    isOpen={isSubmitOpen}
-                    onClose={() => setIsSubmitOpen(false)}
-                    meterSerial={selectedMeterSerial}
                     onSuccess={fetchData}
                 />
 
@@ -144,9 +129,9 @@ export default function SmartMeterPage() {
                                     readings={readings}
                                     meters={meters}
                                     loading={loading}
-                                    onMint={async (id, kwh, meterId) => handleMintTokens(id, kwh, meterId)}
                                     onCopy={copyToClipboard}
-                                    mintingId={mintingReadingId}
+                                    serverTotal={totalReadings}
+                                    hasMoreOnServer={hasMoreReadings}
                                 />
                             </div>
                         )}
@@ -156,7 +141,6 @@ export default function SmartMeterPage() {
                                 <MeterList
                                     meters={meters}
                                     loading={loading}
-                                    onOpenSubmit={handleOpenSubmit}
                                 />
                             </div>
                         )}

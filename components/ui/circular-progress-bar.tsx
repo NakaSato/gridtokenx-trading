@@ -20,7 +20,7 @@ const CircularProgressBar = ({
         cx={size / 2}
         cy={size / 2}
         r={radius}
-        stroke="var(--primary-foreground)"
+        stroke="rgb(var(--primary-foreground))"
         strokeWidth={stroke}
         fill="transparent"
       />
@@ -42,7 +42,7 @@ const CircularProgressBar = ({
         dominantBaseline="central"
         textAnchor="middle"
         fontSize="1em"
-        fill="var(--foreground)"
+        fill="rgb(var(--foreground))"
         transform="rotate(90, 40, 40)"
       >
         {percentage}%

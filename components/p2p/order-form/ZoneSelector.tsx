@@ -66,7 +66,7 @@ export function ZoneSelector({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-secondary">
             <MapPin className="h-3.5 w-3.5 text-primary" />
           </div>
           Zone Routing
@@ -77,7 +77,7 @@ export function ZoneSelector({
             variant="ghost"
             size="sm"
             onClick={handleAutoSelect}
-            className="h-7 px-2.5 rounded-lg text-xs font-medium text-primary hover:text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="h-7 px-2.5 rounded-lg text-xs font-medium text-primary hover:text-primary hover:bg-secondary focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             <Zap className="h-3.5 w-3.5 mr-1.5" />
             Auto-Select
@@ -113,14 +113,14 @@ export function ZoneSelector({
               }
             }}
           >
-            <SelectTrigger className="h-9 rounded-lg border-border bg-muted/50 text-xs font-medium transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+            <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
-            <SelectContent position="popper" avoidCollisions={false} className="rounded-lg z-50 min-w-[200px]">
+            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
                       {zone.id}
                     </span>
                     <span className="font-medium">{zone.name}</span>
@@ -154,14 +154,14 @@ export function ZoneSelector({
               }
             }}
           >
-            <SelectTrigger className="h-9 rounded-lg border-border bg-muted/50 text-xs font-medium transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+            <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
-            <SelectContent position="popper" avoidCollisions={false} className="rounded-lg z-50 min-w-[200px]">
+            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
                       {zone.id}
                     </span>
                     <span className="font-medium">{zone.name}</span>

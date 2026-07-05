@@ -11,7 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../lib/wasm --out-name gridtokenx_wasm && git checkout -- ../lib/wasm/.gitignore 2>/dev/null || true",
+    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir ../lib/wasm --out-name main && cp ../lib/wasm/main_bg.wasm ../public/main.wasm && (git checkout -- ../lib/wasm/.gitignore 2>/dev/null || true)",
     "format": "prettier --write .",
     "analyze": "ANALYZE=true next build --webpack",
     "clean": "rm -rf .next",

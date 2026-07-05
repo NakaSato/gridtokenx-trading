@@ -18,7 +18,7 @@ test.describe('Order Placement Flow', () => {
     // 2. Sign Up
     await page.locator('button', { hasText: /^Connect$/ }).first().click();
     await page.waitForTimeout(500);
-    await page.click('button:has-text("Or sign in with email")');
+    // Modal opens on the email sign-in tab (see dca.spec.ts) — go straight to sign-up.
     await page.click('button:has-text("Sign up")');
 
     await page.fill('#signup-username', username);

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowUpRight, ArrowDownRight, CheckCircle2, Coins, Loader2, Copy } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Loader2, Copy } from 'lucide-react'
 import { format } from 'date-fns'
 import { MeterReading, MeterResponse } from '@/types/meter'
 import Pagination from '@/components/Pagination'
@@ -17,12 +17,14 @@ interface ReadingsListProps {
     readings: MeterReading[]
     meters: MeterResponse[]
     loading: boolean
-    onMint: (readingId: string, kwh: number, meterSerial: string) => Promise<void>
     onCopy: (text: string) => Promise<void>
-    mintingId: string | null
+    /** Server-side total (X-Total-Count); shown when more readings exist than the fetched page. */
+    serverTotal?: number
+    /** Server reports more readings beyond the fetched page (X-Has-More). */
+    hasMoreOnServer?: boolean
 }
 
-export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintingId }: ReadingsListProps) {
+export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, hasMoreOnServer }: ReadingsListProps) {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
     const [currentPage, setCurrentPage] = useState(1)
@@ -121,14 +123,13 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                 ) : (
                     <div className="flex flex-col gap-4 h-full">
                         <div className="rounded-md border flex-1 flex flex-col min-h-0">
-                            <div className="grid grid-cols-7 gap-4 border-b bg-muted/50 p-4 text-sm font-medium flex-none">
+                            <div className="grid grid-cols-6 gap-4 border-b bg-muted/50 p-4 text-sm font-medium flex-none">
                                 <div>Time</div>
                                 <div className="col-span-1">Meter</div>
                                 <div>Type</div>
                                 <div>Amount</div>
                                 <div>Status</div>
                                 <div>Tx Signature</div>
-                                <div className="text-right">Action</div>
                             </div>
                             <div className="flex-1 overflow-y-auto">
                                 {paginatedReadings.length === 0 ? (
@@ -139,7 +140,7 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                     paginatedReadings.map((reading) => {
                                         const meter = getMeterDetails(reading.meter_serial)
                                         return (
-                                            <div key={reading.id} className="grid grid-cols-7 gap-4 border-b p-4 text-sm last:border-0 hover:bg-muted/50">
+                                            <div key={reading.id} className="grid grid-cols-6 gap-4 border-b p-4 text-sm last:border-0 hover:bg-muted/50">
                                                 <div className="flex items-center text-xs font-mono">{format(new Date(reading.timestamp), 'HH:mm:ss')}</div>
                                                 <div className="flex flex-col justify-center truncate col-span-1">
                                                     <div className="font-medium truncate text-xs" title={meter?.location || 'Unknown Location'}>
@@ -190,39 +191,6 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                                         </>
                                                     ) : '-'}
                                                 </div>
-                                                <div className="flex items-center justify-end">
-                                                    {reading.mint_status === 'minted' ? (
-                                                        <span className="text-xs text-muted-foreground flex items-center">
-                                                            <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
-                                                            Done
-                                                        </span>
-                                                    ) : reading.kwh > 0 ? (
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => onMint(reading.id, reading.kwh, reading.meter_serial)}
-                                                                disabled={mintingId === reading.id}
-                                                                className="h-7 px-3 text-xs"
-                                                            >
-                                                                {mintingId === reading.id ? (
-                                                                    <>
-                                                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                                                        Retrying...
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <Coins className="h-3 w-3 mr-1" />
-                                                                        Retry Mint
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                            <span className="text-[10px] text-muted-foreground">Auto-mint failed</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-muted-foreground">N/A</span>
-                                                    )}
-                                                </div>
                                             </div>
                                         )
                                     })
@@ -239,6 +207,13 @@ export function ReadingsList({ readings, meters, loading, onMint, onCopy, mintin
                                     onPageChange={setCurrentPage}
                                 />
                             </div>
+                        )}
+
+                        {hasMoreOnServer && (
+                            <p className="flex-none pt-2 text-center text-xs text-muted-foreground">
+                                Showing the latest {readings.length}
+                                {serverTotal ? ` of ${serverTotal}` : ''} readings
+                            </p>
                         )}
                     </div>
                 )}
