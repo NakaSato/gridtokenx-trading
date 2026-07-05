@@ -54,6 +54,46 @@ describe('MetersApi.getMyReadingsPage', () => {
         expect(res.data?.hasMore).toBe(false)
     })
 
+    it('derives hasMore from X-Total-Count when X-Has-More is absent', async () => {
+        // e.g. a gateway CORS filter passing only X-Total-Count through.
+        mockFetch.mockResolvedValueOnce(
+            mockResponse([{ id: 'a' }, { id: 'b' }], { 'X-Total-Count': '5' })
+        )
+
+        const client = new ApiClient('tok')
+        const res = await client.getMyReadingsPage(2, 0)
+
+        // offset 0 + 2 readings < total 5 → more pages exist.
+        expect(res.data?.total).toBe(5)
+        expect(res.data?.hasMore).toBe(true)
+    })
+
+    it('derived hasMore is false on the last page', async () => {
+        mockFetch.mockResolvedValueOnce(
+            mockResponse([{ id: 'e' }], { 'X-Total-Count': '5' })
+        )
+
+        const client = new ApiClient('tok')
+        const res = await client.getMyReadingsPage(2, 4)
+
+        // offset 4 + 1 reading == total 5 → no more.
+        expect(res.data?.hasMore).toBe(false)
+    })
+
+    it('trusts an explicit X-Has-More=false over the derived value', async () => {
+        mockFetch.mockResolvedValueOnce(
+            mockResponse([{ id: 'a' }], {
+                'X-Total-Count': '10',
+                'X-Has-More': 'false',
+            })
+        )
+
+        const client = new ApiClient('tok')
+        const res = await client.getMyReadingsPage(1, 0)
+
+        expect(res.data?.hasMore).toBe(false)
+    })
+
     it('propagates an error response without pagination data', async () => {
         mockFetch.mockResolvedValueOnce(
             mockResponse({ error: 'unauthorized' }, {}, { ok: false, status: 401 })

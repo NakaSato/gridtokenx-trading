@@ -13,6 +13,35 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+/// Milliseconds since epoch. js_sys only works on wasm targets; native
+/// builds (plain `cargo test`) fall back to SystemTime so tests can run.
+fn now_ms() -> i64 {
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as i64
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0)
+    }
+}
+
+/// Pseudo-random u32 in [0, bound). Same wasm/native split as `now_ms`.
+fn random_u32_below(bound: u32) -> u32 {
+    #[cfg(target_arch = "wasm32")]
+    {
+        (js_sys::Math::random() * bound as f64) as u32
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        (now_ms() as u32) % bound
+    }
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -90,7 +119,7 @@ impl GovernanceClient {
                 description: "Proposed increase of 12% to the confidential solar feed-in tariff for residential meters.".to_string(),
                 support_weight: 45000,
                 oppose_weight: 12000,
-                deadline: js_sys::Date::now() as i64 + 86400000 * 3,
+                deadline: now_ms() + 86400000 * 3,
                 status: ProposalStatus::Active,
                 has_voted: false,
             },
@@ -100,7 +129,7 @@ impl GovernanceClient {
                 description: "Confidential funding for a new private node in the Windsor offshore wind cluster.".to_string(),
                 support_weight: 89000,
                 oppose_weight: 5000,
-                deadline: js_sys::Date::now() as i64 + 86400000 * 5,
+                deadline: now_ms() + 86400000 * 5,
                 status: ProposalStatus::Active,
                 has_voted: false,
             },
@@ -253,7 +282,7 @@ impl GovernanceClient {
         // 2. Sign and send to Solana
         // 3. Get the proposal PDA/ID from the response
 
-        let random_num = (js_sys::Math::random() * 1000.0) as u32;
+        let random_num = random_u32_below(1000);
         let new_id = format!("PROP-{:03}", random_num);
 
         let new_proposal = Proposal {
@@ -262,7 +291,7 @@ impl GovernanceClient {
             description,
             support_weight: 0,
             oppose_weight: 0,
-            deadline: js_sys::Date::now() as i64 + 86400000 * 7,
+            deadline: now_ms() + 86400000 * 7,
             status: ProposalStatus::Active,
             has_voted: false,
         };
