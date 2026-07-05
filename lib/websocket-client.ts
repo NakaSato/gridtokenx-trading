@@ -19,6 +19,11 @@ export type WebSocketMessageType =
   | 'settlement_complete'
   | 'order_book_snapshot'
   | 'conditional_order_triggered'
+  // Public /api/market/ws stream (energy-grid map)
+  | 'grid_status_updated'
+  | 'grid_status'
+  | 'meter.telemetry'
+  | 'meter_telemetry'
 
 /** Standard WebSocket message format */
 export interface WebSocketMessage<T = unknown> {
@@ -55,6 +60,9 @@ export class WebSocketClient {
   private handlers: Map<WebSocketMessageType, Set<WebSocketEventHandler>> =
     new Map()
   private reconnectTimeout?: NodeJS.Timeout
+  // disconnect() closing the socket still fires onclose — without this flag
+  // that onclose would schedule a reconnect and resurrect the connection.
+  private intentionalClose = false
 
   constructor(path: string, options: WebSocketClientOptions = {}) {
     this.url = getWsUrl(path)
@@ -71,8 +79,9 @@ export class WebSocketClient {
    * Connect to WebSocket server
    */
   connect(): void {
+    this.intentionalClose = false
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.warn('WebSocket already connected')
+      console.debug('WebSocket already connected')
       return
     }
 
@@ -125,6 +134,8 @@ export class WebSocketClient {
       }
 
       this.ws.onclose = (event) => {
+        if (this.intentionalClose) return
+
         // 1008 = Policy Violation (often auth), 1006 = Abnormal Closure (upgrade rejected / network)
         const isAuthFailure = event.code === 1008 ||
           (event.code === 1006 && this.options.token && !this.options.isPublic)
@@ -150,6 +161,7 @@ export class WebSocketClient {
    * Disconnect from WebSocket server
    */
   disconnect(): void {
+    this.intentionalClose = true
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout)
     }

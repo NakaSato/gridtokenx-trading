@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
+import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
+import { defaultWSManager, WebSocketEventHandler } from '@/lib/websocket-client'
 import { GridStatus, ZoneGridStatus } from '@/types/grid'
 
 // Interfaces moved to types/grid.ts
@@ -21,7 +21,6 @@ export interface UseGridStatusResult {
  */
 export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
     const queryClient = useQueryClient()
-    const wsRef = useRef<WebSocket | null>(null)
 
     const { data: status = null, isLoading, error, refetch } = useQuery({
         queryKey: ['grid-status'],
@@ -33,74 +32,49 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
         refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     })
 
-    // WebSocket connection logic
+    // WebSocket updates over the shared public market socket
+    // (lib/websocket-client.ts — refcounted, backoff reconnect, clean teardown).
     useEffect(() => {
-        const wsUrl = `${API_CONFIG.wsBaseUrl}/api/market/ws`
-        let disposed = false
-        let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+        const client = defaultWSManager.getOrCreatePublic()
 
-        const connectWs = () => {
-            if (disposed) return
-            if (wsRef.current?.readyState === WebSocket.OPEN) return
+        const handler: WebSocketEventHandler = (message) => {
+            // The simulator's 'grid_status' wraps the fields in message.data;
+            // 'grid_status_updated' carries them at the message root.
+            const parsed = message as unknown as Record<string, any>
+            const data = message.type === 'grid_status' && message.data ? (message.data as Record<string, any>) : parsed
 
-            const ws = new WebSocket(wsUrl)
-            wsRef.current = ws
-
-            ws.onmessage = (event) => {
-                try {
-                    const parsed = JSON.parse(event.data)
-                    if (parsed.type === 'grid_status_updated' || parsed.type === 'grid_status') {
-                        // If it's the simulator's structure, the actual status fields are inside parsed.data
-                        const data = parsed.type === 'grid_status' && parsed.data ? parsed.data : parsed
-                        
-                        const updatedStatus: GridStatus = {
-                            total_generation: data.total_generation,
-                            total_consumption: data.total_consumption,
-                            net_balance: data.net_balance,
-                            active_meters: data.active_meters,
-                            co2_saved_kg: data.co2_saved_kg,
-                            timestamp: data.timestamp || parsed.timestamp,
-                            zones: data.zones,
-                            frequency: typeof data.frequency === 'object' && data.frequency !== null ? data.frequency.value : data.frequency,
-                            island_status: data.island_status,
-                            health_score: data.health_score,
-                            is_under_attack: data.is_under_attack,
-                            tariff: data.tariff,
-                            adr_event: data.adr_event,
-                            load_forecast: data.load_forecast,
-                            ev_fleet: data.ev_fleet,
-                            avg_nodal_price: data.avg_nodal_price,
-                            carbon_intensity: data.carbon_intensity,
-                            peak_capacity_kw: data.peak_capacity_kw
-                        }
-                        // Update cache immediately on WS message
-                        queryClient.setQueryData(['grid-status'], updatedStatus)
-                    }
-                } catch (e) {
-                    console.error('Failed to parse WS message:', e)
-                }
+            const updatedStatus: GridStatus = {
+                total_generation: data.total_generation,
+                total_consumption: data.total_consumption,
+                net_balance: data.net_balance,
+                active_meters: data.active_meters,
+                co2_saved_kg: data.co2_saved_kg,
+                timestamp: data.timestamp || parsed.timestamp,
+                zones: data.zones,
+                frequency: typeof data.frequency === 'object' && data.frequency !== null ? data.frequency.value : data.frequency,
+                island_status: data.island_status,
+                health_score: data.health_score,
+                is_under_attack: data.is_under_attack,
+                tariff: data.tariff,
+                adr_event: data.adr_event,
+                load_forecast: data.load_forecast,
+                ev_fleet: data.ev_fleet,
+                avg_nodal_price: data.avg_nodal_price,
+                carbon_intensity: data.carbon_intensity,
+                peak_capacity_kw: data.peak_capacity_kw
             }
-
-            // Unmount cleanup close() also fires onclose — the disposed flag
-            // stops it from resurrecting the connection after the hook is gone.
-            ws.onclose = () => {
-                if (disposed) return
-                reconnectTimer = setTimeout(connectWs, 5000)
-            }
-
-            ws.onerror = () => {
-                ws.close()
-            }
+            // Update cache immediately on WS message
+            queryClient.setQueryData(['grid-status'], updatedStatus)
         }
 
-        connectWs()
+        client.on('grid_status_updated', handler)
+        client.on('grid_status', handler)
+        client.connect()
 
         return () => {
-            disposed = true
-            if (reconnectTimer) clearTimeout(reconnectTimer)
-            if (wsRef.current) {
-                wsRef.current.close()
-            }
+            client.off('grid_status_updated', handler)
+            client.off('grid_status', handler)
+            defaultWSManager.disconnectPublic()
         }
     }, [queryClient])
 
