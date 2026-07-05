@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from 'react'
 import { useApiClient } from '@/hooks/useApi'
+import { ApiClientError } from '@/lib/api/core'
 import { computeRefreshDelay } from '@/lib/jwt'
 import type {
   LoginResponse,
@@ -186,7 +187,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const response = await apiClient.login(username, password)
 
       if (response.error || !response.data) {
-        throw new Error(response.error || 'Login failed')
+        throw new ApiClientError(
+          response.error || 'Login failed',
+          response.code,
+          response.status
+        )
       }
 
       const loginData: LoginResponse = response.data

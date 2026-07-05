@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import WalletList from '@/components/WalletList'
 import { allWallets } from '@/components/WalletModal'
+import { ApiClientError } from '@/lib/api/core'
+import { defaultApiClient } from '@/lib/api-client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,6 +18,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Login rejected with AUTH_1005 (correct password, email unverified).
+  const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
+  const [isResending, setIsResending] = useState(false)
 
   // Once authenticated (via password or wallet), leave the login page.
   useEffect(() => {
@@ -33,14 +38,46 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
+      setShowUnverifiedAlert(false)
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
       router.push('/')
     } catch (error: unknown) {
+      if (error instanceof ApiClientError && error.code === 'AUTH_1005') {
+        // Credentials are right but the email is unverified — show the
+        // actionable inline alert instead of the generic failure toast.
+        setShowUnverifiedAlert(true)
+        return
+      }
       const message = error instanceof Error ? error.message : 'Sign in failed'
       toast.error(message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // IAM's resend endpoint takes an email; only offer resend when the
+  // identifier field holds one (users can also sign in by username).
+  const canResend = username.includes('@')
+
+  const handleResendVerification = async () => {
+    if (isResending || !canResend) return
+
+    setIsResending(true)
+    try {
+      const response = await defaultApiClient.resendVerification(username)
+      if (response.data?.success) {
+        toast.success('Verification email sent! Check your inbox.')
+      } else {
+        toast.error(
+          response.data?.message || 'Failed to send verification email'
+        )
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error)
+      toast.error('Failed to send verification email. Please try again.')
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -72,6 +109,27 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
+
+        {showUnverifiedAlert && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+            <p className="text-amber-700 dark:text-amber-300">
+              <span className="font-medium">
+                Your email isn&apos;t verified yet.
+              </span>{' '}
+              Check your inbox for the verification link before signing in.
+            </p>
+            {canResend && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="mt-2 font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                {isResending ? 'Sending...' : 'Resend verification email'}
+              </button>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

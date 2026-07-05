@@ -43,9 +43,10 @@ test.describe('DCA Trading Flow', () => {
     await page.waitForTimeout(2000);
 
     // Registration leaves the account inactive (is_active=false) until email
-    // verification (gridtokenx-iam-service auth_service.rs register()), and login
-    // filters on is_active before even checking the password — so login would 401
-    // with a generic "Invalid username or password" here without this step.
+    // verification (gridtokenx-iam-service auth_service.rs register()); login
+    // on an unverified account 401s with AUTH_1005 EmailNotVerified (after the
+    // password check), so without this step the UI stops at the
+    // "verify your email" alert instead of signing in.
     // Dev/non-production builds accept a `verify_<email>` token without a DB lookup
     // (auth_service.rs verify_email()), same shortcut tests/e2e/90_golden_path uses.
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://apisix.gridtokenx-coresystem.orb.local';

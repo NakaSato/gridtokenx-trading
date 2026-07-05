@@ -3,7 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from './ui/button'
-import { XIcon, Eye, EyeOff } from 'lucide-react'
+import {
+  XIcon,
+  Eye,
+  EyeOff,
+  Check,
+  X as XMark,
+  AlertTriangle,
+  Mail,
+  Loader2,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -17,8 +26,17 @@ import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Separator } from './ui/separator'
 import { Checkbox } from './ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
+import { cn } from '@/lib/utils'
 import type { Wallet } from '../types/wallet'
 import { defaultApiClient } from '../lib/api-client'
+import { ApiClientError } from '../lib/api/core'
 import type { RegisterResponse } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
@@ -34,6 +52,34 @@ export const allWallets: Wallet[] = [
   { name: 'Solflare', iconPath: '/images/solflare.png', id: 'solflare' },
   { name: 'Trust', iconPath: '/images/trust.png', id: 'trust' },
   { name: 'SafePal', iconPath: '/images/safepal.png', id: 'safepal' },
+] as const
+
+// Role options for the signup account-type selector.
+const ROLE_OPTIONS = [
+  { value: 'prosumer', label: 'Prosumer', hint: 'Buy & sell energy' },
+  { value: 'consumer', label: 'Consumer', hint: 'Buy energy only' },
+  { value: 'producer', label: 'Producer', hint: 'Sell energy only' },
+] as const
+
+// Live password-strength rules. Mirrors the submit-time validation in
+// handleEmailSignUp so the meter never disagrees with the final check.
+function getPasswordChecks(password: string) {
+  return {
+    length: password.length >= 8,
+    lower: /[a-z]/.test(password),
+    upper: /[A-Z]/.test(password),
+    digit: /\d/.test(password),
+    special: /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password),
+  }
+}
+
+const STRENGTH_META = [
+  { label: 'Too weak', color: 'bg-red-500', text: 'text-red-500' },
+  { label: 'Weak', color: 'bg-red-500', text: 'text-red-500' },
+  { label: 'Fair', color: 'bg-yellow-500', text: 'text-yellow-500' },
+  { label: 'Good', color: 'bg-yellow-400', text: 'text-yellow-400' },
+  { label: 'Strong', color: 'bg-green-500', text: 'text-green-500' },
+  { label: 'Very strong', color: 'bg-green-500', text: 'text-green-500' },
 ] as const
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
@@ -57,6 +103,9 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
+  // Login rejected with AUTH_1005 (correct password, email unverified).
+  const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
+  const [isResendingVerification, setIsResendingVerification] = useState(false)
 
   // Close modal when user becomes authenticated
   useEffect(() => {
@@ -86,6 +135,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
 
     try {
+      setShowUnverifiedAlert(false)
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
@@ -97,9 +147,40 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       }, 100)
     } catch (error: unknown) {
       console.error('Sign in error:', error)
+      if (error instanceof ApiClientError && error.code === 'AUTH_1005') {
+        // Credentials are right but the email is unverified — show the
+        // actionable inline alert instead of the generic failure toast.
+        setShowUnverifiedAlert(true)
+        return
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Sign in failed: ${errorMessage}`)
+    }
+  }
+
+  // IAM's resend endpoint takes an email; only offer resend when the
+  // identifier field holds one (users can also sign in by username).
+  const canResendVerification = username.includes('@')
+
+  const handleResendVerification = async () => {
+    if (isResendingVerification || !canResendVerification) return
+
+    setIsResendingVerification(true)
+    try {
+      const response = await defaultApiClient.resendVerification(username)
+      if (response.data?.success) {
+        toast.success('Verification email sent! Check your inbox.')
+      } else {
+        toast.error(
+          response.data?.message || 'Failed to send verification email'
+        )
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error)
+      toast.error('Failed to send verification email. Please try again.')
+    } finally {
+      setIsResendingVerification(false)
     }
   }
 
@@ -256,9 +337,18 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
     }
   }
 
+  // Derived signup validation — computed each render, cheap, keeps the meter
+  // and inline hints in sync with the live field values.
+  const pwChecks = getPasswordChecks(password)
+  const pwScore = Object.values(pwChecks).filter(Boolean).length
+  const strength = STRENGTH_META[pwScore]
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const confirmMatches =
+    confirmPassword.length > 0 && password === confirmPassword
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex h-auto max-h-[95vh] w-[95vw] max-w-full flex-col overflow-y-auto bg-accent p-4 sm:w-[90vw] sm:max-w-md md:max-w-lg md:p-10">
+      <DialogContent className="flex h-auto max-h-[95vh] w-[95vw] max-w-full flex-col overflow-y-auto bg-accent p-4 sm:w-[90vw] sm:max-w-lg md:max-w-2xl md:p-10">
         <DialogHeader className="flex h-fit flex-row items-start justify-between space-y-0 pb-4 md:h-auto md:pb-2">
           <div className="space-y-2 pr-2">
             <DialogTitle className="text-xl font-medium text-foreground sm:text-2xl">
@@ -302,6 +392,44 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         ) : authMode === 'signin' ? (
           <div className="w-full">
             <>
+              {showUnverifiedAlert && (
+                <div className="mb-4 rounded-sm border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <div className="space-y-2 text-sm">
+                      <p className="text-amber-700 dark:text-amber-300">
+                        <span className="font-medium">
+                          Your email isn&apos;t verified yet.
+                        </span>{' '}
+                        Check your inbox for the verification link before
+                        signing in.
+                      </p>
+                      {canResendVerification && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResendVerification}
+                          disabled={isResendingVerification}
+                          className="border-amber-500/30 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                        >
+                          {isResendingVerification ? (
+                            <>
+                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="mr-1 h-4 w-4" />
+                              Resend verification email
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               <form
                 onSubmit={handleEmailSignIn}
                 noValidate
@@ -426,29 +554,66 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
           </div>
         ) : (
           <div className="w-full">
-            <>
-              <form
-                onSubmit={handleEmailSignUp}
-                noValidate
-                className="space-y-3"
-              >
-                <div className="space-y-2">
+            <form onSubmit={handleEmailSignUp} noValidate className="space-y-4">
+              {/* Account ----------------------------------------------------- */}
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Account
+                </p>
+
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Choose a username"
-                    className="h-9 rounded-sm border border-border px-3 py-2"
-                    minLength={3}
-                    maxLength={50}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Choose a username"
+                      className="h-10 rounded-md border border-border px-3 py-2 pr-9"
+                      minLength={3}
+                      maxLength={50}
+                      required
+                    />
+                    {username.length >= 3 && (
+                      <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
+                    )}
+                  </div>
                 </div>
 
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-email">Email Address</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="h-10 rounded-md border border-border px-3 py-2 pr-9"
+                      required
+                    />
+                    {email.length > 0 && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {emailValid ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XMark className="h-4 w-4 text-red-500" />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile ----------------------------------------------------- */}
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Profile
+                </p>
+
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="signup-first-name">First Name</Label>
                     <Input
                       id="signup-first-name"
@@ -456,14 +621,14 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="John"
-                      className="h-9 rounded-sm border border-border px-3 py-2"
+                      className="h-10 rounded-md border border-border px-3 py-2"
                       minLength={1}
                       maxLength={100}
                       required
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="signup-last-name">Last Name</Label>
                     <Input
                       id="signup-last-name"
@@ -471,7 +636,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Doe"
-                      className="h-9 rounded-sm border border-border px-3 py-2"
+                      className="h-10 rounded-md border border-border px-3 py-2"
                       minLength={1}
                       maxLength={100}
                       required
@@ -479,35 +644,36 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-role">Account Type</Label>
-                  <select
-                    id="signup-role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="flex h-9 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required
-                  >
-                    <option value="prosumer">Prosumer (Buy & Sell Energy)</option>
-                    <option value="consumer">Consumer (Buy Energy Only)</option>
-                    <option value="producer">Producer (Sell Energy Only)</option>
-                  </select>
+                  <Select value={role} onValueChange={setRole}>
+                    <SelectTrigger
+                      id="signup-role"
+                      className="h-10 border border-border bg-background"
+                    >
+                      <SelectValue placeholder="Select account type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <span className="font-medium">{opt.label}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {opt.hint}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email Address</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="h-9 rounded-sm border border-border px-3 py-2"
-                    required
-                  />
-                </div>
+              {/* Security ---------------------------------------------------- */}
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Security
+                </p>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-password">Password</Label>
                   <div className="relative">
                     <Input
@@ -515,8 +681,8 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create a password (min 8 characters)"
-                      className="h-9 rounded-sm border border-border px-3 py-2 pr-10"
+                      placeholder="Create a strong password"
+                      className="h-10 rounded-md border border-border px-3 py-2 pr-10"
                       required
                       minLength={8}
                       maxLength={128}
@@ -536,9 +702,62 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       )}
                     </button>
                   </div>
+
+                  {/* Strength meter + requirement checklist */}
+                  {password.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-1.5 flex-1 gap-1">
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <div
+                              key={i}
+                              className={cn(
+                                'flex-1 rounded-full transition-colors',
+                                i < pwScore ? strength.color : 'bg-border'
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <span
+                          className={cn(
+                            'w-20 text-right text-xs font-medium',
+                            strength.text
+                          )}
+                        >
+                          {strength.label}
+                        </span>
+                      </div>
+                      <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
+                        {[
+                          { ok: pwChecks.length, label: '8+ characters' },
+                          { ok: pwChecks.lower, label: 'Lowercase' },
+                          { ok: pwChecks.upper, label: 'Uppercase' },
+                          { ok: pwChecks.digit, label: 'Number' },
+                          { ok: pwChecks.special, label: 'Symbol' },
+                        ].map((r) => (
+                          <li
+                            key={r.label}
+                            className={cn(
+                              'flex items-center gap-1.5 text-xs',
+                              r.ok
+                                ? 'text-green-500'
+                                : 'text-muted-foreground'
+                            )}
+                          >
+                            {r.ok ? (
+                              <Check className="h-3 w-3 shrink-0" />
+                            ) : (
+                              <XMark className="h-3 w-3 shrink-0" />
+                            )}
+                            {r.label}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="signup-confirm-password">
                     Confirm Password
                   </Label>
@@ -548,12 +767,26 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm your password"
-                      className="h-9 rounded-sm border border-border px-3 py-2 pr-10"
+                      placeholder="Re-enter your password"
+                      className={cn(
+                        'h-10 rounded-md border border-border px-3 py-2 pr-16',
+                        confirmPassword.length > 0 &&
+                          !confirmMatches &&
+                          'border-red-500 focus-visible:ring-red-500'
+                      )}
                       required
                       minLength={8}
                       maxLength={128}
                     />
+                    {confirmPassword.length > 0 && (
+                      <span className="absolute right-10 top-1/2 -translate-y-1/2">
+                        {confirmMatches ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XMark className="h-4 w-4 text-red-500" />
+                        )}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() =>
@@ -571,53 +804,58 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                       )}
                     </button>
                   </div>
+                  {confirmPassword.length > 0 && !confirmMatches && (
+                    <p className="text-xs text-red-500">
+                      Passwords do not match
+                    </p>
+                  )}
                 </div>
-
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="agree-terms"
-                    checked={agreeToTerms}
-                    onCheckedChange={(checked) =>
-                      setAgreeToTerms(checked === true)
-                    }
-                    className="mt-0.5"
-                  />
-                  <Label
-                    htmlFor="agree-terms"
-                    className="cursor-pointer text-xs leading-4 text-muted-foreground"
-                  >
-                    I agree to the{' '}
-                    <a href="#" className="text-primary hover:text-primary/80">
-                      Terms of Service
-                    </a>{' '}
-                    and{' '}
-                    <a href="#" className="text-primary hover:text-primary/80">
-                      Privacy Policy
-                    </a>
-                  </Label>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isLoading || authLoading}
-                  className="w-full rounded-sm"
-                >
-                  {isLoading || authLoading ? 'Creating Account...' : 'Sign Up'}
-                </Button>
-              </form>
-
-              <div className="mt-6 border-t border-border pt-6">
-                <p className="text-center text-sm text-secondary-foreground">
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => setAuthMode('signin')}
-                    className="font-semibold text-primary transition-colors hover:text-primary/80"
-                  >
-                    Sign in
-                  </button>
-                </p>
               </div>
-            </>
+
+              <div className="flex items-start space-x-2 pt-1">
+                <Checkbox
+                  id="agree-terms"
+                  checked={agreeToTerms}
+                  onCheckedChange={(checked) =>
+                    setAgreeToTerms(checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <Label
+                  htmlFor="agree-terms"
+                  className="cursor-pointer text-xs leading-4 text-muted-foreground"
+                >
+                  I agree to the{' '}
+                  <a href="#" className="text-primary hover:text-primary/80">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="text-primary hover:text-primary/80">
+                    Privacy Policy
+                  </a>
+                </Label>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading || authLoading}
+                className="h-10 w-full rounded-md"
+              >
+                {isLoading || authLoading ? 'Creating Account...' : 'Sign Up'}
+              </Button>
+            </form>
+
+            <div className="mt-6 border-t border-border pt-6">
+              <p className="text-center text-sm text-secondary-foreground">
+                Already have an account?{' '}
+                <button
+                  onClick={() => setAuthMode('signin')}
+                  className="font-semibold text-primary transition-colors hover:text-primary/80"
+                >
+                  Sign in
+                </button>
+              </p>
+            </div>
           </div>
         )}
       </DialogContent>

@@ -34,8 +34,9 @@ test.describe('Order Placement Flow', () => {
     await page.waitForTimeout(2000);
 
     // Email-verification gate: gridtokenx-iam-service registers the account with
-    // is_active=false; login filters on is_active=true, so login would 401 with a
-    // generic "Invalid username or password" without this step (see dca.spec.ts).
+    // is_active=false; without this step login would 401 with AUTH_1005
+    // EmailNotVerified and the UI would stop at the "verify your email"
+    // alert instead of signing in (see dca.spec.ts).
     const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://apisix.gridtokenx-coresystem.orb.local';
     const verifyResp = await page.request.get(
       `${apiBase}/api/v1/auth/verify?token=verify_${encodeURIComponent(email)}`

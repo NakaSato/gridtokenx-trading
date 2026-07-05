@@ -161,6 +161,48 @@ describe('ApiClient', () => {
     })
   })
 
+  describe('login error codes', () => {
+    it('extracts the structured code from the IAM error envelope (AUTH_1005 email not verified)', async () => {
+      const body = {
+        error: {
+          code: 'AUTH_1005',
+          code_number: 1005,
+          message: 'Email not verified',
+        },
+        request_id: 'req-1',
+        timestamp: '2026-07-05T00:00:00Z',
+      }
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify(body),
+        json: async () => body,
+      } as Response)
+
+      const result = await defaultApiClient.login('pending-user', 'Correct-Pass-123!')
+
+      expect(result.status).toBe(401)
+      expect(result.code).toBe('AUTH_1005')
+      expect(result.error).toBe('Email not verified')
+      expect(result.data).toBeUndefined()
+    })
+
+    it('leaves code undefined for a plain string error body', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ error: 'Invalid username or password' }),
+        json: async () => ({ error: 'Invalid username or password' }),
+      } as Response)
+
+      const result = await defaultApiClient.login('someone', 'Wrong-Pass-123!')
+
+      expect(result.status).toBe(401)
+      expect(result.code).toBeUndefined()
+      expect(result.error).toBe('Invalid username or password')
+    })
+  })
+
   describe('refreshToken', () => {
     it('POSTs to /api/v1/auth/refresh with the Bearer header and no body', async () => {
       const mockResponse = {
@@ -237,7 +279,9 @@ describe('ApiClient', () => {
         json: async () => ({}),
       } as Response)
 
-      await client.logout()
+      // logout() is client-side only (IAM has no /auth/logout); use an
+      // authenticated network call to exercise the header path.
+      await client.refreshToken()
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
