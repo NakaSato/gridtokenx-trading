@@ -96,7 +96,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   // Track map bounds for clustering
   const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
   // Highlighted path state (array of node IDs for topology)
-  const [highlightedPath, setHighlightedPath] = useState<string[] | undefined>(undefined)
 
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -131,9 +130,40 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 
   // Combine meters with transformers if showing real data
   const energyNodes = useMemo(() => {
-    return showRealMeters
-      ? [...displayMeterNodes, ...displayTransformers]
-      : []
+    if (!showRealMeters) return []
+    const nodes = [...displayMeterNodes, ...displayTransformers]
+
+    // Grid flows target `transformer-<zone>` and are silently dropped when
+    // that node is missing. The topology endpoint doesn't describe zones yet,
+    // so synthesize a transformer node at the centroid of each zone's meters.
+    // (plain record — `Map` is shadowed by the react-map-gl component import)
+    const have = new Set(nodes.map((n) => n.id))
+    const zoneAccum: Record<number, { lat: number; lng: number; count: number }> = {}
+    displayMeterNodes.forEach((m) => {
+      if (m.zoneId == null) return
+      const z = zoneAccum[m.zoneId] ?? { lat: 0, lng: 0, count: 0 }
+      z.lat += m.latitude
+      z.lng += m.longitude
+      z.count += 1
+      zoneAccum[m.zoneId] = z
+    })
+    Object.entries(zoneAccum).forEach(([zone, z]) => {
+      const zoneId = Number(zone)
+      const id = `transformer-${zoneId}`
+      if (have.has(id)) return
+      nodes.push({
+        id,
+        name: `Transformer Zone ${zoneId}`,
+        buildingCode: `TR-${zoneId}`,
+        type: 'transformer',
+        latitude: z.lat / z.count,
+        longitude: z.lng / z.count,
+        capacity: '',
+        status: 'active',
+        zoneId,
+      })
+    })
+    return nodes
   }, [showRealMeters, displayMeterNodes, displayTransformers])
 
   // Telemetry-derived flows (surplus/deficit) when showing real meters.
@@ -168,26 +198,19 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     }
   }, [topologyLoaded, energyNodes, energyTransfers, loadNetwork])
 
-  // Calculate path when node is selected
-  useEffect(() => {
-    if (!selectedNode || !topologyLoaded) {
-      setHighlightedPath(undefined)
-      return
-    }
+  // Highlighted path is pure derivation from the selection — useMemo, not
+  // state + effect (sync setState in an effect trips the react-hooks rule).
+  const highlightedPath = useMemo(() => {
+    if (!selectedNode || !topologyLoaded) return undefined
 
     // For consumers, find path to nearest generator
     // For generators, find path to first consumer
     const targetType = selectedNode.type === 'generator' ? 'consumer' : 'generator'
     const targetNode = energyNodes.find(n => n.type === targetType)
-
-    if (!targetNode) return
+    if (!targetNode) return undefined
 
     const result = findPath(selectedNode.id, targetNode.id)
-    if (result && result.nodeIds.length > 1) {
-      setHighlightedPath(result.nodeIds)
-    } else {
-      setHighlightedPath(undefined)
-    }
+    return result && result.nodeIds.length > 1 ? result.nodeIds : undefined
   }, [selectedNode, topologyLoaded, energyNodes, findPath])
 
   // Handle flow line hover
