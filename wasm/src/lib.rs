@@ -14,7 +14,10 @@
 //! - **portfolio**: Aggregated portfolio risk analytics
 //! - **pricing**: Black-Scholes and Greeks calculations
 //! - **simulation**: Energy node and flow simulation
-//! - **zk**: Zero-knowledge proofs (ElGamal, Pedersen)
+//!
+//! ZK proofs (ElGamal, Pedersen) live in the separate `wasm-zk/` crate —
+//! solana-zk-token-sdk is ~80% of the combined binary, so it ships as its
+//! own lazily-loaded module.
 
 mod modules;
 
@@ -28,7 +31,6 @@ pub use modules::orderbook::*;
 pub use modules::portfolio::*;
 pub use modules::pricing::*;
 pub use modules::simulation::*;
-pub use modules::zk::*;
 
 use wasm_bindgen::prelude::*;
 

@@ -8,4 +8,3 @@ pub mod orderbook;
 pub mod portfolio;
 pub mod pricing;
 pub mod simulation;
-pub mod zk;

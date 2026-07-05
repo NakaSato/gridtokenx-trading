@@ -1,28 +1,29 @@
 [package]
-name = "gridtokenx-wasm"
-version = "0.1.1"
+name = "gridtokenx-wasm-zk"
+version = "0.1.0"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# Split from the main gridtokenx-wasm crate: solana-zk-token-sdk is ~80% of
+# the combined binary, and the ZK features (PrivacyProvider) are rarely on the
+# critical path. This module is lazily loaded by lib/wasm-bridge.ts#loadZkModule.
 [dependencies]
 wasm-bindgen = "0.2"
-js-sys = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6"
 sha2 = "0.10"
 hmac = "0.12"
-hex = "0.4"
-console_error_panic_hook = "0.1"
+getrandom = { version = "0.2", features = ["js"] }
+solana-zk-token-sdk = "2.3.1"
+bytemuck = { version = "1.16", features = ["derive"] }
 
 # -Oz size pass; flags let binaryen accept the post-2021 wasm features
 # (bulk memory, sign-ext) modern rustc emits.
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-sign-ext", "--enable-nontrapping-float-to-int"]
 
-# Size-optimized release: this binary ships to the browser (public/main.wasm).
-# wasm-opt is off above, so these compiler-side settings are the only shrink.
 [profile.release]
 opt-level = "z"
 lto = true

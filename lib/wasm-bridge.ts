@@ -14,16 +14,11 @@ import init, {
   calculate_portfolio_risk as wasm_calculate_portfolio_risk,
   aggregate_readings as wasm_aggregate_readings,
   calculate_greeks as wasm_calculate_greeks,
-  create_commitment as wasm_create_commitment,
-  create_range_proof as wasm_create_range_proof,
-  create_transfer_proof as wasm_create_transfer_proof,
   crypto_verify as wasm_crypto_verify,
   delta_calc as wasm_delta_calc,
-  derive_stealth_key as wasm_derive_stealth_key,
   gamma_calc as wasm_gamma_calc,
   hmac_sha256 as wasm_hmac_sha256,
   perform_clustering as wasm_perform_clustering,
-  recover_amount_from_commitment as wasm_recover_amount_from_commitment,
   rho_calc as wasm_rho_calc,
   sha256 as wasm_sha256,
   theta_calc as wasm_theta_calc,
@@ -167,6 +162,53 @@ export function deferWasmInit(): void {
  */
 export function getWasmExports(): WasmExports | null {
   return wasmExports
+}
+
+// =============================================================================
+// ZK MODULE (separate, lazily-loaded wasm bundle)
+// =============================================================================
+// solana-zk-token-sdk is ~80% of the combined binary, so the ZK exports live
+// in their own crate (wasm-zk/) and load on first use instead of shipping in
+// the main module.
+
+type ZkModule = typeof import('./wasm-zk/zk.js')
+
+let zkModule: ZkModule | null = null
+let zkLoadPromise: Promise<ZkModule | null> | null = null
+
+/** Load + init the ZK wasm module once; resolves null on failure. */
+export async function loadZkModule(): Promise<ZkModule | null> {
+  if (typeof window === 'undefined') return null
+  if (zkModule) return zkModule
+  if (!zkLoadPromise) {
+    zkLoadPromise = (async () => {
+      try {
+        const pkg = await import('./wasm-zk/zk.js')
+        await pkg.default()
+        zkModule = pkg
+        console.log('[WASM] ZK module initialized successfully')
+        return pkg
+      } catch (error) {
+        console.warn(
+          '[WASM] Failed to load ZK module:',
+          error instanceof Error ? error.message : error
+        )
+        zkLoadPromise = null
+        return null
+      }
+    })()
+  }
+  return zkLoadPromise
+}
+
+/** Fire-and-forget warmup so the sync ZK helpers have exports ready. */
+export function preloadZkModule(): void {
+  loadZkModule().catch(() => { })
+}
+
+/** True once the ZK module is initialized (sync helpers usable). */
+export function isZkLoaded(): boolean {
+  return zkModule !== null
 }
 
 // =============================================================================
@@ -394,16 +436,18 @@ export async function createCommitment(
   value: number,
   blinding: Uint8Array
 ): Promise<ZkCommitment> {
-  if (!isWasmLoaded()) throw new Error('WASM not loaded')
-  return wasm_create_commitment(BigInt(value), blinding)
+  const zk = await loadZkModule()
+  if (!zk) throw new Error('ZK WASM module not loaded')
+  return zk.create_commitment(BigInt(value), blinding)
 }
 
 export async function createRangeProof(
   amount: number,
   blinding: Uint8Array
 ): Promise<ZkRangeProof> {
-  if (!isWasmLoaded()) throw new Error('WASM not loaded')
-  return wasm_create_range_proof(BigInt(amount), blinding)
+  const zk = await loadZkModule()
+  if (!zk) throw new Error('ZK WASM module not loaded')
+  return zk.create_range_proof(BigInt(amount), blinding)
 }
 
 export async function createTransferProof(
@@ -412,8 +456,9 @@ export async function createTransferProof(
   senderBlinding: Uint8Array,
   amountBlinding: Uint8Array
 ): Promise<ZkTransferProof> {
-  if (!isWasmLoaded()) throw new Error('WASM not loaded')
-  return wasm_create_transfer_proof(
+  const zk = await loadZkModule()
+  if (!zk) throw new Error('ZK WASM module not loaded')
+  return zk.create_transfer_proof(
     BigInt(amount),
     BigInt(balance),
     senderBlinding,
@@ -444,8 +489,10 @@ export function aggregateReadings(readings: any[]): any {
  * Recover hidden amount from a Pedersen commitment
  */
 export function recoverAmount(commitment: number[], blinding: Uint8Array): number | null {
-  if (!isWasmLoaded()) return null
-  const result = wasm_recover_amount_from_commitment(commitment, blinding)
+  // Sync API: only usable once the lazily-loaded ZK module is warm
+  // (preloadZkModule). Callers keep their JS fallbacks otherwise.
+  if (!zkModule) return null
+  const result = zkModule.recover_amount_from_commitment(commitment, blinding)
   return result !== undefined ? Number(result) : null
 }
 
@@ -453,8 +500,9 @@ export function recoverAmount(commitment: number[], blinding: Uint8Array): numbe
  * Derive stealth key for private links
  */
 export function deriveStealthKey(rootSeed: Uint8Array, index: number): Uint8Array | null {
-  if (!isWasmLoaded()) return null
-  return wasm_derive_stealth_key(rootSeed, index)
+  // Sync API — same warm-module requirement as recoverAmount.
+  if (!zkModule) return null
+  return zkModule.derive_stealth_key(rootSeed, index)
 }
 
 /**

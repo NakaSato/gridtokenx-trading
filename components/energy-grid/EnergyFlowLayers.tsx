@@ -73,7 +73,31 @@ function generateCurvedLine(
 
 import { useWasmMath } from './useWasmMath'
 
-// ... existing imports ...
+// Module-level geometry memo: curve output is a pure function of its
+// endpoints, so cache across renders/instances here — mutating a Map created
+// inside a hook would violate the react-hooks immutability rule.
+const CURVE_INTENSITY = 0.15
+const CURVE_SEGMENTS = 24
+const curveGeometryCache = new Map<string, [number, number][]>()
+
+function getCurveGeometry(
+    from: [number, number],
+    to: [number, number],
+    wasmGenerate: ((from: [number, number], to: [number, number], intensity: number, segments: number) => [number, number][] | null) | null
+): [number, number][] {
+    const key = `${from[0]},${from[1]}-${to[0]},${to[1]}`
+    const cached = curveGeometryCache.get(key)
+    if (cached) return cached
+
+    const curve =
+        wasmGenerate?.(from, to, CURVE_INTENSITY, CURVE_SEGMENTS) ??
+        generateCurvedLine(from, to, CURVE_INTENSITY, CURVE_SEGMENTS)
+
+    // Bounded: node pairs are finite, but guard against coordinate churn.
+    if (curveGeometryCache.size > 1000) curveGeometryCache.clear()
+    curveGeometryCache.set(key, curve)
+    return curve
+}
 
 export const EnergyFlowLayers = memo(function EnergyFlowLayers({
     energyNodes,
@@ -126,53 +150,29 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
 
     const pulseOpacity = 0.85
 
-    // Curve geometry cache - persists across renders, keyed by "fromId-toId"
-    const curveCache = useRef<Map<string, [number, number][]>>(new Map())
-
     // Wasm hook
     const { isLoaded: wasmLoaded, generateCurvedLineWasm } = useWasmMath()
 
-    // Cache curved line geometry separately (only depends on node positions)
+    // Cache curved line geometry separately (only depends on node positions);
+    // repeat endpoint pairs hit the module-level geometry memo below.
     const cachedCurves = useMemo(() => {
         const curves = new Map<string, [number, number][]>()
 
         energyTransfers.forEach((transfer) => {
             const cacheKey = `${transfer.from}-${transfer.to}`
 
-            // Check if we already have this curve cached
-            const existingCurve = curveCache.current.get(cacheKey)
-            if (existingCurve) {
-                curves.set(cacheKey, existingCurve)
-                return
-            }
-
             const fromNode = energyNodes.find((n) => n.id === transfer.from)
             const toNode = energyNodes.find((n) => n.id === transfer.to)
             if (!fromNode || !toNode) return
 
-            // Generate new curve
-            let curvedCoordinates: [number, number][] | null = null
-
-            if (wasmLoaded) {
-                curvedCoordinates = generateCurvedLineWasm(
+            curves.set(
+                cacheKey,
+                getCurveGeometry(
                     [fromNode.longitude, fromNode.latitude],
                     [toNode.longitude, toNode.latitude],
-                    0.15,
-                    24
+                    wasmLoaded ? generateCurvedLineWasm : null
                 )
-            }
-
-            if (!curvedCoordinates) {
-                curvedCoordinates = generateCurvedLine(
-                    [fromNode.longitude, fromNode.latitude],
-                    [toNode.longitude, toNode.latitude],
-                    0.15,
-                    24
-                )
-            }
-
-            curves.set(cacheKey, curvedCoordinates)
-            curveCache.current.set(cacheKey, curvedCoordinates)
+            )
         })
 
         return curves

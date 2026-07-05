@@ -1,0 +1,15 @@
+{
+  "name": "gridtokenx-wasm-zk",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "zk_bg.wasm",
+    "zk.js",
+    "zk.d.ts"
+  ],
+  "main": "zk.js",
+  "types": "zk.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

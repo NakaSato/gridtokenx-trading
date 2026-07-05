@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from 'react'
-import { initWasm, isWasmLoaded } from './wasm-bridge'
+import { initWasm, isWasmLoaded, preloadZkModule } from './wasm-bridge'
 
 interface WasmContextType {
   isLoaded: boolean
@@ -48,7 +48,9 @@ interface WasmProviderProps {
  * ```
  */
 export function WasmProvider({ children }: WasmProviderProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  // Lazy initializer covers remounts after a previous load — avoids a
+  // synchronous setState in the effect body (react-hooks rule).
+  const [isLoaded, setIsLoaded] = useState(() => isWasmLoaded())
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export function WasmProvider({ children }: WasmProviderProps) {
 
     // Only initialize once
     if (isWasmLoaded()) {
-      setIsLoaded(true)
+      preloadZkModule()
       return
     }
 
@@ -69,6 +71,9 @@ export function WasmProvider({ children }: WasmProviderProps) {
         await initWasm('/main.wasm')
         setIsLoaded(true)
         console.log('[WasmProvider] WASM module loaded successfully')
+        // Warm the separate ZK bundle in the background so the sync helpers
+        // (deriveStealthKey/recoverAmount) have exports when privacy flows run.
+        preloadZkModule()
       } catch (err) {
         console.warn(
           '[WasmProvider] Failed to initialize WASM, using JS fallbacks:',

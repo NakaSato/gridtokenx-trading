@@ -1,3 +1,10 @@
+//! GridTokenX ZK wasm module (ElGamal keypairs, Pedersen commitments,
+//! range/transfer proofs, stealth key derivation).
+//!
+//! Lives in its own crate because solana-zk-token-sdk dominates binary size;
+//! the main gridtokenx-wasm module stays small and this one is lazily loaded
+//! on first ZK use (lib/wasm-bridge.ts#loadZkModule).
+
 use bytemuck::bytes_of;
 use serde::{Deserialize, Serialize};
 use solana_zk_token_sdk::{

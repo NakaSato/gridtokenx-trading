@@ -1,0 +1,31 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const __wbg_wasmelgamalkeypair_free: (a: number, b: number) => void;
+export const create_commitment: (a: bigint, b: number, c: number) => [number, number, number];
+export const create_range_proof: (a: bigint, b: number, c: number) => [number, number, number];
+export const create_transfer_proof: (a: bigint, b: bigint, c: number, d: number, e: number, f: number) => [number, number, number];
+export const derive_stealth_key: (a: number, b: number, c: number) => [number, number];
+export const recover_amount_from_commitment: (a: any, b: number, c: number) => [number, bigint];
+export const wasmelgamalkeypair_decrypt: (a: number, b: number, c: number) => [bigint, number, number];
+export const wasmelgamalkeypair_fromSecret: (a: number, b: number) => [number, number, number];
+export const wasmelgamalkeypair_new: () => number;
+export const wasmelgamalkeypair_pubkey: (a: number) => [number, number];
+export const wasmelgamalkeypair_secret: (a: number) => [number, number];
+export const __wbg_instruction_free: (a: number, b: number) => void;
+export const __wbg_instructions_free: (a: number, b: number) => void;
+export const instructions_constructor: () => number;
+export const instructions_push: (a: number, b: number) => void;
+export const __wbg_pubkey_free: (a: number, b: number) => void;
+export const pubkey_constructor: (a: any) => [number, number, number];
+export const pubkey_equals: (a: number, b: number) => number;
+export const pubkey_toBytes: (a: number) => [number, number];
+export const pubkey_toString: (a: number) => [number, number];
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __externref_table_dealloc: (a: number) => void;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_start: () => void;

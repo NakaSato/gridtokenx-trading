@@ -105,24 +105,6 @@ export class Greeks {
     vega: number;
 }
 
-/**
- * wasm-bindgen version of the Instruction struct.
- * This duplication is required until https://github.com/rustwasm/wasm-bindgen/issues/3671
- * is fixed. This must not diverge from the regular non-wasm Instruction struct.
- */
-export class Instruction {
-    private constructor();
-    free(): void;
-    [Symbol.dispose](): void;
-}
-
-export class Instructions {
-    free(): void;
-    [Symbol.dispose](): void;
-    constructor();
-    push(instruction: Instruction): void;
-}
-
 export class OrderBook {
     free(): void;
     [Symbol.dispose](): void;
@@ -183,45 +165,6 @@ export enum ProposalStatus {
     Failed = 2,
 }
 
-/**
- * The address of a [Solana account][acc].
- *
- * Some account addresses are [ed25519] public keys, with corresponding secret
- * keys that are managed off-chain. Often, though, account addresses do not
- * have corresponding secret keys &mdash; as with [_program derived
- * addresses_][pdas] &mdash; or the secret key is not relevant to the operation
- * of a program, and may have even been disposed of. As running Solana programs
- * can not safely create or manage secret keys, the full [`Keypair`] is not
- * defined in `solana-program` but in `solana-sdk`.
- *
- * [acc]: https://solana.com/docs/core/accounts
- * [ed25519]: https://ed25519.cr.yp.to/
- * [pdas]: https://solana.com/docs/core/cpi#program-derived-addresses
- * [`Keypair`]: https://docs.rs/solana-sdk/latest/solana_sdk/signer/keypair/struct.Keypair.html
- */
-export class Pubkey {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Create a new Pubkey object
-     *
-     * * `value` - optional public key as a base58 encoded string, `Uint8Array`, `[number]`
-     */
-    constructor(value: any);
-    /**
-     * Checks if two `Pubkey`s are equal
-     */
-    equals(other: Pubkey): boolean;
-    /**
-     * Return the `Uint8Array` representation of the public key
-     */
-    toBytes(): Uint8Array;
-    /**
-     * Return the base58 string representation of the public key
-     */
-    toString(): string;
-}
-
 export class Simulation {
     free(): void;
     [Symbol.dispose](): void;
@@ -243,16 +186,6 @@ export class Simulation {
     update(hour: number, minute: number): void;
 }
 
-export class WasmElGamalKeypair {
-    free(): void;
-    [Symbol.dispose](): void;
-    decrypt(ciphertext: Uint8Array): bigint;
-    static fromSecret(secret_bytes: Uint8Array): WasmElGamalKeypair;
-    constructor();
-    pubkey(): Uint8Array;
-    secret(): Uint8Array;
-}
-
 export function aggregate_readings(readings_js: any): any;
 
 export function black_scholes(s: number, k: number, t: number, is_call: boolean): number;
@@ -267,21 +200,6 @@ export function calculate_portfolio_risk(positions_js: any): any;
  * Compute PDA for PoA config account
  */
 export function compute_poa_config_pda(program_id: string): string;
-
-/**
- * Create a Pedersen commitment with a specific blinding factor
- */
-export function create_commitment(value: bigint, blinding: Uint8Array): any;
-
-/**
- * Generate a real Range Proof for a u64 amount with a specific blinding factor
- */
-export function create_range_proof(amount: bigint, blinding: Uint8Array): any;
-
-/**
- * Generate a full Transfer Proof (aligned with TS bridge)
- */
-export function create_transfer_proof(amount: bigint, sender_balance: bigint, sender_blinding: Uint8Array, amount_blinding: Uint8Array): any;
 
 /**
  * Double SHA-256 (hash of hash) commonly used in blockchains
@@ -299,11 +217,6 @@ export function crypto_verify(key: Uint8Array, message: Uint8Array, signature_he
 export function decode_fixed_string(bytes: Uint8Array, len: number): string;
 
 export function delta_calc(s: number, k: number, t: number, is_call: boolean): number;
-
-/**
- * Stealth Key Derivation: high-performance derivation for private links
- */
-export function derive_stealth_key(root_seed: Uint8Array, index: number): Uint8Array;
 
 export function gamma_calc(s: number, k: number, t: number): number;
 
@@ -324,12 +237,6 @@ export function hmac_sha256(key: Uint8Array, message: Uint8Array): string;
 export function init_panic_hook(): void;
 
 export function perform_clustering(chars: any): any;
-
-/**
- * Recovery: brute-force search for small amounts (up to 1M)
- * This is a simple implementation of balance recovery from commitments
- */
-export function recover_amount_from_commitment(commitment_js: any, blinding: Uint8Array): bigint | undefined;
 
 export function rho_calc(s: number, k: number, t: number, is_call: boolean): number;
 
@@ -372,7 +279,6 @@ export interface InitOutput {
     readonly __wbg_set_greeks_theta: (a: number, b: number) => void;
     readonly __wbg_set_greeks_vega: (a: number, b: number) => void;
     readonly __wbg_simulation_free: (a: number, b: number) => void;
-    readonly __wbg_wasmelgamalkeypair_free: (a: number, b: number) => void;
     readonly aggregate_readings: (a: any) => [number, number, number];
     readonly auctionsimulator_add_order: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly auctionsimulator_calculate_clearing_price: (a: number) => [number, number];
@@ -383,14 +289,10 @@ export interface InitOutput {
     readonly calculate_greeks: (a: number, b: number, c: number, d: number) => number;
     readonly calculate_portfolio_risk: (a: any) => [number, number, number];
     readonly compute_poa_config_pda: (a: number, b: number) => [number, number, number, number];
-    readonly create_commitment: (a: bigint, b: number, c: number) => [number, number, number];
-    readonly create_range_proof: (a: bigint, b: number, c: number) => [number, number, number];
-    readonly create_transfer_proof: (a: bigint, b: bigint, c: number, d: number, e: number, f: number) => [number, number, number];
     readonly crypto_msg_hash: (a: number, b: number) => [number, number];
     readonly crypto_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly decode_fixed_string: (a: number, b: number, c: number) => [number, number];
     readonly delta_calc: (a: number, b: number, c: number, d: number) => number;
-    readonly derive_stealth_key: (a: number, b: number, c: number) => [number, number];
     readonly gamma_calc: (a: number, b: number, c: number) => number;
     readonly generate_zk_vote_proof: (a: bigint, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly governanceclient_connect: (a: number) => number;
@@ -420,7 +322,6 @@ export interface InitOutput {
     readonly orderbook_new: () => number;
     readonly orderbook_spread: (a: number) => number;
     readonly perform_clustering: (a: any) => [number, number, number];
-    readonly recover_amount_from_commitment: (a: any, b: number, c: number) => [number, bigint];
     readonly rho_calc: (a: number, b: number, c: number, d: number) => number;
     readonly sha256: (a: number, b: number) => [number, number];
     readonly sign_p2p_order: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint, h: number, i: number) => [number, number, number, number];
@@ -434,20 +335,6 @@ export interface InitOutput {
     readonly theta_calc: (a: number, b: number, c: number, d: number) => number;
     readonly vega_calc: (a: number, b: number, c: number) => number;
     readonly verify_zk_vote_proof: (a: number, b: number, c: number, d: number) => number;
-    readonly wasmelgamalkeypair_decrypt: (a: number, b: number, c: number) => [bigint, number, number];
-    readonly wasmelgamalkeypair_fromSecret: (a: number, b: number) => [number, number, number];
-    readonly wasmelgamalkeypair_new: () => number;
-    readonly wasmelgamalkeypair_pubkey: (a: number) => [number, number];
-    readonly wasmelgamalkeypair_secret: (a: number) => [number, number];
-    readonly __wbg_instruction_free: (a: number, b: number) => void;
-    readonly __wbg_instructions_free: (a: number, b: number) => void;
-    readonly instructions_constructor: () => number;
-    readonly instructions_push: (a: number, b: number) => void;
-    readonly __wbg_pubkey_free: (a: number, b: number) => void;
-    readonly pubkey_constructor: (a: any) => [number, number, number];
-    readonly pubkey_equals: (a: number, b: number) => number;
-    readonly pubkey_toBytes: (a: number) => [number, number];
-    readonly pubkey_toString: (a: number) => [number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

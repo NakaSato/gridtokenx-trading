@@ -13,7 +13,8 @@ export function useSmartMeter() {
         data: meterData = { meters: [], readings: [], fetchedStats: null, totalReadings: 0, hasMoreReadings: false },
         isLoading: loading,
         isRefetching: refreshing,
-        refetch: fetchData
+        refetch: fetchData,
+        dataUpdatedAt
     } = useQuery({
         queryKey: ['smartMeter', token],
         queryFn: async () => {
@@ -57,7 +58,11 @@ export function useSmartMeter() {
         }
     }
 
-    const lastRefreshed = useMemo(() => new Date(), [meterData])
+    // Query's own fetch timestamp — 0 until the first fetch resolves.
+    const lastRefreshed = useMemo(
+        () => (dataUpdatedAt ? new Date(dataUpdatedAt) : new Date()),
+        [dataUpdatedAt]
+    )
 
     // WebSocket real-time updates
     useEffect(() => {
