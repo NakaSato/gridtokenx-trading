@@ -23,7 +23,8 @@ export function EmailVerificationBanner() {
         setIsResending(true)
         try {
             const response = await defaultApiClient.resendVerification(user.email)
-            if (response.data?.success) {
+            // Success = HTTP 2xx; backend sends a generic acknowledgement with no `success` flag.
+            if (response.data && !response.error) {
                 toast.success('Verification email sent! Check your inbox.')
             } else {
                 toast.error(response.data?.message || 'Failed to send verification email')

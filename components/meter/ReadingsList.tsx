@@ -66,17 +66,17 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
 
     return (
         <Card className="h-full flex flex-col">
-            <CardHeader className="flex-none">
-                <div className="flex items-center justify-between">
+            <CardHeader className="flex-none p-3">
+                <div className="flex items-center justify-between gap-2">
                     <div>
-                        <CardTitle>Reading History</CardTitle>
-                        <CardDescription>
+                        <CardTitle className="text-base">Reading History</CardTitle>
+                        <CardDescription className="text-xs">
                             Recent energy readings recorded on the blockchain.
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
                         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                            <SelectTrigger className="w-[140px]">
+                            <SelectTrigger className="h-8 w-[120px] text-xs">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -87,7 +87,7 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                         </Select>
 
                         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
-                            <SelectTrigger className="w-[160px]">
+                            <SelectTrigger className="h-8 w-[130px] text-xs">
                                 <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -112,7 +112,7 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0 relative">
+            <CardContent className="flex-1 flex flex-col min-h-0 relative p-3 pt-0">
                 {loading ? (
                     <div className="flex h-full items-center justify-center">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -121,9 +121,9 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                 ) : readings.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-muted-foreground">No readings found. Generate some data!</div>
                 ) : (
-                    <div className="flex flex-col gap-4 h-full">
+                    <div className="flex flex-col gap-3 h-full">
                         <div className="rounded-md border flex-1 flex flex-col min-h-0">
-                            <div className="grid grid-cols-6 gap-4 border-b bg-muted/50 p-4 text-sm font-medium flex-none">
+                            <div className="grid grid-cols-6 gap-3 border-b bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground flex-none">
                                 <div>Time</div>
                                 <div className="col-span-1">Meter</div>
                                 <div>Type</div>
@@ -140,7 +140,7 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                                     paginatedReadings.map((reading) => {
                                         const meter = getMeterDetails(reading.meter_serial)
                                         return (
-                                            <div key={reading.id} className="grid grid-cols-6 gap-4 border-b p-4 text-sm last:border-0 hover:bg-muted/50">
+                                            <div key={reading.id} className="grid grid-cols-6 gap-3 border-b px-3 py-2 text-sm last:border-0 hover:bg-muted/50">
                                                 <div className="flex items-center text-xs font-mono">{format(new Date(reading.timestamp), 'HH:mm:ss')}</div>
                                                 <div className="flex flex-col justify-center truncate col-span-1">
                                                     <div className="font-medium truncate text-xs" title={meter?.location || 'Unknown Location'}>
@@ -198,22 +198,23 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                             </div>
                         </div>
 
-                        {totalPages > 1 && (
-                            <div className="flex-none">
-                                <Pagination
-                                    currentPage={currentPage}
-                                    totalItems={totalItems}
-                                    itemsPerPage={ITEMS_PER_PAGE}
-                                    onPageChange={setCurrentPage}
-                                />
+                        {(totalPages > 1 || hasMoreOnServer) && (
+                            <div className="flex-none flex items-center justify-center gap-3">
+                                {totalPages > 1 && (
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalItems={totalItems}
+                                        itemsPerPage={ITEMS_PER_PAGE}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                )}
+                                {hasMoreOnServer && (
+                                    <span className="text-xs text-muted-foreground">
+                                        Showing latest {readings.length}
+                                        {serverTotal ? ` of ${serverTotal}` : ''} readings
+                                    </span>
+                                )}
                             </div>
-                        )}
-
-                        {hasMoreOnServer && (
-                            <p className="flex-none pt-2 text-center text-xs text-muted-foreground">
-                                Showing the latest {readings.length}
-                                {serverTotal ? ` of ${serverTotal}` : ''} readings
-                            </p>
                         )}
                     </div>
                 )}

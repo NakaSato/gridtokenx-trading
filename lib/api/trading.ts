@@ -4,6 +4,13 @@ import type {
     RecurringOrder,
     CreateRecurringOrderRequest
 } from '../../types/features'
+import type {
+    ApiOrder,
+    ListOrdersResponse,
+    OrderBookResponse,
+    SubmitOrderResponse,
+    TradeHistory,
+} from '../../types/trading'
 
 // Mirrors trading-api rest.rs ClearingEpochResponse — decimals stringified.
 export interface ClearingEpoch {
@@ -21,16 +28,28 @@ export interface ClearingEpoch {
 export class TradingApi {
     constructor(private getToken: () => string | undefined) { }
 
-    async createOrder(orderData: any) {
-        const payload = {
+    async createOrder(orderData: any): Promise<ApiResponse<SubmitOrderResponse>> {
+        // price_per_kwh is optional in rest.rs SubmitOrderRequest (omitted for
+        // market-sell). Only stringify when present — String(undefined) would send
+        // the literal "undefined" and 400 on Decimal::from_str.
+        const rawPrice = orderData.price_per_kwh ?? orderData.price
+        const payload: Record<string, unknown> = {
             side: orderData.side,
             order_type: orderData.order_type || 'limit',
-            energy_amount_kwh: String(orderData.amount || orderData.energy_amount_kwh),
-            price_per_kwh: String(orderData.price_per_kwh),
-            zone_id: orderData.zone_id || 1,
-            meter_id: orderData.meter_id
+            energy_amount_kwh: String(orderData.amount ?? orderData.energy_amount_kwh),
+            // zone_id 0 ("Main Grid") is a valid zone, not "unset" — `|| 1` was
+            // silently coercing it to zone 1, so every order at the default zone
+            // was submitted to the wrong zone.
+            zone_id: orderData.zone_id ?? 1,
         }
-        return apiRequest('/api/v1/orders', {
+        if (rawPrice !== undefined && rawPrice !== null && rawPrice !== '') {
+            payload.price_per_kwh = String(rawPrice)
+        }
+        if (orderData.meter_id !== undefined) payload.meter_id = orderData.meter_id
+        if (orderData.custodial_sign !== undefined) payload.custodial_sign = orderData.custodial_sign
+        if (orderData.time_in_force !== undefined) payload.time_in_force = orderData.time_in_force
+        if (orderData.market_segment !== undefined) payload.market_segment = orderData.market_segment
+        return apiRequest<SubmitOrderResponse>('/api/v1/orders', {
             method: 'POST',
             body: payload,
             token: this.getToken(),
@@ -46,14 +65,21 @@ export class TradingApi {
 
     async getOrders(filters?: { status?: string; limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest(`/api/v1/orders?${params.toString()}`, {
+        return apiRequest<ListOrdersResponse>(`/api/v1/orders?${params.toString()}`, {
+            method: 'GET',
+            token: this.getToken(),
+        })
+    }
+
+    async getOrder(orderId: string): Promise<ApiResponse<ApiOrder>> {
+        return apiRequest<ApiOrder>(`/api/v1/orders/${orderId}`, {
             method: 'GET',
             token: this.getToken(),
         })
     }
 
     async getOrderBook(zoneId: number = 1) {
-        return apiRequest(`/api/v1/zones/${zoneId}/book`, {
+        return apiRequest<OrderBookResponse>(`/api/v1/zones/${zoneId}/book`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -150,6 +176,8 @@ export class TradingApi {
         })
     }
 
+    // STUB WARNING: rest.rs create_quote binds `_req` (unused) — the handler
+    // returns a mock quote, not a real cost of THIS request. Do not settle on it.
     async calculateP2PCost(request: {
         buyer_zone_id: number
         seller_zone_id: number
@@ -215,23 +243,9 @@ export class TradingApi {
         const params = new URLSearchParams()
         if (filters?.limit) params.set('limit', String(filters.limit))
         if (filters?.offset) params.set('offset', String(filters.offset))
-        return apiRequest<{
-            trades: Array<{
-                id: string
-                buyer_id: string
-                seller_id: string
-                energy_amount: number
-                price_per_kwh: number
-                total_value: number
-                fee_amount: number
-                wheeling_charge: number
-                effective_energy: number
-                status: string
-                transaction_hash?: string
-                created_at: string
-            }>
-            total: number
-        }>(`/api/v1/trades?${params.toString()}`, {
+        // Amounts are stringified Decimals in rest.rs TradeRecordResponse, not
+        // floats — TradeHistory reflects that. Parse with parseFloat at use sites.
+        return apiRequest<TradeHistory>(`/api/v1/trades?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })

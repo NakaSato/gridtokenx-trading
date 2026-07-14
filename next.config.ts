@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   compress: true,
+  // bigint-buffer ships a native addon loaded via `bindings`, which resolves the
+  // .node file relative to its own node_modules dir. Bundling it into the server
+  // output breaks that lookup → "Failed to load bindings, pure JS will be used".
+  // Keep it external so it's required from node_modules and the addon loads.
+  serverExternalPackages: ['bigint-buffer'],
   images: {
     remotePatterns: [
       {

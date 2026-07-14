@@ -3,6 +3,7 @@ import type { UserProfile } from '../../types/auth'
 import type {
     UserWallet,
     LinkWalletRequest,
+    OnChainOnboardingRequest,
     Notification,
     NotificationPreferences
 } from '../../types/features'
@@ -29,6 +30,18 @@ export class UserApi {
             error: 'Profile updates are not supported by the IAM service',
             status: 501,
         }
+    }
+
+    // IAM: POST /api/v1/me/registration — creates the on-chain PDA (idempotent).
+    // Requires a Solana validator up; returns the onboarding result.
+    async submitOnChainRegistration(
+        data: OnChainOnboardingRequest
+    ): Promise<ApiResponse<any>> {
+        return apiRequest('/api/v1/me/registration', {
+            method: 'POST',
+            body: data,
+            token: this.getToken(),
+        })
     }
 
     async getBalance(walletAddress?: string): Promise<ApiResponse<any>> {

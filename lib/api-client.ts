@@ -57,7 +57,7 @@ export class ApiClient {
   async register(userData: any) { return this.authApi.register(userData) }
   async verifyWalletSignature(data: any) { return this.authApi.verifyWalletSignature(data) }
   async logout() { return this.authApi.logout() }
-  async refreshToken() { return this.authApi.refreshToken() }
+  async refreshToken(refreshToken: string) { return this.authApi.refreshToken(refreshToken) }
   async updateWallet(walletAddress: string, verifyOwnership?: boolean) { return this.authApi.updateWallet(walletAddress, verifyOwnership) }
   async verifyEmail(token: string) { return this.authApi.verifyEmail(token) }
   async resendVerification(email: string) { return this.authApi.resendVerification(email) }
@@ -70,6 +70,7 @@ export class ApiClient {
 
   async createOrder(orderData: any) { return this.tradingApi.createOrder(orderData) }
   async getOrders(filters?: any) { return this.tradingApi.getOrders(filters) }
+  async getOrder(orderId: string) { return this.tradingApi.getOrder(orderId) }
   async getOrderBook(filters?: any) { return this.tradingApi.getOrderBook(filters) }
   async getMarketData() { return this.tradingApi.getMarketData() }
   async getMarketConfig() { return this.tradingApi.getMarketConfig() }
@@ -103,6 +104,7 @@ export class ApiClient {
 
   async getProfile() { return this.userApi.getProfile() }
   async updateProfile(profileData: any) { return this.userApi.updateProfile(profileData) }
+  async submitOnChainRegistration(data: any) { return this.userApi.submitOnChainRegistration(data) }
   async getBalance(walletAddress?: string) { return this.userApi.getBalance(walletAddress) }
   async getUserAnalytics(params: any) { return this.userApi.getUserAnalytics(params) }
   async getUserHistory(params: any) { return this.userApi.getUserHistory(params) }
@@ -129,6 +131,7 @@ export class ApiClient {
   async getMyReadings(limit?: number, offset?: number) { return this.metersApi.getMyReadings(limit, offset) }
   async getMyReadingsPage(limit?: number, offset?: number) { return this.metersApi.getMyReadingsPage(limit, offset) }
   async getMyMeters() { return this.metersApi.getMyMeters() }
+  async getMetersMap() { return this.metersApi.getMetersMap() }
   async registerMeter(data: any) { return this.metersApi.registerMeter(data) }
   async getGridStatus() { return this.metersApi.getGridStatus() }
   async getGridTopology() { return this.metersApi.getGridTopology() }

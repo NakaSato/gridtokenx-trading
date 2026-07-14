@@ -197,13 +197,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const loginData: LoginResponse = response.data
       const expirationTime = Date.now() + loginData.expires_in * 1000
 
-      // Store token and user data
+      // Store token and user data. refresh_token is persisted alongside the
+      // access token so the proactive-refresh timer can present it to /auth/refresh.
       if (rememberMe) {
         localStorage.setItem('access_token', loginData.access_token)
+        localStorage.setItem('refresh_token', loginData.refresh_token)
         localStorage.setItem('token_expires_at', String(expirationTime))
         localStorage.setItem('user', JSON.stringify(loginData.user))
       } else {
         sessionStorage.setItem('access_token', loginData.access_token)
+        sessionStorage.setItem('refresh_token', loginData.refresh_token)
         sessionStorage.setItem('token_expires_at', String(expirationTime))
         sessionStorage.setItem('user', JSON.stringify(loginData.user))
       }
@@ -235,9 +238,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       // Clear local storage regardless of backend response
       localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('token_expires_at')
       localStorage.removeItem('user')
       sessionStorage.removeItem('access_token')
+      sessionStorage.removeItem('refresh_token')
       sessionStorage.removeItem('token_expires_at')
       sessionStorage.removeItem('user')
 
@@ -392,7 +397,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshToken = async (): Promise<boolean> => {
     try {
-      const response = await apiClient.refreshToken()
+      const storedRefresh =
+        localStorage.getItem('refresh_token') ||
+        sessionStorage.getItem('refresh_token')
+      if (!storedRefresh) {
+        // No refresh token on hand — session can't be renewed, force re-login.
+        await logout()
+        return false
+      }
+      const response = await apiClient.refreshToken(storedRefresh)
       if (response.error || !response.data) {
         console.warn('Token refresh failed:', response.error)
         // 401 means the token already expired — nothing to refresh, force re-login.

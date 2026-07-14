@@ -15,7 +15,12 @@ export function useWalletBalance() {
     const { data: profile } = useProfile()
     const apiClient = createApiClient(token || '')
 
-    const walletAddress = profile?.wallet_address || publicKey?.toString()
+    // The connected browser wallet is the source of truth for "your wallet" in a
+    // non-custodial app — a user can have a different wallet plugged in than the
+    // one stored as their DB profile.wallet_address, and showing the DB address's
+    // balance instead is misleading (looks like "my wallet has 0" when the
+    // connected one doesn't).
+    const walletAddress = publicKey?.toString() || profile?.wallet_address
 
     return useQuery<TokenBalance>({
         queryKey: ['wallet-balance', token, walletAddress],

@@ -74,17 +74,18 @@ export default function Profile() {
       const statsResponse = await client.getUserAnalytics({ timeframe: '7d' })
       if (statsResponse.data) {
         const s = statsResponse.data
-        const totalCreated = (s.as_seller.offers_created || 0) + (s.as_buyer.orders_created || 0)
-        const totalFulfilled = (s.as_seller.offers_fulfilled || 0) + (s.as_buyer.orders_fulfilled || 0)
+        const totalCreated = (s.as_seller?.offers_created || 0) + (s.as_buyer?.orders_created || 0)
+        const totalFulfilled = (s.as_seller?.offers_fulfilled || 0) + (s.as_buyer?.orders_fulfilled || 0)
         const winRate = totalCreated > 0
           ? ((totalFulfilled / totalCreated) * 100).toFixed(1)
           : '0.0'
 
+        const netRevenue = s.overall?.net_revenue_usd || 0
         setStats({
-          totalTrades: s.overall.total_transactions || 0,
-          totalVolume: `${(s.overall.total_volume_kwh || 0).toLocaleString()} kWh`,
+          totalTrades: s.overall?.total_transactions || 0,
+          totalVolume: `${(s.overall?.total_volume_kwh || 0).toLocaleString()} kWh`,
           winRate: `${winRate}%`,
-          totalPnl: `${s.overall.net_revenue_usd >= 0 ? '+' : ''}${s.overall.net_revenue_usd.toLocaleString()} THB`
+          totalPnl: `${netRevenue >= 0 ? '+' : ''}${netRevenue.toLocaleString()} THB`
         })
       }
     } catch (error) {

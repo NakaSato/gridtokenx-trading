@@ -48,7 +48,9 @@ function ForgotPasswordContent() {
 
             const data = await response.json()
 
-            if (data.success) {
+            // Backend returns { message } and always 200 for a valid request
+            // (anti-enumeration) — there is no `success` flag.
+            if (response.ok) {
                 setState('success')
                 setMessage(data.message || 'If an account with that email exists, a password reset link has been sent.')
                 toast.success('Check your email for the reset link!')

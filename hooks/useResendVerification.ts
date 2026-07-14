@@ -21,7 +21,9 @@ export function useResendVerification(identifier: string) {
     setIsResending(true)
     try {
       const response = await defaultApiClient.resendVerification(identifier)
-      if (response.data?.success) {
+      // Success = HTTP 2xx (response.data present). Backend returns a generic
+      // { status:"sent", message } acknowledgement — no `success` flag.
+      if (response.data && !response.error) {
         toast.success('Verification email sent! Check your inbox.')
       } else {
         toast.error(

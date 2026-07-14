@@ -42,7 +42,7 @@ describe('useResendVerification', () => {
     })
 
     it('toasts success when the backend confirms', async () => {
-        mockResend.mockResolvedValueOnce({ data: { success: true }, status: 200 })
+        mockResend.mockResolvedValueOnce({ data: { status: 'sent', message: 'ok' }, status: 200 })
 
         const { result } = renderHook(() => useResendVerification('a@b.co'))
         await act(async () => {
@@ -55,9 +55,11 @@ describe('useResendVerification', () => {
     })
 
     it('toasts the backend message on failure', async () => {
+        // Failure surfaces as an error / non-2xx (e.g. 429), not a success:false body.
         mockResend.mockResolvedValueOnce({
-            data: { success: false, message: 'rate limited' },
-            status: 200,
+            error: 'rate limited',
+            data: { message: 'rate limited' },
+            status: 429,
         })
 
         const { result } = renderHook(() => useResendVerification('a@b.co'))

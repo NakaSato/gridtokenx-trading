@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM oven/bun:latest AS base
+# Pinned tag — :latest re-pulls bust every downstream layer (incl. the rustup
+# toolchain layer) whenever upstream publishes a new image.
+FROM oven/bun:1.3.14 AS base
 WORKDIR /app
 
 # Install dependencies only when needed
@@ -29,7 +31,13 @@ COPY . .
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
 ENV NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN
 ENV NEXT_TELEMETRY_DISABLED=1
+# Cache mounts: .next incremental cache + cargo registry and both wasm crates'
+# target dirs — `bun run build` recompiles wasm/ and wasm-zk/ every build, so
+# without these the Rust side rebuilds from scratch each time.
 RUN --mount=type=cache,target=/app/.next/cache \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/app/wasm/target \
+    --mount=type=cache,target=/app/wasm-zk/target \
     bun run build
 
 # Production image, copy all the files and run next

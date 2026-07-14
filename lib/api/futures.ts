@@ -22,6 +22,8 @@ export class FuturesApi {
         })
     }
 
+    // STUB WARNING: rest.rs create_futures_order binds `_req` (unused) — response
+    // is mock, the order is not actually placed. Verify before UI relies on it.
     async createFuturesOrder(data: CreateFuturesOrderRequest): Promise<ApiResponse<{ order_id: string }>> {
         return apiRequest<{ order_id: string }>('/api/v1/futures/orders', {
             method: 'POST',

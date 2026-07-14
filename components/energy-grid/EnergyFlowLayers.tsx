@@ -187,11 +187,17 @@ export const EnergyFlowLayers = memo(function EnergyFlowLayers({
                 const curvedCoordinates = cachedCurves.get(cacheKey)
 
                 if (!curvedCoordinates) {
-                    console.warn(`[EnergyFlow] No curve for transfer ${index}: ${cacheKey}`, {
-                        from: transfer.from,
-                        to: transfer.to,
-                        availableKeys: Array.from(cachedCurves.keys())
-                    })
+                    // Only a genuine anchoring bug when other transfers DID resolve.
+                    // An empty cache means nodes haven't loaded yet (grid-flows
+                    // query resolves before public/meters) — a transient load race,
+                    // not a mismatch, so stay quiet.
+                    if (cachedCurves.size > 0) {
+                        console.warn(`[EnergyFlow] No curve for transfer ${index}: ${cacheKey}`, {
+                            from: transfer.from,
+                            to: transfer.to,
+                            availableKeys: Array.from(cachedCurves.keys())
+                        })
+                    }
                     return null
                 }
 

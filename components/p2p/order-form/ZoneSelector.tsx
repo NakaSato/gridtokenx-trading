@@ -116,7 +116,7 @@ export function ZoneSelector({
             <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
-            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
+            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] !min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
                   <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export function ZoneSelector({
             <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
-            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
+            <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] !min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
                   <div className="flex items-center gap-2">
@@ -172,6 +172,13 @@ export function ZoneSelector({
           </Select>
         </div>
       </div>
+
+      {buyerZone === sellerZone && (
+        <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+          <Info className="h-3 w-3 shrink-0" />
+          <span>Intra-zone transfer — no cross-zone transfer fee.</span>
+        </div>
+      )}
     </div>
   )
 }

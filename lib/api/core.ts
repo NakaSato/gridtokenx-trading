@@ -1,5 +1,32 @@
 import { getApiUrl } from '../config'
 
+/**
+ * fetch() that retries only on a transient *network* failure (fetch throws —
+ * DNS/TLS/connection reset, e.g. OrbStack dropping an idle keep-alive conn →
+ * `net::ERR_FAILED`). An HTTP response (any status) is returned as-is: 4xx/5xx
+ * are not network failures and must not be retried here. Retries are gated to
+ * idempotent methods (GET/HEAD) so a dropped POST/PUT/DELETE is never resent.
+ */
+async function fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    retries = 2,
+    backoffMs = 150
+): Promise<Response> {
+    const idempotent = !init.method || init.method === 'GET' || init.method === 'HEAD'
+    let lastError: unknown
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await fetch(url, init)
+        } catch (error) {
+            lastError = error
+            if (!idempotent || attempt === retries) break
+            await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)))
+        }
+    }
+    throw lastError
+}
+
 export interface ApiRequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
     headers?: Record<string, string>
@@ -46,7 +73,7 @@ export async function apiRequestText(
     }
 
     try {
-        const response = await fetch(getApiUrl(path), {
+        const response = await fetchWithRetry(getApiUrl(path), {
             method,
             headers: requestHeaders,
         })
@@ -89,7 +116,7 @@ export async function apiRequest<T = any>(
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetchWithRetry(url, {
             method,
             headers: requestHeaders,
             body: body ? JSON.stringify(body) : undefined,

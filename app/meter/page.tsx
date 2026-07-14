@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, Suspense } from 'react'
+import { useState } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Plus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
+import { MeterHeader } from '@/components/meter/MeterHeader'
 import { useSmartMeter } from '@/hooks/useSmartMeter'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import dynamic from 'next/dynamic'
@@ -65,22 +66,13 @@ export default function SmartMeterPage() {
             <main className="flex h-[calc(100vh-4rem)] flex-1 flex-col gap-6 p-6 overflow-hidden">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Smart Energy Dashboard</h1>
-                        <p className="text-muted-foreground">Monitor your energy production and consumption in real-time.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => fetchData()} disabled={refreshing}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                            Refresh
-                        </Button>
-                        <Button size="sm" onClick={() => setIsRegisterOpen(true)}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Register Meter
-                        </Button>
-                    </div>
-                </div>
+                <MeterHeader
+                    meterCount={meters.length}
+                    lastRefreshed={lastRefreshed}
+                    refreshing={refreshing}
+                    onRefresh={() => fetchData()}
+                    onRegister={() => setIsRegisterOpen(true)}
+                />
 
                 <MeterRegistrationModal
                     isOpen={isRegisterOpen}

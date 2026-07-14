@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Poppins } from 'next/font/google'
 import './globals.css'
 import NavBar from '@/components/NavBar'
@@ -183,7 +184,9 @@ export default function RootLayout({
                                   <DevFaucet />
                                   <EmailVerificationBanner />
                                   <ClaimStealthModal />
-                                  <FulfillTradeModal />
+                                  <Suspense fallback={null}>
+                                    <FulfillTradeModal />
+                                  </Suspense>
                                   <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
                                     <NavBar />
                                     <main className="flex flex-1 flex-col overflow-hidden">

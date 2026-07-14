@@ -157,6 +157,7 @@ function VerifyEmailContent() {
 
       if (response.data.auth) {
         localStorage.setItem('access_token', response.data.auth.access_token)
+        localStorage.setItem('refresh_token', response.data.auth.refresh_token)
         localStorage.setItem(
           'token_expires_at',
           String(Date.now() + response.data.auth.expires_in * 1000)

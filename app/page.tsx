@@ -27,7 +27,6 @@ const TradingPositionsPanel = dynamic(
 
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
-import { useAuth } from '@/contexts/AuthProvider'
 
 const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
   ssr: false,
@@ -76,13 +75,6 @@ const P2POrderForm = dynamic(() => import('@/components/p2p/OrderForm'), {
   ),
 })
 
-const P2PStatus = dynamic(() => import('@/components/p2p/P2PStatus'), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-secondary/50 mb-4 h-32 animate-pulse rounded-lg" />
-  ),
-})
-
 import type { EnergyNode } from '@/components/energy-grid/types'
 import { CAMPUS_CONFIG } from '@/lib/constants'
 
@@ -104,7 +96,6 @@ export default function Homepage() {
   const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol)
   const { marketData, loading: marketLoading } =
     usePythMarketData(selectedSymbol)
-  const { token } = useAuth()
 
   const handleViewStateChange = useCallback((newViewState: any) => {
     setViewState(newViewState)
@@ -239,11 +230,6 @@ export default function Homepage() {
                         selectedNode={selectedMeterNode}
                         onClearNode={handleClearNode}
                       />
-                      {token && (
-                        <div className="mt-3 flex flex-col gap-3">
-                          <P2PStatus />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </ResizablePanel>

@@ -1,26 +1,7 @@
-export type Role = "user" | "producer" | "consumer" | "ami";
+// Matches IAM contract: POST /api/v1/auth/register accepts only these roles
+// (default consumer). Do not add "producer"/"user"/"ami" — the backend rejects them.
+export type Role = "prosumer" | "consumer";
 
-export interface RegistrationRequest {
-  username: string;
-  email: string;
-  password: string;
-  role?: Role; // Optional - assigned by backend
-  first_name: string;
-  last_name: string;
-}
-
-export interface RegistrationUser {
-  username: string;
-  email: string;
-  role: Role;
-}
-
-export interface RegistrationResponse {
-  message: string;
-  user: RegistrationUser;
-  email_verification_sent: boolean;
-  verification_required: boolean;
-}
 /**
  * Authentication Types for GridTokenX Platform
  */
@@ -34,9 +15,9 @@ export interface RegisterRequest {
   username: string; // min: 3, max: 50 chars
   email: string; // valid email format
   password: string; // min: 8, max: 128 chars
-  role?: Role;
-  first_name: string; // min: 1, max: 100 chars
-  last_name: string; // min: 1, max: 100 chars
+  role?: Role; // optional, default consumer
+  first_name?: string; // optional, max: 100 chars
+  last_name?: string; // optional, max: 100 chars
 }
 
 export interface VerifyWalletRequest {
@@ -48,7 +29,9 @@ export interface VerifyWalletRequest {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token: string; // long-lived JWT; presented to /auth/refresh
   expires_in: number; // seconds
+  token_type: string; // always "Bearer"
   user: UserResponse;
 }
 
@@ -89,27 +72,24 @@ export interface ApiError {
   retry_after?: number;
 }
 
+// Matches backend VerifyEmailResponse (auth.rs:180). `auth` is present only on
+// auto-login after verification.
 export interface VerifyEmailResponse {
+  success: boolean;
   message: string;
-  email_verified: boolean;
-  verified_at: string;
-  wallet_address?: string; // Wallet address generated during verification
-  username?: string;
-  email?: string;
-  auth?: LoginResponse; // Optional auto-login after verification
+  wallet_address?: string; // wallet address generated during verification
+  auth?: LoginResponse; // optional auto-login after verification
 }
 
 export interface ResendVerificationRequest {
   email: string;
 }
 
+// Matches backend ResendVerificationResult (models.rs:168) — anti-enumeration:
+// only { status, message }. Backend's status is always "sent".
 export interface ResendVerificationResponse {
-  success: boolean;
+  status: string;
   message: string;
-  email: string;
-  sent_at: string;
-  expires_in_hours: number;
-  status: "already_verified" | "expired_resent" | "sent";
 }
 
 export interface UserProfile extends UserResponse {

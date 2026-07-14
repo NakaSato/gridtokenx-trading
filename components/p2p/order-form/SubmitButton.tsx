@@ -11,7 +11,10 @@ interface SubmitButtonProps {
 
   orderType: 'buy' | 'sell'
   amount: string
-  price: string
+  /** Precomputed total in THB (energy + wheeling + loss) — see OrderForm. */
+  total: number
+  /** True when a limit order won't cross the spread and will rest unfilled. */
+  resting?: boolean
   cryptoLoaded: boolean
   disabled?: boolean
 }
@@ -22,15 +25,11 @@ export function SubmitButton({
 
   orderType,
   amount,
-  price,
+  total,
+  resting = false,
   cryptoLoaded,
   disabled = false,
 }: SubmitButtonProps) {
-  const totalValue =
-    amount && price
-      ? (parseFloat(amount) * parseFloat(price)).toFixed(2)
-      : '0.00'
-
   if (!token) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border bg-muted/10 p-6 text-center">
@@ -66,11 +65,12 @@ export function SubmitButton({
         <div className="flex items-center gap-2">
           {cryptoLoaded && <Shield className="h-5 w-5" />}
           <span>
+            {resting ? 'Place Resting ' : ''}
             {orderType === 'buy' ? 'Buy' : 'Sell'} {amount || '0'} kWh
           </span>
-          {amount && price && (
+          {amount && total > 0 && (
             <span className="ml-1 text-white/80 font-mono">
-              · ฿{totalValue}
+              · {resting ? '~' : ''}฿{total.toFixed(2)}
             </span>
           )}
         </div>

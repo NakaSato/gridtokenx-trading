@@ -37,7 +37,7 @@ import { cn } from '@/lib/utils'
 import type { Wallet } from '../types/wallet'
 import { defaultApiClient } from '../lib/api-client'
 import { ApiClientError } from '../lib/api/core'
-import type { RegisterResponse } from '../types/auth'
+import type { RegisterResponse, Role } from '../types/auth'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import { useResendVerification } from '@/hooks/useResendVerification'
@@ -59,7 +59,6 @@ export const allWallets: Wallet[] = [
 const ROLE_OPTIONS = [
   { value: 'prosumer', label: 'Prosumer', hint: 'Buy & sell energy' },
   { value: 'consumer', label: 'Consumer', hint: 'Buy energy only' },
-  { value: 'producer', label: 'Producer', hint: 'Sell energy only' },
 ] as const
 
 // Password rules — single source for both the live strength meter and the
@@ -258,7 +257,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         password,
         first_name: firstName,
         last_name: lastName,
-        role: (role as any) || 'prosumer',
+        role: (role as Role) || 'prosumer',
       })
 
       if (response.error || !response.data) {

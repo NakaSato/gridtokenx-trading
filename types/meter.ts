@@ -136,6 +136,20 @@ export interface SubmitReadingRequest {
     meter_type?: string
 }
 
+/**
+ * Per-zone energy flow within one `zone_id`. `net_flow > 0` = zone is a net
+ * exporter; `< 0` = net importer. Mirrors meter-service `ZoneFlow`.
+ */
+export interface ZoneFlow {
+    /** Zone partition id; null groups meters with no assigned zone (sorted last). */
+    zone_id: number | null
+    total_produced: number
+    total_consumed: number
+    /** total_produced - total_consumed for the zone. */
+    net_flow: number
+    reading_count: number
+}
+
 export interface MeterStats {
     total_produced: number
     total_consumed: number
@@ -146,6 +160,28 @@ export interface MeterStats {
     pending_count: number
     /** Count of readings whose mint was denied/failed. */
     denied_count: number
+    /** Per-zone energy-flow breakdown, ordered by zone_id (unzoned last). */
+    zones: ZoneFlow[]
+}
+
+/**
+ * Map marker for a located meter (GET /api/v1/meters/map). Unlike
+ * MeterResponse, latitude/longitude are always present — the backend query
+ * filters to meters with coordinates. Returned across ALL users for the
+ * dashboard map view (not caller-scoped), JWT still required.
+ */
+export interface MeterMapPoint {
+    id: string
+    serial_number: string
+    meter_type: string
+    location: string
+    is_verified: boolean
+    wallet_address: string
+    /** Always present — query filters to located meters. */
+    latitude: number
+    /** Always present — query filters to located meters. */
+    longitude: number
+    zone_id?: number
 }
 
 export interface RegisterMeterResponse {

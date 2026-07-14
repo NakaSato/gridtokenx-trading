@@ -35,7 +35,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'producer' as Role,
+        role: 'prosumer' as Role,
         first_name: 'John',
         last_name: 'Doe',
         wallet_address: 'SomeWalletAddress123456789012345678',
@@ -79,7 +79,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'user' as Role,
+        role: 'consumer' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -102,7 +102,7 @@ describe('ApiClient', () => {
         username: 'existinguser',
         email: 'existing@example.com',
         password: 'password123',
-        role: 'user' as Role,
+        role: 'consumer' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -126,7 +126,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'invalid-email',
         password: 'password123',
-        role: 'user' as Role,
+        role: 'consumer' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -149,7 +149,7 @@ describe('ApiClient', () => {
         username: 'newuser',
         email: 'new@example.com',
         password: 'password123',
-        role: 'user' as Role,
+        role: 'consumer' as Role,
         first_name: 'John',
         last_name: 'Doe',
       }
@@ -204,7 +204,7 @@ describe('ApiClient', () => {
   })
 
   describe('refreshToken', () => {
-    it('POSTs to /api/v1/auth/refresh with the Bearer header and no body', async () => {
+    it('POSTs to /api/v1/auth/refresh with the refresh token in the JSON body', async () => {
       const mockResponse = {
         access_token: 'fresh-token',
         expires_in: 86400,
@@ -219,17 +219,15 @@ describe('ApiClient', () => {
       } as Response)
 
       const client = new ApiClient('current-token')
-      const result = await client.refreshToken()
+      const result = await client.refreshToken('my-refresh-token')
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/auth/refresh'),
         expect.objectContaining({
           method: 'POST',
-          headers: expect.objectContaining({
-            Authorization: 'Bearer current-token',
-          }),
-          // Backend reads the token from the header only — refresh sends no body.
-          body: undefined,
+          // Backend reads the refresh token from the body (RefreshRequest), not
+          // the Authorization header.
+          body: JSON.stringify({ refresh_token: 'my-refresh-token' }),
         })
       )
       expect(result.status).toBe(200)
@@ -245,7 +243,7 @@ describe('ApiClient', () => {
       } as Response)
 
       const client = new ApiClient('expired-token')
-      const result = await client.refreshToken()
+      const result = await client.refreshToken('expired-refresh-token')
 
       expect(result.status).toBe(401)
       expect(result.error).toBe('token expired')
@@ -279,9 +277,9 @@ describe('ApiClient', () => {
         json: async () => ({}),
       } as Response)
 
-      // logout() is client-side only (IAM has no /auth/logout); use an
-      // authenticated network call to exercise the header path.
-      await client.refreshToken()
+      // Use an authenticated call that attaches the Bearer header to exercise
+      // the header path (refresh sends the token in the body, not the header).
+      await client.getProfile()
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),

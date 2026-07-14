@@ -51,6 +51,18 @@ export interface LinkWalletRequest {
     is_primary?: boolean;
 }
 
+// --- On-chain onboarding ---
+// Mirrors IAM's OnChainOnboardingRequest (POST /api/v1/me/registration).
+export interface OnChainOnboardingRequest {
+    user_type: 'prosumer' | 'consumer';
+    location: {
+        lat_e7: number;
+        long_e7: number;
+    };
+    h3_index?: number | null;
+    shard_id?: number | null;
+}
+
 // --- Notifications ---
 export type NotificationType = 'system' | 'trade' | 'alert' | 'wallet' | 'reward';
 

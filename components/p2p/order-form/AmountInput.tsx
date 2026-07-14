@@ -7,21 +7,28 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { P2P_CONFIG } from '@/lib/constants'
 
+const MIN_KWH = P2P_CONFIG.minOrderKwh
+const MAX_KWH = P2P_CONFIG.maxOrderKwh
+
 interface AmountInputProps {
   amount: string
   setAmount: (amount: string) => void
-  balance: number | null
+  // Retained for API compatibility with OrderForm; quick pills are now a
+  // percentage of the fixed MAX order size, not of balance.
+  balance?: number | null
 }
 
 export function AmountInput({
   amount,
   setAmount,
-  balance,
 }: AmountInputProps) {
+  const numericAmount = parseFloat(amount)
+  const hasValue = amount.trim() !== ''
+  const isInvalid = hasValue && (Number.isNaN(numericAmount) || numericAmount < MIN_KWH || numericAmount > MAX_KWH)
+
   const handleQuickAmount = (percent: number) => {
-    if (balance && balance > 0) {
-      setAmount(((balance * percent) / 100).toFixed(2))
-    }
+    // Percentage of the max order size (MAX_KWH), e.g. 25% of 5 kWh = 1.25.
+    setAmount(((MAX_KWH * percent) / 100).toFixed(2))
   }
 
   return (
@@ -31,7 +38,7 @@ export function AmountInput({
           Amount
         </Label>
         <span className="text-xs text-muted-foreground">
-          Min: 0.1 kWh
+          Range: {MIN_KWH}–{MAX_KWH} kWh
         </span>
       </div>
       <div className="relative">
@@ -41,24 +48,33 @@ export function AmountInput({
           placeholder="0.00"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          min="0.01"
+          min={MIN_KWH}
+          max={MAX_KWH}
           step="0.01"
+          aria-invalid={isInvalid}
           className={cn(
             "h-14 appearance-none rounded-xl border border-muted bg-secondary pr-14 text-right font-mono text-xl font-bold transition-colors duration-200",
             "placeholder:text-muted-foreground",
             "focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
-            amount
-              ? "text-primary border-primary"
-              : "text-foreground"
+            isInvalid
+              ? "text-destructive border-destructive focus-visible:ring-destructive/50 focus-visible:border-destructive"
+              : hasValue
+                ? "text-primary border-primary"
+                : "text-foreground"
           )}
         />
         <span className={cn(
           "absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold transition-colors duration-200",
-          amount ? "text-primary/70" : "text-muted-foreground"
+          isInvalid ? "text-destructive/70" : hasValue ? "text-primary/70" : "text-muted-foreground"
         )}>
           kWh
         </span>
       </div>
+      {isInvalid && (
+        <p role="alert" className="text-xs font-medium text-destructive">
+          Amount must be between {MIN_KWH} and {MAX_KWH} kWh
+        </p>
+      )}
       {/* Quick Amount Pills - Design System */}
       <div className="flex gap-2">
         {P2P_CONFIG.quickAmountPercentages.map((percent) => (

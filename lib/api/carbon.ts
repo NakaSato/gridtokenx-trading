@@ -29,6 +29,8 @@ export class CarbonApi {
         })
     }
 
+    // STUB WARNING: rest.rs transfer_carbon_credits binds `_req` (unused) —
+    // response is mock, no transfer is executed. Verify before UI relies on it.
     async transferCarbonCredits(data: {
         receiver_username: string
         amount: string

@@ -21,27 +21,27 @@ export default function Pagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-center gap-2 p-2">
+    <div className="flex items-center justify-center gap-1.5 p-1">
       <Button
         variant="outline"
         size="sm"
-        className="h-7 w-7 p-0"
+        className="h-6 w-6 p-0"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-3.5 w-3.5" />
       </Button>
-      <span className="text-sm text-muted-foreground">
+      <span className="text-xs text-muted-foreground tabular-nums">
         Page {currentPage} of {totalPages}
       </span>
       <Button
         variant="outline"
         size="sm"
-        className="h-7 w-7 p-0"
+        className="h-6 w-6 p-0"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-3.5 w-3.5" />
       </Button>
     </div>
   )

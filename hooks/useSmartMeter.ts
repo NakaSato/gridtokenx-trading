@@ -39,8 +39,11 @@ export function useSmartMeter() {
             }
         },
         enabled: !!token,
-        refetchInterval: 30000, // Poll every 30 seconds
-        staleTime: 10000,
+        refetchInterval: 15000, // Poll every 15s (fallback; WS push invalidates instantly)
+        refetchIntervalInBackground: false, // pause polling when tab hidden
+        refetchOnWindowFocus: true, // refresh when user returns to the tab
+        refetchOnReconnect: true, // refresh after network/WS reconnect
+        staleTime: 5000,
     })
 
     const { meters, readings, fetchedStats, totalReadings, hasMoreReadings } = meterData

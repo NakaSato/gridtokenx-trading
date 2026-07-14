@@ -30,28 +30,84 @@ export interface ApiOrder {
     created_at: string;
 }
 
+/** rest.rs SubmitOrderRequest — decimals are stringified. */
+export interface SubmitOrderRequest {
+    side: 'buy' | 'sell';
+    order_type: 'limit' | 'market';
+    energy_amount_kwh: string;
+    /** opt; required for limit + market-buy (slippage cap). Omit for market-sell. */
+    price_per_kwh?: string;
+    zone_id?: number;
+    meter_id?: string;
+    custodial_sign?: boolean;
+    /** default 'gtc' */
+    time_in_force?: 'gtc' | 'ioc' | 'fok';
+    /** default 'realtime' */
+    market_segment?: 'realtime' | 'interval';
+}
+
+/** rest.rs SubmitOrderResponse. */
+export interface SubmitOrderResponse {
+    id: string;
+    status: string;
+    created_at: string;
+}
+
+export interface Pagination {
+    total: number;
+    limit: number;
+    offset: number;
+}
+
+/** rest.rs ListOrdersResponse — GET /orders. */
+export interface ListOrdersResponse {
+    data: ApiOrder[];
+    pagination: Pagination;
+}
+
+/** [price, quantity] tuple as returned by the order book. */
+export type PriceLevel = [string, string];
+
+/** rest.rs OrderBookResponse — GET /zones/{id}/book. */
+export interface OrderBookResponse {
+    zone_id: number;
+    last_update_id: number;
+    asks: PriceLevel[];
+    bids: PriceLevel[];
+}
+
+// rest.rs TradeRecordResponse — every amount is a stringified Decimal.
 export interface TradeRecord {
     id: string;
-    quantity: string;
-    price: string;
-    total_value: string;
-    role: "buyer" | "seller";
-    executed_at: string;
-    status: string;
-    buy_order_id?: string;
-    sell_order_id?: string;
+    buyer_id?: string;
+    seller_id?: string;
     counterparty_id?: string;
-    product_symbol?: string;
+    role: "buyer" | "seller";
+    quantity: string;
+    energy_amount?: string;
+    price: string;
+    price_per_kwh?: string;
+    total_value: string;
+    fee_amount?: string;
     wheeling_charge?: string;
     loss_cost?: string;
     effective_energy?: string;
+    status: string;
+    transaction_hash?: string;
+    buy_order_id?: string;
+    sell_order_id?: string;
     buyer_zone_id?: number;
     seller_zone_id?: number;
+    executed_at: string;
+    created_at?: string;
+    product_symbol?: string;
 }
 
+// rest.rs TradesListResponse — GET /trades. Carries both counts.
 export interface TradeHistory {
     trades: TradeRecord[];
     total_count: number;
+    total: number;
 }
 
 import { PublicKey } from '@solana/web3.js';

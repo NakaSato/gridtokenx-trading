@@ -20,9 +20,9 @@ interface Trade {
     counterparty_id: string
     executed_at: string
     status: string
-    wheeling_charge?: number
-    loss_cost?: number
-    effective_energy?: number
+    wheeling_charge?: string
+    loss_cost?: string
+    effective_energy?: string
     buyer_zone_id?: number
     seller_zone_id?: number
 }
@@ -169,7 +169,7 @@ const TradeHistory = React.memo(function TradeHistory() {
                         {trades.map((trade, idx) => {
                             const isBuyer = trade.role === 'buyer'
                             // Calculate extra costs if available (only relevant for buyer usually, or net for seller)
-                            const fees = (trade.wheeling_charge || 0) + (trade.loss_cost || 0);
+                            const fees = (parseFloat(trade.wheeling_charge || '0') || 0) + (parseFloat(trade.loss_cost || '0') || 0);
 
                             return (
                                 <div
@@ -188,6 +188,21 @@ const TradeHistory = React.memo(function TradeHistory() {
                                                 )}
                                             >
                                                 {isBuyer ? 'BUY' : 'SELL'}
+                                            </Badge>
+
+                                            {/* Status Badge — always shown, colored by settlement state */}
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    "text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight border-opacity-40",
+                                                    trade.status === 'confirmed' || trade.status === 'completed'
+                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500"
+                                                        : trade.status === 'failed'
+                                                            ? "bg-destructive/10 text-destructive border-destructive"
+                                                            : "bg-amber-500/10 text-amber-500 border-amber-500"
+                                                )}
+                                            >
+                                                {trade.status.toUpperCase()}
                                             </Badge>
 
                                             {/* Zone Badge */}

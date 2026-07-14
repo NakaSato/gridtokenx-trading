@@ -61,6 +61,7 @@ export type EnergyGridConfig = typeof ENERGY_GRID_CONFIG
 export const P2P_CONFIG = {
     // Available trading zones
     zones: [
+        { id: 0, name: 'Zone 0 - Main Grid' },
         { id: 1, name: 'Zone 1 - Residential' },
         { id: 2, name: 'Zone 2 - Commercial' },
         { id: 3, name: 'Zone 3 - Industrial' },
@@ -70,12 +71,20 @@ export const P2P_CONFIG = {
     // Default price per kWh (THB)
     defaultPrice: 4.0,
 
+    // Order amount bounds (kWh)
+    minOrderKwh: 1,
+    maxOrderKwh: 5,
+
     // Quick amount percentages
     quickAmountPercentages: [25, 50, 75, 100] as const,
 
     // Grid pricing defaults (THB/kWh)
     defaultGridImportPrice: 4.50,
     defaultGridExportPrice: 2.20,
+
+    // Loss factor assumed for a cross-zone trade until real per-zone data
+    // loads from getP2PMarketPrices. Same-zone trades use 0 (no transmission).
+    defaultCrossZoneLossFactor: 0.015,
 
     // Pagination
     itemsPerPage: 10,

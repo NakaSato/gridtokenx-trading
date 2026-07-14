@@ -6,19 +6,12 @@ import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useTrading, OrderAccount } from '@/contexts/TradingProvider'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import P2PCostBreakdown from './P2PCostBreakdown'
-import OrderBookDepth from './OrderBookDepth'
 import type { EnergyNode } from '@/components/energy-grid/types'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
 import { useCrypto } from '@/hooks/useCrypto'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
-import { useMarketConfig } from '@/hooks/useApi'
+import { useMarketConfig, useP2PMarketPrices, useP2PBestPrices } from '@/hooks/useApi'
+import { P2P_CONFIG } from '@/lib/constants'
 import {
   OrderTypeTabs,
   MatchTargetIndicator,
@@ -52,12 +45,20 @@ const OrderForm = React.memo(function OrderForm({
   const [sellerZone, setSellerZone] = useState<number>(0)
   const [message, setMessage] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
-  const [showCostBreakdown, setShowCostBreakdown] = useState(true)
   const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(null)
   const { isLoaded: cryptoLoaded } = useCrypto()
   const queryClient = useQueryClient()
   const { marketConfig } = useMarketConfig(token ?? undefined)
+  const { marketPrices } = useP2PMarketPrices(token ?? undefined)
+  const { bestBid, bestAsk, refetch: refetchBestPrices } = useP2PBestPrices(token ?? undefined)
   const { activeOrderFill, setActiveOrderFill } = useTrading()
+
+  // Best bid/ask move as the book fills — refresh periodically so the spread
+  // warning and market-order estimate don't go stale.
+  useEffect(() => {
+    const interval = setInterval(refetchBestPrices, 10000)
+    return () => clearInterval(interval)
+  }, [refetchBestPrices])
 
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance()
   const rawBalance = balanceData?.token_balance
@@ -126,15 +127,20 @@ const OrderForm = React.memo(function OrderForm({
   const orderMutation = useMutation({
     mutationFn: async (orderPayload: {
       side: 'buy' | 'sell'
+      order_type: 'market' | 'limit'
       amount: string
-      price_per_kwh: string
+      price_per_kwh?: string
       zone_id: number
     }) => {
       if (!token) throw new Error('Please log in to create orders')
 
       const apiClient = createApiClient(token)
-      const apiResult = await apiClient.createP2POrder({
+      // createOrder maps `amount` → energy_amount_kwh and only sends price when
+      // present, so a market order (empty price, or a buy-side slippage ceiling)
+      // is submitted correctly instead of being forced to a limit order.
+      const apiResult = await apiClient.createOrder({
         side: orderPayload.side,
+        order_type: orderPayload.order_type,
         amount: orderPayload.amount,
         price_per_kwh: orderPayload.price_per_kwh,
         // zone_id 0 ("Main Grid") is a valid zone, not "unset" — `|| undefined` was
@@ -180,20 +186,24 @@ const OrderForm = React.memo(function OrderForm({
       setMessage('Minimum order amount is 0.1 kWh')
       return
     }
-    if (!price || parseFloat(price) <= 0) {
-      setMessage('Please enter a valid price')
-      return
-    }
-
-    if (marketConfig) {
-      const priceVal = parseFloat(price)
-      if (priceVal < marketConfig.min_price_per_kwh) {
-        setMessage(`Price cannot be lower than the minimum limit (฿${marketConfig.min_price_per_kwh})`)
+    // Market orders fill against the resting book — no price required. Only limit
+    // orders need a price (and are range-checked against market config).
+    if (priceType === 'limit') {
+      if (!price || parseFloat(price) <= 0) {
+        setMessage('Please enter a valid price')
         return
       }
-      if (priceVal > marketConfig.max_price_per_kwh) {
-        setMessage(`Price cannot be higher than the maximum limit (฿${marketConfig.max_price_per_kwh})`)
-        return
+
+      if (marketConfig) {
+        const priceVal = parseFloat(price)
+        if (priceVal < marketConfig.min_price_per_kwh) {
+          setMessage(`Price cannot be lower than the minimum limit (฿${marketConfig.min_price_per_kwh})`)
+          return
+        }
+        if (priceVal > marketConfig.max_price_per_kwh) {
+          setMessage(`Price cannot be higher than the maximum limit (฿${marketConfig.max_price_per_kwh})`)
+          return
+        }
       }
     }
 
@@ -206,15 +216,55 @@ const OrderForm = React.memo(function OrderForm({
 
     orderMutation.mutate({
       side: orderType as 'buy' | 'sell',
+      order_type: priceType,
       amount,
-      price_per_kwh: price,
+      // Limit: the price. Market: omit (a market buy may still carry `price` as a
+      // slippage ceiling; sell carries none).
+      price_per_kwh: priceType === 'limit' ? price : (price || undefined),
       zone_id,
     })
   }
 
   const loading = orderMutation.isPending
-  const energyAmount = parseFloat(amount) || 0
-  const agreedPrice = parseFloat(price) || undefined
+
+  const amountNum = parseFloat(amount) || 0
+  const priceNum = parseFloat(price) || 0
+
+  // Market orders have no price of their own (the field is disabled) — they
+  // sweep the resting book, so estimate against the side they'd actually fill
+  // against: a market buy eats asks, a market sell eats bids. Falls back to
+  // the typed price only while the book hasn't loaded yet.
+  const effectivePrice = priceType === 'market'
+    ? (orderType === 'buy' ? bestAsk : bestBid) ?? priceNum
+    : priceNum
+  const energyCost = amountNum * effectivePrice
+
+  // A limit order priced worse than the current best opposing quote won't
+  // fill immediately — it rests on the book until a counterparty crosses it.
+  const fillWarning = priceType === 'limit' && priceNum > 0
+    ? orderType === 'buy'
+      ? (bestAsk !== null && priceNum < bestAsk
+        ? `Price below best ask (฿${bestAsk.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
+        : null)
+      : (bestBid !== null && priceNum > bestBid
+        ? `Price above best bid (฿${bestBid.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
+        : null)
+    : null
+
+  // Wheeling charge + transmission loss for the selected zone pair — sourced
+  // from the real market-prices endpoint, not the mocked /api/v1/quotes.
+  const crossZone = buyerZone !== sellerZone
+  const zoneKey = String(sellerZone)
+  const homeZoneKey = String(buyerZone)
+  const wheelingChargePerKwh = crossZone
+    ? (marketPrices?.wheeling_charges?.[zoneKey] ?? marketPrices?.wheeling_charges?.[homeZoneKey] ?? 0)
+    : 0
+  const wheelingCharge = wheelingChargePerKwh * amountNum
+  const lossFactor = crossZone
+    ? (marketPrices?.loss_factors?.[zoneKey] ?? marketPrices?.loss_factors?.[homeZoneKey] ?? P2P_CONFIG.defaultCrossZoneLossFactor)
+    : 0
+  const lossCost = energyCost * lossFactor
+  const orderTotal = energyCost + wheelingCharge + lossCost
 
   return (
     <div className="flex w-full flex-col space-y-0 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
@@ -265,58 +315,30 @@ const OrderForm = React.memo(function OrderForm({
                 setPrice={setPrice}
                 priceType={priceType}
                 setPriceType={setPriceType}
+                bestBid={bestBid}
+                bestAsk={bestAsk}
+                fillWarning={fillWarning}
               />
-
-              {energyAmount > 0 && (
-                <Accordion
-                  type="single"
-                  collapsible
-                  defaultValue={showCostBreakdown ? 'breakdown' : undefined}
-                >
-                  <AccordionItem value="breakdown" className="border-0">
-                    <AccordionTrigger
-                      onClick={() => setShowCostBreakdown(!showCostBreakdown)}
-                      className="flex h-12 items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-0 text-sm font-semibold text-foreground hover:bg-muted hover:text-foreground hover:no-underline [&[data-state=open]>svg]:rotate-180 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:rounded-xl"
-                    >
-                      <span>Cost Breakdown</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-base font-bold text-foreground">
-                          ฿{(energyAmount * (agreedPrice || 0)).toFixed(2)}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-3">
-                      <div className="rounded-xl border border-border bg-muted/20 p-4">
-                        <P2PCostBreakdown
-                          buyerZone={buyerZone}
-                          sellerZone={sellerZone}
-                          energyAmount={energyAmount}
-                          agreedPrice={agreedPrice}
-                        />
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              )}
-
-              {token && energyAmount > 0 && (
-                <OrderBookDepth
-                  side={orderType as 'buy' | 'sell'}
-                  amount={energyAmount}
-                  currentPrice={agreedPrice}
-                />
-              )}
 
               <Separator />
 
-              <OrderSummary amount={amount} price={price} />
+              <OrderSummary
+                amount={amount}
+                priceType={priceType}
+                effectivePrice={effectivePrice}
+                total={orderTotal}
+                wheelingCharge={crossZone ? wheelingCharge : 0}
+                lossCost={crossZone ? lossCost : 0}
+                lossFactor={crossZone ? lossFactor : 0}
+              />
 
               <SubmitButton
                 token={token}
                 loading={loading}
                 orderType={orderType as 'buy' | 'sell'}
                 amount={amount}
-                price={price}
+                total={orderTotal}
+                resting={!!fillWarning}
                 cryptoLoaded={cryptoLoaded}
                 disabled={loading || !amount || parseFloat(amount) <= 0}
               />

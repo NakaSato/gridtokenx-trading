@@ -6,6 +6,7 @@ import { PortfolioSummary } from '@/components/portfolio/portfolio-summary'
 import { PortfolioTabs } from '@/components/portfolio/portfolio-tabs'
 import { VolumeCard } from '@/components/portfolio/volume-card'
 import { TradingHistoryChart } from '@/components/charts/TradingHistoryChart'
+import P2PStatus from '@/components/p2p/P2PStatus'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
@@ -59,11 +60,11 @@ export default function Portfolio() {
               </ErrorBoundary>
             </div>
 
-            {/* Right Column - Placeholder or Info */}
+            {/* Right Column - System Status */}
             <div className="col-span-12 lg:col-span-5">
-              <div className="h-full border border-border/50 rounded-lg bg-card/30 flex items-center justify-center p-8 text-muted-foreground italic text-sm text-center">
-                Real-time performance metrics enabled for this portfolio session.
-              </div>
+              <ErrorBoundary name="System Status">
+                <P2PStatus />
+              </ErrorBoundary>
             </div>
           </div>
         </section>

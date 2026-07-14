@@ -4,13 +4,19 @@ import React from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { TrendingUp } from 'lucide-react'
+import { AlertTriangle, TrendingUp } from 'lucide-react'
 
 interface PriceInputProps {
   price: string
   setPrice: (price: string) => void
   priceType: 'market' | 'limit'
   setPriceType: (type: 'market' | 'limit') => void
+  /** Highest resting buy price, from the live order book. Null while unknown/empty. */
+  bestBid?: number | null
+  /** Lowest resting sell price, from the live order book. Null while unknown/empty. */
+  bestAsk?: number | null
+  /** Set when the typed limit price won't cross the spread and will rest unfilled. */
+  fillWarning?: string | null
 }
 
 export function PriceInput({
@@ -18,6 +24,9 @@ export function PriceInput({
   setPrice,
   priceType,
   setPriceType,
+  bestBid = null,
+  bestAsk = null,
+  fillWarning = null,
 }: PriceInputProps) {
   return (
     <div className="space-y-2">
@@ -89,7 +98,15 @@ export function PriceInput({
       {priceType === 'limit' && (
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           <TrendingUp className="h-3 w-3" />
-          Spread: 4.20 - 4.80 THB
+          {bestBid !== null && bestAsk !== null
+            ? `Spread: ${bestBid.toFixed(2)} - ${bestAsk.toFixed(2)} THB`
+            : 'Spread: no active quotes yet'}
+        </p>
+      )}
+      {fillWarning && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{fillWarning}</span>
         </p>
       )}
     </div>

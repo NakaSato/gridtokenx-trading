@@ -74,7 +74,9 @@ function ResetPasswordContent() {
 
             const data = await response.json()
 
-            if (data.success) {
+            // Backend returns { message } and signals success via HTTP status
+            // (200 ok; 400/404 on invalid/expired token) — there is no `success` flag.
+            if (response.ok) {
                 setState('success')
                 setMessage(data.message || 'Password has been reset successfully!')
                 toast.success('Password reset successful!')

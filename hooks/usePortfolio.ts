@@ -32,6 +32,25 @@ export function useProfile() {
 }
 
 /**
+ * Hook for fetching the user's linked wallets (IAM GET /api/v1/me/wallets).
+ */
+export function useWallets() {
+    const { token, isAuthenticated } = useAuth()
+    const apiClient = createApiClient(token || '')
+
+    return useQuery<import('@/types/features').UserWallet[]>({
+        queryKey: ['user-wallets', token],
+        queryFn: async () => {
+            if (!token) throw new Error('Authentication required')
+            const response = await apiClient.listWallets()
+            if (response.error) throw new Error(response.error)
+            return (response.data as import('@/types/features').UserWallet[]) || []
+        },
+        enabled: !!token && isAuthenticated,
+    })
+}
+
+/**
  * Hook for fetching wallet balance
  */
 export function useWalletBalance(walletAddress?: string) {

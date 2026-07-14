@@ -146,6 +146,65 @@ export function useMarketConfig(token?: string) {
 }
 
 /**
+ * Hook for the current P2P order book's best bid / best ask — the real spread,
+ * used to warn when a limit order is priced outside it and to estimate a
+ * market order's fill price (market orders carry no price of their own).
+ */
+export function useP2PBestPrices(token?: string) {
+  const client = useApiClient(token)
+
+  const { data, loading, error, refetch } = useApiRequest(
+    () => client.getP2POrderBook(),
+    [token]
+  )
+
+  const bestBid = useMemo(() => {
+    const bids: any[] = (data as any)?.bids || []
+    const prices = bids
+      .map((b) => Number(b.price_per_kwh ?? b.price ?? 0))
+      .filter((p) => p > 0)
+    return prices.length ? Math.max(...prices) : null
+  }, [data])
+
+  const bestAsk = useMemo(() => {
+    const asks: any[] = (data as any)?.asks || []
+    const prices = asks
+      .map((a) => Number(a.price_per_kwh ?? a.price ?? 0))
+      .filter((p) => p > 0)
+    return prices.length ? Math.min(...prices) : null
+  }, [data])
+
+  return {
+    bestBid,
+    bestAsk,
+    loading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook for fetching P2P market prices (per-zone wheeling charges + loss factors).
+ * Backed by /api/v1/markets/p2p/market-prices — a real endpoint, unlike the
+ * mocked /api/v1/quotes (see STUB WARNING in lib/api/trading.ts calculateP2PCost).
+ */
+export function useP2PMarketPrices(token?: string) {
+  const client = useApiClient(token)
+
+  const { data, loading, error, refetch } = useApiRequest(
+    () => client.getP2PMarketPrices(),
+    [token]
+  )
+
+  return {
+    marketPrices: data,
+    loading,
+    error,
+    refetch,
+  }
+}
+
+/**
  * Hook for creating orders
  */
 export function useCreateOrder(token?: string) {

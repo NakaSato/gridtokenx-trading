@@ -86,7 +86,7 @@ export const API_ENDPOINTS = {
   user: {
     profile: `${API_CONFIG.baseUrl}/api/v1/me`,
     wallets: `${API_CONFIG.baseUrl}/api/v1/me/wallets`,
-    onchain: `${API_CONFIG.baseUrl}/api/v1/me/onchain-profile`,
+    registration: `${API_CONFIG.baseUrl}/api/v1/me/registration`,
     balance: `${API_CONFIG.baseUrl}/api/v1/me/wallets`,
     transactions: `${API_CONFIG.baseUrl}/api/v1/transactions`,
     notifications: `${API_CONFIG.baseUrl}/api/v1/noti`,

@@ -10,6 +10,7 @@ import type {
     PublicMeterResponse,
     MeterReading,
     MeterResponse,
+    MeterMapPoint,
     RegisterMeterResponse,
     MeterStats
 } from '../../types/meter'
@@ -97,6 +98,18 @@ export class MetersApi {
 
     async getMyMeters(): Promise<ApiResponse<MeterResponse[]>> {
         return apiRequest<MeterResponse[]>('/api/v1/me/meters', {
+            method: 'GET',
+            token: this.getToken(),
+        })
+    }
+
+    /**
+     * Every located meter (latitude/longitude present) across ALL users, as map
+     * markers. Requires a valid JWT but is intentionally not caller-scoped — the
+     * map shows the whole grid. GET /api/v1/meters/map.
+     */
+    async getMetersMap(): Promise<ApiResponse<MeterMapPoint[]>> {
+        return apiRequest<MeterMapPoint[]>('/api/v1/meters/map', {
             method: 'GET',
             token: this.getToken(),
         })

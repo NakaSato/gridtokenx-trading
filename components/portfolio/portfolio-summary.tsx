@@ -5,7 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { Card, CardContent } from '../ui/card'
 import { Wallet, User, Zap, TrendingUp, Coins, RefreshCw } from 'lucide-react'
 import { useState, useMemo } from 'react'
-import { useProfile, useWalletBalance } from '@/hooks/usePortfolio'
+import { useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
 import { Button } from '../ui/button'
 import { Skeleton } from '../ui/skeleton'
 
@@ -13,8 +13,16 @@ export function PortfolioSummary() {
     const { isAuthenticated } = useAuth()
     const { publicKey } = useWallet()
     const { data: profileUser, isLoading: profileLoading, refetch: refetchProfile } = useProfile()
+    const { data: linkedWallets } = useWallets()
 
-    const walletAddress = profileUser?.wallet_address || publicKey?.toString()
+    // Prefer the profile's wallet_address, then the IAM primary linked wallet,
+    // then any linked wallet, then the connected browser-extension wallet.
+    const primaryLinked = useMemo(() => {
+        if (!linkedWallets?.length) return undefined
+        return (linkedWallets.find((w) => w.is_primary) ?? linkedWallets[0])?.wallet_address
+    }, [linkedWallets])
+
+    const walletAddress = profileUser?.wallet_address || primaryLinked || publicKey?.toString()
     const { data: tokenBalance, isLoading: balanceLoading, refetch: refetchBalance } = useWalletBalance(walletAddress)
 
     const handleRefresh = async () => {

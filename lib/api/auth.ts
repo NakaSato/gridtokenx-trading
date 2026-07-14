@@ -52,10 +52,13 @@ export class AuthApi {
   // Exchanges the current (still-valid) token for a fresh one. Must be called
   // BEFORE expiry — the backend rejects expired tokens, so this is driven by a
   // proactive timer in AuthProvider, not reactively after a 401.
-  async refreshToken(): Promise<ApiResponse<RefreshResponse>> {
+  // Backend reads the refresh token from the JSON body (RefreshRequest), NOT
+  // the Authorization header — an access token in the header is rejected as the
+  // wrong token type. Caller passes the long-lived refresh token stored at login.
+  async refreshToken(refreshToken: string): Promise<ApiResponse<RefreshResponse>> {
     return apiRequest<RefreshResponse>('/api/v1/auth/refresh', {
       method: 'POST',
-      token: this.getToken(),
+      body: { refresh_token: refreshToken },
     })
   }
 
@@ -88,8 +91,8 @@ export class AuthApi {
     })
   }
 
-  async forgotPassword(email: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    return apiRequest<{ success: boolean; message: string }>('/api/v1/auth/forgot-password', {
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    return apiRequest<{ message: string }>('/api/v1/auth/forgot-password', {
       method: 'POST',
       body: { email },
     })
@@ -98,8 +101,8 @@ export class AuthApi {
   async resetPassword(
     token: string,
     newPassword: string
-  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    return apiRequest<{ success: boolean; message: string }>('/api/v1/auth/reset-password', {
+  ): Promise<ApiResponse<{ message: string }>> {
+    return apiRequest<{ message: string }>('/api/v1/auth/reset-password', {
       method: 'POST',
       body: { token, new_password: newPassword },
     })
