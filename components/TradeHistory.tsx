@@ -6,9 +6,15 @@ import { defaultApiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
-import { History, TrendingUp, BarChart3, Globe } from 'lucide-react'
+import { History, TrendingUp, BarChart3, Globe, AlertOctagon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Trade {
@@ -25,7 +31,12 @@ interface Trade {
     effective_energy?: string
     buyer_zone_id?: number
     seller_zone_id?: number
+    retry_count?: number
+    error_message?: string | null
 }
+
+/** Terminal settlement state: the worker exhausted its retries and parked the row. */
+const PERMANENTLY_FAILED = 'permanently_failed'
 
 const TradeHistory = React.memo(function TradeHistory() {
     const { token } = useAuth()
@@ -93,20 +104,15 @@ const TradeHistory = React.memo(function TradeHistory() {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3">
-                    <div className="space-y-2">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="animate-pulse flex justify-between items-center p-2 rounded-sm bg-secondary/30">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-8 w-8 bg-secondary rounded-sm" />
-                                    <div className="space-y-1">
-                                        <div className="h-3 bg-secondary w-20 rounded" />
-                                        <div className="h-2 bg-secondary w-14 rounded" />
-                                    </div>
-                                </div>
-                                <div className="space-y-1 text-right">
-                                    <div className="h-3 bg-secondary w-16 rounded" />
-                                    <div className="h-2 bg-secondary w-12 rounded" />
-                                </div>
+                    <div className="space-y-1">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="animate-pulse flex items-center gap-2 px-3 py-1.5 rounded-sm bg-secondary/30">
+                                <div className="h-4 w-9 bg-secondary rounded-sm" />
+                                <div className="h-3 w-16 bg-secondary rounded" />
+                                <div className="h-3 w-12 bg-secondary rounded" />
+                                <div className="h-4 w-14 bg-secondary rounded-sm" />
+                                <div className="ml-auto h-3 w-14 bg-secondary rounded" />
+                                <div className="h-3 w-12 bg-secondary rounded" />
                             </div>
                         ))}
                     </div>
@@ -165,95 +171,126 @@ const TradeHistory = React.memo(function TradeHistory() {
                         </div>
                     </div>
                 ) : (
+                    <TooltipProvider delayDuration={150}>
                     <div className="divide-y divide-border/30">
                         {trades.map((trade, idx) => {
                             const isBuyer = trade.role === 'buyer'
                             // Calculate extra costs if available (only relevant for buyer usually, or net for seller)
                             const fees = (parseFloat(trade.wheeling_charge || '0') || 0) + (parseFloat(trade.loss_cost || '0') || 0);
+                            const isPermanentlyFailed = trade.status === PERMANENTLY_FAILED
 
                             return (
                                 <div
                                     key={trade.id}
-                                    className="group flex flex-col gap-1 px-4 py-3 hover:bg-accent/30 transition-colors"
+                                    className="group flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 hover:bg-accent/30 transition-colors"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    "text-[9px] px-1.5 py-0 h-4 font-mono font-bold tracking-tight border-opacity-40",
-                                                    isBuyer
-                                                        ? "bg-green-500/10 text-green-500 border-green-500"
-                                                        : "bg-red-500/10 text-red-500 border-red-500"
-                                                )}
-                                            >
-                                                {isBuyer ? 'BUY' : 'SELL'}
-                                            </Badge>
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "shrink-0 text-[9px] px-1.5 py-0 h-4 font-mono font-bold tracking-tight border-opacity-40",
+                                            isBuyer
+                                                ? "bg-green-500/10 text-green-500 border-green-500"
+                                                : "bg-red-500/10 text-red-500 border-red-500"
+                                        )}
+                                    >
+                                        {isBuyer ? 'BUY' : 'SELL'}
+                                    </Badge>
 
-                                            {/* Status Badge — always shown, colored by settlement state */}
-                                            <Badge
-                                                variant="outline"
-                                                className={cn(
-                                                    "text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight border-opacity-40",
-                                                    trade.status === 'confirmed' || trade.status === 'completed'
-                                                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500"
-                                                        : trade.status === 'failed'
-                                                            ? "bg-destructive/10 text-destructive border-destructive"
-                                                            : "bg-amber-500/10 text-amber-500 border-amber-500"
-                                                )}
-                                            >
-                                                {trade.status.toUpperCase()}
-                                            </Badge>
+                                    <span className="shrink-0 text-xs font-medium font-mono text-foreground tabular-nums">
+                                        {parseFloat(trade.quantity).toFixed(2)}
+                                        <span className="text-[9px] text-muted-foreground ml-0.5">kWh</span>
+                                    </span>
 
-                                            {/* Zone Badge */}
-                                            {(trade.buyer_zone_id !== undefined && trade.seller_zone_id !== undefined) && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className={cn(
-                                                        "text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight",
-                                                        trade.buyer_zone_id === trade.seller_zone_id
-                                                            ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
-                                                            : "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20"
-                                                    )}
-                                                >
-                                                    {trade.buyer_zone_id === trade.seller_zone_id ? 'LOCAL' : 'X-ZONE'}
-                                                </Badge>
-                                            )}
+                                    <span className="shrink-0 text-[11px] text-muted-foreground font-mono tabular-nums">
+                                        @{parseFloat(trade.price).toFixed(2)}
+                                    </span>
 
-                                            <span className="text-sm font-medium font-mono text-foreground">
-                                                {parseFloat(trade.quantity).toFixed(2)} kWh
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] text-muted-foreground tabular-nums">
-                                            {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
+                                    {fees > 0 && (
+                                        <span className="shrink-0 text-[9px] text-muted-foreground opacity-70 tabular-nums">
+                                            +{fees.toFixed(2)} fees
                                         </span>
-                                    </div>
+                                    )}
 
-                                    <div className="flex items-center justify-between pl-1">
-                                        <div className="flex flex-col">
-                                            <div className="flex items-center text-xs text-muted-foreground font-mono">
-                                                @{parseFloat(trade.price).toFixed(2)}
-                                            </div>
-                                            {fees > 0 && (
-                                                <div className="text-[9px] text-muted-foreground opacity-70">
-                                                    + Fees: {fees.toFixed(2)}
-                                                </div>
+                                    {/* Status Badge — every state except the terminal failure, which the
+                                        diagnostics icon below stands in for. */}
+                                    {!isPermanentlyFailed && (
+                                        <Badge
+                                            variant="outline"
+                                            className={cn(
+                                                "shrink-0 text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight border-opacity-40",
+                                                trade.status === 'confirmed' || trade.status === 'completed'
+                                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500"
+                                                    : trade.status === 'failed'
+                                                        ? "bg-destructive/10 text-destructive border-destructive"
+                                                        : "bg-amber-500/10 text-amber-500 border-amber-500"
                                             )}
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <div className={cn(
-                                                "font-mono text-sm font-medium tabular-nums",
-                                                isBuyer ? "text-red-500" : "text-green-500"
-                                            )}>
-                                                {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
-                                                <span className="text-[10px] text-muted-foreground ml-1">THB</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        >
+                                            {trade.status.toUpperCase()}
+                                        </Badge>
+                                    )}
+
+                                    {/* Terminal failures collapse to one icon; it carries both the state
+                                        and the settlement worker's diagnostics on hover. */}
+                                    {isPermanentlyFailed && (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Settlement permanently failed — show diagnostics"
+                                                    className="shrink-0 rounded-sm text-destructive hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-destructive"
+                                                >
+                                                    <AlertOctagon className="h-3.5 w-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="top"
+                                                align="start"
+                                                className="max-w-xs space-y-1 bg-popover text-popover-foreground border border-destructive/40"
+                                            >
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-destructive">
+                                                    Settlement permanently failed
+                                                </p>
+                                                <p className="font-mono text-[11px] leading-snug break-words">
+                                                    {trade.error_message || 'No error message recorded.'}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    Retries: {trade.retry_count ?? 0} · Trade {trade.id.slice(0, 8)}
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+
+                                    {/* Zone Badge */}
+                                    {(trade.buyer_zone_id !== undefined && trade.seller_zone_id !== undefined) && (
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                                "shrink-0 text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight",
+                                                trade.buyer_zone_id === trade.seller_zone_id
+                                                    ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                                                    : "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20"
+                                            )}
+                                        >
+                                            {trade.buyer_zone_id === trade.seller_zone_id ? 'LOCAL' : 'X-ZONE'}
+                                        </Badge>
+                                    )}
+
+                                    <span className={cn(
+                                        "ml-auto shrink-0 font-mono text-xs font-medium tabular-nums",
+                                        isBuyer ? "text-red-500" : "text-green-500"
+                                    )}>
+                                        {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
+                                        <span className="text-[9px] text-muted-foreground ml-0.5">THB</span>
+                                    </span>
+
+                                    <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums w-20 text-right">
+                                        {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
+                                    </span>
                                 </div>
                             )
                         })}
                     </div>
+                    </TooltipProvider>
                 )}
             </CardContent>
         </Card>
