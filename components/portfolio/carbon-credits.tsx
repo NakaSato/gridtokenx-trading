@@ -9,6 +9,18 @@ import { createApiClient } from '@/lib/api-client'
 import { CarbonBalanceResponse, CarbonCredit, CarbonTransaction } from '@/types/features'
 import { format } from 'date-fns'
 
+/**
+ * Client-side CO2 conversion: the balance endpoint reports credits only, so the
+ * impact figure is derived here rather than measured. 1 credit ≈ 0.0004 tons
+ * ≈ 0.4 kg CO2 offset — the factor this UI has always quoted to users.
+ */
+const KG_CO2_PER_CREDIT = 0.4
+
+const kgCo2FromCredits = (credits: string | undefined): number => {
+    const parsed = parseFloat(credits ?? '')
+    return Number.isFinite(parsed) ? parsed * KG_CO2_PER_CREDIT : 0
+}
+
 export function CarbonCredits() {
     const { token, isAuthenticated } = useAuth()
     const [balance, setBalance] = useState<CarbonBalanceResponse | null>(null)
@@ -46,6 +58,11 @@ export function CarbonCredits() {
         )
     }
 
+    // Fails closed: an absent or unparseable balance disables the transfer,
+    // rather than parseFloat(undefined) -> NaN slipping past a `<= 0` check.
+    const parsedAvailable = parseFloat(balance?.available_credits ?? '')
+    const availableCredits = Number.isFinite(parsedAvailable) ? parsedAvailable : 0
+
     return (
         <div className="flex flex-col gap-6">
             {/* Summary Stats */}
@@ -66,7 +83,7 @@ export function CarbonCredits() {
                         <Award className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-500">{balance?.active_credits || '0.00'}</div>
+                        <div className="text-2xl font-bold text-green-500">{balance?.available_credits || '0.00'}</div>
                         <p className="text-xs text-muted-foreground">Available for trade/offset</p>
                     </CardContent>
                 </Card>
@@ -87,7 +104,7 @@ export function CarbonCredits() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-emerald-600">
-                            {balance ? (balance.kg_co2_equivalent).toFixed(2) : '0.00'} kg
+                            {kgCo2FromCredits(balance?.total_credits).toFixed(2)} kg
                         </div>
                         <p className="text-xs text-muted-foreground">CO2 equivalent reduced</p>
                     </CardContent>
@@ -181,11 +198,11 @@ export function CarbonCredits() {
                                         className="w-full rounded-sm border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                     />
                                 </div>
-                                <Button className="w-full rounded-sm" disabled={!balance || parseFloat(balance.active_credits) <= 0}>
+                                <Button className="w-full rounded-sm" disabled={availableCredits <= 0}>
                                     Transfer Credits
                                 </Button>
                                 <p className="text-center text-[10px] text-muted-foreground italic">
-                                    * 1.00 Credit ≈ 0.0004 tons CO2 offset
+                                    * 1.00 Credit ≈ {(KG_CO2_PER_CREDIT / 1000).toFixed(4)} tons CO2 offset
                                 </p>
                             </form>
                         </CardContent>

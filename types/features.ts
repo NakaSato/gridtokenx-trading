@@ -16,12 +16,20 @@ export interface CarbonCredit {
     created_at: string;
 }
 
+/**
+ * Wire shape of `GET /api/v1/carbon/balance`, verbatim from the handler at
+ * trading-api/src/rest.rs:1141. The handler returns a bare `serde_json::Value`,
+ * so nothing type-checks this across the boundary — keep it in sync by hand.
+ *
+ * CO2 impact is NOT reported by the backend; it is derived client-side (see
+ * KG_CO2_PER_CREDIT in components/portfolio/carbon-credits.tsx).
+ */
 export interface CarbonBalanceResponse {
     total_credits: string;
-    active_credits: string;
+    available_credits: string;
+    /** Always "0.0" — the handler hardcodes it; retirement isn't tracked yet. */
     retired_credits: string;
-    transferred_credits: string;
-    kg_co2_equivalent: number;
+    last_updated: string;
 }
 
 export interface CarbonTransaction {
