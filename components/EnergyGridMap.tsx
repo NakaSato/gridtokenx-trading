@@ -24,6 +24,7 @@ import {
   useGridTopology,
   useGridFlows,
   useMeterTelemetry,
+  useActiveOrderMeters,
 } from './energy-grid'
 import { useTopology } from './energy-grid/useTopology'
 import type { EnergyNode, ClusterOrPoint, ClusterFeature } from './energy-grid'
@@ -87,6 +88,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const [showZones, setShowZones] = useState(true) // Toggle for zone polygons
   const [showTrades, setShowTrades] = useState(true) // Toggle for trade flows
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
+  // Show only meters with a resting buy/sell order. Off → every meter.
+  const [showOnlyTradingMeters, setShowOnlyTradingMeters] = useState(true)
   const [hoveredFlow, setHoveredFlow] = useState<{
     power: number
     description: string
@@ -128,14 +131,28 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   // Use WASM topology for path finding
   const { isLoaded: topologyLoaded, loadNetwork, findPath } = useTopology()
 
+  // Which meters currently have a resting buy/sell order (auth-gated).
+  const { bySerial: tradingMeters, isFilterable: tradingFilterable } = useActiveOrderMeters(30000)
+
+  // Meters actually placed on the map. When the trading filter can't be applied
+  // (logged out, loading, or the request failed) show every meter — an unknown
+  // answer must not read as "nothing is trading".
+  const visibleMeterNodes = useMemo(() => {
+    if (!showOnlyTradingMeters || !tradingFilterable) return displayMeterNodes
+    return displayMeterNodes.filter((n) => tradingMeters.has(n.id))
+  }, [showOnlyTradingMeters, tradingFilterable, tradingMeters, displayMeterNodes])
+
   // Combine meters with transformers if showing real data
   const energyNodes = useMemo(() => {
     if (!showRealMeters) return []
-    const nodes = [...displayMeterNodes, ...displayTransformers]
+    const nodes = [...visibleMeterNodes, ...displayTransformers]
 
     // Grid flows target `transformer-<zone>` and are silently dropped when
     // that node is missing. The topology endpoint doesn't describe zones yet,
     // so synthesize a transformer node at the centroid of each zone's meters.
+    // Centroids come from the unfiltered meter set: a transformer anchors its
+    // zone's flow lines, so it must not drift (or vanish) just because the
+    // trading filter hid the meters around it.
     // (plain record — `Map` is shadowed by the react-map-gl component import)
     const have = new Set(nodes.map((n) => n.id))
     const zoneAccum: Record<number, { lat: number; lng: number; count: number }> = {}
@@ -164,7 +181,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       })
     })
     return nodes
-  }, [showRealMeters, displayMeterNodes, displayTransformers])
+  }, [showRealMeters, visibleMeterNodes, displayMeterNodes, displayTransformers])
 
   // Telemetry-derived flows (surplus/deficit) when showing real meters.
   const energyTransfers = useMemo(() => {
@@ -483,6 +500,19 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           >
             <Radio className="h-4 w-4" />
           </Button>
+
+          {tradingFilterable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showOnlyTradingMeters ? 'border-amber-500/50 text-amber-500' : 'border-primary/30 text-primary'
+                }`}
+              onClick={() => setShowOnlyTradingMeters(!showOnlyTradingMeters)}
+              title={showOnlyTradingMeters ? 'Show all meters' : 'Show only meters with open buy/sell orders'}
+            >
+              <Zap className="h-4 w-4" />
+            </Button>
+          )}
 
           <Button
             variant="ghost"

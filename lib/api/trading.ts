@@ -5,6 +5,7 @@ import type {
     CreateRecurringOrderRequest
 } from '../../types/features'
 import type {
+    ActiveOrderMetersResponse,
     ApiOrder,
     ListOrdersResponse,
     OrderBookResponse,
@@ -46,6 +47,9 @@ export class TradingApi {
             payload.price_per_kwh = String(rawPrice)
         }
         if (orderData.meter_id !== undefined) payload.meter_id = orderData.meter_id
+        // Serial (the grid map's node id space); trading-service resolves it to
+        // meters.id. Sending a serial as meter_id violates the FK and 500s.
+        if (orderData.meter_serial !== undefined) payload.meter_serial = orderData.meter_serial
         if (orderData.custodial_sign !== undefined) payload.custodial_sign = orderData.custodial_sign
         if (orderData.time_in_force !== undefined) payload.time_in_force = orderData.time_in_force
         if (orderData.market_segment !== undefined) payload.market_segment = orderData.market_segment
@@ -73,6 +77,18 @@ export class TradingApi {
 
     async getOrder(orderId: string): Promise<ApiResponse<ApiOrder>> {
         return apiRequest<ApiOrder>(`/api/v1/orders/${orderId}`, {
+            method: 'GET',
+            token: this.getToken(),
+        })
+    }
+
+    /**
+     * Meters that currently have resting (pending/active/partially-filled)
+     * orders, market-wide. Auth-gated — without a token the map can't tell which
+     * meters are trading and should fall back to showing all of them.
+     */
+    async getActiveOrderMeters(): Promise<ApiResponse<ActiveOrderMetersResponse>> {
+        return apiRequest<ActiveOrderMetersResponse>('/api/v1/markets/active-order-meters', {
             method: 'GET',
             token: this.getToken(),
         })

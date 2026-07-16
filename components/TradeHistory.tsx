@@ -16,31 +16,14 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
-
-interface Trade {
-    id: string
-    quantity: string
-    price: string
-    total_value: string
-    role: 'buyer' | 'seller'
-    counterparty_id: string
-    executed_at: string
-    status: string
-    wheeling_charge?: string
-    loss_cost?: string
-    effective_energy?: string
-    buyer_zone_id?: number
-    seller_zone_id?: number
-    retry_count?: number
-    error_message?: string | null
-}
+import type { TradeRecord } from '@/types/trading'
 
 /** Terminal settlement state: the worker exhausted its retries and parked the row. */
 const PERMANENTLY_FAILED = 'permanently_failed'
 
 const TradeHistory = React.memo(function TradeHistory() {
     const { token } = useAuth()
-    const [trades, setTrades] = useState<Trade[]>([])
+    const [trades, setTrades] = useState<TradeRecord[]>([])
     const [loading, setLoading] = useState(true)
 
     const { socket } = useSocket()
@@ -55,7 +38,6 @@ const TradeHistory = React.memo(function TradeHistory() {
             defaultApiClient.setToken(token)
             const response = await defaultApiClient.getTrades({ limit: 20 })
             if (response.data) {
-                // @ts-ignore - API response might have different shape or fields, casting loosely
                 setTrades(response.data.trades || [])
             }
         } catch (error) {

@@ -17,6 +17,8 @@ export { useMeterClusters } from './useMeterClusters'
 export { useGridStatus } from './useGridStatus'
 export { useGridTopology } from './useGridTopology'
 export { useGridFlows } from './useGridFlows'
+export { useActiveOrderMeters } from './useActiveOrderMeters'
+export type { UseActiveOrderMetersResult } from './useActiveOrderMeters'
 
 // Types
 export type {

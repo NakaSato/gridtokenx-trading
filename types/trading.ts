@@ -65,6 +65,32 @@ export interface ListOrdersResponse {
     pagination: Pagination;
 }
 
+/**
+ * rest.rs ActiveOrderMeter — one meter with at least one resting order.
+ *
+ * Only meters whose orders were placed against that specific meter appear here:
+ * an order carries `meter_id` only when submitted from a map node, so absence
+ * from this list does not prove the meter has no orders.
+ */
+export interface ActiveOrderMeter {
+    /** The metering `meters.id`. NOT the map's node id — see `meter_serial`. */
+    meter_id: string;
+    /**
+     * The meter's `serial_number` — the id the grid map keys its nodes on.
+     * Match map nodes against this; `meter_id` lives in a different id space
+     * and never matches a node.
+     */
+    meter_serial: string;
+    zone_id: number;
+    has_open_buy: boolean;
+    has_open_sell: boolean;
+}
+
+/** rest.rs ActiveOrderMetersResponse — GET /markets/active-order-meters. */
+export interface ActiveOrderMetersResponse {
+    data: ActiveOrderMeter[];
+}
+
 /** [price, quantity] tuple as returned by the order book. */
 export type PriceLevel = [string, string];
 
@@ -100,7 +126,14 @@ export interface TradeRecord {
     seller_zone_id?: number;
     executed_at: string;
     created_at?: string;
-    product_symbol?: string;
+    /**
+     * Settlement retry attempts. Non-zero means the settlement bounced at
+     * least once; at the worker's cap the row is parked in
+     * `permanently_failed` and stops being retried.
+     */
+    retry_count: number;
+    /** Why the settlement failed, verbatim from the worker. Null unless failed. */
+    error_message?: string | null;
 }
 
 // rest.rs TradesListResponse — GET /trades. Carries both counts.

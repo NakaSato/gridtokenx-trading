@@ -72,6 +72,7 @@ export class ApiClient {
   async getOrders(filters?: any) { return this.tradingApi.getOrders(filters) }
   async getOrder(orderId: string) { return this.tradingApi.getOrder(orderId) }
   async getOrderBook(filters?: any) { return this.tradingApi.getOrderBook(filters) }
+  async getActiveOrderMeters() { return this.tradingApi.getActiveOrderMeters() }
   async getMarketData() { return this.tradingApi.getMarketData() }
   async getMarketConfig() { return this.tradingApi.getMarketConfig() }
   async getTrades(filters?: any) { return this.tradingApi.getTrades(filters) }

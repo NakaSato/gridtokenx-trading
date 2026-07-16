@@ -24,6 +24,7 @@ import {
   SubmitButton,
   FeedbackMessage,
 } from './order-form'
+import { meterSerialFromNode } from './order-form/meterId'
 
 interface OrderFormProps {
   onOrderPlaced?: () => void
@@ -131,6 +132,7 @@ const OrderForm = React.memo(function OrderForm({
       amount: string
       price_per_kwh?: string
       zone_id: number
+      meter_serial?: string
     }) => {
       if (!token) throw new Error('Please log in to create orders')
 
@@ -147,6 +149,12 @@ const OrderForm = React.memo(function OrderForm({
         // dropping it from the request, and trading-service requires the field
         // (400 "missing field `zone_id`"), so every order at the default zone failed.
         zone_id: orderPayload.zone_id,
+        // Attributes the order to the meter it was placed against, which is what
+        // lets the map show only meters that are actually trading
+        // (GET /markets/active-order-meters). The map holds serials, so the
+        // backend resolves this to meters.id. Undefined when the order wasn't
+        // placed from a map node — createOrder then omits the field.
+        meter_serial: orderPayload.meter_serial,
       })
 
       if (apiResult.error) {
@@ -167,6 +175,9 @@ const OrderForm = React.memo(function OrderForm({
       queryClient.invalidateQueries({ queryKey: ['user-stats'] })
       queryClient.invalidateQueries({ queryKey: ['p2p-orders'] })
       queryClient.invalidateQueries({ queryKey: ['orderbook'] })
+      // The map filters markers on this — refresh it so the meter just traded
+      // against appears without waiting for the poll interval.
+      queryClient.invalidateQueries({ queryKey: ['active-order-meters'] })
       onOrderPlaced?.()
     },
     onError: (error) => {
@@ -222,6 +233,7 @@ const OrderForm = React.memo(function OrderForm({
       // slippage ceiling; sell carries none).
       price_per_kwh: priceType === 'limit' ? price : (price || undefined),
       zone_id,
+      meter_serial: meterSerialFromNode(selectedNode),
     })
   }
 

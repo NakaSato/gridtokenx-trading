@@ -10,16 +10,14 @@ jest.mock('@/contexts/SocketContext', () => ({
     useSocket: () => ({ socket: null }),
 }))
 
+const mockGetTrades = jest.fn()
+
 jest.mock('@/lib/api-client', () => ({
     defaultApiClient: {
         setToken: jest.fn(),
-        getTrades: jest.fn(),
+        getTrades: (...args: unknown[]) => mockGetTrades(...args),
     },
 }))
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { defaultApiClient } = require('@/lib/api-client')
-const mockGetTrades = defaultApiClient.getTrades as jest.Mock
 
 /**
  * Field names and the `permanently_failed` literal mirror the backend's
