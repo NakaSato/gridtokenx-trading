@@ -56,9 +56,10 @@ export interface ZkEqualityProof {
 
 export interface ZkTransferProof {
   amount_commitment: ZkCommitment
-  amount_range_proof: ZkRangeProof
-  remaining_range_proof: ZkRangeProof
+  remaining_commitment: ZkCommitment
   balance_proof: ZkEqualityProof
+  // BatchedRangeProofU128Data bytes for the ZK ElGamal Proof Program (Phase 2).
+  range_proof_data: number[]
 }
 
 export type WasmExports = InitOutput
@@ -486,14 +487,15 @@ export function aggregateReadings(readings: any[]): any {
 }
 
 /**
- * Recover hidden amount from a Pedersen commitment
+ * Recover a hidden amount from a Pedersen commitment.
+ *
+ * Not implemented: this always returned null (the wasm-zk stub it called was a
+ * no-op and has been removed). A real implementation needs a bounded
+ * baby-step/giant-step discrete-log search over v in C = v*G + b*H; callers
+ * already treat null as "unknown" and keep their own fallbacks.
  */
-export function recoverAmount(commitment: number[], blinding: Uint8Array): number | null {
-  // Sync API: only usable once the lazily-loaded ZK module is warm
-  // (preloadZkModule). Callers keep their JS fallbacks otherwise.
-  if (!zkModule) return null
-  const result = zkModule.recover_amount_from_commitment(commitment, blinding)
-  return result !== undefined ? Number(result) : null
+export function recoverAmount(_commitment: number[], _blinding: Uint8Array): number | null {
+  return null
 }
 
 /**

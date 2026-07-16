@@ -42,15 +42,22 @@ export async function createTransferProof(
     const proof = zk.create_transfer_proof(BigInt(amount), BigInt(balance), senderBlinding, amountBlinding);
     return {
         amount_commitment: proof.amount_commitment,
-        amount_range_proof: {
-            proof_data: Array.from(proof.amount_range_proof.proof_data),
-            commitment: proof.amount_range_proof.commitment
-        },
-        remaining_range_proof: {
-            proof_data: Array.from(proof.remaining_range_proof.proof_data),
-            commitment: proof.remaining_range_proof.commitment
-        },
-        balance_proof: proof.balance_proof
+        remaining_commitment: proof.remaining_commitment,
+        balance_proof: proof.balance_proof,
+        range_proof_data: Array.from(proof.range_proof_data),
+    };
+}
+
+export async function createUnshieldProof(
+    remaining: number,
+    blinding: Uint8Array
+): Promise<{ commitment: ZkCommitment; range_proof_data: number[] }> {
+    const zk = await loadZkModule();
+    if (!zk) throw new Error('ZK WASM module not loaded');
+    const proof = zk.create_unshield_proof(BigInt(remaining), blinding);
+    return {
+        commitment: proof.commitment,
+        range_proof_data: Array.from(proof.range_proof_data as Uint8Array | number[]),
     };
 }
 

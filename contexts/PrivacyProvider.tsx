@@ -9,15 +9,21 @@ import {
 } from 'react'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Program, AnchorProvider, BN } from '@coral-xyz/anchor'
-import { PublicKey, Keypair, SystemProgram, Transaction } from '@solana/web3.js'
+import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 import * as zk from '@/lib/zk-utils'
 import * as privacyUtils from '@/lib/privacy-utils'
 import * as stealthUtils from '@/lib/stealth-utils'
 import {
   getPrivateBalancePDA,
-  getNullifierSetPDA,
-  getMintAuthorityPDA,
+  getPrivVaultPDA,
+  getPrivVaultAuthPDA,
+  getPrivNullifierPDA,
 } from '@/lib/pda-utils'
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token'
+import { buildRangeProofContext } from '@/lib/zk-proof-program'
 import { ENERGY_TOKEN_MINT } from '@/utils/const'
 import tradingIdl from '@/lib/idl/trading.json'
 import { toast } from 'react-hot-toast'
@@ -358,61 +364,66 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
       b_tr
     )
 
-    // 3. Derive commitments
-    const senderNewCommit = {
-      point: Array.from(proof.remaining_range_proof.commitment.point),
-    }
-    const recipientNewCommit = {
-      point: Array.from(proof.amount_range_proof.commitment.point),
-    }
+    // 3. Commitments the on-chain instruction takes: C_amt (amount) and the
+    //    sender's new commitment C_new (= remaining). Conservation C_old ==
+    //    C_amt + C_new and the Okamoto balance PoK are verified on-chain.
+    const amountCommitment = Array.from(proof.amount_commitment.point)
+    const senderNewCommitment = Array.from(proof.remaining_commitment.point)
 
-    // 4. PDAs
-    const senderPda = getPrivateBalancePDA(
+    // 4. PDAs + per-transfer nullifier
+    const senderBalance = getPrivateBalancePDA(
       wallet.publicKey,
       ENERGY_TOKEN_MINT,
       TRADING_PROGRAM_ID
     )
-    const recipientPda = getPrivateBalancePDA(
+    const recipientBalance = getPrivateBalancePDA(
       recipient,
       ENERGY_TOKEN_MINT,
       TRADING_PROGRAM_ID
     )
-    const nullifierSet = getNullifierSetPDA(
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-
-    const transferRecord = Keypair.generate()
     const nullifier = window.crypto.getRandomValues(new Uint8Array(32))
+    const nullifierPda = getPrivNullifierPDA(nullifier, TRADING_PROGRAM_ID)
+
+    // 5. Range proof (amount, remaining ∈ [0,2^64)): verify the batched U128
+    //    proof via the ZK ElGamal Proof Program into a context-state account
+    //    that private_transfer reads. The ~1000-byte proof + createAccount
+    //    exceed one tx's size limit, so setup runs as two SEPARATE txs before
+    //    the transfer (verified against a live validator).
+    const { contextAccount, createIx, verifyIx, closeIx } =
+      await buildRangeProofContext(
+        connection,
+        wallet.publicKey,
+        proof.range_proof_data,
+        'u128'
+      )
+    await program.provider.sendAndConfirm!(
+      new Transaction().add(createIx),
+      [contextAccount]
+    )
+    await program.provider.sendAndConfirm!(new Transaction().add(verifyIx))
 
     const sig = await (program.methods as any)
       .privateTransfer(
-        senderNewCommit,
-        recipientNewCommit,
+        Array.from(nullifier),
+        amountCommitment,
+        senderNewCommitment,
         {
-          amountCommitment: { point: recipientNewCommit.point },
-          amountRangeProof: {
-            proofData: Array.from(proof.amount_range_proof.proof_data),
-            commitment: { point: recipientNewCommit.point },
-          },
-          remainingRangeProof: {
-            proofData: Array.from(proof.remaining_range_proof.proof_data),
-            commitment: { point: senderNewCommit.point },
-          },
-          balanceProof: proof.balance_proof,
-        },
-        Array.from(nullifier)
+          challenge: Array.from(proof.balance_proof.challenge),
+          response: Array.from(proof.balance_proof.response),
+        }
       )
       .accounts({
-        senderBalance: senderPda,
-        recipientBalance: recipientPda,
-        nullifierSet: nullifierSet,
-        transferRecord: transferRecord.publicKey,
+        senderBalance,
+        recipientBalance,
+        nullifierPda,
+        recipient,
+        mint: ENERGY_TOKEN_MINT,
+        rangeProofContext: contextAccount.publicKey,
         sender: wallet.publicKey,
-        owner: wallet.publicKey,
         systemProgram: SystemProgram.programId,
       } as any)
-      .signers([transferRecord])
+      // Reclaim the context-state rent after private_transfer reads it.
+      .postInstructions([closeIx])
       .rpc()
 
     // Update local balance
@@ -435,77 +446,59 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     if (privateBalance.amount < amount)
       throw new Error('Insufficient private balance')
 
-    // 1. Proof Setup
-    const currentIdx = privateBalance.txCounter
-    const b_old = privacyUtils.deriveBlindingFactor(rootSeed, currentIdx)
-    // Recipient blinding in 'transfer_proof' represents the 'unshielded commitment'
-    // We'll use a random one as it's not staying in the ZK system (it's becoming public)
-    const b_tr = window.crypto.getRandomValues(new Uint8Array(32))
-
-    const proof = await zk.createTransferProof(
-      amount,
-      privateBalance.amount,
-      b_old,
-      b_tr
-    )
-
-    // 2. PDAs
-    const pda = getPrivateBalancePDA(
+    // Unshield amount is PUBLIC (tokens cross back to the public ledger). The
+    // on-chain instruction subtracts amount·G from the shielded commitment and
+    // pays out of the per-mint pool vault, gated on a range proof that the
+    // REMAINING balance is still in [0,2^64) (prevents over-unshield underflow).
+    const senderBalance = getPrivateBalancePDA(
       wallet.publicKey,
       ENERGY_TOKEN_MINT,
       TRADING_PROGRAM_ID
     )
-    const nullifierSet = getNullifierSetPDA(
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-    const mintAuthority = getMintAuthorityPDA(
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-
-    // Public ATA source/dest
-    const { getAssociatedTokenAddressSync } = await import('@solana/spl-token')
-    const ata = getAssociatedTokenAddressSync(
+    const vault = getPrivVaultPDA(ENERGY_TOKEN_MINT, TRADING_PROGRAM_ID)
+    const vaultAuthority = getPrivVaultAuthPDA(TRADING_PROGRAM_ID)
+    const userWallet = getAssociatedTokenAddressSync(
       ENERGY_TOKEN_MINT,
       wallet.publicKey
     )
 
-    const senderNewCommit = {
-      point: Array.from(proof.remaining_range_proof.commitment.point),
-    }
-    const nullifier = window.crypto.getRandomValues(new Uint8Array(32))
+    // Range proof over C_new = C_old − amount·G, blinded by the CURRENT balance
+    // blinding b_old (unchanged by unshield). Verified via the ZK ElGamal Proof
+    // Program into a context-state account that unshield reads.
+    const b_old = privacyUtils.deriveBlindingFactor(
+      rootSeed,
+      privateBalance.txCounter
+    )
+    const remainingProof = await zk.createUnshieldProof(
+      privateBalance.amount - amount,
+      b_old
+    )
+    const { contextAccount, createIx, verifyIx, closeIx } =
+      await buildRangeProofContext(
+        connection,
+        wallet.publicKey,
+        remainingProof.range_proof_data,
+        'u64'
+      )
+    await program.provider.sendAndConfirm!(
+      new Transaction().add(createIx),
+      [contextAccount]
+    )
+    await program.provider.sendAndConfirm!(new Transaction().add(verifyIx))
 
     const sig = await (program.methods as any)
-      .unshieldTokens(
-        new BN(amount),
-        senderNewCommit,
-        {
-          amountCommitment: {
-            point: Array.from(proof.amount_range_proof.commitment.point),
-          },
-          amountRangeProof: {
-            proofData: Array.from(proof.amount_range_proof.proof_data),
-            commitment: {
-              point: Array.from(proof.amount_range_proof.commitment.point),
-            },
-          },
-          remainingRangeProof: {
-            proofData: Array.from(proof.remaining_range_proof.proof_data),
-            commitment: { point: senderNewCommit.point },
-          },
-          balanceProof: proof.balance_proof,
-        },
-        Array.from(nullifier)
-      )
+      .unshield(new BN(amount))
       .accounts({
-        privateBalance: pda,
-        nullifierSet: nullifierSet,
+        sender: wallet.publicKey,
         mint: ENERGY_TOKEN_MINT,
-        userTokenAccount: ata,
-        mintAuthority: mintAuthority,
-        owner: wallet.publicKey,
+        userWallet,
+        vault,
+        vaultAuthority,
+        senderBalance,
+        rangeProofContext: contextAccount.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
       } as any)
+      .postInstructions([closeIx])
       .rpc()
 
     // Update local balance
@@ -611,32 +604,33 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     if (!wallet || !program || !rootSeed)
       throw new Error('Not connected or locked')
 
-    // Drive next blinding factor
-    const nextIdx = (privateBalance?.txCounter || 0) + 1
-    const blinding = privacyUtils.deriveBlindingFactor(rootSeed, nextIdx)
-
     checkPolicy('SHIELD', amount, { origin })
 
-    // Generate proof
-    const proof = await zk.createRangeProof(amount, blinding)
-
-    // PDA
-    const pda = getPrivateBalancePDA(
+    // Shield amount is PUBLIC. The instruction moves tokens user→pool vault and
+    // adds amount·G to the shielded commitment (blinding accrues via transfers).
+    const senderBalance = getPrivateBalancePDA(
       wallet.publicKey,
       ENERGY_TOKEN_MINT,
       TRADING_PROGRAM_ID
     )
+    const vault = getPrivVaultPDA(ENERGY_TOKEN_MINT, TRADING_PROGRAM_ID)
+    const vaultAuthority = getPrivVaultAuthPDA(TRADING_PROGRAM_ID)
+    const userWallet = getAssociatedTokenAddressSync(
+      ENERGY_TOKEN_MINT,
+      wallet.publicKey
+    )
 
     const sig = await (program.methods as any)
-      .shieldTokens(
-        new BN(amount),
-        { point: Array.from(proof.commitment.point) },
-        Array.from(proof.proof_data)
-      )
+      .shield(new BN(amount))
       .accounts({
-        privateBalance: pda,
+        sender: wallet.publicKey,
         mint: ENERGY_TOKEN_MINT,
-        owner: wallet.publicKey,
+        userWallet,
+        vault,
+        vaultAuthority,
+        senderBalance,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
       } as any)
       .rpc()
 

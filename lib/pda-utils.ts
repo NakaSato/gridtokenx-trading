@@ -74,9 +74,36 @@ export const getLpTokenMintPDA = (poolName: string, programId: PublicKey) => {
     )[0]
 }
 
+// Shielded-balance / pool PDA seeds — MUST match the trading program's on-chain
+// seeds (gridtokenx-anchor/programs/trading, `privacy` feature):
+//   priv_bal        = [b"priv_bal", owner, mint]
+//   priv_vault      = [b"priv_vault", mint]        (per-mint pool token account)
+//   priv_vault_auth = [b"priv_vault_auth"]         (global vault authority)
+//   priv_null       = [b"priv_null", nullifier]    (per-transfer replay guard)
 export const getPrivateBalancePDA = (owner: PublicKey, mint: PublicKey, programId: PublicKey) => {
     return PublicKey.findProgramAddressSync(
-        [Buffer.from('private_balance'), owner.toBuffer(), mint.toBuffer()],
+        [Buffer.from('priv_bal'), owner.toBuffer(), mint.toBuffer()],
+        programId
+    )[0]
+}
+
+export const getPrivVaultPDA = (mint: PublicKey, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('priv_vault'), mint.toBuffer()],
+        programId
+    )[0]
+}
+
+export const getPrivVaultAuthPDA = (programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('priv_vault_auth')],
+        programId
+    )[0]
+}
+
+export const getPrivNullifierPDA = (nullifier: Uint8Array, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('priv_null'), Buffer.from(nullifier)],
         programId
     )[0]
 }
