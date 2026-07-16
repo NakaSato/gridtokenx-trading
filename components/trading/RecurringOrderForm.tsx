@@ -117,7 +117,7 @@ export function RecurringOrderForm() {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: '380px' }}>
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 min-h-[380px]">
                     {/* Strategy Name */}
                     <Field label="Strategy Name" hint="optional">
                         <Input
@@ -310,6 +310,7 @@ export function RecurringOrderForm() {
                     <SlideToConfirm
                         loading={loading}
                         disabled={loading || !token || !amount}
+                        idleHint={!token ? 'Sign in to trade' : !amount ? 'Enter an amount' : 'Slide to confirm'}
                         onConfirm={(s) => handleSubmit({ preventDefault() {} } as React.SyntheticEvent, s)}
                     />
 
@@ -324,10 +325,17 @@ const freqIcons = { Clock, Sun, CalendarDays, CalendarRange }
 // Single alert style — one layout, accent swaps by success/error only
 function FormAlert({ success, message }: { success: boolean; message: string }) {
     const Icon = success ? CheckCircle2 : AlertCircle
-    const accent = success ? "text-emerald-500" : "text-rose-500"
     return (
-        <div className="flex items-start gap-2.5 rounded-xl border border-border bg-secondary p-3 text-xs">
-            <Icon className={cn("mt-0.5 h-4 w-4 flex-shrink-0", accent)} />
+        <div
+            role="status"
+            className={cn(
+                "flex items-start gap-2.5 rounded-xl border p-3 text-xs",
+                success
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : "border-rose-500/30 bg-rose-500/5"
+            )}
+        >
+            <Icon className={cn("mt-0.5 h-4 w-4 flex-shrink-0", success ? "text-emerald-500" : "text-rose-500")} />
             <span className="leading-relaxed text-foreground">{message}</span>
         </div>
     )
@@ -341,9 +349,10 @@ const inputBase = "appearance-none rounded-xl border border-border bg-secondary 
 const THUMB_W = 48 // px, matches w-12
 const SLIDE_THRESHOLD = 0.7 // fraction of max travel to trigger
 
-function SlideToConfirm({ loading, disabled, onConfirm }: {
+function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onConfirm }: {
     loading: boolean
     disabled: boolean
+    idleHint?: string
     onConfirm: (side: 'buy' | 'sell') => void
 }) {
     const trackRef = useRef<HTMLDivElement>(null)
@@ -387,6 +396,7 @@ function SlideToConfirm({ loading, disabled, onConfirm }: {
     const intensity = Math.min(1, Math.abs(ratio))
 
     return (
+        <div className="space-y-1.5">
         <div
             ref={trackRef}
             data-testid="slide-to-confirm-track"
@@ -409,19 +419,12 @@ function SlideToConfirm({ loading, disabled, onConfirm }: {
             {/* Side hints */}
             <div className="absolute inset-0 flex items-center justify-between px-5 text-xs font-semibold pointer-events-none">
                 <span className={cn("flex items-center gap-1 transition-colors", !towardBuy && dragging ? "text-rose-500" : "text-muted-foreground")}>
-                    <TrendingUp className="h-3.5 w-3.5" /> Sell
+                    <TrendingDown className="h-3.5 w-3.5" /> Sell
                 </span>
                 <span className={cn("flex items-center gap-1 transition-colors", towardBuy && dragging ? "text-emerald-500" : "text-muted-foreground")}>
-                    Buy <TrendingDown className="h-3.5 w-3.5" />
+                    Buy <TrendingUp className="h-3.5 w-3.5" />
                 </span>
             </div>
-
-            {/* Center label */}
-            {!dragging && !loading && (
-                <span className="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-muted-foreground/70 pointer-events-none">
-                    Slide to confirm
-                </span>
-            )}
 
             {/* Thumb */}
             <div
@@ -455,6 +458,18 @@ function SlideToConfirm({ loading, disabled, onConfirm }: {
                     </span>
                 )}
             </div>
+        </div>
+
+        {/* Hint below the track — the thumb sits dead-center, so an in-track
+            label is always occluded. Height is reserved to avoid layout shift. */}
+        <p
+            className={cn(
+                "h-4 text-center text-[11px] font-medium text-muted-foreground/70 transition-opacity",
+                (dragging || loading) && "opacity-0"
+            )}
+        >
+            {idleHint}
+        </p>
         </div>
     )
 }
