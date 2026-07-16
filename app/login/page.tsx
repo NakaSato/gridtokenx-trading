@@ -20,6 +20,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   // Login rejected with AUTH_1005 (correct password, email unverified).
   const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
+  // Login failed (wrong credentials, server error, …) — shown inline so the
+  // error persists on the form instead of only flashing a toast.
+  const [signInError, setSignInError] = useState<string | null>(null)
   const { canResend, isResending, resendVerification: handleResendVerification } =
     useResendVerification(username)
 
@@ -40,18 +43,19 @@ export default function LoginPage() {
     setLoading(true)
     try {
       setShowUnverifiedAlert(false)
+      setSignInError(null)
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
       router.push('/')
     } catch (error: unknown) {
       if (error instanceof ApiClientError && error.code === 'AUTH_1005') {
         // Credentials are right but the email is unverified — show the
-        // actionable inline alert instead of the generic failure toast.
+        // actionable inline alert instead of the generic failure message.
         setShowUnverifiedAlert(true)
         return
       }
       const message = error instanceof Error ? error.message : 'Sign in failed'
-      toast.error(message)
+      setSignInError(message)
     } finally {
       setLoading(false)
     }
@@ -104,6 +108,18 @@ export default function LoginPage() {
                 {isResending ? 'Sending...' : 'Resend verification email'}
               </button>
             )}
+          </div>
+        )}
+
+        {signInError && (
+          <div
+            role="alert"
+            className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm"
+          >
+            <p className="text-red-700 dark:text-red-300">
+              <span className="font-medium">Sign in failed.</span>{' '}
+              {signInError}
+            </p>
           </div>
         )}
 

@@ -108,6 +108,9 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   // Login rejected with AUTH_1005 (correct password, email unverified).
   const [showUnverifiedAlert, setShowUnverifiedAlert] = useState(false)
+  // Login failed (wrong credentials, server error, …) — shown inline so the
+  // error survives inside the still-open modal instead of only flashing a toast.
+  const [signInError, setSignInError] = useState<string | null>(null)
   const {
     canResend: canResendVerification,
     isResending: isResendingVerification,
@@ -141,8 +144,10 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       return
     }
 
+    setIsLoading(true)
     try {
       setShowUnverifiedAlert(false)
+      setSignInError(null)
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
@@ -156,13 +161,15 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       console.error('Sign in error:', error)
       if (error instanceof ApiClientError && error.code === 'AUTH_1005') {
         // Credentials are right but the email is unverified — show the
-        // actionable inline alert instead of the generic failure toast.
+        // actionable inline alert instead of the generic failure message.
         setShowUnverifiedAlert(true)
         return
       }
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Sign in failed: ${errorMessage}`)
+      setSignInError(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -405,6 +412,20 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                         </Button>
                       )}
                     </div>
+                  </div>
+                </div>
+              )}
+              {signInError && (
+                <div
+                  role="alert"
+                  className="mb-4 rounded-sm border border-red-500/30 bg-red-500/10 p-3"
+                >
+                  <div className="flex items-start gap-2 text-sm">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    <p className="text-red-700 dark:text-red-300">
+                      <span className="font-medium">Sign in failed.</span>{' '}
+                      {signInError}
+                    </p>
                   </div>
                 </div>
               )}

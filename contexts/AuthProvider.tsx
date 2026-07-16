@@ -182,44 +182,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     password: string,
     rememberMe: boolean = false
   ): Promise<LoginResponse> => {
-    setIsLoading(true)
-    try {
-      const response = await apiClient.login(username, password)
+    // Deliberately does NOT toggle the global isLoading: that flag means
+    // "initial auth check in progress" and gates skeletons/unmounts (e.g.
+    // AuthButton). Flipping it here unmounted the WalletModal mid-login, so a
+    // failed sign-in silently closed the modal. Callers show their own
+    // per-form loading state.
+    const response = await apiClient.login(username, password)
 
-      if (response.error || !response.data) {
-        throw new ApiClientError(
-          response.error || 'Login failed',
-          response.code,
-          response.status
-        )
-      }
-
-      const loginData: LoginResponse = response.data
-      const expirationTime = Date.now() + loginData.expires_in * 1000
-
-      // Store token and user data. refresh_token is persisted alongside the
-      // access token so the proactive-refresh timer can present it to /auth/refresh.
-      if (rememberMe) {
-        localStorage.setItem('access_token', loginData.access_token)
-        localStorage.setItem('refresh_token', loginData.refresh_token)
-        localStorage.setItem('token_expires_at', String(expirationTime))
-        localStorage.setItem('user', JSON.stringify(loginData.user))
-      } else {
-        sessionStorage.setItem('access_token', loginData.access_token)
-        sessionStorage.setItem('refresh_token', loginData.refresh_token)
-        sessionStorage.setItem('token_expires_at', String(expirationTime))
-        sessionStorage.setItem('user', JSON.stringify(loginData.user))
-      }
-
-      setToken(loginData.access_token)
-      setUser(loginData.user)
-      apiClient.setToken(loginData.access_token)
-      scheduleRefresh(expirationTime)
-
-      return loginData
-    } finally {
-      setIsLoading(false)
+    if (response.error || !response.data) {
+      throw new ApiClientError(
+        response.error || 'Login failed',
+        response.code,
+        response.status
+      )
     }
+
+    const loginData: LoginResponse = response.data
+    const expirationTime = Date.now() + loginData.expires_in * 1000
+
+    // Store token and user data. refresh_token is persisted alongside the
+    // access token so the proactive-refresh timer can present it to /auth/refresh.
+    if (rememberMe) {
+      localStorage.setItem('access_token', loginData.access_token)
+      localStorage.setItem('refresh_token', loginData.refresh_token)
+      localStorage.setItem('token_expires_at', String(expirationTime))
+      localStorage.setItem('user', JSON.stringify(loginData.user))
+    } else {
+      sessionStorage.setItem('access_token', loginData.access_token)
+      sessionStorage.setItem('refresh_token', loginData.refresh_token)
+      sessionStorage.setItem('token_expires_at', String(expirationTime))
+      sessionStorage.setItem('user', JSON.stringify(loginData.user))
+    }
+
+    setToken(loginData.access_token)
+    setUser(loginData.user)
+    apiClient.setToken(loginData.access_token)
+    scheduleRefresh(expirationTime)
+
+    return loginData
   }
 
   const logout = async () => {
@@ -261,18 +261,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     role?: Role
     wallet_address?: string
   }): Promise<RegisterResponse> => {
-    setIsLoading(true)
-    try {
-      const response = await apiClient.register(userData)
+    // Same as login: never toggle the global isLoading here (see comment there).
+    const response = await apiClient.register(userData)
 
-      if (response.error || !response.data) {
-        throw new Error(response.error || 'Registration failed')
-      }
-
-      return response.data
-    } finally {
-      setIsLoading(false)
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Registration failed')
     }
+
+    return response.data
   }
 
   const loginWithWallet = async (data: {
@@ -281,32 +277,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     message: string
     timestamp: number
   }): Promise<LoginResponse> => {
-    setIsLoading(true)
-    try {
-      const response = await apiClient.verifyWalletSignature(data)
+    // Same as login: never toggle the global isLoading here (see comment there).
+    const response = await apiClient.verifyWalletSignature(data)
 
-      if (response.error || !response.data) {
-        throw new Error(response.error || 'Wallet login failed')
-      }
-
-      const loginData: LoginResponse = response.data
-      const expirationTime = Date.now() + loginData.expires_in * 1000
-
-      // Store token and user data (always in session for safety, or local based on preference)
-      // For wallet, we default to localStorage for convenience like standard dApps
-      localStorage.setItem('access_token', loginData.access_token)
-      localStorage.setItem('token_expires_at', String(expirationTime))
-      localStorage.setItem('user', JSON.stringify(loginData.user))
-
-      setToken(loginData.access_token)
-      setUser(loginData.user)
-      apiClient.setToken(loginData.access_token)
-      scheduleRefresh(expirationTime)
-
-      return loginData
-    } finally {
-      setIsLoading(false)
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Wallet login failed')
     }
+
+    const loginData: LoginResponse = response.data
+    const expirationTime = Date.now() + loginData.expires_in * 1000
+
+    // Store token and user data (always in session for safety, or local based on preference)
+    // For wallet, we default to localStorage for convenience like standard dApps
+    localStorage.setItem('access_token', loginData.access_token)
+    localStorage.setItem('token_expires_at', String(expirationTime))
+    localStorage.setItem('user', JSON.stringify(loginData.user))
+
+    setToken(loginData.access_token)
+    setUser(loginData.user)
+    apiClient.setToken(loginData.access_token)
+    scheduleRefresh(expirationTime)
+
+    return loginData
   }
 
   const getProfile = async (): Promise<UserProfile | null> => {
