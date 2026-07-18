@@ -3,16 +3,11 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useActiveOrderMeters } from '../useActiveOrderMeters'
 
-const mockGetActiveOrderMeters = jest.fn()
+const mockGetPublicActiveOrderMeters = jest.fn()
 jest.mock('@/lib/api-client', () => ({
-    createApiClient: () => ({
-        getActiveOrderMeters: () => mockGetActiveOrderMeters(),
-    }),
-}))
-
-let mockToken: string | null = 'jwt-token'
-jest.mock('@/contexts/AuthProvider', () => ({
-    useAuth: () => ({ token: mockToken }),
+    defaultApiClient: {
+        getPublicActiveOrderMeters: () => mockGetPublicActiveOrderMeters(),
+    },
 }))
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -24,12 +19,11 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('useActiveOrderMeters', () => {
     beforeEach(() => {
-        mockGetActiveOrderMeters.mockReset()
-        mockToken = 'jwt-token'
+        mockGetPublicActiveOrderMeters.mockReset()
     })
 
     it('indexes by meter_serial, not meter_id — node ids are serials', async () => {
-        mockGetActiveOrderMeters.mockResolvedValueOnce({
+        mockGetPublicActiveOrderMeters.mockResolvedValueOnce({
             data: {
                 data: [
                     { meter_id: 'id-1', meter_serial: 'serial-1', zone_id: 2, has_open_buy: true, has_open_sell: false },
@@ -50,27 +44,30 @@ describe('useActiveOrderMeters', () => {
     })
 
     it('is filterable on an empty list — nothing is trading is a real answer', async () => {
-        mockGetActiveOrderMeters.mockResolvedValueOnce({ data: { data: [] }, status: 200 })
+        mockGetPublicActiveOrderMeters.mockResolvedValueOnce({ data: { data: [] }, status: 200 })
 
         const { result } = renderHook(() => useActiveOrderMeters(0), { wrapper })
         await waitFor(() => expect(result.current.isFilterable).toBe(true))
         expect(result.current.bySerial.size).toBe(0)
     })
 
-    it('is NOT filterable without a token, and does not call the API', async () => {
-        // The endpoint is auth-gated: a logged-out visitor must see every meter,
-        // not an empty map.
-        mockToken = null
+    it('filters for logged-out visitors — the source is public, no token needed', async () => {
+        // The public endpoint takes no auth, so the filter applies even when
+        // nobody is signed in.
+        mockGetPublicActiveOrderMeters.mockResolvedValueOnce({
+            data: { data: [{ meter_id: 'id-1', meter_serial: 'serial-1', zone_id: 1, has_open_buy: true, has_open_sell: false }] },
+            status: 200,
+        })
 
         const { result } = renderHook(() => useActiveOrderMeters(0), { wrapper })
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        await waitFor(() => expect(result.current.isFilterable).toBe(true))
 
-        expect(result.current.isFilterable).toBe(false)
-        expect(mockGetActiveOrderMeters).not.toHaveBeenCalled()
+        expect(mockGetPublicActiveOrderMeters).toHaveBeenCalled()
+        expect(result.current.bySerial.has('serial-1')).toBe(true)
     })
 
     it('is NOT filterable when the request fails', async () => {
-        mockGetActiveOrderMeters.mockResolvedValueOnce({ error: 'boom', status: 500 })
+        mockGetPublicActiveOrderMeters.mockResolvedValueOnce({ error: 'boom', status: 500 })
 
         const { result } = renderHook(() => useActiveOrderMeters(0), { wrapper })
         await waitFor(() => expect(result.current.error).toBe('boom'))

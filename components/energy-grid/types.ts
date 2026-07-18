@@ -3,6 +3,8 @@
 export interface EnergyNode {
     id: string
     name: string
+    /** Meter serial number. Only populated for authenticated viewers (public API omits it). */
+    serial?: string
     buildingCode?: string
     type: 'generator' | 'storage' | 'consumer' | 'transformer'
     longitude: number

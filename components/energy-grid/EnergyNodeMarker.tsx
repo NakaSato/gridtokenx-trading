@@ -72,7 +72,7 @@ export function EnergyNodeMarker({
                             e.stopPropagation()
                             onDoubleClick(node)
                         }}
-                        title={`${node.name} - Double click to zoom`}
+                        title={`${node.name}${node.serial ? ` · Meter ${node.serial}` : ''} - Double click to zoom`}
                     >
                         {/* Status indicator */}
                         <div
@@ -112,10 +112,11 @@ export function EnergyNodeMarker({
                                     LIVE
                                 </span>
                             </h3>
-                            {node.buildingCode && (
-                                <p className="mb-3 font-mono text-xs text-secondary-foreground">
-                                    {node.buildingCode}
-                                </p>
+                            {(node.buildingCode || node.serial) && (
+                                <div className="mb-3 space-y-0.5 font-mono text-xs text-secondary-foreground">
+                                    {node.buildingCode && <p>{node.buildingCode}</p>}
+                                    {node.serial && <p>Meter #{node.serial}</p>}
+                                </div>
                             )}
 
                             <div className="custom-scrollbar max-h-[400px] space-y-2 overflow-y-auto text-xs">
@@ -308,6 +309,7 @@ export const MemoizedEnergyNodeMarker = React.memo(EnergyNodeMarker, (prev, next
     // Only re-render if these props changed
     return (
         prev.node.id === next.node.id &&
+        prev.node.serial === next.node.serial &&
         prev.isSelected === next.isSelected &&
         prev.liveData?.currentValue === next.liveData?.currentValue &&
         prev.liveData?.status === next.liveData?.status

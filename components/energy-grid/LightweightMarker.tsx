@@ -73,8 +73,11 @@ function LightweightMarkerComponent({
         onTradeClick?.(node)
     }, [node, onTradeClick])
 
+    // Serial suffix — only present for authenticated viewers (public API omits it)
+    const serialSuffix = node.serial ? ` · Meter ${node.serial}` : ''
+
     // Generate accessible label based on node type and status
-    const ariaLabel = `${node.name}, ${node.type}, ${status}, ${node.type === 'storage' ? `${liveValue.toFixed(0)}% charged` : `${liveValue.toFixed(1)} kilowatts`}`
+    const ariaLabel = `${node.name}${serialSuffix}, ${node.type}, ${status}, ${node.type === 'storage' ? `${liveValue.toFixed(0)}% charged` : `${liveValue.toFixed(1)} kilowatts`}`
 
     return (
         <Marker longitude={node.longitude} latitude={node.latitude}>
@@ -83,7 +86,7 @@ function LightweightMarkerComponent({
                 style={{
                     contain: 'layout style',
                 }}
-                title={isCompromised ? `${node.name} - COMPROMISED (Anomaly: ${anomalyScore.toFixed(2)})` : node.name}
+                title={isCompromised ? `${node.name}${serialSuffix} - COMPROMISED (Anomaly: ${anomalyScore.toFixed(2)})` : `${node.name}${serialSuffix}`}
                 onClick={handleClick}
                 onDoubleClick={handleDoubleClick}
             >
@@ -111,6 +114,7 @@ function LightweightMarkerComponent({
 export const LightweightMarker = memo(LightweightMarkerComponent, (prev, next) => {
     return (
         prev.node.id === next.node.id &&
+        prev.node.serial === next.node.serial &&
         prev.isSelected === next.isSelected &&
         prev.liveData?.status === next.liveData?.status &&
         prev.liveData?.currentValue === next.liveData?.currentValue &&

@@ -94,6 +94,17 @@ export class TradingApi {
         })
     }
 
+    /**
+     * Public, unauthenticated variant of {@link getActiveOrderMeters} for the
+     * grid map — same order-presence data, no token, so logged-out viewers can
+     * hide non-trading meters. Backed by GET /api/v1/public/active-order-meters.
+     */
+    async getPublicActiveOrderMeters(): Promise<ApiResponse<ActiveOrderMetersResponse>> {
+        return apiRequest<ActiveOrderMetersResponse>('/api/v1/public/active-order-meters', {
+            method: 'GET',
+        })
+    }
+
     async getOrderBook(zoneId: number = 1) {
         return apiRequest<OrderBookResponse>(`/api/v1/zones/${zoneId}/book`, {
             method: 'GET',

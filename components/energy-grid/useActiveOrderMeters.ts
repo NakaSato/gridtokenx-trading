@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { defaultApiClient } from '@/lib/api-client'
 import type { ActiveOrderMeter } from '@/types/trading'
 
 export interface UseActiveOrderMetersResult {
@@ -13,9 +12,10 @@ export interface UseActiveOrderMetersResult {
      */
     bySerial: Map<string, ActiveOrderMeter>
     /**
-     * False when the filter cannot be applied — no auth token, still loading, or
-     * the request failed. Callers must show ALL meters in that case rather than
-     * an empty map: an unknown answer is not "nothing is trading".
+     * False when the filter cannot be applied — still loading or the request
+     * failed. Callers must show ALL meters in that case rather than an empty map:
+     * an unknown answer is not "nothing is trading". The data source is public,
+     * so being logged out no longer disables the filter.
      */
     isFilterable: boolean
     isLoading: boolean
@@ -24,17 +24,15 @@ export interface UseActiveOrderMetersResult {
 
 /**
  * Meters that currently have resting buy/sell orders (GET
- * /markets/active-order-meters). Auth-gated, so logged-out visitors get
- * `isFilterable: false` and the map falls back to showing every meter.
+ * /public/active-order-meters). Public/unauthenticated, so the map filters for
+ * every visitor — logged in or not. `isFilterable` is false only while loading
+ * or on error, where the map falls back to showing every meter.
  */
 export function useActiveOrderMeters(refreshIntervalMs = 30000): UseActiveOrderMetersResult {
-    const { token } = useAuth()
-
     const { data, isLoading, error } = useQuery({
-        queryKey: ['active-order-meters'],
-        enabled: !!token,
+        queryKey: ['public-active-order-meters'],
         queryFn: async () => {
-            const response = await createApiClient(token!).getActiveOrderMeters()
+            const response = await defaultApiClient.getPublicActiveOrderMeters()
             if (response.error) throw new Error(response.error)
             return response.data?.data ?? []
         },
@@ -48,7 +46,7 @@ export function useActiveOrderMeters(refreshIntervalMs = 30000): UseActiveOrderM
 
     return {
         bySerial,
-        isFilterable: !!token && !isLoading && !error && data !== undefined,
+        isFilterable: !isLoading && !error && data !== undefined,
         isLoading,
         error: error ? (error as Error).message : null,
     }

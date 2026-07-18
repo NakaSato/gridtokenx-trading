@@ -5,6 +5,7 @@ import type { PublicMeterResponse } from '@/types/meter'
 import type { EnergyNode } from './types'
 import { useQuery } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
+import { useAuth } from '@/contexts/AuthProvider'
 
 export interface UseMeterMapDataOptions {
     /** Whether to include static config nodes alongside real meters */
@@ -100,6 +101,8 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
         refreshIntervalMs = 60000,
     } = options
 
+    const { isAuthenticated } = useAuth()
+
     const { data: meters = [], isLoading, error, refetch } = useQuery({
         queryKey: ['public-meters'],
         queryFn: async () => {
@@ -109,6 +112,36 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
         },
         refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
     })
+
+    // Serial numbers are privacy-safe-omitted from the public endpoint. When the
+    // viewer is authenticated, pull the located-meter map (which carries
+    // serial_number) and merge serials in by meter id. Gated on auth so public
+    // viewers never fire the JWT-only /meters/map request.
+    const { data: mapPoints = [] } = useQuery({
+        queryKey: ['meters-map-serials'],
+        queryFn: async () => {
+            const response = await defaultApiClient.getMetersMap()
+            if (response.error) throw new Error(response.error)
+            return response.data || []
+        },
+        enabled: isAuthenticated,
+        refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
+    })
+
+    // node.id can live in either id space depending on the backend build: the
+    // active-order path treats node ids as serials, while PublicMeterResponse
+    // documents meter_id as an opaque id. Index each auth map point under BOTH
+    // its uuid `id` and its `serial_number` so the serial merge matches whichever
+    // one a node carries.
+    const serialById = useMemo(() => {
+        const m = new Map<string, string>()
+        for (const p of mapPoints) {
+            if (!p.serial_number) continue
+            if (p.id) m.set(p.id, p.serial_number)
+            m.set(p.serial_number, p.serial_number)
+        }
+        return m
+    }, [mapPoints])
 
     // Convert meters to EnergyNodes. Only verified meters WITH real coordinates
     // are placed on the map — meters without lat/lng from the backend are dropped
@@ -121,8 +154,12 @@ export function useMeterMapData(options: UseMeterMapDataOptions = {}): UseMeterM
                 `[useMeterMapData] Dropped ${verified.length - placeable.length} verified meter(s) without coordinates from the map`
             )
         }
-        return placeable.map((meter, index) => meterToEnergyNode(meter, index))
-    }, [meters])
+        return placeable.map((meter, index) => {
+            const node = meterToEnergyNode(meter, index)
+            const serial = serialById.get(node.id)
+            return serial ? { ...node, serial } : node
+        })
+    }, [meters, serialById])
 
     // Combine with static nodes if requested
     const nodes: EnergyNode[] = useMemo(() =>
