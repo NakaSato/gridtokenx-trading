@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Leaf,
   MenuIcon,
   MessagesSquare,
   TrendingUp,
@@ -94,6 +95,12 @@ const NAV_ITEMS: NavItem[] = [
     name: 'Portfolio',
     href: '/portfolio',
     icon: <WalletIcon />,
+    requiresAuth: true,
+  },
+  {
+    name: 'Carbon',
+    href: '/carbon-credit',
+    icon: <Leaf size={16} />,
     requiresAuth: true,
   },
 ]
