@@ -24,6 +24,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const { token } = useAuth();
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
     const socketRef = useRef<WebSocket | null>(null);
+    const reconnectAttemptsRef = useRef(0);
+    // Latest connect() for the reconnect timer — a useCallback can't reference
+    // itself before its own declaration (react-hooks lint).
+    const connectRef = useRef<() => void>(() => { });
 
     const connect = useCallback(() => {
         // Basic JWT validation: must be a string, at least 20 chars, and have 3 parts
@@ -55,6 +59,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         ws.onopen = () => {
             setIsConnected(true);
             setSocket(ws);
+            reconnectAttemptsRef.current = 0;
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
             }
@@ -65,16 +70,30 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setSocket(null);
             socketRef.current = null;
 
+            // 1000 = clean close (e.g. our own unmount cleanup) — nothing to report.
+            if (event.code !== 1000) {
+                console.warn(
+                    `⚠️ WebSocket closed (code ${event.code}${event.reason ? `, reason: ${event.reason}` : ''}) — ${wsUrl}`
+                );
+            }
+
             // Reconnect only with a still-valid token. Retrying an expired token
             // just reproduces the 401 that closed us — let the auth layer refresh
             // first (a new `token` re-runs connect() via the effect dependency).
+            // Exponential backoff (3s → 6s → 12s → … capped at 60s) so an
+            // unreachable gateway doesn't get hammered every 3s forever.
             if (token && !isJwtExpired(token)) {
-                reconnectTimeoutRef.current = setTimeout(connect, 3000);
+                const delay = Math.min(3000 * 2 ** reconnectAttemptsRef.current, 60000);
+                reconnectAttemptsRef.current += 1;
+                reconnectTimeoutRef.current = setTimeout(() => connectRef.current(), delay);
             }
         };
 
-        ws.onerror = (error) => {
-            console.error('⚠️ WebSocket error:', error);
+        ws.onerror = () => {
+            // The browser's WS `error` event is intentionally opaque (no code,
+            // no message — logs as `{}`). The paired `close` event carries the
+            // diagnostic (code/reason), so just warn and let onclose report.
+            console.warn(`⚠️ WebSocket error — ${wsUrl} unreachable or rejected the upgrade`);
             ws.close();
         };
 
@@ -99,6 +118,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }, []);
 
     useEffect(() => {
+        connectRef.current = connect;
         connect();
 
         return () => {
