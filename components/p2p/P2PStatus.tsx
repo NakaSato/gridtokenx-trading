@@ -74,8 +74,6 @@ const P2PStatus = React.memo(function P2PStatus() {
         showToasts: false,
     })
 
-    const isRealTimeConnected = p2pConnected || settlementConnected
-
     const fetchData = useCallback(async () => {
         if (!token) return
 
@@ -147,29 +145,6 @@ const P2PStatus = React.memo(function P2PStatus() {
 
     return (
         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Real-time Connection Status */}
-            <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">System Status</span>
-                <div className="flex items-center gap-1.5">
-                    <div className="relative flex h-2 w-2">
-                        <span className={cn(
-                            "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                            isRealTimeConnected ? "bg-emerald-500" : "bg-amber-500"
-                        )}></span>
-                        <span className={cn(
-                            "relative inline-flex rounded-full h-2 w-2",
-                            isRealTimeConnected ? "bg-emerald-500" : "bg-amber-500"
-                        )}></span>
-                    </div>
-                    <span className={cn(
-                        "text-[10px] font-medium",
-                        isRealTimeConnected ? "text-emerald-500" : "text-amber-500"
-                    )}>
-                        {isRealTimeConnected ? "Live" : "Polling"}
-                    </span>
-                </div>
-            </div>
-
             {/* User Stats Card - NEW */}
             <Card className="rounded-lg border-border bg-gradient-to-br from-card to-muted/20 shadow-sm overflow-hidden">
                 <CardHeader className="pb-2 pt-3 px-3">

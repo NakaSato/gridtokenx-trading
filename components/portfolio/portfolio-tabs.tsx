@@ -1,17 +1,14 @@
 'use client'
 
-import { ChevronDown, Loader2 } from 'lucide-react'
-import { Button } from '../ui/button'
+import { Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Card, CardContent } from '../ui/card'
 import ProtectedRoute from '../ProtectedRoute'
-import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { usePortfolioPositions, usePortfolioOrders, usePortfolioTradeHistory, useExpiredOptions, useOptionSettlement } from '@/hooks/usePortfolio'
 import { useQueryClient } from '@tanstack/react-query'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
-import { format } from 'date-fns'
 import OpenPositions from '../OpenPositions'
 import OpenOptionOrders from '../OpenOptionOrders'
 import OrderHistory from '../OrderHistory'
@@ -21,9 +18,9 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { connection } from '@/utils/const'
 import ExpiredOptions from '../ExpiredOptions'
 import { CarbonCredits } from './carbon-credits'
+import P2PStatus from '../p2p/P2PStatus'
 
 export function PortfolioTabs() {
-  const [activeTab, setActiveTab] = useState('positions')
   const { token } = useAuth()
   const queryClient = useQueryClient()
   const { data: positions = [], isLoading: positionsLoading } = usePortfolioPositions()
@@ -77,27 +74,26 @@ export function PortfolioTabs() {
   )
 
   return (
-    <Tabs
-      defaultValue="positions"
-      className="flex w-full flex-1 flex-col space-y-4"
-      onValueChange={setActiveTab}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <TabsList className="grid h-fit w-full grid-cols-2 rounded-sm border bg-inherit p-1 sm:w-fit sm:grid-cols-6">
-          <TabsTrigger value="positions" className="text-xs sm:text-sm">Positions</TabsTrigger>
-          <TabsTrigger value="orders" className="text-xs sm:text-sm">Orders</TabsTrigger>
-          <TabsTrigger value="order-history" className="text-xs sm:text-sm">Order History</TabsTrigger>
-          <TabsTrigger value="trade-history" className="text-xs sm:text-sm">Trade History</TabsTrigger>
-          <TabsTrigger value="funding-history" className="text-xs sm:text-sm">Funding</TabsTrigger>
-          <TabsTrigger value="carbon-credits" className="text-xs sm:text-sm">Carbon Credits</TabsTrigger>
+    <Tabs defaultValue="system-status" className="flex w-full flex-1 flex-col space-y-4">
+      <div className="overflow-x-auto">
+        <TabsList className="flex h-fit w-max rounded-sm border bg-inherit p-1">
+          <TabsTrigger value="system-status" className="whitespace-nowrap text-xs sm:text-sm">P2P Activity</TabsTrigger>
+          <TabsTrigger value="positions" className="whitespace-nowrap text-xs sm:text-sm">Positions</TabsTrigger>
+          <TabsTrigger value="orders" className="whitespace-nowrap text-xs sm:text-sm">Orders</TabsTrigger>
+          <TabsTrigger value="order-history" className="whitespace-nowrap text-xs sm:text-sm">Order History</TabsTrigger>
+          <TabsTrigger value="trade-history" className="whitespace-nowrap text-xs sm:text-sm">Trade History</TabsTrigger>
+          <TabsTrigger value="funding-history" className="whitespace-nowrap text-xs sm:text-sm">Funding</TabsTrigger>
+          <TabsTrigger value="carbon-credits" className="whitespace-nowrap text-xs sm:text-sm">Carbon Credits</TabsTrigger>
         </TabsList>
-        <Button variant={'outline'} className="h-fit py-2 text-sm">
-          Filter
-          <ChevronDown className="ml-2 h-4 w-4" />
-        </Button>
       </div>
 
-      <TabsContent value="positions" className="mt-2 min-h-[300px]">
+      <TabsContent value="system-status" className="mt-6 min-h-[300px]">
+        <ProtectedRoute requireWallet={false} requireAuth={true}>
+          <P2PStatus />
+        </ProtectedRoute>
+      </TabsContent>
+
+      <TabsContent value="positions" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {loading ? renderLoading() : (
             <div className="flex flex-col gap-3">
@@ -119,7 +115,7 @@ export function PortfolioTabs() {
         </ProtectedRoute>
       </TabsContent>
 
-      <TabsContent value="orders" className="mt-2 min-h-[300px]">
+      <TabsContent value="orders" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {loading ? renderLoading() : (
             <div className="flex flex-col gap-3">
@@ -133,7 +129,7 @@ export function PortfolioTabs() {
         </ProtectedRoute>
       </TabsContent>
 
-      <TabsContent value="order-history" className="mt-2 min-h-[300px]">
+      <TabsContent value="order-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {loading ? renderLoading() : (
             history.length > 0 ? (
@@ -143,7 +139,7 @@ export function PortfolioTabs() {
         </ProtectedRoute>
       </TabsContent>
 
-      <TabsContent value="trade-history" className="mt-2 min-h-[300px]">
+      <TabsContent value="trade-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {loading ? renderLoading() : (
             history.length > 0 ? (
@@ -153,13 +149,13 @@ export function PortfolioTabs() {
         </ProtectedRoute>
       </TabsContent>
 
-      <TabsContent value="funding-history" className="mt-2 min-h-[300px]">
+      <TabsContent value="funding-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           {renderEmptyState("No funding history", "Funding payments will appear here")}
         </ProtectedRoute>
       </TabsContent>
 
-      <TabsContent value="carbon-credits" className="mt-2 min-h-[300px]">
+      <TabsContent value="carbon-credits" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
           <CarbonCredits />
         </ProtectedRoute>
