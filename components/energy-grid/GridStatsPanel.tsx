@@ -23,6 +23,13 @@ interface GridStatsPanelProps {
     evFleet?: EVFleetStatus
     /** Real peak grid capacity (kW) for progress-bar scaling; falls back to config. */
     peakCapacityKw?: number
+    /**
+     * Whose meters Gen/Con/Load-Balance describe: 'personal' = the viewer's own
+     * meters, 'grid' (default) = grid-wide aggregate.
+     */
+    scope?: 'grid' | 'personal'
+    /** Number of the viewer's meters behind the personal totals. */
+    scopedMeterCount?: number
 }
 
 export const GridStatsPanel = memo(function GridStatsPanel({
@@ -41,6 +48,8 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     loadForecast,
     evFleet,
     peakCapacityKw,
+    scope = 'grid',
+    scopedMeterCount,
 }: GridStatsPanelProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -49,9 +58,13 @@ export const GridStatsPanel = memo(function GridStatsPanel({
     const balancePercentage = totalLoad > 0 ? (totalGeneration / totalLoad) * 100 : 50
     // `> 0` (not `??`): a backend peak_capacity_kw of 0 must also fall back,
     // or the progress bars divide by zero (NaN%/pinned-100% widths).
-    const maxCapacity = peakCapacityKw && peakCapacityKw > 0
-        ? peakCapacityKw
-        : ENERGY_GRID_CONFIG.progressBar.maxCapacity
+    // Personal scope: grid peak capacity would flatten a household's few kW to
+    // invisible slivers — scale bars to the viewer's own larger side instead.
+    const maxCapacity = scope === 'personal'
+        ? Math.max(totalGeneration, totalConsumption, 1)
+        : peakCapacityKw && peakCapacityKw > 0
+            ? peakCapacityKw
+            : ENERGY_GRID_CONFIG.progressBar.maxCapacity
 
     return (
         <div
@@ -127,6 +140,20 @@ export const GridStatsPanel = memo(function GridStatsPanel({
 
                 <EVManagementPanel fleet={evFleet} />
 
+
+                {/* Scope badge — personal totals come from the viewer's own meters */}
+                {scope === 'personal' && (
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[8px] px-1.5 py-0.5 rounded-full border bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-bold uppercase tracking-wider">
+                            My Meters
+                        </span>
+                        {scopedMeterCount != null && (
+                            <span className="text-[8px] text-white/30 font-bold uppercase tracking-tighter">
+                                {scopedMeterCount} meter{scopedMeterCount === 1 ? '' : 's'}
+                            </span>
+                        )}
+                    </div>
+                )}
 
                 {/* Generation */}
                 <div>

@@ -1,8 +1,5 @@
 // Energy Grid Map Components - Barrel Export
-export { EnergyFlowLayers } from './EnergyFlowLayers'
 export { ZonePolygonLayers } from './ZonePolygonLayers'
-export { TradeFlowLayers } from './TradeFlowLayers'
-export { FlowParticles } from './FlowParticles'
 export { useActiveTrades } from './useActiveTrades'
 export { EnergyNodeMarker, MemoizedEnergyNodeMarker } from './EnergyNodeMarker'
 export { LightweightMarker } from './LightweightMarker'
@@ -19,6 +16,10 @@ export { useGridTopology } from './useGridTopology'
 export { useGridFlows } from './useGridFlows'
 export { useActiveOrderMeters } from './useActiveOrderMeters'
 export type { UseActiveOrderMetersResult } from './useActiveOrderMeters'
+export { useMyMeterTotals } from './useMyMeterTotals'
+export type { MyMeterTotals } from './useMyMeterTotals'
+export { useMyOwnedMeters } from './useMyOwnedMeters'
+export type { UseMyOwnedMetersResult } from './useMyOwnedMeters'
 
 // Types
 export type {
@@ -38,6 +39,8 @@ export {
     getPowerWidth,
     getStatusColor,
     getInitialLiveValue,
+    liveValueFor,
+    isAccountActive,
 } from './utils'
 export * from './GridFrequencyChart'
 export * from './GridForecastChart'

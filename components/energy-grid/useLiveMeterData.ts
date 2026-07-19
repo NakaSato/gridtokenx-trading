@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import type { EnergyNode, EnergyTransfer, LiveNodeData, LiveTransferData } from './types'
-import { getInitialLiveValue } from './utils'
+import { getInitialLiveValue, liveValueFor } from './utils'
 import type { MeterTelemetry } from './useMeterTelemetry'
 
 interface UseLiveMeterDataProps {
@@ -10,15 +10,6 @@ interface UseLiveMeterDataProps {
     energyTransfers: EnergyTransfer[]
     /** Optional live WS telemetry keyed by node id; overrides poll values when present. */
     telemetry?: Record<string, MeterTelemetry>
-}
-
-/** Resolve a node's live value: WS telemetry if present, else the REST-poll value. */
-function liveValueFor(node: EnergyNode, t?: MeterTelemetry): number {
-    if (t) {
-        if (node.type === 'generator' && t.generation_kw != null) return t.generation_kw
-        if (node.type === 'consumer' && t.consumption_kw != null) return t.consumption_kw
-    }
-    return getInitialLiveValue(node)
 }
 
 /**

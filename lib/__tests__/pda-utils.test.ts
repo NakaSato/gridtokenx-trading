@@ -258,7 +258,7 @@ describe('pda-utils', () => {
 
       expect(PublicKey.findProgramAddressSync).toHaveBeenCalledWith(
         [
-          Buffer.from('private_balance'),
+          Buffer.from('priv_bal'),
           mockOwner.toBuffer(),
           mockMint.toBuffer(),
         ],

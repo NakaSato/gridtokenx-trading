@@ -105,7 +105,8 @@ export class UserApi {
             ? `/api/v1/transactions?${queryString}`
             : '/api/v1/transactions'
 
-        return apiRequest<import('../../types/transactions').UserTransactionsResponse>(
+        // Backend returns a bare array of TransactionData, not a wrapper object.
+        return apiRequest<import('../../types/transactions').UserTransaction[]>(
             endpoint,
             { method: 'GET', token: this.getToken() }
         )

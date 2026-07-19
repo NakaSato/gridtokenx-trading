@@ -3,9 +3,7 @@
 import { Zap, Battery, BatteryCharging } from 'lucide-react'
 
 interface MapLegendProps {
-    showFlowLines: boolean
     showZones?: boolean
-    showTrades?: boolean
 }
 
 // Zone colors matching ZonePolygonLayers
@@ -17,7 +15,7 @@ const ZONE_LEGEND = [
     { name: 'Zone 4', color: 'bg-amber-500' },
 ]
 
-export function MapLegend({ showFlowLines, showZones = true, showTrades = true }: MapLegendProps) {
+export function MapLegend({ showZones = true }: MapLegendProps) {
     return (
         <div className="from-background/95 to-background/90 absolute bottom-12 left-2 rounded border border-primary/30 bg-gradient-to-br p-2 text-xs shadow-xl backdrop-blur-md w-auto">
             <h4 className="mb-1 text-[10px] font-bold text-foreground">Nodes</h4>
@@ -68,61 +66,6 @@ export function MapLegend({ showFlowLines, showZones = true, showTrades = true }
                 </>
             )}
 
-            {/* Energy Flow Legend */}
-            {showFlowLines && (
-                <>
-                    <div className="my-1.5 border-t border-primary/20" />
-                    <h4 className="mb-1 text-[10px] font-bold text-foreground">Power Flow</h4>
-                    <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="h-0.5 w-4 rounded bg-green-500" />
-                            <span className="text-[9px] text-secondary-foreground">≥300 kW</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="h-0.5 w-4 rounded bg-yellow-500" />
-                            <span className="text-[9px] text-secondary-foreground">200-299 kW</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="h-0.5 w-4 rounded bg-orange-500" />
-                            <span className="text-[9px] text-secondary-foreground">100-199 kW</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="h-0.5 w-4 rounded bg-red-500" />
-                            <span className="text-[9px] text-secondary-foreground">&lt;100 kW</span>
-                        </div>
-                        {/* Live meter packet (comet dot animation) */}
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <span className="relative flex h-1.5 w-1.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
-                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
-                            </span>
-                            <span className="text-[9px] text-secondary-foreground">Live packet · meter↔grid</span>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Trade Flow Legend */}
-            {showTrades && (
-                <>
-                    <div className="my-1.5 border-t border-primary/20" />
-                    <h4 className="mb-1 text-[10px] font-bold text-foreground">P2P Trades</h4>
-                    <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="h-0.5 w-4 rounded bg-cyan-400 animate-pulse shadow-[0_0_4px_rgba(0,255,255,0.6)]" />
-                            <span className="text-[9px] text-secondary-foreground">Trade Flow</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 p-0.5">
-                            <div className="flex gap-0.5">
-                                <div className="h-1 w-1 rounded-full bg-cyan-400" />
-                                <div className="h-1 w-1 rounded-full bg-cyan-400/60" />
-                                <div className="h-1 w-1 rounded-full bg-cyan-400/30" />
-                            </div>
-                            <span className="text-[9px] text-secondary-foreground">→ Direction</span>
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     )
 }

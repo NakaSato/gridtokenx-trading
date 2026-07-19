@@ -17,6 +17,11 @@ interface PriceInputProps {
   bestAsk?: number | null
   /** Set when the typed limit price won't cross the spread and will rest unfilled. */
   fillWarning?: string | null
+  /**
+   * Hide the Market option (sell side): the matcher prices market sells at the
+   * resting ask and rejects them, so a sell must be a limit order.
+   */
+  disableMarket?: boolean
 }
 
 export function PriceInput({
@@ -27,6 +32,7 @@ export function PriceInput({
   bestBid = null,
   bestAsk = null,
   fillWarning = null,
+  disableMarket = false,
 }: PriceInputProps) {
   return (
     <div className="space-y-2">
@@ -68,20 +74,22 @@ export function PriceInput({
         </span>
       </div>
 
-      {/* Market/Limit Toggle */}
+      {/* Market/Limit Toggle — Market hidden on sell (matcher rejects market sells) */}
       <div className="flex items-center gap-1 bg-muted/80 rounded-xl p-1 border border-border/50">
-        <button
-          type="button"
-          onClick={() => setPriceType('market')}
-          className={cn(
-            'px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 flex-1',
-            priceType === 'market'
-              ? 'bg-background text-foreground shadow-sm border border-border/50'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          )}
-        >
-          Market
-        </button>
+        {!disableMarket && (
+          <button
+            type="button"
+            onClick={() => setPriceType('market')}
+            className={cn(
+              'px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 flex-1',
+              priceType === 'market'
+                ? 'bg-background text-foreground shadow-sm border border-border/50'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            )}
+          >
+            Market
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPriceType('limit')}

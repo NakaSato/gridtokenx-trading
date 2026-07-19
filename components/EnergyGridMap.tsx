@@ -1,17 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import Map, { NavigationControl, MapRef, MapMouseEvent } from 'react-map-gl/mapbox'
+import Map, { NavigationControl, MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Activity, Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon, ArrowRightLeft } from 'lucide-react'
+import { Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import throttle from 'lodash.throttle'
 
 // Import from energy-grid sub-components
 import {
-  EnergyFlowLayers,
   ZonePolygonLayers,
-  TradeFlowLayers,
   useActiveTrades,
   LightweightMarker,
   ClusterMarker,
@@ -25,9 +23,13 @@ import {
   useGridFlows,
   useMeterTelemetry,
   useActiveOrderMeters,
+  useMyMeterTotals,
+  useMyOwnedMeters,
+  isAccountActive,
 } from './energy-grid'
 import { useTopology } from './energy-grid/useTopology'
 import type { EnergyNode, ClusterOrPoint, ClusterFeature } from './energy-grid'
+import { useAuth } from '@/contexts/AuthProvider'
 
 // Load config
 import { CAMPUS_CONFIG } from '@/lib/constants'
@@ -84,18 +86,10 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [showFlowLines, setShowFlowLines] = useState(true)
   const [showZones, setShowZones] = useState(true) // Toggle for zone polygons
-  const [showTrades, setShowTrades] = useState(true) // Toggle for trade flows
   const [showRealMeters, setShowRealMeters] = useState(true) // Toggle for real meters
   // Show only meters with a resting buy/sell order. Off → every meter.
   const [showOnlyTradingMeters, setShowOnlyTradingMeters] = useState(true)
-  const [hoveredFlow, setHoveredFlow] = useState<{
-    power: number
-    description: string
-    x: number
-    y: number
-  } | null>(null)
   // Track map bounds for clustering
   const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
   // Highlighted path state (array of node IDs for topology)
@@ -129,18 +123,37 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const { transfers: realEnergyTransfers } = useGridFlows(30000)
 
   // Use WASM topology for path finding
-  const { isLoaded: topologyLoaded, loadNetwork, findPath } = useTopology()
+  const { isLoaded: topologyLoaded, loadNetwork } = useTopology()
 
   // Which meters currently have a resting buy/sell order (auth-gated).
   const { bySerial: tradingMeters, isFilterable: tradingFilterable } = useActiveOrderMeters(30000)
 
-  // Meters actually placed on the map. When the trading filter can't be applied
-  // (logged out, loading, or the request failed) show every meter — an unknown
-  // answer must not read as "nothing is trading".
+  // Owner filter: the map shows only meters the viewer owns, and only when the
+  // viewer's account is activated. Auth-gated — logged out / loading keeps the
+  // public fleet (see useMyOwnedMeters.isFilterable).
+  const { user } = useAuth()
+  const accountActive = isAccountActive(user?.status)
+  const { ownedIds, isFilterable: ownedFilterable } = useMyOwnedMeters(30000)
+
+  // Meters actually placed on the map. Two independent auth-gated filters:
+  //  1. Owner+active — only the viewer's own meters, only if their account is
+  //     activated. A logged-in but not-yet-active account shows none of its own.
+  //  2. Trading — only meters with a resting buy/sell order.
+  // When a filter can't be applied (logged out, loading, or the request failed)
+  // it is skipped — an unknown answer must not read as "you own nothing" /
+  // "nothing is trading".
   const visibleMeterNodes = useMemo(() => {
-    if (!showOnlyTradingMeters || !tradingFilterable) return displayMeterNodes
-    return displayMeterNodes.filter((n) => tradingMeters.has(n.id))
-  }, [showOnlyTradingMeters, tradingFilterable, tradingMeters, displayMeterNodes])
+    let nodes = displayMeterNodes
+    if (ownedFilterable) {
+      nodes = accountActive
+        ? nodes.filter((n) => ownedIds.has(n.id) || (n.serial != null && ownedIds.has(n.serial)))
+        : []
+    }
+    if (showOnlyTradingMeters && tradingFilterable) {
+      nodes = nodes.filter((n) => tradingMeters.has(n.id))
+    }
+    return nodes
+  }, [displayMeterNodes, ownedFilterable, accountActive, ownedIds, showOnlyTradingMeters, tradingFilterable, tradingMeters])
 
   // Combine meters with transformers if showing real data
   const energyNodes = useMemo(() => {
@@ -208,44 +221,20 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     telemetry: meterTelemetry,
   })
 
+  // Gen/Con/Balance scoped to the viewer's OWN meters. Computed from the
+  // unfiltered meter list so hiding markers (trading filter) never shrinks the
+  // viewer's totals. Null when logged out / no owned meters on the map.
+  const { totals: myMeterTotals } = useMyMeterTotals({
+    nodes: displayMeterNodes,
+    telemetry: meterTelemetry,
+  })
+
   // Load topology network when nodes/transfers change
   useEffect(() => {
     if (topologyLoaded && energyNodes.length > 0) {
       loadNetwork(energyNodes, energyTransfers)
     }
   }, [topologyLoaded, energyNodes, energyTransfers, loadNetwork])
-
-  // Highlighted path is pure derivation from the selection — useMemo, not
-  // state + effect (sync setState in an effect trips the react-hooks rule).
-  const highlightedPath = useMemo(() => {
-    if (!selectedNode || !topologyLoaded) return undefined
-
-    // For consumers, find path to nearest generator
-    // For generators, find path to first consumer
-    const targetType = selectedNode.type === 'generator' ? 'consumer' : 'generator'
-    const targetNode = energyNodes.find(n => n.type === targetType)
-    if (!targetNode) return undefined
-
-    const result = findPath(selectedNode.id, targetNode.id)
-    return result && result.nodeIds.length > 1 ? result.nodeIds : undefined
-  }, [selectedNode, topologyLoaded, energyNodes, findPath])
-
-  // Handle flow line hover
-  const handleFlowHover = useCallback((e: MapMouseEvent) => {
-    if (e.features && e.features.length > 0) {
-      const feature = e.features[0]
-      setHoveredFlow({
-        power: feature.properties?.power ?? 0,
-        description: feature.properties?.description ?? '',
-        x: e.point.x,
-        y: e.point.y,
-      })
-    }
-  }, [])
-
-  const handleFlowLeave = useCallback(() => {
-    setHoveredFlow(null)
-  }, [])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -437,10 +426,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           console.error('Map error:', e?.error || e)
           setMapError(e?.error?.message || 'Failed to load map. Check your Mapbox token.')
         }}
-        interactiveLayerIds={showFlowLines ? ['energy-flow-line', 'energy-flow-glow'] : []}
-        onMouseMove={handleFlowHover}
-        onMouseLeave={handleFlowLeave}
-        cursor={hoveredFlow ? 'pointer' : 'grab'}
+        cursor="grab"
       >
         <NavigationControl position="top-right" />
 
@@ -449,22 +435,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           energyNodes={energyNodes}
           visible={showZones}
         />
-
-        {/* Energy Flow Layers */}
-        <EnergyFlowLayers
-          energyNodes={energyNodes}
-          energyTransfers={energyTransfers}
-          liveTransferData={liveTransferData}
-          visible={showFlowLines}
-          highlightedPath={highlightedPath}
-        />
-
-        {/* Trade Flow Layers - Animated trades between zones */}
-        <TradeFlowLayersWrapper
-          transformers={displayTransformers}
-          visible={showTrades}
-        />
-
 
         {/* Control Buttons Group */}
         <div className="absolute right-10 top-2 z-10 flex flex-col sm:flex-row gap-2 sm:right-16 sm:top-4">
@@ -477,17 +447,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
             title={showZones ? 'Hide zone areas' : 'Show zone areas'}
           >
             <MapIcon className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showTrades ? 'border-cyan-500/50 text-cyan-500' : 'border-primary/30 text-primary'
-              }`}
-            onClick={() => setShowTrades(!showTrades)}
-            title={showTrades ? 'Hide trade flows' : 'Show trade flows'}
-          >
-            <ArrowRightLeft className="h-4 w-4" />
           </Button>
 
           <Button
@@ -513,17 +472,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
               <Zap className="h-4 w-4" />
             </Button>
           )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showFlowLines ? 'border-green-500/50 text-green-500' : 'border-primary/30 text-primary'
-              }`}
-            onClick={() => setShowFlowLines(!showFlowLines)}
-            title={showFlowLines ? 'Hide energy flow' : 'Show energy flow'}
-          >
-            <Activity className="h-4 w-4" />
-          </Button>
 
           <Button
             variant="ghost"
@@ -594,15 +542,15 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 
       {/* Legend */}
       <MapLegend
-        showFlowLines={showFlowLines}
         showZones={showZones}
-        showTrades={showTrades}
       />
 
       {/* Grid Stats Panel */}
       <GridStatsPanel
-        totalGeneration={apiGridStatus?.total_generation ?? gridTotals.totalGeneration}
-        totalConsumption={apiGridStatus?.total_consumption ?? gridTotals.totalConsumption}
+        totalGeneration={myMeterTotals?.totalGeneration ?? apiGridStatus?.total_generation ?? gridTotals.totalGeneration}
+        totalConsumption={myMeterTotals?.totalConsumption ?? apiGridStatus?.total_consumption ?? gridTotals.totalConsumption}
+        scope={myMeterTotals ? 'personal' : 'grid'}
+        scopedMeterCount={myMeterTotals?.meterCount}
         avgStorage={gridTotals.avgStorage}
         co2Saved={apiGridStatus?.co2_saved_kg ?? gridTotals.co2Saved}
         activeMeters={apiGridStatus?.active_meters ?? gridTotals.activeMeters}
@@ -618,47 +566,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         peakCapacityKw={apiGridStatus?.peak_capacity_kw}
       />
 
-      {/* Flow Line Hover Tooltip */}
-      {hoveredFlow && (
-        <div
-          className="pointer-events-none absolute z-50 rounded border border-primary/40 bg-background/95 px-3 py-2 shadow-xl backdrop-blur-md"
-          style={{
-            left: hoveredFlow.x + 15,
-            top: hoveredFlow.y - 10,
-            transform: 'translateY(-50%)',
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-yellow-500" />
-            <span className="text-sm font-bold text-foreground">
-              {Math.round(hoveredFlow.power)} kW
-            </span>
-          </div>
-          {hoveredFlow.description && hoveredFlow.description !== `${Math.round(hoveredFlow.power)} kW` && (
-            <p className="mt-0.5 text-xs text-secondary-foreground">{hoveredFlow.description}</p>
-          )}
-        </div>
-      )}
     </div>
-  )
-}
-
-// Wrapper component for TradeFlowLayers that fetches trade data
-function TradeFlowLayersWrapper({
-  transformers,
-  visible
-}: {
-  transformers: EnergyNode[]
-  visible: boolean
-}) {
-  const { trades } = useActiveTrades()
-
-  return (
-    <TradeFlowLayers
-      trades={trades}
-      transformers={transformers}
-      visible={visible}
-    />
   )
 }
 

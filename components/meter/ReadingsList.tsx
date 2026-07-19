@@ -169,6 +169,13 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                                                         <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-900 dark:text-red-300">
                                                             Denied
                                                         </span>
+                                                    ) : reading.mint_status === 'not_applicable' ? (
+                                                        <span
+                                                            className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                            title="No mint — this billing window closed with net consumption"
+                                                        >
+                                                            N/A
+                                                        </span>
                                                     ) : (
                                                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
                                                             Pending

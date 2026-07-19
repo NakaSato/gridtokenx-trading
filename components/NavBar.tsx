@@ -6,6 +6,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import Image, { type StaticImageData } from 'next/image'
 import {
   Activity,
+  ArrowDownUp,
   BookOpenText,
   ChartLine,
   ExternalLink,
@@ -119,6 +120,13 @@ const NAV_ITEMS: NavItem[] = [
     name: 'Carbon',
     href: '/carbon-credit',
     icon: <Leaf size={16} />,
+    hideOnMobile: true,
+    requiresAuth: true,
+  },
+  {
+    name: 'Wallet',
+    href: '/wallet',
+    icon: <ArrowDownUp size={16} />,
     hideOnMobile: true,
     requiresAuth: true,
   },

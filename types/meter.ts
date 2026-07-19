@@ -4,8 +4,12 @@ export interface MeterReading {
     kwh: number
     timestamp: string
     submitted_at: string
-    /** Read-only token-mint status derived by meter-service: 'minted' | 'pending' | 'denied'. */
-    mint_status: 'minted' | 'pending' | 'denied'
+    /**
+     * Read-only token-mint status derived by meter-service. 'not_applicable'
+     * means the reading's 15-min billing window closed with net consumption
+     * (no surplus) — nothing was ever going to mint for it.
+     */
+    mint_status: 'minted' | 'pending' | 'denied' | 'not_applicable'
     /** On-chain mint tx signature, present when mint_status === 'minted'. */
     mint_tx_signature?: string
 

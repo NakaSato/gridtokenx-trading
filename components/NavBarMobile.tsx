@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowDownUp,
   BookOpenText,
   ChartLine,
   ChevronDown,
@@ -101,6 +102,12 @@ const NAV_ITEMS: NavItem[] = [
     name: 'Carbon',
     href: '/carbon-credit',
     icon: <Leaf size={16} />,
+    requiresAuth: true,
+  },
+  {
+    name: 'Wallet',
+    href: '/wallet',
+    icon: <ArrowDownUp size={16} />,
     requiresAuth: true,
   },
 ]

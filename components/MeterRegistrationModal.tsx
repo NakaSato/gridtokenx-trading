@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,17 @@ import { Input } from './ui/input'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import toast from 'react-hot-toast'
-import { Loader2, MapPin, Zap, CheckCircle } from 'lucide-react'
+import {
+  Loader2,
+  MapPin,
+  Zap,
+  CheckCircle,
+  Gauge,
+  SearchX,
+  ShieldCheck,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+} from 'lucide-react'
 import { PublicMeterResponse } from '@/types/meter'
 import { Label } from './ui/label'
 
@@ -33,23 +43,19 @@ export function MeterRegistrationModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [matchedMeter, setMatchedMeter] = useState<PublicMeterResponse | null>(null)
+  const [searchDone, setSearchDone] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  const client = createApiClient(token || undefined)
+  const client = useMemo(() => createApiClient(token || undefined), [token])
 
   // Auto-search for meter when ID is entered (debounced)
   const searchMeter = useCallback(async (serial: string) => {
-    if (!serial || serial.length < 3) {
-      setMatchedMeter(null)
-      setSearchError(null)
-      return
-    }
-
     setIsSearching(true)
     setSearchError(null)
+    setSearchDone(false)
 
     try {
-      // Fetch public meters to check if meter exists
+      // Fetch public meters and match the entered ID against live meters
       const response = await client.getPublicMeters()
       if (response.error) {
         setSearchError('Failed to fetch meter data')
@@ -57,10 +63,14 @@ export function MeterRegistrationModal({
         return
       }
 
-      // Backend will auto-populate all meter data upon registration
-      // We just show a preview that data will be auto-matched
+      const query = serial.trim().toLowerCase()
       const meters = response.data || []
-      setMatchedMeter(meters.length > 0 ? meters[0] : null)
+      const match =
+        meters.find((m) => m.meter_id?.toLowerCase() === query) ??
+        meters.find((m) => m.meter_id?.toLowerCase().includes(query)) ??
+        null
+      setMatchedMeter(match)
+      setSearchDone(true)
     } catch (error) {
       setSearchError('Error searching for meter')
       setMatchedMeter(null)
@@ -71,12 +81,14 @@ export function MeterRegistrationModal({
 
   // Debounced search effect
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (meterId.length >= 3) {
-        searchMeter(meterId)
-      }
-    }, 500)
+    if (meterId.trim().length < 3) {
+      setMatchedMeter(null)
+      setSearchError(null)
+      setSearchDone(false)
+      return
+    }
 
+    const timer = setTimeout(() => searchMeter(meterId), 500)
     return () => clearTimeout(timer)
   }, [meterId, searchMeter])
 
@@ -105,6 +117,7 @@ export function MeterRegistrationModal({
         onClose()
         setMeterId('')
         setMatchedMeter(null)
+        setSearchDone(false)
       } else {
         toast.error(result.data?.message || 'Failed to register meter')
       }
@@ -119,6 +132,7 @@ export function MeterRegistrationModal({
     setMeterId('')
     setMatchedMeter(null)
     setSearchError(null)
+    setSearchDone(false)
     onClose()
   }
 
@@ -126,10 +140,18 @@ export function MeterRegistrationModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Register Smart Meter</DialogTitle>
-          <DialogDescription>
-            Enter your smart meter ID to automatically register it on the GridTokenX network. All meter data will be fetched automatically.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Gauge className="h-5 w-5 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <DialogTitle>Register Smart Meter</DialogTitle>
+              <DialogDescription>
+                Enter your meter ID — location, type, and readings are fetched
+                automatically.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -137,9 +159,12 @@ export function MeterRegistrationModal({
             <div className="relative">
               <Input
                 id="meterId"
-                placeholder="Enter meter serial number (e.g., GRID-SM-001)"
+                className="pr-9 font-mono"
+                placeholder="e.g. GRID-SM-001"
                 value={meterId}
                 onChange={(e) => setMeterId(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
                 required
                 disabled={isSubmitting}
               />
@@ -152,23 +177,59 @@ export function MeterRegistrationModal({
             </p>
           </div>
 
-          {/* Auto-matched meter preview */}
+          {/* Live meter preview — matched against public meter feed */}
           {matchedMeter && (
-            <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>Meter data will be auto-populated</span>
+            <div className="rounded-lg border border-green-600/30 bg-green-500/5 p-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Live meter found</span>
+                </div>
+                {matchedMeter.is_verified && (
+                  <span className="flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-600">
+                    <ShieldCheck className="h-3 w-3" />
+                    Verified
+                  </span>
+                )}
               </div>
-              <div className="grid gap-1 text-xs text-muted-foreground">
+              <div className="grid gap-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-3 w-3" />
-                  <span>Location: Auto-detected from meter</span>
+                  <Zap className="h-3 w-3 shrink-0" />
+                  <span className="capitalize">{matchedMeter.meter_type || 'Unknown type'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Zap className="h-3 w-3" />
-                  <span>Type: Auto-detected from meter</span>
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{matchedMeter.location || 'Location on record'}</span>
                 </div>
+                {(matchedMeter.current_generation != null ||
+                  matchedMeter.current_consumption != null) && (
+                  <div className="flex items-center gap-3 pt-0.5">
+                    {matchedMeter.current_generation != null && (
+                      <span className="flex items-center gap-1">
+                        <ArrowUpFromLine className="h-3 w-3 text-green-600" />
+                        {matchedMeter.current_generation.toFixed(2)} kWh
+                      </span>
+                    )}
+                    {matchedMeter.current_consumption != null && (
+                      <span className="flex items-center gap-1">
+                        <ArrowDownToLine className="h-3 w-3 text-amber-600" />
+                        {matchedMeter.current_consumption.toFixed(2)} kWh
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+
+          {/* No live match — registration still allowed, data links when online */}
+          {searchDone && !matchedMeter && !searchError && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">
+              <SearchX className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <span>
+                No live meter matches this ID yet. You can still register — data
+                links automatically once the meter comes online.
+              </span>
             </div>
           )}
 

@@ -1,4 +1,5 @@
 import type { EnergyNode } from './types'
+import type { MeterTelemetry } from './useMeterTelemetry'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 // Helper to parse numeric value from string like "280 kW" or "150 kWh"
@@ -38,6 +39,39 @@ export const getStatusColor = (status: string): string => {
         default:
             return 'bg-gray-500'
     }
+}
+
+/**
+ * Whether a user account is "activated" — the map only shows meters owned by an
+ * active account. Register returns status `pending_verification`; the account
+ * becomes usable once verified (`active`). Unknown/missing status is treated as
+ * active (the viewer holds a valid JWT). Known not-yet-active / disabled states
+ * are excluded. Adjust the sets here if the backend adds new status strings.
+ */
+export const isAccountActive = (status?: string | null): boolean => {
+    if (status == null) return true
+    const s = status.toLowerCase()
+    const inactive = new Set([
+        'pending_verification',
+        'pending',
+        'unverified',
+        'inactive',
+        'suspended',
+        'disabled',
+        'banned',
+        'locked',
+        'deactivated',
+    ])
+    return !inactive.has(s)
+}
+
+/** Resolve a node's live value: WS telemetry if present, else the REST-poll value. */
+export const liveValueFor = (node: EnergyNode, t?: MeterTelemetry): number => {
+    if (t) {
+        if (node.type === 'generator' && t.generation_kw != null) return t.generation_kw
+        if (node.type === 'consumer' && t.consumption_kw != null) return t.consumption_kw
+    }
+    return getInitialLiveValue(node)
 }
 
 // Get initial live value based on node type

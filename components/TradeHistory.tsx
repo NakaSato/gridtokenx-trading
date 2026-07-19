@@ -282,7 +282,7 @@ const TradeHistory = React.memo(function TradeHistory() {
                                     </span>
 
                                     <span className={cn(
-                                        "shrink-0 font-mono text-base font-medium tabular-nums",
+                                        "shrink-0 font-mono text-sm font-medium tabular-nums",
                                         isBuyer ? "text-red-500" : "text-green-500"
                                     )}>
                                         {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}

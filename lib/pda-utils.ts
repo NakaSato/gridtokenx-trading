@@ -108,6 +108,24 @@ export const getPrivNullifierPDA = (nullifier: Uint8Array, programId: PublicKey)
     )[0]
 }
 
+// Escrow PDA seeds — MUST match the trading program's on-chain seeds
+// (gridtokenx-anchor/programs/trading/src/instructions/escrow.rs):
+//   user_escrow      = [b"escrow", user, mint]   (token account, authority = market_authority)
+//   market_authority = [b"market_authority"]     (global escrow authority)
+export const getUserEscrowPDA = (user: PublicKey, mint: PublicKey, programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('escrow'), user.toBuffer(), mint.toBuffer()],
+        programId
+    )[0]
+}
+
+export const getMarketAuthorityPDA = (programId: PublicKey) => {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from('market_authority')],
+        programId
+    )[0]
+}
+
 export const getNullifierSetPDA = (mint: PublicKey, programId: PublicKey) => {
     return PublicKey.findProgramAddressSync(
         [Buffer.from('nullifier_set'), mint.toBuffer()],

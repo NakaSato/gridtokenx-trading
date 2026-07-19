@@ -1,7 +1,7 @@
-import { Connection, PublicKey, Transaction } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
 import { Program, BN } from '@coral-xyz/anchor'
 import { OptionContract } from '@/lib/idl/option_contract'
-import { getAssociatedTokenAddressSync } from '@solana/spl-token'
+import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import {
     WSOL_MINT,
     WSOL_ORACLE,
@@ -106,7 +106,7 @@ export const openOption = async (
 
     let optionIndex
     try {
-        const userInfo = await program.account.User.fetch(userPDA)
+        const userInfo = await (program.account as any).user.fetch(userPDA)
         optionIndex = userInfo.option_index.toNumber() + 1
     } catch {
         optionIndex = 1
@@ -119,10 +119,10 @@ export const openOption = async (
     )
 
     const paycustody = getCustodyPDA(pool, paySol ? baseMint : quoteMint, program.programId)
-    const paycustodyData = await program.account.Custody.fetch(paycustody)
+    const paycustodyData = await (program.account as any).custody.fetch(paycustody)
 
-    const transaction = await program.methods
-        .open_option({
+    const transaction = await (program.methods as any)
+        .openOption({
             amount: new BN(amount),
             strike: strike,
             period: new BN(period),
@@ -131,14 +131,14 @@ export const openOption = async (
         })
         .accountsPartial({
             owner: publicKey,
-            funding_account: fundingAccount,
-            custody_mint: baseMint,
-            pay_custody_mint: paySol ? baseMint : quoteMint,
-            custody_oracle_account: baseOracle,
-            pay_custody_oracle_account: paySol ? baseOracle : quoteOracle,
-            locked_custody_mint: isCall ? baseMint : quoteMint,
-            option_detail: optionDetailAccount,
-            pay_custody_token_account: paycustodyData.token_account,
+            fundingAccount: fundingAccount,
+            custodyMint: baseMint,
+            payCustodyMint: paySol ? baseMint : quoteMint,
+            custodyOracleAccount: baseOracle,
+            payCustodyOracleAccount: paySol ? baseOracle : quoteOracle,
+            lockedCustodyMint: isCall ? baseMint : quoteMint,
+            optionDetail: optionDetailAccount,
+            payCustodyTokenAccount: paycustodyData.token_account,
         })
         .transaction()
 
@@ -172,7 +172,7 @@ export const closeOption = async (
         const custodyPDA = getCustodyPDA(poolPDA, THB_MINT, program.programId)
         const od = getOptionDetailPDA(publicKey, optionIndex, poolPDA, custodyPDA, program.programId)
 
-        const exists = await program.account.OptionDetail.fetch(od).catch(() => null)
+        const exists = await (program.account as any).optionDetail.fetch(od).catch(() => null)
         if (exists) {
             foundPool = poolPDA
             poolInfo = p
@@ -188,26 +188,26 @@ export const closeOption = async (
     const payCustodyTokenAccount = getCustodyTokenAccountPDA(pool, THB_MINT, program.programId)
     const optionDetail = getOptionDetailPDA(publicKey, optionIndex, pool, custody, program.programId)
 
-    const optionDetailData = await program.account.OptionDetail.fetch(optionDetail)
+    const optionDetailData = await (program.account as any).optionDetail.fetch(optionDetail)
     const fundingAccount = getAssociatedTokenAddressSync(
         optionDetailData.premium_asset.equals(custody) ? THB_MINT : custodyToken,
         publicKey
     )
 
-    const transaction = await program.methods
-        .close_option({
+    const transaction = await (program.methods as any)
+        .closeOption({
             optionIndex: new BN(optionIndex),
             poolName: poolInfo.name,
         })
         .accountsPartial({
             owner: publicKey,
-            funding_account: fundingAccount,
-            custody_mint: THB_MINT,
-            pay_custody_mint: THB_MINT,
-            pay_custody_token_account: payCustodyTokenAccount,
-            option_detail: optionDetail,
-            locked_custody: custody,
-            pay_custody: custody,
+            fundingAccount: fundingAccount,
+            custodyMint: THB_MINT,
+            payCustodyMint: THB_MINT,
+            payCustodyTokenAccount: payCustodyTokenAccount,
+            optionDetail: optionDetail,
+            lockedCustody: custody,
+            payCustody: custody,
         })
         .transaction()
 
@@ -221,19 +221,61 @@ export const closeOption = async (
     return true
 }
 
+/**
+ * Locate which pool holds the caller's option `index`, returning its pool name,
+ * the resolved custody, and the fetched OptionDetail. Mirrors closeOption's
+ * discovery loop — the on-chain instructions need `pool_name` as an arg to
+ * resolve the pool/custody/option_detail PDAs.
+ */
+const findOptionPool = async (
+    program: Program<OptionContract>,
+    publicKey: PublicKey,
+    optionIndex: number
+) => {
+    const poolsToCheck = [
+        { name: 'THB-USDC', mint: USDC_MINT },
+        { name: 'THB-SOL', mint: WSOL_MINT },
+    ]
+    for (const p of poolsToCheck) {
+        const poolPDA = getPoolPDA(p.name, program.programId)
+        const custodyPDA = getCustodyPDA(poolPDA, THB_MINT, program.programId)
+        const optionDetail = getOptionDetailPDA(publicKey, optionIndex, poolPDA, custodyPDA, program.programId)
+        const data = await (program.account as any).optionDetail.fetch(optionDetail).catch(() => null)
+        if (data) return { poolName: p.name, custody: custodyPDA, optionDetail, optionDetailData: data }
+    }
+    return null
+}
+
 export const claimOption = async (
     program: Program<OptionContract>,
     connection: Connection,
     publicKey: PublicKey,
     sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
     optionIndex: number,
-    solPrice: number
+    // Retained for API compatibility with the provider/UI. The deployed
+    // claim_option instruction takes no price (params: {option_index, pool_name}).
+    _solPrice?: number
 ): Promise<boolean> => {
-    const transaction = await program.methods
-        .claim_option(new BN(optionIndex), solPrice)
+    const found = await findOptionPool(program, publicKey, optionIndex)
+    if (!found) return false
+    const { poolName, custody, optionDetailData } = found
+
+    // locked_custody = OptionDetail.locked_asset; fetch it for its mint + oracle.
+    const lockedCustody = optionDetailData.locked_asset as PublicKey
+    const lockedCustodyData = await (program.account as any).custody.fetch(lockedCustody)
+    const fundingAccount = getAssociatedTokenAddressSync(
+        optionDetailData.premium_asset.equals(custody) ? THB_MINT : lockedCustodyData.mint,
+        publicKey
+    )
+
+    const transaction = await (program.methods as any)
+        .claimOption({ optionIndex: new BN(optionIndex), poolName })
         .accountsPartial({
             owner: publicKey,
-            custody_mint: THB_MINT,
+            fundingAccount: fundingAccount,
+            lockedCustody: lockedCustody,
+            lockedOracle: lockedCustodyData.oracle,
+            custodyMint: THB_MINT,
         })
         .transaction()
 
@@ -254,10 +296,25 @@ export const exerciseOption = async (
     sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
     optionIndex: number
 ): Promise<boolean> => {
-    const transaction = await program.methods
-        .exercise_option(new BN(optionIndex))
+    const found = await findOptionPool(program, publicKey, optionIndex)
+    if (!found) return false
+    const { poolName, custody, optionDetailData } = found
+
+    const lockedCustody = optionDetailData.locked_asset as PublicKey
+    const lockedCustodyData = await (program.account as any).custody.fetch(lockedCustody)
+    const fundingAccount = getAssociatedTokenAddressSync(
+        optionDetailData.premium_asset.equals(custody) ? THB_MINT : lockedCustodyData.mint,
+        publicKey
+    )
+
+    const transaction = await (program.methods as any)
+        .exerciseOption({ optionIndex: new BN(optionIndex), poolName })
         .accountsPartial({
             owner: publicKey,
+            fundingAccount: fundingAccount,
+            lockedOracle: lockedCustodyData.oracle,
+            custodyMint: THB_MINT,
+            lockedCustodyMint: lockedCustodyData.mint,
         })
         .transaction()
 
@@ -281,28 +338,28 @@ export const addLiquidity = async (
     const { amount, asset, poolName } = params
     const pool = getPoolPDA(poolName, program.programId)
     const custodyPDA = getCustodyPDA(pool, asset, program.programId)
-    const poolData = await program.account.Pool.fetch(pool)
-    const custodyData = await program.account.Custody.fetch(custodyPDA)
+    const poolData = await (program.account as any).pool.fetch(pool)
+    const custodyData = await (program.account as any).custody.fetch(custodyPDA)
     const fundingAccount = getAssociatedTokenAddressSync(asset, publicKey)
 
     let remainingAccounts = []
     for (const cPubkey of poolData.custodies) {
-        const c = await program.account.Custody.fetch(cPubkey)
+        const c = await (program.account as any).custody.fetch(cPubkey)
         remainingAccounts.push({ pubkey: cPubkey, isSigner: false, isWritable: true })
         remainingAccounts.push({ pubkey: c.oracle, isSigner: false, isWritable: true })
     }
 
-    const transaction = await program.methods
-        .add_liquidity({
+    const transaction = await (program.methods as any)
+        .addLiquidity({
             amountIn: new BN(amount),
             minLpAmountOut: new BN(1),
             poolName: poolName,
         })
         .accountsPartial({
             owner: publicKey,
-            funding_account: fundingAccount,
-            custody_mint: asset,
-            custody_oracle_account: custodyData.oracle,
+            fundingAccount: fundingAccount,
+            custodyMint: asset,
+            custodyOracleAccount: custodyData.oracle,
         })
         .remainingAccounts(remainingAccounts)
         .transaction()
@@ -326,9 +383,9 @@ export const removeLiquidity = async (
 ): Promise<boolean> => {
     const { amount, asset, poolName } = params
     const pool = getPoolPDA(poolName, program.programId)
-    const poolData = await program.account.Pool.fetch(pool)
+    const poolData = await (program.account as any).pool.fetch(pool)
     const custodyPDA = getCustodyPDA(pool, asset, program.programId)
-    const custodyData = await program.account.Custody.fetch(custodyPDA)
+    const custodyData = await (program.account as any).custody.fetch(custodyPDA)
 
     const receivingAccount = getAssociatedTokenAddressSync(asset, publicKey)
     const contract = getContractPDA(program.programId)
@@ -339,29 +396,29 @@ export const removeLiquidity = async (
 
     let remainingAccounts = []
     for (const cPubkey of poolData.custodies) {
-        const c = await program.account.Custody.fetch(cPubkey)
+        const c = await (program.account as any).custody.fetch(cPubkey)
         remainingAccounts.push({ pubkey: cPubkey, isSigner: false, isWritable: true })
         remainingAccounts.push({ pubkey: c.oracle, isSigner: false, isWritable: true })
     }
 
-    const transaction = await program.methods
-        .remove_liquidity({
+    const transaction = await (program.methods as any)
+        .removeLiquidity({
             lpAmountIn: new BN(amount),
             minAmountOut: new BN(0),
             poolName: poolName,
         })
         .accountsPartial({
             owner: publicKey,
-            receiving_account: receivingAccount,
-            transfer_authority: transferAuthority,
+            receivingAccount: receivingAccount,
+            transferAuthority: transferAuthority,
             contract: contract,
             pool: pool,
             custody: custodyPDA,
-            custody_oracle_account: custodyData.oracle,
-            custody_token_account: custodyTokenAccount,
-            lp_token_mint: lpTokenMint,
-            lp_token_account: lpTokenAccount,
-            custody_mint: asset,
+            custodyOracleAccount: custodyData.oracle,
+            custodyTokenAccount: custodyTokenAccount,
+            lpTokenMint: lpTokenMint,
+            lpTokenAccount: lpTokenAccount,
+            custodyMint: asset,
         })
         .remainingAccounts(remainingAccounts)
         .transaction()
@@ -420,8 +477,8 @@ export const submitAuctionOrder = async (
             vault: vaultPda,
             tokenMint: tokenMint,
             authority: publicKey,
-            tokenProgram: require("@solana/spl-token").TOKEN_PROGRAM_ID,
-            systemProgram: require("@solana/web3.js").SystemProgram.programId,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
         })
         .transaction();
 
@@ -457,7 +514,7 @@ export const cancelAuctionOrder = async (
             vault: vaultPda,
             tokenMint: tokenMint,
             authority: publicKey,
-            tokenProgram: require("@solana/spl-token").TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
         })
         .transaction();
 

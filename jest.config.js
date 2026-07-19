@@ -10,6 +10,9 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   moduleNameMapper: {
+    // jsdom's "browser" export condition resolves uuid (via @solana/web3.js →
+    // jayson) to its ESM build, which Jest can't parse — force the CJS entry.
+    '^uuid$': require.resolve('uuid'),
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/types/(.*)$': '<rootDir>/types/$1',

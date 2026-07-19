@@ -115,6 +115,14 @@ const OrderForm = React.memo(function OrderForm({
     }
   }, [selectedNode])
 
+  // Market sells are unsupported (the matcher prices them at the resting ask and
+  // rejects them), so switching to the sell side forces a limit order. Wrapping
+  // the setter keeps this out of an effect (avoids a cascading-render setState).
+  const handleSetOrderType = (next: 'buy' | 'sell' | 'recurring') => {
+    if (next === 'sell') setPriceType('limit')
+    setOrderType(next)
+  }
+
   useEffect(() => {
     if (isSuccess) {
       const timer = setTimeout(() => {
@@ -197,9 +205,13 @@ const OrderForm = React.memo(function OrderForm({
       setMessage('Minimum order amount is 0.1 kWh')
       return
     }
+    // The matcher rejects market sells (it would price them at the resting ask),
+    // so a sell must be a limit order. Guard here in case state slips through.
+    const effectivePriceType = orderType === 'sell' ? 'limit' : priceType
+
     // Market orders fill against the resting book — no price required. Only limit
     // orders need a price (and are range-checked against market config).
-    if (priceType === 'limit') {
+    if (effectivePriceType === 'limit') {
       if (!price || parseFloat(price) <= 0) {
         setMessage('Please enter a valid price')
         return
@@ -227,11 +239,11 @@ const OrderForm = React.memo(function OrderForm({
 
     orderMutation.mutate({
       side: orderType as 'buy' | 'sell',
-      order_type: priceType,
+      order_type: effectivePriceType,
       amount,
       // Limit: the price. Market: omit (a market buy may still carry `price` as a
-      // slippage ceiling; sell carries none).
-      price_per_kwh: priceType === 'limit' ? price : (price || undefined),
+      // slippage ceiling; sell is always limit).
+      price_per_kwh: effectivePriceType === 'limit' ? price : (price || undefined),
       zone_id,
       meter_serial: meterSerialFromNode(selectedNode),
     })
@@ -282,7 +294,7 @@ const OrderForm = React.memo(function OrderForm({
     <div className="flex w-full flex-col space-y-0 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
       <OrderTypeTabs
         orderType={orderType}
-        setOrderType={setOrderType}
+        setOrderType={handleSetOrderType}
       />
 
       <div className="flex flex-col space-y-4 p-4">
@@ -330,6 +342,7 @@ const OrderForm = React.memo(function OrderForm({
                 bestBid={bestBid}
                 bestAsk={bestAsk}
                 fillWarning={fillWarning}
+                disableMarket={orderType === 'sell'}
               />
 
               <Separator />

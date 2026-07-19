@@ -84,7 +84,7 @@
           "name": "settlement_shard",
           "docs": [
             "Per-shard settlement accumulator (`[b\"settle_shard\", &[shard_id]]`), bumped via",
-            "CPI instead of the global `total_settled_thbg`. Required when recording fires."
+            "CPI instead of the global `total_settled_thbc`. Required when recording fires."
           ],
           "writable": true,
           "optional": true
@@ -1302,23 +1302,23 @@
       ]
     },
     {
-      "name": "set_settlement_thbg_mint",
+      "name": "set_settlement_thbc_mint",
       "docs": [
-        "Configure the settlement THBG mint for this market (admin only). Once set,",
+        "Configure the settlement THBC mint for this market (admin only). Once set,",
         "any match that settles in this mint MUST pass the treasury accounts so the",
         "baht-denominated settlement is recorded \u2014 recording is no longer optional for",
-        "THBG-denominated trades. Pass `Pubkey::default()` is not allowed (use the real",
-        "THBG mint); to disable, this could be extended with a clear flag if ever needed."
+        "THBC-denominated trades. Pass `Pubkey::default()` is not allowed (use the real",
+        "THBC mint); to disable, this could be extended with a clear flag if ever needed."
       ],
       "discriminator": [
-        3,
-        243,
+        93,
         227,
-        136,
-        118,
-        246,
-        158,
-        162
+        244,
+        50,
+        152,
+        249,
+        58,
+        21
       ],
       "accounts": [
         {
@@ -1332,7 +1332,7 @@
       ],
       "args": [
         {
-          "name": "thbg_mint",
+          "name": "thbc_mint",
           "type": "pubkey"
         }
       ]
@@ -2464,16 +2464,16 @@
       ]
     },
     {
-      "name": "SettlementThbgMintSet",
+      "name": "SettlementThbcMintSet",
       "discriminator": [
-        30,
-        253,
-        168,
+        55,
+        241,
+        239,
         138,
-        37,
-        8,
-        161,
-        27
+        96,
+        16,
+        236,
+        96
       ]
     }
   ],
@@ -2641,12 +2641,12 @@
     {
       "code": 6032,
       "name": "TreasuryCurrencyMismatch",
-      "msg": "Settlement currency mint is not the treasury THBG mint"
+      "msg": "Settlement currency mint is not the treasury THBC mint"
     },
     {
       "code": 6033,
       "name": "TreasurySettlementRequired",
-      "msg": "This market settles in THBG: the treasury accounts are required to record the settlement"
+      "msg": "This market settles in THBC: the treasury accounts are required to record the settlement"
     },
     {
       "code": 6034,
@@ -3667,11 +3667,11 @@
             }
           },
           {
-            "name": "settlement_thbg_mint",
+            "name": "settlement_thbc_mint",
             "type": "pubkey"
           },
           {
-            "name": "has_settlement_thbg_mint",
+            "name": "has_settlement_thbc_mint",
             "type": "u8"
           },
           {
@@ -4214,7 +4214,7 @@
       "name": "SettlementShard",
       "docs": [
         "Per-shard settlement accumulator (zero-copy). Hot-path settles bump the shard",
-        "PDA for the buyer's shard instead of the global `Treasury.total_settled_thbg`, so",
+        "PDA for the buyer's shard instead of the global `Treasury.total_settled_thbc`, so",
         "settles on distinct shards don't write-lock a single account. PDA seeds:",
         "`[b\"settle_shard\", &[shard_id]]`. Global total reconciled via",
         "`aggregate_settlement_shards`."
@@ -4227,7 +4227,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "settled_thbg",
+            "name": "settled_thbc",
             "type": "u64"
           },
           {
@@ -4255,7 +4255,7 @@
       }
     },
     {
-      "name": "SettlementThbgMintSet",
+      "name": "SettlementThbcMintSet",
       "type": {
         "kind": "struct",
         "fields": [
@@ -4264,7 +4264,7 @@
             "type": "pubkey"
           },
           {
-            "name": "thbg_mint",
+            "name": "thbc_mint",
             "type": "pubkey"
           },
           {
@@ -4421,7 +4421,7 @@
             "type": "pubkey"
           },
           {
-            "name": "thbg_mint",
+            "name": "thbc_mint",
             "type": "pubkey"
           },
           {
@@ -4441,11 +4441,11 @@
             "type": "i64"
           },
           {
-            "name": "thbg_supply",
+            "name": "thbc_supply",
             "type": "u64"
           },
           {
-            "name": "grx_per_thbg_rate",
+            "name": "grx_per_thbc_rate",
             "type": "u64"
           },
           {
@@ -4461,7 +4461,7 @@
             "type": "i64"
           },
           {
-            "name": "total_settled_thbg",
+            "name": "total_settled_thbc",
             "type": "u64"
           },
           {
@@ -4477,7 +4477,7 @@
             "type": "u8"
           },
           {
-            "name": "thbg_mint_bump",
+            "name": "thbc_mint_bump",
             "type": "u8"
           },
           {

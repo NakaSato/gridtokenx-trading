@@ -94,7 +94,7 @@ export function useSmartMeter() {
         const netEnergy = totalProduced - totalConsumed
 
         const mintedReadings = readings.filter(r => r.mint_status === 'minted')
-        const pendingReadings = readings.filter(r => r.mint_status !== 'minted' && r.kwh > 0)
+        const pendingReadings = readings.filter(r => r.mint_status === 'pending' && r.kwh > 0)
         const totalMinted = mintedReadings.reduce((acc, r) => acc + r.kwh, 0)
         const pendingToMint = pendingReadings.reduce((acc, r) => acc + r.kwh, 0)
 

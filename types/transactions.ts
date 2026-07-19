@@ -18,31 +18,26 @@ export type TransactionStatus =
   | 'failed'
   | 'settled'
 
+/**
+ * Mirrors trading-service `TransactionData` (trading-core/src/models.rs:648) —
+ * the exact wire shape of GET /api/v1/transactions, which returns a bare ARRAY
+ * of these (no wrapper). Backed by the `settlements` table via analytics_repo,
+ * so it carries only settlement-level fields: no per-op signature, energy
+ * metadata, or confirmed/settled timestamps (those live on other endpoints).
+ */
 export interface UserTransaction {
-  transaction_type: TransactionType
-  operation_id: string
-  user_id: string
-  status: TransactionStatus
-  signature: string | null
-  attempts: number
-  last_error: string | null
-  created_at: string
-  submitted_at: string | null
-  confirmed_at: string | null
-  settled_at: string | null
-  metadata?: {
-    energy_amount?: number
-    price_per_kwh?: number
-    total_amount?: number
-    wheeling_charge?: number
-    loss_cost?: number
-    loss_factor?: number
-    effective_energy?: number
-    buyer_zone_id?: number
-    seller_zone_id?: number
-    side?: string
-    zone_id?: number
-  }
+  id: string
+  transaction_type: string // backend emits 'trading' for settlement rows
+  amount: string // Decimal string
+  asset: string // e.g. 'GRID'
+  status: string
+  timestamp: string
+  reference_id: string | null
+  /**
+   * Runtime-only: merged in from the realtime WS `TransactionStatusUpdate`
+   * feed (useTransactionUpdates), never present on the REST response.
+   */
+  signature?: string | null
 }
 
 export interface GetUserTransactionsParams {
@@ -56,7 +51,6 @@ export interface GetUserTransactionsParams {
   has_signature?: boolean
 }
 
-export interface UserTransactionsResponse {
-  transactions: UserTransaction[]
-  total: number
-}
+// NOTE: GET /api/v1/transactions returns a bare `UserTransaction[]`, NOT a
+// wrapper object. A prior `{ transactions, total }` shape never matched the
+// backend and left WalletActivity permanently empty.
