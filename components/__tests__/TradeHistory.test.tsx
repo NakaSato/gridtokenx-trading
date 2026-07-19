@@ -78,14 +78,15 @@ describe('TradeHistory — permanently_failed settlements', () => {
         expect(screen.queryByText('PERMANENTLY_FAILED')).not.toBeInTheDocument()
     })
 
-    it('keeps the status badge and shows no diagnostics for non-terminal states', async () => {
+    it('badges only in-flight/failed states and shows no diagnostics for non-terminal states', async () => {
         await renderWithTrades([
             trade({ id: 'trade-completed', status: 'completed' }),
             trade({ id: 'trade-pending', status: 'pending' }),
             trade({ id: 'trade-failed', status: 'failed' }),
         ])
 
-        expect(screen.getByText('COMPLETED')).toBeInTheDocument()
+        // Success settles silently — the row itself is the confirmation, no badge.
+        expect(screen.queryByText('COMPLETED')).not.toBeInTheDocument()
         expect(screen.getByText('PENDING')).toBeInTheDocument()
         // Retryable `failed` is distinct from terminal `permanently_failed`:
         // it still renders as a badge, not as a diagnostics icon.
@@ -160,6 +161,7 @@ describe('TradeHistory — permanently_failed settlements', () => {
         ])
 
         expect(screen.getAllByLabelText(DIAGNOSTICS_LABEL)).toHaveLength(1)
-        expect(screen.getByText('CONFIRMED')).toBeInTheDocument()
+        // The confirmed row settles silently — no status badge, just the row.
+        expect(screen.queryByText('CONFIRMED')).not.toBeInTheDocument()
     })
 })

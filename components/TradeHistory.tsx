@@ -174,12 +174,15 @@ const TradeHistory = React.memo(function TradeHistory() {
                             // Calculate extra costs if available (only relevant for buyer usually, or net for seller)
                             const fees = (parseFloat(trade.wheeling_charge || '0') || 0) + (parseFloat(trade.loss_cost || '0') || 0);
                             const isPermanentlyFailed = trade.status === PERMANENTLY_FAILED
+                            const isSuccess = trade.status === 'confirmed' || trade.status === 'completed'
 
                             return (
                                 <div
                                     key={trade.id}
                                     className="group flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 hover:bg-accent/30 transition-colors"
                                 >
+                                    {/* Left group: trade meta — wraps as a unit, never overflows */}
+                                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
                                     <Badge
                                         variant="outline"
                                         className={cn(
@@ -191,6 +194,21 @@ const TradeHistory = React.memo(function TradeHistory() {
                                     >
                                         {isBuyer ? 'BUY' : 'SELL'}
                                     </Badge>
+
+                                    {/* Zone Badge */}
+                                    {(trade.buyer_zone_id !== undefined && trade.seller_zone_id !== undefined) && (
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                                "shrink-0 text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight",
+                                                trade.buyer_zone_id === trade.seller_zone_id
+                                                    ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                                                    : "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20"
+                                            )}
+                                        >
+                                            {trade.buyer_zone_id === trade.seller_zone_id ? 'LOCAL' : 'X-ZONE'}
+                                        </Badge>
+                                    )}
 
                                     <span className="shrink-0 text-xs font-medium font-mono text-foreground tabular-nums">
                                         {parseFloat(trade.quantity).toFixed(2)}
@@ -207,18 +225,17 @@ const TradeHistory = React.memo(function TradeHistory() {
                                         </span>
                                     )}
 
-                                    {/* Status Badge — every state except the terminal failure, which the
-                                        diagnostics icon below stands in for. */}
-                                    {!isPermanentlyFailed && (
+                                    {/* Status Badge — only for in-flight or non-terminal failure states.
+                                        Success needs no badge (the row itself means the trade settled);
+                                        terminal failure collapses to the diagnostics icon below. */}
+                                    {!isPermanentlyFailed && !isSuccess && (
                                         <Badge
                                             variant="outline"
                                             className={cn(
                                                 "shrink-0 text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight border-opacity-40",
-                                                trade.status === 'confirmed' || trade.status === 'completed'
-                                                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500"
-                                                    : trade.status === 'failed'
-                                                        ? "bg-destructive/10 text-destructive border-destructive"
-                                                        : "bg-amber-500/10 text-amber-500 border-amber-500"
+                                                trade.status === 'failed'
+                                                    ? "bg-destructive/10 text-destructive border-destructive"
+                                                    : "bg-amber-500/10 text-amber-500 border-amber-500"
                                             )}
                                         >
                                             {trade.status.toUpperCase()}
@@ -256,32 +273,22 @@ const TradeHistory = React.memo(function TradeHistory() {
                                         </Tooltip>
                                     )}
 
-                                    {/* Zone Badge */}
-                                    {(trade.buyer_zone_id !== undefined && trade.seller_zone_id !== undefined) && (
-                                        <Badge
-                                            variant="secondary"
-                                            className={cn(
-                                                "shrink-0 text-[9px] px-1.5 py-0 h-4 font-normal tracking-tight",
-                                                trade.buyer_zone_id === trade.seller_zone_id
-                                                    ? "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
-                                                    : "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20"
-                                            )}
-                                        >
-                                            {trade.buyer_zone_id === trade.seller_zone_id ? 'LOCAL' : 'X-ZONE'}
-                                        </Badge>
-                                    )}
+                                    </div>
+
+                                    {/* Right group: own line — time on the left, value on the right */}
+                                    <div className="flex w-full shrink-0 items-center justify-between gap-x-2">
+                                    <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground tabular-nums">
+                                        {shortTimeAgo(new Date(trade.executed_at))} ago
+                                    </span>
 
                                     <span className={cn(
-                                        "ml-auto shrink-0 font-mono text-xs font-medium tabular-nums",
+                                        "shrink-0 font-mono text-base font-medium tabular-nums",
                                         isBuyer ? "text-red-500" : "text-green-500"
                                     )}>
                                         {isBuyer ? '-' : '+'}{parseFloat(trade.total_value).toFixed(2)}
-                                        <span className="text-[9px] text-muted-foreground ml-0.5">THB</span>
+                                        <span className="text-[10px] text-muted-foreground ml-0.5">THBC</span>
                                     </span>
-
-                                    <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums w-24 text-right">
-                                        {shortTimeAgo(new Date(trade.executed_at))} ago
-                                    </span>
+                                    </div>
                                 </div>
                             )
                         })}
