@@ -71,6 +71,42 @@ export function useWalletBalance(walletAddress?: string) {
     })
 }
 
+/** Shape returned by GET /api/v1/markets/price (all prices are decimal strings). */
+export interface MarketPrice {
+    vwap: string
+    last_price: string
+    high: string
+    low: string
+    volume_kwh: string
+    trade_count: number
+    window_hours: number
+    as_of: string
+}
+
+/**
+ * Hook for the real, trade-derived market price (24h VWAP by default).
+ * Backed by /api/v1/markets/price — computed from completed settlements, so it
+ * replaces the old hardcoded display rate. `trade_count === 0` means "no price
+ * yet" (every price field is "0"); callers should fall back, not render 0.
+ */
+export function useMarketPrice(windowHours = 24, enabled = true) {
+    const { token } = useAuth()
+    const apiClient = createApiClient(token || '')
+
+    return useQuery<MarketPrice>({
+        queryKey: ['market-price', token, windowHours],
+        queryFn: async () => {
+            if (!token) throw new Error('Authentication required')
+            const response = await apiClient.getMarketPrice(windowHours)
+            if (response.error) throw new Error(response.error)
+            if (!response.data) throw new Error('No market price returned')
+            return response.data
+        },
+        enabled: !!token && enabled,
+        refetchInterval: 15000,
+    })
+}
+
 /**
  * Hook for fetching portfolio positions with mapping
  */

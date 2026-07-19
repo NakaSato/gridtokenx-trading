@@ -87,6 +87,7 @@ export class ApiClient {
   async getSettlementStats() { return this.tradingApi.getSettlementStats() }
   async calculateP2PCost(request: any) { return this.tradingApi.calculateP2PCost(request) }
   async getP2PMarketPrices() { return this.tradingApi.getP2PMarketPrices() }
+  async getMarketPrice(windowHours = 24) { return this.tradingApi.getMarketPrice(windowHours) }
   async getTradeHistory(filters?: any) { return this.tradingApi.getTradeHistory(filters) }
 
   // Alerts & Recurring

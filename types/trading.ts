@@ -175,6 +175,5 @@ export interface MarketStatsResponse {
     total_volume_24h_kwh: string;
     avg_price_24h: string;
     active_users: number;
-    grid_stability_index: string;
-    renewable_ratio: string;
+    trade_count_24h: number;
 }

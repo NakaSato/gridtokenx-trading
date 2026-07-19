@@ -3,16 +3,16 @@
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
+import { useMarketPrice, useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
 import { Card, CardContent } from '../ui/card'
 import { Button } from '../ui/button'
 import { Skeleton } from '../ui/skeleton'
 import { Check, Coins, Copy, RefreshCw, User, Wallet } from 'lucide-react'
 import { PortfolioStatsRow } from './portfolio-stats-row'
 
-// Dev display rates until a price oracle feed is wired in (฿ per unit)
-const GRX_PRICE_THB = 1.8
-const SOL_PRICE_THB = 6200
+// No static prices. GRX (the only platform token) is priced from the real trade
+// VWAP (useMarketPrice); when the market has never traded, ฿-value renders "—".
+const EMDASH = '—'
 
 function formatAmount(value: string | number | undefined, decimals = 2): string {
   if (value === undefined || value === null) return '0.00'
@@ -24,6 +24,11 @@ function formatAmount(value: string | number | undefined, decimals = 2): string 
   })
 }
 
+/** ฿-formatted value, or an em-dash when the figure is genuinely unknown. */
+function formatBaht(value: number | null | undefined, decimals = 2): string {
+  return value === null || value === undefined ? EMDASH : `฿${formatAmount(value, decimals)}`
+}
+
 function truncateAddress(address: string): string {
   return `${address.slice(0, 4)}...${address.slice(-4)}`
 }
@@ -33,6 +38,10 @@ export function PortfolioHero() {
   const { publicKey } = useWallet()
   const { data: profileUser, isLoading: profileLoading, refetch: refetchProfile } = useProfile()
   const { data: linkedWallets } = useWallets()
+  // Real price: 24h VWAP; widen to all-time only when 24h has no trades.
+  const { data: mp24 } = useMarketPrice(24)
+  const needAllTime = !!mp24 && mp24.trade_count === 0
+  const { data: mpAll } = useMarketPrice(0, needAllTime)
   const [copied, setCopied] = useState(false)
 
   // Prefer the profile's wallet_address, then the IAM primary linked wallet,
@@ -67,10 +76,14 @@ export function PortfolioHero() {
   }
 
   const grxBalance = parseFloat(tokenBalance?.token_balance || '0')
-  const solBalance = tokenBalance?.balance_sol || 0
-  const grxValue = grxBalance * GRX_PRICE_THB
-  const solValue = solBalance * SOL_PRICE_THB
-  const totalWealth = grxValue + solValue
+  // Effective real price: prefer 24h VWAP, else all-time; null when the market
+  // has never traded. No static fallback — an unknown price renders as "—".
+  const effectivePrice =
+    mp24 && mp24.trade_count > 0 ? mp24 : mpAll && mpAll.trade_count > 0 ? mpAll : null
+  const grxPriceThb = effectivePrice ? parseFloat(effectivePrice.vwap) : null
+  const grxValue = grxPriceThb === null ? null : grxBalance * grxPriceThb
+  // GRX is the only platform token — total wealth is its ฿-value (or "—").
+  const totalWealth = grxValue
 
   return (
     <Card className="rounded-sm bg-gradient-to-br from-primary/10 via-transparent to-transparent border-primary/20">
@@ -144,17 +157,15 @@ export function PortfolioHero() {
             ) : (
               <>
                 <p className="text-4xl font-bold tracking-tight text-foreground">
-                  ฿{formatAmount(totalWealth)}
+                  {formatBaht(totalWealth)}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground md:justify-end">
                   <span className="inline-flex items-center gap-1">
                     <Coins className="h-3.5 w-3.5" />
                     {formatAmount(grxBalance)} GRX
-                    <span className="text-xs">≈ ฿{formatAmount(grxValue)}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    {formatAmount(solBalance, 4)} SOL
-                    <span className="text-xs">≈ ฿{formatAmount(solValue, 0)}</span>
+                    <span className="text-xs" title={grxValue === null ? 'No market price yet — no completed trades' : undefined}>
+                      ≈ {formatBaht(grxValue)}
+                    </span>
                   </span>
                 </div>
               </>

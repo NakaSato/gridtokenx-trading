@@ -203,8 +203,10 @@ export class TradingApi {
         })
     }
 
-    // STUB WARNING: rest.rs create_quote binds `_req` (unused) — the handler
-    // returns a mock quote, not a real cost of THIS request. Do not settle on it.
+    // Real quote: rest.rs create_quote computes cost from the request (energy,
+    // agreed_price, zones) using configured wheeling/loss. When agreed_price is
+    // omitted it prices at the real market VWAP; if the market has never traded
+    // it returns 400 (no price to quote) rather than inventing one.
     async calculateP2PCost(request: {
         buyer_zone_id: number
         seller_zone_id: number
@@ -247,6 +249,27 @@ export class TradingApi {
             wheeling_charges: Record<string, number>
             loss_factors: Record<string, number>
         }>('/api/v1/markets/p2p/market-prices', {
+            method: 'GET',
+            token: this.getToken(),
+        })
+    }
+
+    /**
+     * Real trade-derived market price (THB/kWh): VWAP + last/high/low + volume
+     * over a trailing window, computed from completed settlements. When
+     * `trade_count` is 0 there is no price yet — every price field is "0".
+     */
+    async getMarketPrice(windowHours = 24) {
+        return apiRequest<{
+            vwap: string
+            last_price: string
+            high: string
+            low: string
+            volume_kwh: string
+            trade_count: number
+            window_hours: number
+            as_of: string
+        }>(`/api/v1/markets/price?window_hours=${windowHours}`, {
             method: 'GET',
             token: this.getToken(),
         })
