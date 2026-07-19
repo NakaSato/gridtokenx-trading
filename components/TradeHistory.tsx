@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { defaultApiClient } from '@/lib/api-client'
-import { formatDistanceToNow } from 'date-fns'
 import { useSocket } from '@/contexts/SocketContext'
 import { useAuth } from '@/contexts/AuthProvider'
 import { History, TrendingUp, BarChart3, Globe, AlertOctagon } from 'lucide-react'
@@ -17,6 +16,21 @@ import {
 } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { TradeRecord } from '@/types/trading'
+
+// Compact relative time: "39m", "2h", "3d", "5mo", "1y"
+function shortTimeAgo(date: Date): string {
+    const s = Math.floor((Date.now() - date.getTime()) / 1000)
+    if (s < 60) return `${s}s`
+    const m = Math.floor(s / 60)
+    if (m < 60) return `${m}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h`
+    const d = Math.floor(h / 24)
+    if (d < 30) return `${d}d`
+    const mo = Math.floor(d / 30)
+    if (mo < 12) return `${mo}mo`
+    return `${Math.floor(mo / 12)}y`
+}
 
 /** Terminal settlement state: the worker exhausted its retries and parked the row. */
 const PERMANENTLY_FAILED = 'permanently_failed'
@@ -265,8 +279,8 @@ const TradeHistory = React.memo(function TradeHistory() {
                                         <span className="text-[9px] text-muted-foreground ml-0.5">THB</span>
                                     </span>
 
-                                    <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums w-20 text-right">
-                                        {formatDistanceToNow(new Date(trade.executed_at), { addSuffix: true })}
+                                    <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums w-24 text-right">
+                                        {shortTimeAgo(new Date(trade.executed_at))} ago
                                     </span>
                                 </div>
                             )
