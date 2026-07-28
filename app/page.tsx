@@ -146,7 +146,7 @@ export default function Homepage() {
                 <ResizablePanel
                   id="left-sidebar"
                   order={1}
-                  defaultSize={20}
+                  defaultSize={15}
                   minSize={10}
                   maxSize={25}
                 >
