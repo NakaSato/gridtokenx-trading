@@ -1,0 +1,17 @@
+# Linguist overrides — keep GitHub's language stats and diffs honest.
+#
+# Without these, ~25.6 MB of pre-minified TradingView bundles count as
+# first-party JavaScript and report the repo as ~86% JS, burying the
+# ~3 MB of TypeScript that is actually written here.
+#
+# These directives affect GitHub reporting and diff rendering only.
+# They do NOT exclude anything from the build — every path below is
+# required at runtime (see app/layout.tsx for the charting <Script> tags).
+
+# Vendored: TradingView Advanced Charts + its sample UDF datafeed.
+public/charting_library/** linguist-vendored
+public/datafeeds/**        linguist-vendored
+
+# Generated: wasm-bindgen output, built from wasm/ via `bun run build:wasm`.
+lib/wasm/**                linguist-generated
+lib/wasm-zk/**             linguist-generated
