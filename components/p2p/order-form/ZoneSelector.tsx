@@ -98,7 +98,7 @@ export function ZoneSelector({
       </div>
       <div className="flex items-center gap-2">
         {/* Your Zone Card - Small */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {orderType === 'buy' ? 'Your Zone' : 'Buyer Zone'}
           </span>
@@ -113,17 +113,17 @@ export function ZoneSelector({
               }
             }}
           >
-            <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+            <SelectTrigger className="h-9 min-w-0 appearance-none overflow-hidden rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
             <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] !min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
                       {zone.id}
                     </span>
-                    <span className="font-medium">{zone.name}</span>
+                    <span className="truncate font-medium">{zone.name}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -139,7 +139,7 @@ export function ZoneSelector({
         </div>
 
         {/* Counterparty Zone Card - Small */}
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {orderType === 'buy' ? 'Seller Zone' : 'Your Zone'}
           </span>
@@ -154,17 +154,17 @@ export function ZoneSelector({
               }
             }}
           >
-            <SelectTrigger className="h-9 appearance-none rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
+            <SelectTrigger className="h-9 min-w-0 appearance-none overflow-hidden rounded-lg border border-border bg-secondary text-xs font-medium text-foreground transition-all hover:bg-muted focus:ring-1 focus:ring-primary/50">
               <SelectValue placeholder="Select zone" />
             </SelectTrigger>
             <SelectContent position="popper" align="start" sideOffset={4} className="z-50 rounded-lg w-[var(--radix-select-trigger-width)] !min-w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-1rem)]">
               {zones.map((zone) => (
                 <SelectItem key={zone.id} value={String(zone.id)} className="text-xs rounded-md">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-secondary text-[10px] font-bold text-primary">
                       {zone.id}
                     </span>
-                    <span className="font-medium">{zone.name}</span>
+                    <span className="truncate font-medium">{zone.name}</span>
                   </div>
                 </SelectItem>
               ))}

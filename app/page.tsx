@@ -146,7 +146,7 @@ export default function Homepage() {
                 <ResizablePanel
                   id="left-sidebar"
                   order={1}
-                  defaultSize={15}
+                  defaultSize={20}
                   minSize={10}
                   maxSize={25}
                 >
@@ -165,7 +165,7 @@ export default function Homepage() {
             <ResizablePanel
               id="center-area"
               order={2}
-              defaultSize={showLeftSidebar && showRightSidebar ? 65 : showLeftSidebar || showRightSidebar ? 80 : 100}
+              defaultSize={showLeftSidebar && showRightSidebar ? 60 : showLeftSidebar || showRightSidebar ? 80 : 100}
               minSize={40}
             >
               <ResizablePanelGroup
@@ -177,7 +177,7 @@ export default function Homepage() {
                 <ResizablePanel
                   id="center-map"
                   order={1}
-                  defaultSize={showPositionsPanel ? 85 : 100}
+                  defaultSize={showPositionsPanel ? 75 : 100}
                   minSize={30}
                 >
                   <div className="flex h-full flex-col overflow-hidden">
@@ -199,7 +199,7 @@ export default function Homepage() {
                     <ResizablePanel
                       id="center-positions"
                       order={2}
-                      defaultSize={15}
+                      defaultSize={25}
                       minSize={10}
                       maxSize={40}
                     >
@@ -225,7 +225,7 @@ export default function Homepage() {
                   maxSize={30}
                 >
                   <div className="flex h-full flex-col overflow-y-auto pl-2 text-xs duration-700 animate-in fade-in slide-in-from-right-4">
-                    <div className="flex-1">
+                    <div id="p2p-order-form" className="flex-1">
                       <P2POrderForm
                         selectedNode={selectedMeterNode}
                         onClearNode={handleClearNode}

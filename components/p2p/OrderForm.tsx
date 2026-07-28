@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { Separator } from '@/components/ui/separator'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
@@ -45,7 +46,6 @@ const OrderForm = React.memo(function OrderForm({
   const [buyerZone, setBuyerZone] = useState<number>(0)
   const [sellerZone, setSellerZone] = useState<number>(0)
   const [message, setMessage] = useState('')
-  const [isSuccess, setIsSuccess] = useState(false)
   const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(null)
   const { isLoaded: cryptoLoaded } = useCrypto()
   const queryClient = useQueryClient()
@@ -123,16 +123,6 @@ const OrderForm = React.memo(function OrderForm({
     setOrderType(next)
   }
 
-  useEffect(() => {
-    if (isSuccess) {
-      const timer = setTimeout(() => {
-        setMessage('')
-        setIsSuccess(false)
-      }, 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [isSuccess])
-
   const orderMutation = useMutation({
     mutationFn: async (orderPayload: {
       side: 'buy' | 'sell'
@@ -172,10 +162,7 @@ const OrderForm = React.memo(function OrderForm({
       return apiResult.data
     },
     onSuccess: () => {
-      setMessage(
-        'Order placed successfully! The matching engine will find the best counterparty.'
-      )
-      setIsSuccess(true)
+      setMessage('')
       setAmount('')
       setPrice('')
       setTargetMatchOrder(null)
@@ -187,11 +174,6 @@ const OrderForm = React.memo(function OrderForm({
       // against appears without waiting for the poll interval.
       queryClient.invalidateQueries({ queryKey: ['active-order-meters'] })
       onOrderPlaced?.()
-    },
-    onError: (error) => {
-      setMessage(
-        error instanceof Error ? error.message : 'Failed to place order'
-      )
     },
   })
 
@@ -237,16 +219,28 @@ const OrderForm = React.memo(function OrderForm({
 
     const zone_id = orderType === 'buy' ? buyerZone : sellerZone
 
-    orderMutation.mutate({
-      side: orderType as 'buy' | 'sell',
-      order_type: effectivePriceType,
-      amount,
-      // Limit: the price. Market: omit (a market buy may still carry `price` as a
-      // slippage ceiling; sell is always limit).
-      price_per_kwh: effectivePriceType === 'limit' ? price : (price || undefined),
-      zone_id,
-      meter_serial: meterSerialFromNode(selectedNode),
-    })
+    toast
+      .promise(
+        orderMutation.mutateAsync({
+          side: orderType as 'buy' | 'sell',
+          order_type: effectivePriceType,
+          amount,
+          // Limit: the price. Market: omit (a market buy may still carry `price` as a
+          // slippage ceiling; sell is always limit).
+          price_per_kwh: effectivePriceType === 'limit' ? price : (price || undefined),
+          zone_id,
+          meter_serial: meterSerialFromNode(selectedNode),
+        }),
+        {
+          loading: 'Placing order…',
+          success:
+            'Order placed successfully! The matching engine will find the best counterparty.',
+          error: (error) =>
+            error instanceof Error ? error.message : 'Failed to place order',
+        }
+      )
+      // toast.promise surfaces the failure; swallow the rejection it re-throws.
+      .catch(() => {})
   }
 
   const loading = orderMutation.isPending
@@ -368,7 +362,7 @@ const OrderForm = React.memo(function OrderForm({
                 disabled={loading || !amount || parseFloat(amount) <= 0}
               />
 
-              <FeedbackMessage message={message} isSuccess={isSuccess} />
+              <FeedbackMessage message={message} isSuccess={false} />
             </form>
           </>
         )}

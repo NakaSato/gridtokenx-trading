@@ -164,6 +164,40 @@
   }
 }
 
+/* Scrollbars — slim, themed via the design-system tokens so they follow
+   every [data-theme] palette. Webkit rules style Chrome/Edge/Safari; the
+   standard properties below are the Firefox fallback (don't set them on the
+   same element as ::-webkit-scrollbar rules — Chrome ignores webkit rules
+   when the standard ones are present). */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted));
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--border)) transparent;
+  }
+}
+
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
   -webkit-appearance: none;
