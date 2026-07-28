@@ -40,6 +40,11 @@ const eslintConfig = [
                 'Moved to features/energy-grid or features/meter — import from there.',
             },
             {
+              group: ['@/components/p2p/*', '@/contexts/TradingProvider'],
+              message:
+                'Moved to features/p2p. Order-fill state is features/p2p/order-fill-context.',
+            },
+            {
               group: ['@/hooks/useApi', '@/contexts/SocketContext'],
               message:
                 'Removed. Use TanStack Query (lib/query/keys.ts) and lib/ws/useWsChannel.',

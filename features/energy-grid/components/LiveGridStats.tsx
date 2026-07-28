@@ -18,7 +18,7 @@ import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useGridStatus } from '@/features/energy-grid/hooks/useGridStatus'
 import type { MeterReading } from '@/types/meter'
-import { useTrading } from '@/contexts/TradingProvider'
+import { useOrderFill } from '@/features/p2p/order-fill-context'
 import { useSidebar } from '@/components/shared/SidebarContext'
 import { toast } from 'react-hot-toast'
 
@@ -86,7 +86,7 @@ const MINT_BADGES: Record<
 export default function LiveGridStats() {
     const { token } = useAuth()
     const { status: grid, error: gridError } = useGridStatus(READINGS_POLL_MS)
-    const { setActiveOrderFill } = useTrading()
+    const { setActiveOrderFill } = useOrderFill()
     const { showRightSidebar, toggleRightSidebar } = useSidebar()
 
     const { data: readings = [], error: readingsQueryError } = useQuery<MeterReading[]>({

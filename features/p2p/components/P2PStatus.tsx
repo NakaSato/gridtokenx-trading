@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-import { useP2PActivity } from './useP2PActivity'
+import { useP2PActivity } from '@/features/p2p/hooks/useP2PActivity'
 
 const P2PStatus = React.memo(function P2PStatus() {
     const { token } = useAuth()

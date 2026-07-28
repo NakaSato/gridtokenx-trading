@@ -3,7 +3,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Link } from 'lucide-react'
-import { OrderAccount } from '@/contexts/TradingProvider'
+import type { OrderAccount } from '@/features/p2p/types'
 
 interface MatchTargetIndicatorProps {
   targetMatchOrder: OrderAccount | null

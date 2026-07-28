@@ -18,7 +18,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { connection } from '@/utils/const'
 import ExpiredOptions from '../ExpiredOptions'
 import { CarbonCredits } from './carbon-credits'
-import P2PStatus from '../p2p/P2PStatus'
+import P2PStatus from '@/features/p2p/components/P2PStatus'
 
 export function PortfolioTabs() {
   const { token } = useAuth()

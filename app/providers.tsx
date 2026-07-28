@@ -9,7 +9,7 @@ import { AuthProvider } from '@/contexts/AuthProvider'
 import { PrivacyProvider } from '@/contexts/PrivacyProvider'
 import { SidebarProvider } from '@/components/shared/SidebarContext'
 import { WasmProvider } from '@/lib/wasm-provider'
-import { TradingProvider } from '@/contexts/TradingProvider'
+import { OrderFillProvider } from '@/features/p2p/order-fill-context'
 import { NotificationToastProvider } from '@/hooks/useNotificationToast'
 
 // The single place the provider stack is composed. Order matters:
@@ -25,11 +25,11 @@ export default function Providers({ children }: { children: ReactNode }) {
                 <PrivacyProvider>
                   <SidebarProvider>
                     <WasmProvider>
-                      <TradingProvider>
+                      <OrderFillProvider>
                         <NotificationToastProvider>
                           {children}
                         </NotificationToastProvider>
-                      </TradingProvider>
+                      </OrderFillProvider>
                     </WasmProvider>
                   </SidebarProvider>
                 </PrivacyProvider>

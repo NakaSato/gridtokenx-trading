@@ -68,7 +68,7 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 
-const P2POrderForm = dynamic(() => import('@/components/p2p/OrderForm'), {
+const P2POrderForm = dynamic(() => import('@/features/p2p/components/OrderForm'), {
   ssr: false,
   loading: () => (
     <div className="bg-secondary/50 h-full animate-pulse rounded-lg" />

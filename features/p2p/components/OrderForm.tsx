@@ -5,27 +5,26 @@ import toast from 'react-hot-toast'
 import { Separator } from '@/components/ui/separator'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useTrading, OrderAccount } from '@/contexts/TradingProvider'
+import { useOrderFill } from '@/features/p2p/order-fill-context'
+import type { OrderAccount } from '@/features/p2p/types'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { EnergyNode } from '@/types/grid'
-import { RecurringOrderForm } from '../trading/RecurringOrderForm'
+import { RecurringOrderForm } from '@/components/trading/RecurringOrderForm'
 import { useCrypto } from '@/hooks/useCrypto'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useMarketConfig, useP2PMarketPrices, useP2PBestPrices } from '@/features/p2p/hooks/useP2PMarket'
 import { P2P_CONFIG } from '@/lib/constants'
-import {
-  OrderTypeTabs,
-  MatchTargetIndicator,
-  BalanceDisplay,
-  SelectedNodeCard,
-  ZoneSelector,
-  AmountInput,
-  PriceInput,
-  OrderSummary,
-  SubmitButton,
-} from './order-form'
+import { OrderTypeTabs } from '@/features/p2p/order-form/OrderTypeTabs'
+import { MatchTargetIndicator } from '@/features/p2p/order-form/MatchTargetIndicator'
+import { BalanceDisplay } from '@/features/p2p/order-form/BalanceDisplay'
+import { SelectedNodeCard } from '@/features/p2p/order-form/SelectedNodeCard'
+import { ZoneSelector } from '@/features/p2p/order-form/ZoneSelector'
+import { AmountInput } from '@/features/p2p/order-form/AmountInput'
+import { PriceInput } from '@/features/p2p/order-form/PriceInput'
+import { OrderSummary } from '@/features/p2p/order-form/OrderSummary'
+import { SubmitButton } from '@/features/p2p/order-form/SubmitButton'
 import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
-import { meterSerialFromNode } from './order-form/meterId'
+import { meterSerialFromNode } from '@/features/p2p/order-form/meterId'
 
 interface OrderFormProps {
   onOrderPlaced?: () => void
@@ -54,7 +53,7 @@ const OrderForm = React.memo(function OrderForm({
   // Best bid/ask refresh on their own interval inside the hook, so the spread
   // warning and market-order estimate don't go stale.
   const { bestBid, bestAsk } = useP2PBestPrices(token ?? undefined)
-  const { activeOrderFill, setActiveOrderFill } = useTrading()
+  const { activeOrderFill, setActiveOrderFill } = useOrderFill()
 
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance()
   const rawBalance = balanceData?.token_balance

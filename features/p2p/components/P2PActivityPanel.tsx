@@ -14,7 +14,7 @@ import {
     Database,
     BookOpen,
 } from 'lucide-react'
-import { useP2PActivity } from './useP2PActivity'
+import { useP2PActivity } from '@/features/p2p/hooks/useP2PActivity'
 
 /**
  * Compact, landscape-oriented P2P activity view for the trading positions
