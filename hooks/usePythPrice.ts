@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { PRICE_FEEDS } from '../lib/data/price-feed'
+import { PRICE_FEEDS } from '@/lib/data/price-feed'
+import { queryKeys } from '@/lib/query/keys'
 import { HermesClient } from '@pythnetwork/hermes-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -33,7 +34,7 @@ export function usePythPrice(token: string): UsePythPriceResult {
 
   const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery({
-    queryKey: ['pythPrice', token],
+    queryKey: queryKeys.pyth.price(token),
     queryFn: async () => {
       if (!feed) throw new Error('Invalid token')
 
@@ -63,7 +64,7 @@ export function usePythPrice(token: string): UsePythPriceResult {
       const message = customEvent.detail
 
       if (message.type === 'PriceUpdated' && message.symbol === token) {
-        queryClient.invalidateQueries({ queryKey: ['pythPrice', token] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.pyth.price(token) })
       }
     }
 
@@ -84,7 +85,7 @@ export function usePyth24hChange(token: string): PriceChangeState {
   const feed = PRICE_FEEDS.find((f) => f.token === token)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['pyth24hChange', token],
+    queryKey: queryKeys.pyth.history(token, '24h'),
     queryFn: async () => {
       if (!feed) throw new Error('Invalid token')
 

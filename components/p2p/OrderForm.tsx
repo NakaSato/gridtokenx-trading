@@ -11,7 +11,7 @@ import type { EnergyNode } from '@/types/grid'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
 import { useCrypto } from '@/hooks/useCrypto'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
-import { useMarketConfig, useP2PMarketPrices, useP2PBestPrices } from '@/hooks/useApi'
+import { useMarketConfig, useP2PMarketPrices, useP2PBestPrices } from '@/features/p2p/hooks/useP2PMarket'
 import { P2P_CONFIG } from '@/lib/constants'
 import {
   OrderTypeTabs,
@@ -51,15 +51,10 @@ const OrderForm = React.memo(function OrderForm({
   const queryClient = useQueryClient()
   const { marketConfig } = useMarketConfig(token ?? undefined)
   const { marketPrices } = useP2PMarketPrices(token ?? undefined)
-  const { bestBid, bestAsk, refetch: refetchBestPrices } = useP2PBestPrices(token ?? undefined)
-  const { activeOrderFill, setActiveOrderFill } = useTrading()
-
-  // Best bid/ask move as the book fills — refresh periodically so the spread
+  // Best bid/ask refresh on their own interval inside the hook, so the spread
   // warning and market-order estimate don't go stale.
-  useEffect(() => {
-    const interval = setInterval(refetchBestPrices, 10000)
-    return () => clearInterval(interval)
-  }, [refetchBestPrices])
+  const { bestBid, bestAsk } = useP2PBestPrices(token ?? undefined)
+  const { activeOrderFill, setActiveOrderFill } = useTrading()
 
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance()
   const rawBalance = balanceData?.token_balance

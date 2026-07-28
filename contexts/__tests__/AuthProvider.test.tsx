@@ -20,7 +20,7 @@ const mockApiClient = {
   clearToken: jest.fn(),
 }
 
-jest.mock('@/hooks/useApi', () => ({
+jest.mock('@/lib/api/useApiClient', () => ({
   useApiClient: () => mockApiClient,
 }))
 

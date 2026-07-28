@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
-import { useSocket } from '@/contexts/SocketContext'
+import { useWsChannel } from '@/lib/ws/useWsChannel'
+import { queryKeys } from '@/lib/query/keys'
 import { useAuth } from '@/contexts/AuthProvider'
 import { History, TrendingUp, BarChart3, Globe, AlertOctagon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -37,58 +39,31 @@ const PERMANENTLY_FAILED = 'permanently_failed'
 
 const TradeHistory = React.memo(function TradeHistory() {
     const { token } = useAuth()
-    const [trades, setTrades] = useState<TradeRecord[]>([])
-    const [loading, setLoading] = useState(true)
+    const queryClient = useQueryClient()
 
-    const { socket } = useSocket()
-
-    const fetchTrades = async () => {
-        if (!token) {
-            setLoading(false)
-            return
-        }
-
-        try {
-            defaultApiClient.setToken(token)
+    const { data: trades = [], isLoading } = useQuery({
+        queryKey: queryKeys.trading.tradeHistory(),
+        queryFn: async (): Promise<TradeRecord[]> => {
+            defaultApiClient.setToken(token!)
             const response = await defaultApiClient.getTrades({ limit: 20 })
-            if (response.data) {
-                setTrades(response.data.trades || [])
-            }
-        } catch (error) {
-            console.error('Failed to fetch trades:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
+            return response.data?.trades ?? []
+        },
+        enabled: !!token,
+        refetchInterval: 10_000,
+    })
 
-    useEffect(() => {
-        if (!token) {
-            setTrades([])
-            setLoading(false)
-            return
-        }
+    // Settled trades arrive out of band; pull the list forward rather than
+    // waiting out the poll interval.
+    useWsChannel('trades', 'trade_executed', {
+        enabled: !!token,
+        onMessage: () => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.trading.tradeHistory(),
+            })
+        },
+    })
 
-        fetchTrades()
-        const interval = setInterval(fetchTrades, 10000)
-
-        if (socket) {
-            const handleMessage = (event: MessageEvent) => {
-                try {
-                    const message = JSON.parse(event.data)
-                    if (message.type === 'trade_executed') {
-                        fetchTrades()
-                    }
-                } catch (e) { }
-            }
-            socket.addEventListener('message', handleMessage)
-            return () => {
-                socket.removeEventListener('message', handleMessage)
-                clearInterval(interval)
-            }
-        }
-
-        return () => clearInterval(interval)
-    }, [socket, token])
+    const loading = !!token && isLoading
 
     if (loading) {
         return (

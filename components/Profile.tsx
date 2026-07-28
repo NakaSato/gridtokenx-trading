@@ -10,7 +10,7 @@ import { User, Upload, Copy, Check, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useApiClient } from '@/hooks/useApi'
+import { useApiClient } from '@/lib/api/useApiClient'
 import type { UserProfile } from '@/types/auth'
 import toast from 'react-hot-toast'
 

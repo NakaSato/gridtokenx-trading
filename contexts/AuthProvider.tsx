@@ -8,7 +8,7 @@ import React, {
   useState,
   ReactNode,
 } from 'react'
-import { useApiClient } from '@/hooks/useApi'
+import { useApiClient } from '@/lib/api/useApiClient'
 import { ApiClientError } from '@/lib/api/core'
 import { computeRefreshDelay } from '@/lib/jwt'
 import type {

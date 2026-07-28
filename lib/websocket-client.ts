@@ -19,6 +19,9 @@ export type WebSocketMessageType =
   | 'settlement_complete'
   | 'order_book_snapshot'
   | 'conditional_order_triggered'
+  // Emitted on the trades channel when a trade settles. Was previously only
+  // observed via a raw socket in SocketContext, so it never reached this union.
+  | 'trade_executed'
   // Public /api/market/ws stream (energy-grid map)
   | 'grid_status_updated'
   | 'grid_status'

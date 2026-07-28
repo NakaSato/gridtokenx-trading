@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { PRICE_FEEDS } from '@/lib/data/price-feed'
+import { queryKeys } from '@/lib/query/keys'
 
+// OHLC history comes from Pyth's TradingView shim directly — unlike spot price
+// (usePythPrice), there is no BFF route for candles.
 const API_ENDPOINT = 'https://benchmarks.pyth.network/v1/shims/tradingview'
-const POLLING_INTERVAL = 180000
-const CACHE_DURATION = 30000
+const POLLING_INTERVAL = 180_000
+const STALE_TIME = 30_000
 
 interface MarketDataState {
   high24h: number | null
@@ -14,13 +18,6 @@ interface MarketDataState {
   change24h: number | null
   historicalPrices: number[]
 }
-
-interface CachedMarketData {
-  data: MarketDataState
-  timestamp: number
-}
-
-const marketDataCache = new Map<string, CachedMarketData>()
 
 interface UsePythMarketDataResult {
   marketData: MarketDataState
@@ -36,127 +33,63 @@ const initialMarketState: MarketDataState = {
   historicalPrices: [],
 }
 
+/**
+ * 24h high/low/change plus a 30-day close series for volatility.
+ *
+ * Previously hand-rolled: useState + setInterval + a module-level Map cache +
+ * a request counter. The query cache supersedes all of it — staleTime replaces
+ * the Map, refetchInterval replaces the interval, and de-duplication across
+ * mounts replaces the rate limiter.
+ */
 export function usePythMarketData(token: string): UsePythMarketDataResult {
-  const [marketData, setMarketData] =
-    useState<MarketDataState>(initialMarketState)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-  const requestCountRef = useRef<number>(0)
-  const lastRequestTimeRef = useRef<number>(0)
+  const feed = PRICE_FEEDS.find((f) => f.token === token)
 
-  useEffect(() => {
-    let mounted = true
-    let intervalId: NodeJS.Timeout
-
-    const priceFeed = PRICE_FEEDS.find((feed) => feed.token === token)
-    if (!priceFeed) {
-      setError(`Price feed not found for token: ${token}`)
-      setLoading(false)
-      return
-    }
-
-    async function fetchMarketData() {
-      if (!mounted) return
-
+  const { data, isLoading, error } = useQuery({
+    queryKey: queryKeys.pyth.history(token, 'D'),
+    queryFn: async (): Promise<MarketDataState> => {
       const now = Date.now()
-      const cachedResult = marketDataCache.get(token)
+      const thirtyDaysAgo = Math.floor(now / 1000) - 30 * 24 * 60 * 60
 
-      if (cachedResult && now - cachedResult.timestamp < CACHE_DURATION) {
-        setMarketData(cachedResult.data)
-        setLoading(false)
-        return
+      const response = await fetch(
+        `${API_ENDPOINT}/history?symbol=${encodeURIComponent(token)}&from=${thirtyDaysAgo}&to=${Math.floor(now / 1000)}&resolution=D`
+      )
+      if (!response.ok) throw new Error('Failed to fetch market data')
+
+      const raw = await response.json()
+      if (!raw.h || !raw.l || !raw.c || raw.h.length === 0 || raw.l.length === 0) {
+        throw new Error('No data available')
       }
 
-      if (now - lastRequestTimeRef.current < 10000) {
-        if (requestCountRef.current >= 85) {
-          return
-        }
-      } else {
-        requestCountRef.current = 0
-        lastRequestTimeRef.current = now
+      const high = Math.max(...raw.h.slice(-1).map((h: string) => parseFloat(h)))
+      const low = Math.min(...raw.l.slice(-1).map((l: string) => parseFloat(l)))
+      const currentPrice = parseFloat(raw.c[raw.c.length - 1])
+      const previousPrice = parseFloat(raw.o[raw.o.length - 1])
+
+      return {
+        high24h: high,
+        low24h: low,
+        lastUpdated: now,
+        change24h: ((currentPrice - previousPrice) / previousPrice) * 100,
+        historicalPrices: raw.c.map((price: string) => parseFloat(price)),
       }
+    },
+    enabled: !!feed,
+    refetchInterval: POLLING_INTERVAL,
+    staleTime: STALE_TIME,
+  })
 
-      try {
-        // Fetch 30 days of historical data for volatility calculation
-        const thirtyDaysAgo = Math.floor(now / 1000) - 30 * 24 * 60 * 60
-
-        const response = await fetch(
-          `${API_ENDPOINT}/history?symbol=${encodeURIComponent(token)}&from=${thirtyDaysAgo}&to=${Math.floor(now / 1000)}&resolution=D`
-        )
-        requestCountRef.current++
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch market data')
-        }
-
-        const data = await response.json()
-
-        if (
-          !data.h ||
-          !data.l ||
-          !data.c ||
-          data.h.length === 0 ||
-          data.l.length === 0
-        ) {
-          throw new Error('No data available')
-        }
-
-        const high = Math.max(
-          ...data.h.slice(-1).map((h: string) => parseFloat(h))
-        )
-        const low = Math.min(
-          ...data.l.slice(-1).map((l: string) => parseFloat(l))
-        )
-        const currentPrice = parseFloat(data.c[data.c.length - 1])
-        const previousPrice = parseFloat(data.o[data.o.length - 1])
-        const change24h = ((currentPrice - previousPrice) / previousPrice) * 100
-
-        const historicalPrices = data.c.map((price: string) =>
-          parseFloat(price)
-        )
-
-        const newMarketData = {
-          high24h: high,
-          low24h: low,
-          lastUpdated: now,
-          change24h: change24h,
-          historicalPrices,
-        }
-
-        marketDataCache.set(token, {
-          data: newMarketData,
-          timestamp: now,
-        })
-
-        if (mounted) {
-          setMarketData(newMarketData)
-          setError(null)
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(
-            err instanceof Error ? err.message : 'Failed to fetch market data'
-          )
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    fetchMarketData()
-    intervalId = setInterval(fetchMarketData, POLLING_INTERVAL)
-
-    return () => {
-      mounted = false
-      if (intervalId) {
-        clearInterval(intervalId)
-      }
-    }
-  }, [token])
-
-  return useMemo(() => ({ marketData, loading, error }), [marketData, loading, error])
+  return useMemo(
+    () => ({
+      marketData: data ?? initialMarketState,
+      loading: isLoading,
+      error: error
+        ? (error as Error).message
+        : feed
+          ? null
+          : `Price feed not found for token: ${token}`,
+    }),
+    [data, isLoading, error, feed, token]
+  )
 }
 
 export type { MarketDataState }

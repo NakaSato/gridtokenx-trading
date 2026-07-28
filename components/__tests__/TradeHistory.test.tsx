@@ -1,13 +1,14 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import TradeHistory from '../TradeHistory'
 
 jest.mock('@/contexts/AuthProvider', () => ({
     useAuth: () => ({ token: 'test-token' }),
 }))
 
-jest.mock('@/contexts/SocketContext', () => ({
-    useSocket: () => ({ socket: null }),
+jest.mock('@/lib/ws/useWsChannel', () => ({
+    useWsChannel: () => ({ connected: false, latest: null, buffer: [], clear: jest.fn(), send: jest.fn() }),
 }))
 
 const mockGetTrades = jest.fn()
@@ -58,7 +59,14 @@ const trade = (overrides: Partial<TradeFixture> = {}): TradeFixture => ({
 
 const renderWithTrades = async (trades: TradeFixture[]) => {
     mockGetTrades.mockResolvedValue({ data: { trades } })
-    render(<TradeHistory />)
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    render(
+        <QueryClientProvider client={queryClient}>
+            <TradeHistory />
+        </QueryClientProvider>
+    )
     // Clears the loading skeleton once the first fetch resolves.
     await screen.findByText('Market Activity')
 }

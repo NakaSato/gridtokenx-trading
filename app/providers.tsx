@@ -6,7 +6,6 @@ import QueryProvider from '@/components/shared/QueryProvider'
 import Connectionprovider from '@/contexts/connectionprovider'
 import { ContractProvider } from '@/contexts/contractProvider'
 import { AuthProvider } from '@/contexts/AuthProvider'
-import { SocketProvider } from '@/contexts/SocketContext'
 import { PrivacyProvider } from '@/contexts/PrivacyProvider'
 import { SidebarProvider } from '@/components/shared/SidebarContext'
 import { WasmProvider } from '@/lib/wasm-provider'
@@ -23,7 +22,6 @@ export default function Providers({ children }: { children: ReactNode }) {
         <Connectionprovider>
           <ContractProvider>
             <AuthProvider>
-              <SocketProvider>
                 <PrivacyProvider>
                   <SidebarProvider>
                     <WasmProvider>
@@ -35,7 +33,6 @@ export default function Providers({ children }: { children: ReactNode }) {
                     </WasmProvider>
                   </SidebarProvider>
                 </PrivacyProvider>
-              </SocketProvider>
             </AuthProvider>
           </ContractProvider>
         </Connectionprovider>
