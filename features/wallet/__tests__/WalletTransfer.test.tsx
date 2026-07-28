@@ -8,11 +8,11 @@ jest.mock('@solana/wallet-adapter-react', () => ({
   useWallet: jest.fn(),
 }))
 
-jest.mock('@/hooks/useWalletBalance', () => ({
+jest.mock('@/features/wallet/hooks/useWalletBalance', () => ({
   useWalletBalance: jest.fn(),
 }))
 
-jest.mock('@/hooks/useEscrow', () => ({
+jest.mock('@/features/wallet/hooks/useEscrow', () => ({
   useEscrowBalance: jest.fn(),
   useDepositEscrow: jest.fn(),
   useWithdrawEscrow: jest.fn(),
@@ -24,9 +24,9 @@ jest.mock('react-hot-toast', () => ({
 }))
 
 const { useWallet } = jest.requireMock('@solana/wallet-adapter-react')
-const { useWalletBalance } = jest.requireMock('@/hooks/useWalletBalance')
+const { useWalletBalance } = jest.requireMock('@/features/wallet/hooks/useWalletBalance')
 const { useEscrowBalance, useDepositEscrow, useWithdrawEscrow } =
-  jest.requireMock('@/hooks/useEscrow')
+  jest.requireMock('@/features/wallet/hooks/useEscrow')
 
 const VALID_MINT = 'So11111111111111111111111111111111111111112'
 

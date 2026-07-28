@@ -7,7 +7,7 @@ import {
   useOrderFilledWebSocket,
   useOrderMatchedWebSocket,
   useWebSocketMessage,
-} from './useWebSocket'
+} from '@/lib/ws/useWebSocket'
 import { useAuth } from '@/features/auth/provider'
 import type {
   ConditionalOrderTriggered,

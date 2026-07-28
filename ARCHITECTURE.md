@@ -31,40 +31,64 @@ Node/Bun frontend.
 
 ```
 app/                    Next.js App Router (routes, layouts, route handlers)
-├── layout.tsx          Root layout — nests the full provider tree (see §3)
-├── page.tsx            Landing / dashboard
-├── futures/  portfolio/  meter/  login/  verify/ …   Route segments
-├── auth/callback/      OAuth/Supabase auth return
+├── layout.tsx          Root layout — page chrome + global modals
+├── providers.tsx       The provider tree, composed in one place (see §3)
+├── page.tsx            P2P trading terminal
+├── futures/  portfolio/  wallet/  meter/  carbon-credit/  login/  verify/ …   Route segments
 └── api/                Server route handlers (BFF) — auth proxy, pyth-price, option txns
-components/             UI — feature dirs (trading/ p2p/ auction/ charts/ energy-grid/ …) + ui/ (shadcn)
-contexts/              React Context providers (Auth, Trading, Energy, Privacy, Marketplace, Socket, …)
-hooks/                 Data/logic hooks (useApi, useOptions, usePythPrice, useWebSocket, …)
-lib/                   Core client logic
+features/               Feature modules — the primary unit of organisation.
+│                       Each owns its components/, hooks/, lib/, types and tests.
+│   ├── auth/              provider.tsx (session + useAuth), lib/{session-storage,token-refresh,password}
+│   ├── trading/           futures/options/positions, contract-provider, lib/{options,liquidity}
+│   ├── p2p/               order form, activity, order-fill-context
+│   ├── energy-grid/       map, telemetry and grid-status hooks
+│   ├── meter/  portfolio/  wallet/  carbon → via portfolio/, privacy/, notifications/
+components/
+│   ├── ui/                shadcn primitives
+│   └── shared/            Cross-feature chrome: NavBar, Footer, Pagination, Settings, SidebarContext
+lib/                    Core client logic (no feature knowledge)
 │   ├── config.ts          Env-driven API/WS/Solana endpoints + helpers
 │   ├── api-client.ts      Facade over lib/api/* domain modules
 │   ├── api/               Domain REST clients (auth, trading, user, meters, carbon, futures, core)
-│   ├── websocket-client.ts  Reconnecting WS client for realtime channels
-│   ├── streaming.ts / datafeed.ts  TradingView/Pyth price streaming
-│   ├── wasm-bridge.ts / wasm-provider.tsx  WASM loader + React provider
-│   ├── idl/               Anchor IDLs (trading, energy_token, governance, oracle, option_contract, …)
-│   ├── contract-actions.ts / pda-utils.ts / program.ts  On-chain options-contract calls
+│   │                      + adapters.ts (API→UI projections), useApiClient.ts
+│   ├── query/keys.ts      TanStack query-key factory — every server-state key
+│   ├── ws/                useWebSocket + useWsChannel over websocket-client.ts
+│   ├── solana/            connection-provider.tsx (wallet adapters)
+│   ├── streaming.ts       TradingView/Pyth price streaming
+│   ├── wasm-bridge.ts / wasm-provider.tsx / wasm-hooks.ts  WASM loader, provider, hooks
+│   ├── idl/               Anchor IDLs (trading, energy_token, governance, option_contract, …)
+│   ├── pda-utils.ts / program.ts   Solana PDA + program helpers
 │   └── zk-utils.ts / stealth-utils.ts / privacy-utils.ts  Privacy primitives (WASM-backed)
-types/                 Shared TS types (trading, futures, meter, grid, wallet, auth, …)
-utils/                 const.ts (Solana mints/oracles/connection), formatters, supabase/ helpers
-middleware.ts          Edge auth gate (active only when NEXT_PUBLIC_AUTH_MODE=supabase)
-next.config.ts         Standalone output, image domains, /api rewrite to APISIX, WASM webpack rules
+types/                  Shared TS types (trading, futures, meter, grid, wallet, auth, ws, …)
+utils/                  const.ts (Solana mints/oracles/connection), formatters, date helpers
+next.config.ts          Standalone output, image domains, /api rewrite to APISIX, WASM webpack rules
 public/  scripts/  docs/  tests/
 ```
+
+**Conventions.** Feature code lives in `features/<name>/`; only genuinely cross-feature UI
+belongs in `components/shared/`, and only feature-agnostic infrastructure in `lib/`.
+There are **no barrel files** — import the full path so the source of a symbol is
+greppable. Server state goes through TanStack Query with keys from
+[`lib/query/keys.ts`](lib/query/keys.ts); realtime goes through
+[`lib/ws/useWsChannel.ts`](lib/ws/useWsChannel.ts). React context is reserved for
+session and UI state. `eslint.config.mjs` carries a `no-restricted-imports`
+ratchet listing every pre-refactor path, so a moved module cannot be
+re-imported from its old location.
 
 ## 3. Architecture
 
 ### Routing & composition
-App Router. `app/layout.tsx` wraps every page in a fixed provider stack (outer → inner):
-`ThemeProvider → QueryProvider → SystemConfigProvider → AuthProvider → SocketProvider →
-EnergyProvider → PrivacyProvider → SidebarProvider → WasmProvider → LendingProvider →
-MarketplaceProvider → TradingProvider → NotificationToastProvider`, then `NavBar` / `{children}` /
-`Footer`. Route segments under `app/` (`futures`, `portfolio`, `meter`, `login`, `verify`, etc.)
-render inside that shell.
+App Router. `app/layout.tsx` renders the page chrome and global modals; the provider stack is
+composed in one place, `app/providers.tsx` (outer → inner):
+`ThemeProvider → QueryProvider → Connectionprovider → ContractProvider → AuthProvider →
+PrivacyProvider → SidebarProvider → WasmProvider → OrderFillProvider →
+NotificationToastProvider`, then `NavBar` / `{children}` / `Footer`. Route segments under `app/`
+(`futures`, `portfolio`, `wallet`, `meter`, `carbon-credit`, `login`, `verify`, …) render inside
+that shell.
+
+`ContractProvider` used to be mounted invisibly inside the connection provider; it is explicit
+here. Four providers with no consumers (Energy, Lending, Marketplace, SystemConfig) and two whose
+surface was unused (Trading, Socket) were removed — see git history if a flow needs reviving.
 
 ### How it talks to the backend
 All backend access is **REST/JSON over `fetch`** (not ConnectRPC/gRPC in this client). Endpoints
@@ -84,22 +108,25 @@ surface — the frontend never targets internal mesh ports.
 `lib/websocket-client.ts` is a reconnecting client (`WebSocketClient`) to `API_CONFIG.wsBaseUrl`
 (`ws://…orb.local` by default), channels `/ws/orderbook`, `/ws/trades`, `/ws/epochs`. It carries
 typed messages (`orderbook_update`, `trade_update`, `epoch_transition`, `settlement_complete`,
-`order_matched`, …) and supports public vs token-authed channels. `SocketContext` exposes it to the
-tree. Price candles stream separately from **Pyth/TradingView** (`lib/streaming.ts`,
-`lib/datafeed.ts`).
+`order_matched`, …) and supports public vs token-authed channels. Components consume it through
+`lib/ws/useWebSocket.ts` and the generic `lib/ws/useWsChannel.ts` — the single realtime stack.
+Price candles stream separately from **Pyth/TradingView** (`lib/streaming.ts`).
 
 ### Wallet & on-chain access (non-custodial)
 This client uses **Solana wallet adapters** directly — it is not purely server-custodial.
-`contexts/connectionprovider.tsx` wires `ConnectionProvider` + `WalletProvider` with lazily
-imported adapters (Phantom, Solflare, Trust, SafePal; `autoConnect`). `contexts/contractProvider.tsx`
-builds an Anchor `AnchorProvider`/`Program` (from `lib/idl/option_contract.json`) against a
-`@solana/web3.js` `Connection`, and `lib/contract-actions.ts` issues options-contract transactions
+`lib/solana/connection-provider.tsx` wires `ConnectionProvider` + `WalletProvider` with lazily
+imported adapters (Phantom, Solflare, Trust, SafePal; `autoConnect`).
+`features/trading/contract-provider.tsx` builds an Anchor `AnchorProvider`/`Program` (from
+`lib/idl/option_contract.json`) against a `@solana/web3.js` `Connection`, and
+`features/trading/lib/{options,liquidity}.ts` issue contract transactions
 signed by the connected wallet. The Solana RPC endpoint comes from
 `NEXT_PUBLIC_SOLANA_RPC_URL` (defaults route through the APISIX `/api/v1/rpc` shim).
 
-Session auth is separate: `contexts/AuthProvider.tsx` stores a backend-issued **JWT** in
-`localStorage`/`sessionStorage` and feeds it to `ApiClient`. An optional **Supabase** auth mode
-(`middleware.ts`, `utils/supabase/`) gates routes at the edge when `NEXT_PUBLIC_AUTH_MODE=supabase`.
+Session auth is separate: `features/auth/provider.tsx` stores a backend-issued **JWT** in
+`localStorage`/`sessionStorage` (all access via `features/auth/lib/session-storage.ts`) and feeds
+it to `ApiClient`. A proactive timer refreshes the token before expiry
+(`features/auth/lib/token-refresh.ts`). There is no edge auth gate — the former Supabase mode,
+`middleware.ts` and `utils/supabase/` were removed in `bb26fd9`.
 
 ## 4. Conventions / Key Behaviors
 
@@ -120,7 +147,12 @@ Session auth is separate: `contexts/AuthProvider.tsx` stores a backend-issued **
    allow-listed in `next.config.ts`. Bundle size is guarded by `scripts/check-bundle-size.js`
    (`bun run check:bundle`).
 7. **Client-first.** Most interactivity lives in `'use client'` components/providers; server work is
-   confined to the small `app/api/*` BFF handlers and `middleware.ts`.
+   confined to the small `app/api/*` BFF handlers.
+8. **Feature modules.** Code belongs to a `features/<name>/` module unless it is genuinely
+   cross-feature UI (`components/shared/`) or feature-agnostic infrastructure (`lib/`). No barrel
+   files. Server state via TanStack Query with keys from `lib/query/keys.ts`; realtime via
+   `lib/ws/useWsChannel.ts`. The `no-restricted-imports` ratchet in `eslint.config.mjs` blocks
+   imports from pre-refactor paths.
 
 ## 5. Commands
 
@@ -146,12 +178,12 @@ bun run clean            # rm -rf .next
 
 | File | Covers |
 | :--- | :--- |
-| `README.md` | Project overview, setup, and feature summary |
-| `QWEN.md` | LLM working notes / orientation for this frontend |
+| `CLAUDE.md` | Day-to-day operating notes for this folder |
 | `next.config.ts` | Standalone output, APISIX rewrites, image domains, WASM webpack rules |
 | `lib/config.ts` | Env-driven API/WS/Solana endpoint definitions |
 | `lib/api-client.ts` | REST facade and the full set of backend calls |
-| `docs/STYLE_GUIDE.md` | Frontend code/style conventions |
+| `lib/query/keys.ts` | Query-key factory for all server state |
+| `docs/STYLE_GUIDE.md` | Brand/visual identity guide (logo, colour, typography) — not code style |
 | `docs/UI_SYSTEM_DESIGN.md` | UI system / component design |
 | `docs/SYSTEM_DESIGN_MOBILE.md` | Mobile layout / responsive design |
 | `lib/wasm/README.md` | The bundled WASM module API |

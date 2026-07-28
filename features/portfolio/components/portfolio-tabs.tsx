@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { useAuth } from '@/features/auth/provider'
-import { useExpiredOptions, useOptionSettlement } from '@/hooks/useOptions'
+import { useExpiredOptions, useOptionSettlement } from '@/features/trading/hooks/useOptions'
 import {
   usePositions,
   useOpenOrders,
@@ -18,7 +18,7 @@ import OpenPositions from '@/features/trading/components/OpenPositions'
 import OpenOptionOrders from '@/features/trading/components/OpenOptionOrders'
 import OrderHistory from '@/features/trading/components/OrderHistory'
 import { useContext } from 'react'
-import { ContractContext } from '@/contexts/contractProvider'
+import { ContractContext } from '@/features/trading/contract-provider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { connection } from '@/utils/const'
 import ExpiredOptions from '@/features/trading/components/ExpiredOptions'

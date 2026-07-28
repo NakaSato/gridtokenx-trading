@@ -1,6 +1,6 @@
 # Map Dashboard — Real-Data API Spec
 
-> Backend endpoints the energy-grid map (`components/EnergyGridMap.tsx` + `components/energy-grid/*`)
+> Backend endpoints the energy-grid map (`features/energy-grid/components/EnergyGridMap.tsx` + `features/energy-grid/*`)
 > needs so the map renders **only real data**. The frontend's synthetic geometry and client-side
 > simulation were removed (see "Removed" below); until these endpoints return real data the map
 > shows empty/idle state, not fake data.

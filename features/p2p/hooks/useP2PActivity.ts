@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { defaultApiClient, createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/features/auth/provider'
-import { useOrderMatchedWebSocket } from '@/hooks/useWebSocket'
+import { useOrderMatchedWebSocket } from '@/lib/ws/useWebSocket'
 import {
     useP2POrderUpdates,
     useSettlementUpdates,
-} from '@/hooks/useTransactionUpdates'
+} from '@/features/trading/hooks/useTransactionUpdates'
 
 // Matching engine status from API
 export interface MatchingStatus {

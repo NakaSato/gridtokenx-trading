@@ -6,7 +6,7 @@ import {
   WebSocketMessage,
   WebSocketMessageType,
 } from '@/lib/websocket-client'
-import { useWebSocket } from '@/hooks/useWebSocket'
+import { useWebSocket } from '@/lib/ws/useWebSocket'
 
 export interface UseWsChannelOptions<T> {
   /** Keep at most this many messages in the buffer (newest first). Default 50. */

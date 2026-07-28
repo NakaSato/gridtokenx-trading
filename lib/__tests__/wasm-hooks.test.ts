@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useCrypto } from '../useCrypto'
+import { useCrypto } from '@/lib/wasm-hooks'
 
 // Mock wasm-bridge
 jest.mock('@/lib/wasm-bridge', () => ({

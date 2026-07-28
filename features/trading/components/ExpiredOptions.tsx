@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { CallIconDark, PutIconDark } from '@/public/svgs/icons'
 import { Separator } from '@/components/ui/separator'
-import { ExpiredOption } from '@/contexts/contractProvider'
+import { ExpiredOption } from '@/features/trading/contract-provider'
 
 const expiredPositions = [
   {

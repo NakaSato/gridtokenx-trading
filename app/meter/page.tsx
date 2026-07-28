@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { MeterRegistrationModal } from '@/features/meter/components/MeterRegistrationModal'
 import { MeterHeader } from '@/features/meter/components/MeterHeader'
-import { useSmartMeter } from '@/hooks/useSmartMeter'
+import { useSmartMeter } from '@/features/meter/hooks/useSmartMeter'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import dynamic from 'next/dynamic'
 

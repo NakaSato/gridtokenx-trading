@@ -43,8 +43,8 @@ import { NetworkStatus } from '@/components/shared/NetworkStatus'
 const WalletSideBar = dynamic(() => import('@/features/wallet/components/WalletSidebar'), { ssr: false })
 const Settings = dynamic(() => import('@/components/shared/Settings'), { ssr: false })
 const Profile = dynamic(() => import('@/features/auth/components/Profile'), { ssr: false })
-const Notifications = dynamic(() => import('@/components/Notifications'), { ssr: false })
-const PointsDropDown = dynamic(() => import('@/components/PointsDropDown'), { ssr: false })
+const Notifications = dynamic(() => import('@/features/notifications/components/Notifications'), { ssr: false })
+const PointsDropDown = dynamic(() => import('@/components/shared/PointsDropDown'), { ssr: false })
 
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'

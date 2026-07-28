@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useWebSocketMessage } from './useWebSocket'
+import { useWebSocketMessage } from '@/lib/ws/useWebSocket'
 import toast from 'react-hot-toast'
 import throttle from 'lodash.throttle'
 import type {

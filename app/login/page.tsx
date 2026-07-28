@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/features/auth/provider'
-import { useWalletAuth } from '@/hooks/useWalletAuth'
+import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 import WalletList from '@/features/auth/components/WalletList'
 import { allWallets } from '@/features/auth/components/WalletModal'
 import { ApiClientError } from '@/lib/api/core'
-import { useResendVerification } from '@/hooks/useResendVerification'
+import { useResendVerification } from '@/features/auth/lib/useResendVerification'
 
 export default function LoginPage() {
   const router = useRouter()

@@ -1,9 +1,9 @@
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import {
   BoostIcon,
@@ -13,8 +13,8 @@ import {
 } from '@/public/svgs/icons'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { DialogTrigger } from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 

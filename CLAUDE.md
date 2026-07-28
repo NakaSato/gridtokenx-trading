@@ -49,24 +49,33 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
   `ApiClient` facade in `lib/api-client.ts` (per-domain modules in `lib/api/*`: `auth`, `trading`,
   `futures`, `meters`, `carbon`, `user`). Add a domain method — don't sprinkle raw `fetch`.
 - **Auth = JWT + wallet, two independent things.** Backend session = JWT in web storage
-  (`contexts/AuthProvider.tsx`), fed to `ApiClient`; login/register go through the BFF routes in
+  (`features/auth/provider.tsx`; all storage access via `features/auth/lib/session-storage.ts`,
+  proactive renewal via `features/auth/lib/token-refresh.ts`), fed to `ApiClient`; login/register go through the BFF routes in
   `app/api/auth/*`. Wallet signing is separate (see below). The old Supabase edge-auth path
   (`middleware.ts`, `utils/supabase/`, `NEXT_PUBLIC_AUTH_MODE`) was removed in `bb26fd9` — none of
   those exist anymore; don't reintroduce them.
-- **Non-custodial signing.** Solana wallet adapters (`contexts/connectionprovider.tsx`) sign in the
+- **Non-custodial signing.** Solana wallet adapters (`lib/solana/connection-provider.tsx`) sign in the
   user's extension; the app holds no private keys. Only persisted secret is the backend JWT —
-  don't log it. On-chain options txs go through `contexts/contractProvider.tsx` +
-  `lib/contract-actions.ts` (Anchor `Program` from `lib/idl/option_contract.json`).
-- **Realtime is two streams.** App data over a reconnecting WS client (`lib/websocket-client.ts`,
-  channels `/ws/orderbook|trades|epochs`, surfaced via `contexts/SocketContext.tsx`). Price candles
-  stream separately from Pyth/TradingView (`lib/streaming.ts`, `lib/datafeed.ts`).
+  don't log it. On-chain options txs go through `features/trading/contract-provider.tsx` +
+  `features/trading/lib/{options,liquidity}.ts` (Anchor `Program` from `lib/idl/option_contract.json`).
+- **Realtime is one stack.** A reconnecting WS client (`lib/websocket-client.ts`, channels
+  `/ws/orderbook|trades|epochs`) consumed via `lib/ws/useWebSocket.ts` and the generic
+  `lib/ws/useWsChannel.ts`. Price candles stream separately from Pyth/TradingView
+  (`lib/streaming.ts`).
 - **WASM is required for crypto/pricing.** `lib/wasm/` ships a prebuilt module (order-book/auction
   sim, Black-Scholes + Greeks, risk, ZK/stealth helpers) compiled from the in-repo
   `wasm/` crate. Rebuild with `bun run build:wasm` after changing that crate.
   `next.config.ts` enables `asyncWebAssembly` and stubs `fs`/`path` on the client.
-- **Heavy provider stack.** State lives in `contexts/*` (`TradingProvider`, `EnergyProvider`,
-  `PrivacyProvider`, `MarketplaceProvider`, …). Prefer extending an existing provider/context over
-  adding ad-hoc global state.
+- **Feature modules are the unit of organisation.** Code lives in `features/<name>/`
+  (`auth`, `trading`, `p2p`, `energy-grid`, `meter`, `portfolio`, `wallet`, `privacy`,
+  `notifications`), each owning its `components/`, `hooks/`, `lib/` and tests. Only genuinely
+  cross-feature UI goes in `components/shared/`, only feature-agnostic infrastructure in `lib/`.
+  **No barrel files** — import full paths. `eslint.config.mjs` has a `no-restricted-imports`
+  ratchet blocking every pre-refactor path.
+- **Server state is TanStack Query, not hand-rolled.** Keys come from the factory in
+  `lib/query/keys.ts`. Don't add `useState` + `useEffect` + `setInterval` fetching; use a query
+  with `refetchInterval`. React context is for session/UI state only — the provider stack is
+  composed in `app/providers.tsx` and is deliberately short.
 
 ## Conventions
 

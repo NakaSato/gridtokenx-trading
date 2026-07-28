@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/features/auth/provider'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useMarketPrice, useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
+import { useMarketPrice, useProfile, useWalletBalance, useWallets } from '@/features/portfolio/hooks/usePortfolio'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'

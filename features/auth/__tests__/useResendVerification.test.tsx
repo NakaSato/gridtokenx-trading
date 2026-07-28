@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useResendVerification } from '../useResendVerification'
+import { useResendVerification } from '@/features/auth/lib/useResendVerification'
 
 const mockResend = jest.fn()
 jest.mock('@/lib/api-client', () => ({

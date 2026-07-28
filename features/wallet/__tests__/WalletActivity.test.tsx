@@ -6,7 +6,7 @@ jest.mock('@/features/auth/provider', () => ({
 }))
 
 // The realtime WS feed is inert in these tests — the REST fetch is what we assert.
-jest.mock('@/hooks/useTransactionUpdates', () => ({
+jest.mock('@/features/trading/hooks/useTransactionUpdates', () => ({
     useTransactionUpdates: () => ({ latestUpdate: null }),
 }))
 

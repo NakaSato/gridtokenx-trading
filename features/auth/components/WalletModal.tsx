@@ -47,8 +47,8 @@ import {
 } from '@/features/auth/lib/password'
 import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter'
 import { useAuth } from '@/features/auth/provider'
-import { useWalletAuth } from '@/hooks/useWalletAuth'
-import { useResendVerification } from '@/hooks/useResendVerification'
+import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
+import { useResendVerification } from '@/features/auth/lib/useResendVerification'
 
 export { allWallets }
 

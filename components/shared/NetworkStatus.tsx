@@ -1,7 +1,7 @@
 'use client'
 
 import { Activity } from 'lucide-react'
-import { useWebSocket } from '@/hooks/useWebSocket'
+import { useWebSocket } from '@/lib/ws/useWebSocket'
 
 export function NetworkStatus() {
     // We can monitor the public 'orderbook' channel to gauge global backend health

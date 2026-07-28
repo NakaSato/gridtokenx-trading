@@ -14,7 +14,7 @@ import { useUserBalance } from '@/features/wallet/hooks/useUserBalance'
 import { allWallets } from '@/features/auth/components/WalletModal'
 import { XIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useP2POrderUpdates } from '@/hooks/useTransactionUpdates'
+import { useP2POrderUpdates } from '@/features/trading/hooks/useTransactionUpdates'
 import { createApiClient } from '@/lib/api-client'
 import MultiWalletManager from '@/features/wallet/components/MultiWalletManager'
 

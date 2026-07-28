@@ -25,8 +25,8 @@ const TradingPositionsPanel = dynamic(
   }
 )
 
-import { usePythPrice } from '@/hooks/usePythPrice'
-import { usePythMarketData } from '@/hooks/usePythMarketData'
+import { usePythPrice } from '@/features/trading/hooks/usePythPrice'
+import { usePythMarketData } from '@/features/trading/hooks/usePythMarketData'
 
 const TradeHistory = dynamic(() => import('@/features/trading/components/TradeHistory'), {
   ssr: false,

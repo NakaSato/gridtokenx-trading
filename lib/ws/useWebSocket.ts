@@ -11,7 +11,7 @@ import {
   WebSocketMessageType,
   WebSocketEventHandler,
   defaultWSManager,
-} from '../lib/websocket-client'
+} from '@/lib/websocket-client'
 import { useAuth } from '@/features/auth/provider'
 
 /**

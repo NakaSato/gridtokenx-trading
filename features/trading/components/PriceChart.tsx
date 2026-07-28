@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { format } from 'date-fns'
 import { OnChainTradeRecord } from '@/types/trading'
-import { ContractContext } from '@/contexts/contractProvider'
+import { ContractContext } from '@/features/trading/contract-provider'
 import { Loader2, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 

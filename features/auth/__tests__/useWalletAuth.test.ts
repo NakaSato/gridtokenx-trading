@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useWalletAuth } from '../useWalletAuth'
+import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 
 // --- mocks -----------------------------------------------------------------
 

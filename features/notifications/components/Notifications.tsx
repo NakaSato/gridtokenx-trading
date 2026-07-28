@@ -3,17 +3,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu'
 import { useEffect, useState, useCallback } from 'react'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
-import { Button } from './ui/button'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { XIcon, BellOff, CheckCheck, Loader2, Settings2, Bell } from 'lucide-react'
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import type { Notification } from '@/types/features'
 import { formatDistanceToNow } from 'date-fns'
-import NotificationPreferences from './NotificationPreferences'
+import NotificationPreferences from '@/features/notifications/components/NotificationPreferences'
 import { cn } from '@/lib/utils'
 
 function NotificationItem({

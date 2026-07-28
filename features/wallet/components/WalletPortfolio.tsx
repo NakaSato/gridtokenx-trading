@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { Separator } from '@/components/ui/separator'
 import { useState } from 'react'
 import { usePositions } from '@/features/trading/hooks/usePositionsData'
-import { usePortfolioRisk } from '@/hooks/usePortfolioRisk'
+import { usePortfolioRisk } from '@/features/portfolio/hooks/usePortfolioRisk'
 
 export default function WalletPortfolio() {
   const [holdingsOpen, setHoldingsOpen] = useState(false)
