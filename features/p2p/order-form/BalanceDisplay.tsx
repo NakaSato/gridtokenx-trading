@@ -1,10 +1,15 @@
 'use client'
-
 import React from 'react'
-import { Loader2, Wallet2 } from 'lucide-react'
+import { Wallet2 } from 'lucide-react'
+import {
+  BALANCE_UNAVAILABLE_HINT,
+  formatBalance,
+} from '@/features/wallet/lib/balance-display'
+import { Spinner } from '@/components/ui/spinner'
 
 interface BalanceDisplayProps {
   token: string | null
+  /** `null` means "could not read" — rendered as "—", never as 0. */
   balance: number | null
   balanceLoading: boolean
 }
@@ -26,15 +31,22 @@ export function BalanceDisplay({
           Available Balance
         </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div
+        className="flex items-center gap-2"
+        title={
+          !balanceLoading && balance === null
+            ? BALANCE_UNAVAILABLE_HINT
+            : undefined
+        }
+      >
         <span className="font-mono text-base font-semibold text-foreground">
           {balanceLoading ? (
             <span className="inline-flex items-center gap-1">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Spinner className="h-3.5 w-3.5" />
               ...
             </span>
           ) : (
-            balance?.toFixed(2) || '0.00'
+            formatBalance(balance)
           )}
         </span>
         <span className="text-sm font-medium text-muted-foreground">GRX</span>

@@ -1,10 +1,18 @@
 'use client'
-
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { NavigationControl, MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Map as MapIcon } from 'lucide-react'
+import {
+  Maximize2,
+  Minimize2,
+  AlertTriangle,
+  Zap,
+  Radio,
+  RefreshCw,
+  Map as MapIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import throttle from 'lodash.throttle'
 
 import { ZonePolygonLayers } from '@/features/energy-grid/components/ZonePolygonLayers'
@@ -34,11 +42,15 @@ import { useAuth } from '@/features/auth/provider'
 
 // Load config
 import { CAMPUS_CONFIG } from '@/lib/constants'
+import { Spinner } from '@/components/ui/spinner'
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
 // Check if token is properly configured
-const hasValidToken = MAPBOX_TOKEN && MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' && MAPBOX_TOKEN.length > 20
+const hasValidToken =
+  MAPBOX_TOKEN &&
+  MAPBOX_TOKEN !== 'YOUR_MAPBOX_TOKEN' &&
+  MAPBOX_TOKEN.length > 20
 
 interface EnergyGridMapProps {
   onTradeFromNode?: (node: EnergyNode) => void
@@ -54,7 +66,11 @@ interface EnergyGridMapProps {
   }) => void
 }
 
-export default function EnergyGridMap({ onTradeFromNode, viewState: propViewState, onViewStateChange }: EnergyGridMapProps) {
+export default function EnergyGridMap({
+  onTradeFromNode,
+  viewState: propViewState,
+  onViewStateChange,
+}: EnergyGridMapProps) {
   // View state - local fallback if not controlled
   const initialViewState = useMemo(() => {
     return {
@@ -72,14 +88,21 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 
   // Throttled map move handler to prevent excessive re-renders during pan/zoom
   const handleMapMove = useMemo(
-    () => throttle((evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
-      if (onViewStateChange) {
-        onViewStateChange(evt.viewState)
-      } else {
-        setLocalViewState(evt.viewState)
-      }
-      // Don't update bounds here to avoid re-clustering on every frame
-    }, 100, { leading: true, trailing: true }),
+    () =>
+      throttle(
+        (evt: {
+          viewState: { longitude: number; latitude: number; zoom: number }
+        }) => {
+          if (onViewStateChange) {
+            onViewStateChange(evt.viewState)
+          } else {
+            setLocalViewState(evt.viewState)
+          }
+          // Don't update bounds here to avoid re-clustering on every frame
+        },
+        100,
+        { leading: true, trailing: true }
+      ),
     [onViewStateChange]
   )
 
@@ -92,14 +115,21 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   // Show only meters with a resting buy/sell order. Off → every meter.
   const [showOnlyTradingMeters, setShowOnlyTradingMeters] = useState(true)
   // Track map bounds for clustering
-  const [mapBounds, setMapBounds] = useState<[number, number, number, number] | undefined>(undefined)
+  const [mapBounds, setMapBounds] = useState<
+    [number, number, number, number] | undefined
+  >(undefined)
   // Highlighted path state (array of node IDs for topology)
 
   const mapRef = useRef<MapRef>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
   // Fetch real meter data only (no static mock nodes)
-  const { realMeterNodes: displayMeterNodes, isLoading: displayLoading, error: displayError, refresh: refreshMeters } = useMeterMapData({
+  const {
+    realMeterNodes: displayMeterNodes,
+    isLoading: displayLoading,
+    error: displayError,
+    refresh: refreshMeters,
+  } = useMeterMapData({
     includeStaticNodes: false,
     refreshIntervalMs: 30000,
   })
@@ -108,7 +138,12 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const metersError = displayError
 
   // Fetch aggregate grid status from the API
-  const { status: apiGridStatus, isLoading: gridStatusLoading, error: gridStatusError, refresh: refreshGridStatus } = useGridStatus(10000)
+  const {
+    status: apiGridStatus,
+    isLoading: gridStatusLoading,
+    error: gridStatusError,
+    refresh: refreshGridStatus,
+  } = useGridStatus(10000)
 
   // Combined API error state
   const apiError = metersError || gridStatusError
@@ -127,7 +162,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   const { isLoaded: topologyLoaded, loadNetwork } = useTopology()
 
   // Which meters currently have a resting buy/sell order (auth-gated).
-  const { bySerial: tradingMeters, isFilterable: tradingFilterable } = useActiveOrderMeters(30000)
+  const { bySerial: tradingMeters, isFilterable: tradingFilterable } =
+    useActiveOrderMeters(30000)
 
   // Owner filter: the map shows only meters the viewer owns, and only when the
   // viewer's account is activated. Auth-gated — logged out / loading keeps the
@@ -147,14 +183,25 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     let nodes = displayMeterNodes
     if (ownedFilterable) {
       nodes = accountActive
-        ? nodes.filter((n) => ownedIds.has(n.id) || (n.serial != null && ownedIds.has(n.serial)))
+        ? nodes.filter(
+            (n) =>
+              ownedIds.has(n.id) || (n.serial != null && ownedIds.has(n.serial))
+          )
         : []
     }
     if (showOnlyTradingMeters && tradingFilterable) {
       nodes = nodes.filter((n) => tradingMeters.has(n.id))
     }
     return nodes
-  }, [displayMeterNodes, ownedFilterable, accountActive, ownedIds, showOnlyTradingMeters, tradingFilterable, tradingMeters])
+  }, [
+    displayMeterNodes,
+    ownedFilterable,
+    accountActive,
+    ownedIds,
+    showOnlyTradingMeters,
+    tradingFilterable,
+    tradingMeters,
+  ])
 
   // Combine meters with transformers if showing real data
   const energyNodes = useMemo(() => {
@@ -169,7 +216,10 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     // trading filter hid the meters around it.
     // (plain record — `Map` is shadowed by the react-map-gl component import)
     const have = new Set(nodes.map((n) => n.id))
-    const zoneAccum: Record<number, { lat: number; lng: number; count: number }> = {}
+    const zoneAccum: Record<
+      number,
+      { lat: number; lng: number; count: number }
+    > = {}
     displayMeterNodes.forEach((m) => {
       if (m.zoneId == null) return
       const z = zoneAccum[m.zoneId] ?? { lat: 0, lng: 0, count: 0 }
@@ -195,7 +245,12 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       })
     })
     return nodes
-  }, [showRealMeters, visibleMeterNodes, displayMeterNodes, displayTransformers])
+  }, [
+    showRealMeters,
+    visibleMeterNodes,
+    displayMeterNodes,
+    displayTransformers,
+  ])
 
   // Telemetry-derived flows (surplus/deficit) when showing real meters.
   const energyTransfers = useMemo(() => {
@@ -245,10 +300,13 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       }
       if (e.key === 'r' || e.key === 'R') {
         mapRef.current?.flyTo({
-          center: [CAMPUS_CONFIG.center.longitude, CAMPUS_CONFIG.center.latitude],
+          center: [
+            CAMPUS_CONFIG.center.longitude,
+            CAMPUS_CONFIG.center.latitude,
+          ],
           zoom: CAMPUS_CONFIG.defaultZoom,
           duration: 1000,
-          essential: true
+          essential: true,
         })
       }
     }
@@ -267,7 +325,8 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
     }
 
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
   // Double click to zoom
@@ -276,7 +335,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       center: [node.longitude, node.latitude],
       zoom: 18,
       duration: 1000,
-      essential: true
+      essential: true,
     })
     setSelectedNode(node)
   }
@@ -322,9 +381,15 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       <div className="flex h-full w-full items-center justify-center rounded-b-sm bg-secondary/20 p-4">
         <div className="flex flex-col items-center gap-2 text-center">
           <AlertTriangle className="h-8 w-8 text-yellow-500" />
-          <h3 className="font-semibold text-foreground">Mapbox Token Required</h3>
+          <h3 className="font-semibold text-foreground">
+            Mapbox Token Required
+          </h3>
           <p className="text-sm text-secondary-foreground">
-            Set <code className="rounded bg-secondary px-1">NEXT_PUBLIC_MAPBOX_TOKEN</code> in your environment
+            Set{' '}
+            <code className="rounded bg-secondary px-1">
+              NEXT_PUBLIC_MAPBOX_TOKEN
+            </code>{' '}
+            in your environment
           </p>
         </div>
       </div>
@@ -332,7 +397,10 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
   }
 
   return (
-    <div ref={mapContainerRef} className="relative h-full w-full overflow-hidden rounded-b-sm">
+    <div
+      ref={mapContainerRef}
+      className="relative h-full w-full overflow-hidden rounded-b-sm"
+    >
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
@@ -353,21 +421,23 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       {/* Loading state - enhanced skeleton */}
       {(!mapLoaded || displayLoading) && !mapError && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
-          <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
-          <p className="text-foreground font-medium">
+          <Spinner className="mb-3 h-8 w-8 text-primary" />
+          <p className="font-medium text-foreground">
             {!mapLoaded ? 'Loading map...' : 'Loading meters...'}
           </p>
           {displayLoading && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Fetching {displayMeterNodes.length > 0 ? displayMeterNodes.length : ''} energy nodes
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fetching{' '}
+              {displayMeterNodes.length > 0 ? displayMeterNodes.length : ''}{' '}
+              energy nodes
             </p>
           )}
           {/* Skeleton placeholder markers */}
           <div className="mt-6 flex gap-3">
             {[...Array(5)].map((_, i) => (
-              <div
+              <Skeleton
                 key={i}
-                className="h-4 w-4 rounded-full bg-primary/20 animate-pulse"
+                className="h-4 w-4 rounded-full bg-primary/20"
                 style={{ animationDelay: `${i * 100}ms` }}
               />
             ))}
@@ -378,7 +448,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       {/* Error state */}
       {mapError && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background">
-          <div className="flex flex-col items-center gap-2 text-center p-4">
+          <div className="flex flex-col items-center gap-2 p-4 text-center">
             <AlertTriangle className="h-8 w-8 text-red-500" />
             <p className="text-sm text-secondary-foreground">{mapError}</p>
           </div>
@@ -387,13 +457,15 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 
       {/* API Error Banner */}
       {displayError && !mapError && (
-        <div className="absolute top-20 sm:top-16 left-1/2 -translate-x-1/2 z-40 w-[90%] sm:w-auto animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center gap-3 px-3 sm:px-4 py-2 rounded-lg border border-red-500/30 bg-red-500/10 backdrop-blur-md shadow-lg">
-            <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0" />
-            <p className="text-[11px] sm:text-sm text-red-200">{displayError}</p>
+        <div className="absolute left-1/2 top-20 z-40 w-[90%] -translate-x-1/2 duration-300 animate-in fade-in slide-in-from-top-2 sm:top-16 sm:w-auto">
+          <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 shadow-lg backdrop-blur-md sm:px-4">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0 text-red-400" />
+            <p className="text-[11px] text-red-200 sm:text-sm">
+              {displayError}
+            </p>
             <button
               onClick={handleRetry}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-medium rounded bg-red-500/20 hover:bg-red-500/30 text-red-200 transition-colors"
+              className="flex items-center gap-1 rounded bg-red-500/20 px-2 py-1 text-[10px] font-medium text-red-200 transition-colors hover:bg-red-500/30 sm:text-xs"
             >
               <RefreshCw className="h-3 w-3" />
               Retry
@@ -425,7 +497,9 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         onLoad={() => setMapLoaded(true)}
         onError={(e: { error?: { message?: string } }) => {
           console.error('Map error:', e?.error || e)
-          setMapError(e?.error?.message || 'Failed to load map. Check your Mapbox token.')
+          setMapError(
+            e?.error?.message || 'Failed to load map. Check your Mapbox token.'
+          )
         }}
         cursor="grab"
       >
@@ -438,12 +512,15 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         />
 
         {/* Control Buttons Group */}
-        <div className="absolute right-10 top-2 z-10 flex flex-col sm:flex-row gap-2 sm:right-16 sm:top-4">
+        <div className="absolute right-10 top-2 z-10 flex flex-col gap-2 sm:right-16 sm:top-4 sm:flex-row">
           <Button
             variant="ghost"
             size="sm"
-            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showZones ? 'border-purple-500/50 text-purple-500' : 'border-primary/30 text-primary'
-              }`}
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${
+              showZones
+                ? 'border-purple-500/50 text-purple-500'
+                : 'border-primary/30 text-primary'
+            }`}
             onClick={() => setShowZones(!showZones)}
             title={showZones ? 'Hide zone areas' : 'Show zone areas'}
           >
@@ -453,8 +530,11 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
           <Button
             variant="ghost"
             size="sm"
-            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showRealMeters ? 'border-blue-500/50 text-blue-500' : 'border-primary/30 text-primary'
-              }`}
+            className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${
+              showRealMeters
+                ? 'border-blue-500/50 text-blue-500'
+                : 'border-primary/30 text-primary'
+            }`}
             onClick={() => setShowRealMeters(!showRealMeters)}
             title={showRealMeters ? 'Hide my meters' : 'Show my meters'}
           >
@@ -465,10 +545,17 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
             <Button
               variant="ghost"
               size="sm"
-              className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${showOnlyTradingMeters ? 'border-amber-500/50 text-amber-500' : 'border-primary/30 text-primary'
-                }`}
+              className={`h-8 w-8 border bg-background/95 p-0 shadow-lg backdrop-blur-md hover:bg-background ${
+                showOnlyTradingMeters
+                  ? 'border-amber-500/50 text-amber-500'
+                  : 'border-primary/30 text-primary'
+              }`}
               onClick={() => setShowOnlyTradingMeters(!showOnlyTradingMeters)}
-              title={showOnlyTradingMeters ? 'Show all meters' : 'Show only meters with open buy/sell orders'}
+              title={
+                showOnlyTradingMeters
+                  ? 'Show all meters'
+                  : 'Show only meters with open buy/sell orders'
+              }
             >
               <Zap className="h-4 w-4" />
             </Button>
@@ -519,7 +606,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
                       center: [lng, lat],
                       zoom: expansionZoom,
                       duration: 500,
-                      essential: true
+                      essential: true,
                     })
                   }}
                 />
@@ -542,14 +629,20 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
       </Map>
 
       {/* Legend */}
-      <MapLegend
-        showZones={showZones}
-      />
+      <MapLegend showZones={showZones} />
 
       {/* Grid Stats Panel */}
       <GridStatsPanel
-        totalGeneration={myMeterTotals?.totalGeneration ?? apiGridStatus?.total_generation ?? gridTotals.totalGeneration}
-        totalConsumption={myMeterTotals?.totalConsumption ?? apiGridStatus?.total_consumption ?? gridTotals.totalConsumption}
+        totalGeneration={
+          myMeterTotals?.totalGeneration ??
+          apiGridStatus?.total_generation ??
+          gridTotals.totalGeneration
+        }
+        totalConsumption={
+          myMeterTotals?.totalConsumption ??
+          apiGridStatus?.total_consumption ??
+          gridTotals.totalConsumption
+        }
         scope={myMeterTotals ? 'personal' : 'grid'}
         scopedMeterCount={myMeterTotals?.meterCount}
         avgStorage={gridTotals.avgStorage}
@@ -566,7 +659,6 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
         evFleet={apiGridStatus?.ev_fleet}
         peakCapacityKw={apiGridStatus?.peak_capacity_kw}
       />
-
     </div>
   )
 }
@@ -574,7 +666,7 @@ export default function EnergyGridMap({ onTradeFromNode, viewState: propViewStat
 // Wrapper component for ZonePolygonLayers that passes active trades
 function ZonePolygonLayersWrapper({
   energyNodes,
-  visible
+  visible,
 }: {
   energyNodes: EnergyNode[]
   visible: boolean

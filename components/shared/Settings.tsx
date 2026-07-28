@@ -26,7 +26,17 @@ import {
   SunIcon,
 } from '@/public/svgs/icons'
 
-export default function Settings() {
+interface SettingsProps {
+  /**
+   * Controlled mode, used by the account menu: pass `open`/`onOpenChange` and
+   * the built-in trigger is dropped, since the menu item is the trigger.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export default function Settings({ open, onOpenChange }: SettingsProps = {}) {
+  const isControlled = open !== undefined
   const [explorer, setExplorer] = useState<string>('Solscan')
   const [endpoint, setEndpoint] = useState<string>('Triton')
   const [fee, setFee] = useState<'medium' | 'high' | 'ultra' | 'custom'>('high')
@@ -51,12 +61,14 @@ export default function Settings() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger className="hidden sm:flex">
-        <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
-          <SettingsIcon />
-        </div>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!isControlled && (
+        <DialogTrigger className="hidden sm:flex">
+          <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
+            <SettingsIcon />
+          </div>
+        </DialogTrigger>
+      )}
       <DialogContent className="flex w-[420px] flex-col border-none bg-accent p-5 sm:rounded-sm">
         <DialogTitle className="text-base font-medium text-foreground">
           Settings

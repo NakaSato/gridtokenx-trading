@@ -282,10 +282,12 @@ Design tokens are the atomic units of the design system — platform-agnostic va
 
 ### 2.6 Breakpoints
 
+Tailwind defaults, unmodified — `tailwind.config.ts` does not override `screens`.
+There is no breakpoint below `sm`; style the 0–639px range as the base layer.
+
 ```json
 {
   "breakpoint": {
-    "xs": "320px",
     "sm": "640px",
     "md": "768px",
     "lg": "1024px",
@@ -801,7 +803,7 @@ Mobile (4 columns, <768px)
 
 | Breakpoint | Max Width | Padding |
 |------------|-----------|---------|
-| **xs** | 100% | 16px |
+| _(base)_ | 100% | 16px |
 | **sm** | 640px | 24px |
 | **md** | 768px | 32px |
 | **lg** | 1024px | 40px |

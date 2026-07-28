@@ -19,7 +19,9 @@ export function useUserBalance(token?: string, walletAddress?: string) {
       if (res.error) throw new Error(res.error)
       return res.data ?? null
     },
-    enabled: !!token,
+    // Requires the address too: getBalance now rejects a missing one rather
+    // than answering with a fabricated zero balance.
+    enabled: !!token && !!walletAddress,
     staleTime: 30_000,
   })
 

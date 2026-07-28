@@ -272,6 +272,16 @@ export class WebSocketClient {
 /**
  * Hook-friendly WebSocket manager for React components
  */
+/**
+ * Authenticated channels that actually have a `/ws/<channel>` route on the
+ * gateway. Deliberately empty: APISIX defines exactly three websocket routes
+ * (`/ws` → noti, `/api/market/ws` → simulator, `/api/v1/rpc-ws` → solana), and
+ * trading-service ships no websocket handler at all, so every `/ws/<channel>`
+ * dial 404s at the gateway and burns the reconnect budget. Add a channel here
+ * once a route and an upstream handler exist for it.
+ */
+const ROUTED_WS_CHANNELS: ReadonlySet<string> = new Set<string>()
+
 export class WebSocketManager {
   private clients: Map<string, WebSocketClient> = new Map()
   private refCounts: Map<string, number> = new Map()
@@ -281,11 +291,16 @@ export class WebSocketManager {
   /**
    * Get or create a WebSocket client for the given channel.
    * If no token is provided, returns a public market WebSocket instead.
+   * Returns null for channels with no gateway route — callers must no-op.
    */
-  getOrCreate(channel: string, token?: string): WebSocketClient {
+  getOrCreate(channel: string, token?: string): WebSocketClient | null {
     // If no token, use public market WebSocket as fallback
     if (!token) {
       return this.getOrCreatePublic()
+    }
+
+    if (!ROUTED_WS_CHANNELS.has(channel)) {
+      return null
     }
 
     let client = this.clients.get(channel)

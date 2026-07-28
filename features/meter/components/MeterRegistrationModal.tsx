@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Dialog,
@@ -14,7 +13,6 @@ import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/features/auth/provider'
 import toast from 'react-hot-toast'
 import {
-  Loader2,
   MapPin,
   Zap,
   CheckCircle,
@@ -26,6 +24,7 @@ import {
 } from 'lucide-react'
 import { PublicMeterResponse } from '@/types/meter'
 import { Label } from '@/components/ui/label'
+import { Spinner } from '@/components/ui/spinner'
 
 interface MeterRegistrationModalProps {
   isOpen: boolean
@@ -42,42 +41,47 @@ export function MeterRegistrationModal({
   const [meterId, setMeterId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
-  const [matchedMeter, setMatchedMeter] = useState<PublicMeterResponse | null>(null)
+  const [matchedMeter, setMatchedMeter] = useState<PublicMeterResponse | null>(
+    null
+  )
   const [searchDone, setSearchDone] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
   const client = useMemo(() => createApiClient(token || undefined), [token])
 
   // Auto-search for meter when ID is entered (debounced)
-  const searchMeter = useCallback(async (serial: string) => {
-    setIsSearching(true)
-    setSearchError(null)
-    setSearchDone(false)
+  const searchMeter = useCallback(
+    async (serial: string) => {
+      setIsSearching(true)
+      setSearchError(null)
+      setSearchDone(false)
 
-    try {
-      // Fetch public meters and match the entered ID against live meters
-      const response = await client.getPublicMeters()
-      if (response.error) {
-        setSearchError('Failed to fetch meter data')
+      try {
+        // Fetch public meters and match the entered ID against live meters
+        const response = await client.getPublicMeters()
+        if (response.error) {
+          setSearchError('Failed to fetch meter data')
+          setMatchedMeter(null)
+          return
+        }
+
+        const query = serial.trim().toLowerCase()
+        const meters = response.data || []
+        const match =
+          meters.find((m) => m.meter_id?.toLowerCase() === query) ??
+          meters.find((m) => m.meter_id?.toLowerCase().includes(query)) ??
+          null
+        setMatchedMeter(match)
+        setSearchDone(true)
+      } catch (error) {
+        setSearchError('Error searching for meter')
         setMatchedMeter(null)
-        return
+      } finally {
+        setIsSearching(false)
       }
-
-      const query = serial.trim().toLowerCase()
-      const meters = response.data || []
-      const match =
-        meters.find((m) => m.meter_id?.toLowerCase() === query) ??
-        meters.find((m) => m.meter_id?.toLowerCase().includes(query)) ??
-        null
-      setMatchedMeter(match)
-      setSearchDone(true)
-    } catch (error) {
-      setSearchError('Error searching for meter')
-      setMatchedMeter(null)
-    } finally {
-      setIsSearching(false)
-    }
-  }, [client])
+    },
+    [client]
+  )
 
   // Debounced search effect
   useEffect(() => {
@@ -112,7 +116,9 @@ export function MeterRegistrationModal({
       }
 
       if (result.data?.success) {
-        toast.success(result.data.message || 'Smart meter registered successfully!')
+        toast.success(
+          result.data.message || 'Smart meter registered successfully!'
+        )
         onSuccess?.()
         onClose()
         setMeterId('')
@@ -169,17 +175,18 @@ export function MeterRegistrationModal({
                 disabled={isSubmitting}
               />
               {isSearching && (
-                <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                <Spinner className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              The system will automatically fetch location, type, and readings for this meter.
+              The system will automatically fetch location, type, and readings
+              for this meter.
             </p>
           </div>
 
           {/* Live meter preview — matched against public meter feed */}
           {matchedMeter && (
-            <div className="rounded-lg border border-green-600/30 bg-green-500/5 p-3 space-y-2.5">
+            <div className="space-y-2.5 rounded-lg border border-green-600/30 bg-green-500/5 p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium text-green-600">
                   <CheckCircle className="h-4 w-4" />
@@ -195,11 +202,15 @@ export function MeterRegistrationModal({
               <div className="grid gap-1.5 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Zap className="h-3 w-3 shrink-0" />
-                  <span className="capitalize">{matchedMeter.meter_type || 'Unknown type'}</span>
+                  <span className="capitalize">
+                    {matchedMeter.meter_type || 'Unknown type'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{matchedMeter.location || 'Location on record'}</span>
+                  <span className="truncate">
+                    {matchedMeter.location || 'Location on record'}
+                  </span>
                 </div>
                 {(matchedMeter.current_generation != null ||
                   matchedMeter.current_consumption != null) && (
@@ -233,9 +244,7 @@ export function MeterRegistrationModal({
             </div>
           )}
 
-          {searchError && (
-            <p className="text-xs text-red-500">{searchError}</p>
-          )}
+          {searchError && <p className="text-xs text-red-500">{searchError}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
@@ -248,7 +257,7 @@ export function MeterRegistrationModal({
             <Button type="submit" disabled={isSubmitting || !meterId.trim()}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2 h-4 w-4" />
                   Registering...
                 </>
               ) : (

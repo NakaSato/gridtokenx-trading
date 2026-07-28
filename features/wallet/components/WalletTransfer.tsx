@@ -1,20 +1,33 @@
 'use client'
-
 import React, { useMemo, useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import toast from 'react-hot-toast'
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet2 } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, Wallet2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
 import { EscrowAmountInput } from '@/features/wallet/components/EscrowAmountInput'
 import { useWalletBalance } from '@/features/wallet/hooks/useWalletBalance'
-import { useDepositEscrow, useWithdrawEscrow, useEscrowBalance } from '@/features/wallet/hooks/useEscrow'
+import {
+  useDepositEscrow,
+  useWithdrawEscrow,
+  useEscrowBalance,
+} from '@/features/wallet/hooks/useEscrow'
+import {
+  BALANCE_UNAVAILABLE_HINT,
+  formatBalance,
+  toBalanceNumber,
+} from '@/features/wallet/lib/balance-display'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 type TransferTab = 'deposit' | 'withdraw'
+
+// Whole numbers stay whole ("100 GRX", not "100.00 GRX") — this row is a
+// reference figure, not an accounting line.
+const BALANCE_FORMAT = { minimumFractionDigits: 0, maximumFractionDigits: 6 }
 
 function truncateSignature(sig: string) {
   return `${sig.slice(0, 8)}…${sig.slice(-8)}`
@@ -24,18 +37,26 @@ function BalanceRow({
   label,
   value,
   loading,
+  unavailable = false,
 }: {
   label: string
   value: string
   loading: boolean
+  /** Read failed — the value shows "—" and gets the explanatory tooltip. */
+  unavailable?: boolean
 }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-border bg-secondary/50 px-4 py-3">
       <span className="text-sm text-muted-foreground">{label}</span>
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <Spinner className="h-4 w-4 text-muted-foreground" />
       ) : (
-        <span className="font-mono text-sm font-semibold text-foreground">{value}</span>
+        <span
+          className="font-mono text-sm font-semibold text-foreground"
+          title={unavailable ? BALANCE_UNAVAILABLE_HINT : undefined}
+        >
+          {value}
+        </span>
       )}
     </div>
   )
@@ -45,7 +66,10 @@ export function WalletTransfer() {
   const { connected, publicKey } = useWallet()
   const [tab, setTab] = useState<TransferTab>('deposit')
   const [amount, setAmount] = useState('')
-  const [feedback, setFeedback] = useState<{ message: string; isSuccess: boolean } | null>(null)
+  const [feedback, setFeedback] = useState<{
+    message: string
+    isSuccess: boolean
+  } | null>(null)
 
   const { data: balance, isLoading: balanceLoading } = useWalletBalance()
 
@@ -59,11 +83,14 @@ export function WalletTransfer() {
     }
   }, [tokenMint])
 
-  const { data: escrowBalance, isLoading: escrowLoading } = useEscrowBalance(mint)
+  const { data: escrowBalance, isLoading: escrowLoading } =
+    useEscrowBalance(mint)
   const deposit = useDepositEscrow()
   const withdraw = useWithdrawEscrow()
 
-  const walletAvailable = balance ? parseFloat(balance.token_balance) : null
+  // null = unread, so the row shows "—" and the amount cap stays unset rather
+  // than pinning max to a fabricated 0.
+  const walletAvailable = toBalanceNumber(balance?.token_balance)
   const escrowAvailable = escrowBalance?.uiAmount ?? (escrowLoading ? null : 0)
   const maxForTab = tab === 'deposit' ? walletAvailable : escrowAvailable
 
@@ -106,9 +133,11 @@ export function WalletTransfer() {
       setAmount('')
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Transaction failed'
-      const message = raw.includes('could not find account') || raw.includes('AccountNotFound')
-        ? 'No on-chain GRX token account found for this wallet'
-        : raw
+      const message =
+        raw.includes('could not find account') ||
+        raw.includes('AccountNotFound')
+          ? 'No on-chain GRX token account found for this wallet'
+          : raw
       setFeedback({ message, isSuccess: false })
       toast.error(message)
     }
@@ -126,13 +155,15 @@ export function WalletTransfer() {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <BalanceRow
             label="Wallet Balance"
-            value={`${walletAvailable?.toLocaleString(undefined, { maximumFractionDigits: 6 }) ?? '—'} GRX`}
+            value={`${formatBalance(walletAvailable, BALANCE_FORMAT)} GRX`}
             loading={balanceLoading}
+            unavailable={walletAvailable === null}
           />
           <BalanceRow
             label="On-chain Escrow"
-            value={`${escrowBalance?.uiAmount.toLocaleString(undefined, { maximumFractionDigits: 6 }) ?? '—'} GRX`}
+            value={`${formatBalance(escrowBalance?.uiAmount ?? null, BALANCE_FORMAT)} GRX`}
             loading={escrowLoading}
+            unavailable={escrowBalance?.uiAmount === undefined}
           />
         </div>
 
@@ -156,11 +187,18 @@ export function WalletTransfer() {
                   setAmount={setAmount}
                   max={maxForTab}
                   decimals={balance?.decimals ?? 6}
-                  label={direction === 'deposit' ? 'Deposit Amount' : 'Withdraw Amount'}
+                  label={
+                    direction === 'deposit'
+                      ? 'Deposit Amount'
+                      : 'Withdraw Amount'
+                  }
                 />
 
                 {feedback && (
-                  <FeedbackMessage message={feedback.message} isSuccess={feedback.isSuccess} />
+                  <FeedbackMessage
+                    message={feedback.message}
+                    isSuccess={feedback.isSuccess}
+                  />
                 )}
 
                 {!connected ? (
@@ -179,7 +217,7 @@ export function WalletTransfer() {
                     size="lg"
                     disabled={!canSubmit}
                     className={cn(
-                      'h-14 w-full rounded-xl font-semibold text-base shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2',
+                      'h-14 w-full rounded-xl text-base font-semibold shadow-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]',
                       direction === 'deposit'
                         ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500 focus-visible:ring-emerald-500/50'
                         : 'bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-sky-500/25 hover:from-sky-400 hover:to-sky-500 focus-visible:ring-sky-500/50'
@@ -187,12 +225,13 @@ export function WalletTransfer() {
                   >
                     {mutation.isPending ? (
                       <div className="flex items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Spinner className="h-5 w-5" />
                         <span>Processing...</span>
                       </div>
                     ) : (
                       <span>
-                        {direction === 'deposit' ? 'Deposit' : 'Withdraw'} {amount || '0'} GRX
+                        {direction === 'deposit' ? 'Deposit' : 'Withdraw'}{' '}
+                        {amount || '0'} GRX
                       </span>
                     )}
                   </Button>
@@ -203,8 +242,9 @@ export function WalletTransfer() {
         </Tabs>
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Deposits fund your on-chain trading escrow; the first deposit also creates the escrow
-          account (small one-time SOL rent). Withdrawals return escrowed GRX to your wallet.
+          Deposits fund your on-chain trading escrow; the first deposit also
+          creates the escrow account (small one-time SOL rent). Withdrawals
+          return escrowed GRX to your wallet.
         </p>
       </CardContent>
     </Card>

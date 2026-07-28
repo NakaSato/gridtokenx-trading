@@ -24,7 +24,9 @@ jest.mock('react-hot-toast', () => ({
 }))
 
 const { useWallet } = jest.requireMock('@solana/wallet-adapter-react')
-const { useWalletBalance } = jest.requireMock('@/features/wallet/hooks/useWalletBalance')
+const { useWalletBalance } = jest.requireMock(
+  '@/features/wallet/hooks/useWalletBalance'
+)
 const { useEscrowBalance, useDepositEscrow, useWithdrawEscrow } =
   jest.requireMock('@/features/wallet/hooks/useEscrow')
 
@@ -35,11 +37,14 @@ function setup({
   walletBalance = '100',
   escrowUi = 40,
   depositPending = false,
+  balanceUnavailable = false,
 }: {
   connected?: boolean
   walletBalance?: string
   escrowUi?: number
   depositPending?: boolean
+  /** Simulates a failed chain read: the query errors and yields no data. */
+  balanceUnavailable?: boolean
 } = {}) {
   const depositMutateAsync = jest.fn().mockResolvedValue('sig'.padEnd(20, 'x'))
   const withdrawMutateAsync = jest.fn().mockResolvedValue('sig'.padEnd(20, 'y'))
@@ -50,12 +55,15 @@ function setup({
     sendTransaction: jest.fn(),
   })
   useWalletBalance.mockReturnValue({
-    data: {
-      token_balance: walletBalance,
-      decimals: 6,
-      token_mint: VALID_MINT,
-    },
+    data: balanceUnavailable
+      ? undefined
+      : {
+          token_balance: walletBalance,
+          decimals: 6,
+          token_mint: VALID_MINT,
+        },
     isLoading: false,
+    isError: balanceUnavailable,
   })
   useEscrowBalance.mockReturnValue({
     data: { uiAmount: escrowUi, raw: BigInt(escrowUi * 1_000_000) },
@@ -87,22 +95,37 @@ describe('WalletTransfer', () => {
     expect(screen.getByText('40 GRX')).toBeInTheDocument()
   })
 
+  it('shows an unreadable wallet balance as "—", not as zero', () => {
+    setup({ balanceUnavailable: true })
+    // "0 GRX" would tell the user their wallet is empty during a chain outage.
+    expect(screen.getByText('— GRX')).toBeInTheDocument()
+    expect(screen.queryByText('0 GRX')).not.toBeInTheDocument()
+    // No mint means no transfer can be built — fail closed, not silently.
+    expect(screen.getByTestId('escrow-submit-button')).toBeDisabled()
+  })
+
   it('shows connect-wallet state instead of submit when disconnected', () => {
     setup({ connected: false })
     expect(screen.queryByTestId('escrow-submit-button')).not.toBeInTheDocument()
-    expect(screen.getByText(/Connect your wallet to deposit/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Connect your wallet to deposit/)
+    ).toBeInTheDocument()
   })
 
   it('disables submit when deposit amount exceeds wallet balance', () => {
     setup({ walletBalance: '10' })
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '11' } })
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '11' },
+    })
     expect(screen.getByTestId('escrow-submit-button')).toBeDisabled()
     expect(screen.getByRole('alert')).toHaveTextContent('exceeds available')
   })
 
   it('submits a valid deposit with parsed params', async () => {
     const { depositMutateAsync } = setup()
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '2.5' } })
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '2.5' },
+    })
     const button = screen.getByTestId('escrow-submit-button')
     expect(button).toBeEnabled()
     fireEvent.click(button)
@@ -122,10 +145,14 @@ describe('WalletTransfer', () => {
     // Radix tab triggers activate on mousedown, not click
     fireEvent.mouseDown(screen.getByTestId('withdraw-tab'))
 
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '41' } })
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '41' },
+    })
     expect(screen.getByTestId('escrow-submit-button')).toBeDisabled()
 
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '40' } })
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '40' },
+    })
     const button = screen.getByTestId('escrow-submit-button')
     expect(button).toBeEnabled()
     fireEvent.click(button)
@@ -135,8 +162,12 @@ describe('WalletTransfer', () => {
 
   it('shows an error message when the transaction fails', async () => {
     const { depositMutateAsync } = setup()
-    depositMutateAsync.mockRejectedValueOnce(new Error('User rejected the request'))
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '1' } })
+    depositMutateAsync.mockRejectedValueOnce(
+      new Error('User rejected the request')
+    )
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '1' },
+    })
     fireEvent.click(screen.getByTestId('escrow-submit-button'))
     await waitFor(() =>
       expect(screen.getByText('User rejected the request')).toBeInTheDocument()
@@ -145,7 +176,9 @@ describe('WalletTransfer', () => {
 
   it('disables submit while the mutation is pending', () => {
     setup({ depositPending: true })
-    fireEvent.change(screen.getByTestId('escrow-amount-input'), { target: { value: '1' } })
+    fireEvent.change(screen.getByTestId('escrow-amount-input'), {
+      target: { value: '1' },
+    })
     expect(screen.getByTestId('escrow-submit-button')).toBeDisabled()
     expect(screen.getByText('Processing...')).toBeInTheDocument()
   })

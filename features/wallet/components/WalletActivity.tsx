@@ -1,8 +1,7 @@
 'use client'
-
 import { useEffect, useState, useCallback } from 'react'
 import { format } from 'date-fns'
-import { Loader2, Copy, RefreshCw } from 'lucide-react'
+import { Copy, RefreshCw } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +11,7 @@ import { useAuth } from '@/features/auth/provider'
 import { useTransactionUpdates } from '@/features/trading/hooks/useTransactionUpdates'
 import type { UserTransaction } from '@/types/transactions'
 import toast from 'react-hot-toast'
+import { Spinner } from '@/components/ui/spinner'
 
 /**
  * Human-readable label for a transaction type. Backend currently emits
@@ -98,7 +98,9 @@ export default function WalletActivity() {
         setTransactions(response.data || [])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch transactions')
+      setError(
+        err instanceof Error ? err.message : 'Failed to fetch transactions'
+      )
     } finally {
       setLoading(false)
     }
@@ -135,7 +137,7 @@ export default function WalletActivity() {
       <ScrollArea className="flex-grow pr-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Spinner className="h-6 w-6 text-primary" />
           </div>
         ) : error ? (
           <div className="space-y-2">
@@ -171,14 +173,19 @@ export default function WalletActivity() {
               >
                 <div className="mb-2 flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{getTransactionIcon(tx.transaction_type)}</span>
+                    <span className="text-lg">
+                      {getTransactionIcon(tx.transaction_type)}
+                    </span>
                     <span className="text-sm font-medium">
                       {getTransactionTypeLabel(tx.transaction_type)}
                     </span>
                   </div>
                   <Badge
                     variant="outline"
-                    className={cn('text-[10px] font-semibold uppercase', getStatusColor(tx.status))}
+                    className={cn(
+                      'text-[10px] font-semibold uppercase',
+                      getStatusColor(tx.status)
+                    )}
                   >
                     {tx.status}
                   </Badge>
@@ -203,7 +210,9 @@ export default function WalletActivity() {
                     <div className="flex items-center justify-between">
                       <span>Signature:</span>
                       <div className="flex items-center gap-1">
-                        <span className="font-mono">{truncateId(tx.signature)}</span>
+                        <span className="font-mono">
+                          {truncateId(tx.signature)}
+                        </span>
                         <button
                           onClick={() => copyToClipboard(tx.signature!)}
                           className="text-primary hover:text-primary/80"
@@ -226,7 +235,9 @@ export default function WalletActivity() {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 text-[10px]">
-                    <span>{format(new Date(tx.timestamp), 'MMM d, h:mm a')}</span>
+                    <span>
+                      {format(new Date(tx.timestamp), 'MMM d, h:mm a')}
+                    </span>
                   </div>
                 </div>
               </div>

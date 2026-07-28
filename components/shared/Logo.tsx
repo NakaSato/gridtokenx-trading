@@ -1,4 +1,35 @@
-export const Logo = ({ width = 110, height = 50, className = "" }) => {
+import { cn } from '@/lib/utils'
+
+/**
+ * Text half of the brand lockup, sitting next to <Logo />. The trailing "X"
+ * carries the accent colour, a space, an italic and 1.25x the size so the mark
+ * reads as "GRIDTOKEN X" rather than one flat word.
+ *
+ * Type is set to 24px to match the rendered height of the icon it pairs with
+ * (a square viewBox letterboxed into the 24x28 box). Merged through `cn`, so a
+ * caller passing its own `text-*` wins over the default rather than fighting it
+ * on stylesheet order.
+ */
+export const LogoWordmark = ({ className = '' }) => {
+  return (
+    <span
+      className={cn(
+        'select-none text-2xl font-bold leading-none tracking-tight text-foreground',
+        className
+      )}
+    >
+      {/* Explicit {' '} rather than a literal space: JSX would strip it if the
+          markup ever wraps onto its own line. */}
+      {/* em, not a fixed px: the X tracks whatever size the caller sets on the
+          wrapper. leading-none keeps the taller glyph from growing the line box
+          and nudging the lockup off the icon's centre. */}
+      GRIDTOKEN{' '}
+      <span className="text-[1.25em] italic leading-none text-primary">X</span>
+    </span>
+  )
+}
+
+export const Logo = ({ width = 110, height = 50, className = '' }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -18,5 +49,5 @@ export const Logo = ({ width = 110, height = 50, className = "" }) => {
         <path d="M50 82.1c-7.3 0-14.1-2.4-19.8-6.9l-5.3 6.7c7.2 5.7 15.9 8.7 25.1 8.7 15.2 0 29-8.4 36-21.8l-7.5-3.9C72.9 75.5 62 82.1 50 82.1zM46.4 18.1c1.2-.1 2.4-.2 3.6-.2 17.7 0 32.1 14.4 32.1 32.1h8.5C90.6 27.6 72.4 9.4 50 9.4c-1.5 0-3 .1-4.5.2C24.9 11.9 9.4 29.3 9.4 50c0 4.4.7 8.7 2.1 12.8l8.1-2.7c-1.1-3.3-1.6-6.7-1.6-10.2-.1-16.3 12.2-30 28.4-31.8z" />
       </g>
     </svg>
-  );
-};
+  )
+}

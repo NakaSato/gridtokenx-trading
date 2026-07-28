@@ -1,26 +1,54 @@
 'use client'
 
 import Image from 'next/image'
-import { ArrowDown, ArrowUp, TableColumnsSplit, TrendingUp, Clock, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { PythIcon } from '@/public/svgs/icons'
 import { formatPrice } from '@/utils/formatter'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import MarketDetails from '@/features/trading/components/MarketDetails'
-import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 interface TradingViewTopNavProps {
   symbol: string | null
   pythSymbol: string
   logo: string
-  priceData: any
-  marketData: any
+  /** From usePythPrice (spot) or the selected product (futures). */
+  priceData: { price: number | null }
+  /** Pages pass different subsets — every stat renders only when its field exists. */
+  marketData: {
+    high24h?: number | null
+    low24h?: number | null
+    volume24h?: number | null
+    change24h?: number | null
+  }
   priceLoading: boolean
   marketLoading: boolean
   type: string
 }
+
+/**
+ * "Crypto.GRX/THB" (a Pyth feed id) → "GRX/THB". The raw id used to leak into
+ * the header with a hardcoded "/USDC" glued on, rendering
+ * "Crypto.GRX/THB/USDC".
+ */
+function displayPair(symbol: string | null): string {
+  if (!symbol) return '—'
+  return symbol.replace(/^Crypto\./, '')
+}
+
+/** pyth.network wants "crypto-grx-usd", not the raw "Crypto.GRX/USD" id. */
+function pythFeedUrl(pythSymbol: string): string {
+  const slug = pythSymbol.toLowerCase().replace(/[./]/g, '-')
+  return `https://pyth.network/price-feeds/${slug}`
+}
+
+const compactNumber = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 2,
+})
 
 export default memo(function TradingViewTopNav({
   symbol,
@@ -34,145 +62,303 @@ export default memo(function TradingViewTopNav({
 }: TradingViewTopNavProps) {
   const router = useRouter()
 
+  const pair = displayPair(symbol)
+  const isFutures = type === 'futures'
+  const change = marketData.change24h
+  const changeKnown = typeof change === 'number' && !Number.isNaN(change)
+  const changeUp = changeKnown && change >= 0
+
+  // Direction of the last price tick, so the big number reads like a ticker
+  // instead of a static label. Falls back to the 24h-change sign before the
+  // second tick arrives. Guarded setState-during-render is the React-documented
+  // way to derive state from the previous render without an effect.
+  const [prevPrice, setPrevPrice] = useState<number | null>(null)
+  const [tick, setTick] = useState<'up' | 'down' | null>(null)
+  if (priceData.price != null && priceData.price !== prevPrice) {
+    if (prevPrice != null) setTick(priceData.price > prevPrice ? 'up' : 'down')
+    setPrevPrice(priceData.price)
+  }
+  const priceTone = tick ?? (changeKnown ? (changeUp ? 'up' : 'down') : null)
+
+  // Where the live price sits inside the 24h range, for the range meter.
+  const { high24h, low24h } = marketData
+  const rangeKnown =
+    typeof high24h === 'number' &&
+    typeof low24h === 'number' &&
+    high24h > low24h &&
+    typeof priceData.price === 'number'
+  const rangePct = rangeKnown
+    ? Math.min(
+        100,
+        Math.max(0, ((priceData.price! - low24h!) / (high24h! - low24h!)) * 100)
+      )
+    : 0
+
   return (
-    <div className="flex w-full flex-col border rounded-lg bg-background/50 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between lg:px-4 py-2 gap-4">
-      {/* Left Section: Token Info & Actions */}
-      <div className="flex items-center gap-4">
-        {/* Token Identity */}
-        <div className="flex items-center gap-3 pr-4 border-r border-border/50">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-background shadow-sm">
-            <Image
-              src={logo}
-              alt={symbol!}
-              fill
-              className="object-cover"
-            />
+    <div className="w-full rounded-lg border border-border/60 bg-background/60 backdrop-blur-md">
+      {/* Primary row: identity · live price · desktop stats · market switcher */}
+      <div className="flex items-center gap-3 px-3 py-2 lg:gap-4 lg:px-4">
+        {/* Instrument identity */}
+        <div className="flex min-w-0 shrink-0 items-center gap-3">
+          <div className="relative h-9 w-9 overflow-hidden rounded-full shadow-sm ring-1 ring-border/60 lg:h-10 lg:w-10">
+            <Image src={logo} alt={pair} fill className="object-cover" />
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-tight text-foreground">
-                {symbol}/USDC
+              <span className="whitespace-nowrap text-base font-bold tracking-tight text-foreground lg:text-lg">
+                {pair}
               </span>
-              <Badge variant="outline" className="ml-1 h-5 px-1.5 py-0 text-[10px] font-medium text-muted-foreground border-border/50 bg-secondary/30">
-                PERP
+              <Badge
+                variant="outline"
+                className={cn(
+                  'h-5 px-1.5 py-0 text-[10px] font-semibold tracking-wide',
+                  isFutures
+                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+                    : 'border-border/50 bg-secondary/30 text-muted-foreground'
+                )}
+              >
+                {isFutures ? 'PERP' : 'SPOT'}
               </Badge>
             </div>
             <a
-              href={`https://pyth.network/price-feeds/${pythSymbol}`}
+              href={pythFeedUrl(pythSymbol)}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 opacity-70 hover:opacity-100 transition-opacity w-fit"
+              title="View this feed on pyth.network"
+              className="flex w-fit items-center gap-1.5 opacity-70 transition-opacity hover:opacity-100"
             >
-              <div className="h-3.5 w-3.5"><PythIcon /></div>
-              <span className="text-xs font-medium text-muted-foreground">Oracle Price</span>
+              <div className="h-3.5 w-3.5">
+                <PythIcon />
+              </div>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Pyth Oracle
+              </span>
             </a>
           </div>
         </div>
 
-        {/* Price Display */}
-        <div className="flex flex-col">
-          <span className="text-2xl font-bold font-mono tracking-tight text-foreground">
-            {priceData.price ? formatPrice(priceData.price) : priceLoading ? "..." : "N/A"}
-          </span>
-          <span className={cn("flex items-center text-xs font-medium", "text-green-500")}>
-            <ArrowUp className="w-3 h-3 mr-0.5" /> +2.45%
-          </span>
-        </div>
-      </div>
+        <div className="h-9 w-px shrink-0 bg-border/50" />
 
-      {/* Middle Section: Market Stats */}
-      <div className="hidden lg:flex items-center gap-6 xl:gap-8 overflow-x-auto no-scrollbar">
-        <StatItem
-          label="24h High"
-          value={marketData.high24h ? `$${formatPrice(marketData.high24h)}` : "N/A"}
-          loading={marketLoading}
-        />
-        <StatItem
-          label="24h Low"
-          value={marketData.low24h ? `$${formatPrice(marketData.low24h)}` : "N/A"}
-          loading={marketLoading}
-        />
-        <StatItem
-          label="24h Volume"
-          value={marketData.volume24h ? `$${formatPrice(marketData.volume24h)}` : "N/A"}
-          loading={marketLoading}
-        />
-
-        {/* Futures Specific Metrics */}
-        {type === 'futures' && (
-          <>
-            <div className="h-8 w-px bg-border/50 hidden xl:block" />
-            <StatItem
-              label="Funding / 8h"
-              value="0.0042%"
-              loading={false}
-              subValue="03:22:10"
-            />
-            <StatItem
-              label="Open Interest"
-              value="$12.5M"
-              loading={false}
-            />
-          </>
-        )}
-
-        {/* Sentiment / Ratio */}
-        <div className="h-8 w-px bg-border/50 hidden xl:block" />
-
-        <div className="flex flex-col gap-1.5 min-w-[100px]">
-          <div className="flex justify-between text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            <span className="text-green-500">L 60%</span>
-            <span className="text-red-500">40% S</span>
-          </div>
-          <div className="h-1.5 w-full flex rounded-full overflow-hidden bg-secondary">
-            <div className="h-full bg-green-500 w-[60%]" />
-            <div className="h-full bg-red-500 w-[40%]" />
-          </div>
-        </div>
-      </div>
-
-      {/* Right Section: Actions */}
-      <div className="hidden lg:flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-9 gap-2 text-xs font-medium text-muted-foreground hover:text-foreground",
-            type === 'futures' && "bg-secondary text-foreground"
+        {/* Live price + 24h change */}
+        <div className="flex shrink-0 flex-col gap-0.5">
+          {priceLoading && priceData.price == null ? (
+            <Skeleton className="h-7 w-28 rounded bg-secondary/50" />
+          ) : (
+            <span
+              className={cn(
+                'font-mono text-xl font-bold tracking-tight transition-colors duration-300 lg:text-2xl',
+                priceTone === 'up' && 'text-green-500',
+                priceTone === 'down' && 'text-red-500',
+                priceTone == null && 'text-foreground'
+              )}
+            >
+              {priceData.price != null ? formatPrice(priceData.price) : 'N/A'}
+            </span>
           )}
-          onClick={() => router.push(type === 'futures' ? '/' : '/futures')}
+          {/* 24h change — rendered only when the feed provides it. A fixed
+              "+2.45%" used to live here regardless of the market. */}
+          {changeKnown && (
+            <span
+              aria-label="24h change"
+              className={cn(
+                'inline-flex w-fit items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
+                changeUp
+                  ? 'bg-green-500/10 text-green-500'
+                  : 'bg-red-500/10 text-red-500'
+              )}
+            >
+              {changeUp ? (
+                <ArrowUp className="h-3 w-3" />
+              ) : (
+                <ArrowDown className="h-3 w-3" />
+              )}
+              {changeUp ? '+' : ''}
+              {change.toFixed(2)}%
+            </span>
+          )}
+        </div>
+
+        {/* Desktop stats. Each renders only when its data exists. */}
+        <div className="no-scrollbar hidden flex-1 items-center gap-6 overflow-x-auto pl-2 lg:flex xl:gap-8">
+          {high24h != null && (
+            <StatItem
+              label="24h High"
+              value={formatPrice(high24h)}
+              loading={marketLoading}
+            />
+          )}
+          {low24h != null && (
+            <StatItem
+              label="24h Low"
+              value={formatPrice(low24h)}
+              loading={marketLoading}
+            />
+          )}
+          {marketData.volume24h != null && (
+            <StatItem
+              label="24h Volume"
+              value={compactNumber.format(marketData.volume24h)}
+              loading={marketLoading}
+            />
+          )}
+
+          {isFutures && (
+            <>
+              <div className="hidden h-8 w-px bg-border/50 xl:block" />
+              <StatItem
+                label="Funding / 8h"
+                value="0.0042%"
+                loading={false}
+                subValue="03:22:10"
+              />
+              <StatItem label="Open Interest" value="$12.5M" loading={false} />
+            </>
+          )}
+
+          {/* Range meter: where the live price sits between the 24h extremes.
+              Replaces a hardcoded L60/S40 sentiment bar that had no data source. */}
+          {rangeKnown && (
+            <>
+              <div className="hidden h-8 w-px bg-border/50 xl:block" />
+              <div
+                className="flex min-w-[110px] flex-col gap-1.5"
+                role="meter"
+                aria-label="Position of the live price within the 24h range"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(rangePct)}
+              >
+                <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <span>24h Range</span>
+                  <span className="tabular-nums text-foreground">
+                    {rangePct.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="relative h-1.5 w-full rounded-full bg-secondary">
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-red-500/60 via-amber-500/60 to-green-500/60"
+                    style={{ width: `${rangePct}%` }}
+                  />
+                  <div
+                    className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-foreground"
+                    style={{ left: `calc(${rangePct}% - 1px)` }}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Market switcher */}
+        <div
+          className="ml-auto hidden shrink-0 items-center rounded-md border border-border/60 bg-secondary/30 p-0.5 lg:flex"
+          role="group"
+          aria-label="Market type"
         >
-          <TrendingUp className="h-4 w-4" />
-          {type === 'futures' ? 'Spot Trading' : 'Futures Trading'}
-        </Button>
+          <MarketTab
+            active={!isFutures}
+            onClick={() => isFutures && router.push('/')}
+          >
+            Spot
+          </MarketTab>
+          <MarketTab
+            active={isFutures}
+            onClick={() => !isFutures && router.push('/futures')}
+          >
+            Futures
+          </MarketTab>
+        </div>
       </div>
 
-      {/* Mobile Layout Fallback */}
-      <div className="flex w-full justify-between px-4 lg:hidden">
+      {/* Mobile: scrollable stats strip + full details dialog */}
+      <div className="flex items-center justify-between gap-3 border-t border-border/40 px-3 py-2 lg:hidden">
+        <div className="no-scrollbar flex items-center gap-5 overflow-x-auto">
+          {high24h != null && (
+            <StatItem
+              label="24h High"
+              value={formatPrice(high24h)}
+              loading={marketLoading}
+            />
+          )}
+          {low24h != null && (
+            <StatItem
+              label="24h Low"
+              value={formatPrice(low24h)}
+              loading={marketLoading}
+            />
+          )}
+          {marketData.volume24h != null && (
+            <StatItem
+              label="24h Volume"
+              value={compactNumber.format(marketData.volume24h)}
+              loading={marketLoading}
+            />
+          )}
+        </div>
         <MarketDetails
           logo={logo}
-          symbol={symbol!}
-          tokenPrice={priceData.price}
-          high={marketData.high24h}
-          low={marketData.low24h}
+          symbol={pair}
+          tokenPrice={priceData.price ?? 0}
+          high={marketData.high24h ?? 0}
+          low={marketData.low24h ?? 0}
         />
       </div>
     </div>
   )
 })
 
-function StatItem({ label, value, loading, subValue }: { label: string, value: string, loading: boolean, subValue?: string }) {
+function MarketTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mb-0.5 whitespace-nowrap">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors',
+        active
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function StatItem({
+  label,
+  value,
+  loading,
+  subValue,
+}: {
+  label: string
+  value: string
+  loading: boolean
+  subValue?: string
+}) {
+  return (
+    <div className="flex shrink-0 flex-col">
+      <span className="mb-0.5 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-sm font-medium font-mono text-foreground whitespace-nowrap">
-          {loading ? "..." : value}
-        </span>
-        {subValue && (
-          <span className="text-[10px] font-mono text-muted-foreground">
+        {loading ? (
+          <Skeleton className="inline-block h-4 w-14 rounded bg-secondary/50" />
+        ) : (
+          <span className="whitespace-nowrap font-mono text-sm font-medium tabular-nums text-foreground">
+            {value}
+          </span>
+        )}
+        {subValue && !loading && (
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
             {subValue}
           </span>
         )}

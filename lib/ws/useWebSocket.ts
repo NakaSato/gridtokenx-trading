@@ -39,8 +39,14 @@ export function useWebSocket(
     // Determine if we'll use public client
     isUsingPublicRef.current = !effectiveToken
 
+    // null = the channel has no gateway route (see ROUTED_WS_CHANNELS in
+    // lib/websocket-client.ts). Stay idle rather than dialing a 404.
     const client = defaultWSManager.getOrCreate(channel, effectiveToken)
     clientRef.current = client
+    if (!client) {
+      setConnected(false)
+      return
+    }
 
     // Always connect - manager handles fallback to public endpoint if no token
     client.connect()
@@ -117,75 +123,6 @@ export function useWebSocketMessage<T = any>(
   return {
     connected,
     latestMessage,
-  }
-}
-
-/**
- * Hook for real-time order book updates
- */
-export function useOrderBookWebSocket(token?: string) {
-  const [orderBook, setOrderBook] = useState<any>(null)
-
-  const { connected } = useWebSocketMessage(
-    'orderbook',
-    'orderbook_update',
-    useCallback((data: any) => {
-      setOrderBook(data)
-    }, []),
-    token,
-    true // publicOnly
-  )
-
-  return {
-    orderBook,
-    connected,
-  }
-}
-
-/**
- * Hook for real-time trade updates
- */
-export function useTradesWebSocket(token?: string) {
-  const [trades, setTrades] = useState<any[]>([])
-
-  const { connected } = useWebSocketMessage(
-    'trades',
-    'trade_update',
-    useCallback((data: any) => {
-      setTrades((prev) => [data, ...prev].slice(0, 100)) // Keep last 100 trades
-    }, []),
-    token,
-    true // publicOnly
-  )
-
-  return {
-    trades,
-    connected,
-  }
-}
-
-/**
- * Hook for epoch transition notifications
- */
-export function useEpochWebSocket(token?: string) {
-  const [currentEpoch, setCurrentEpoch] = useState<any>(null)
-  const [lastTransition, setLastTransition] = useState<any>(null)
-
-  const { connected } = useWebSocketMessage(
-    'epochs',
-    'epoch_transition',
-    useCallback((data: any) => {
-      setCurrentEpoch(data.current_epoch)
-      setLastTransition(data)
-    }, []),
-    token,
-    true // publicOnly
-  )
-
-  return {
-    currentEpoch,
-    lastTransition,
-    connected,
   }
 }
 

@@ -67,10 +67,6 @@ export default {
         sans: ["var(--font-poppins)", '"TikTok Sans"', "var(--font-lufga)", "system-ui", "sans-serif"],
         tiktok: ['"TikTok Sans"', "system-ui", "sans-serif"],
       },
-      screens: {
-        xs: "375px",
-        desktop: "1800px",
-      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("tailwind-scrollbar-hide")],

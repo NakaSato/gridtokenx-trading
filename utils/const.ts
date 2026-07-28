@@ -43,9 +43,23 @@ export const USDC_ORACLE = safePublicKey(
   'USDC_ORACLE'
 )
 
-// Devnet
+/**
+ * THBC — the baht-denominated settlement currency. This is the mint every P2P
+ * trade is priced and settled in (`CURRENCY_TOKEN_MINT` on the trading service).
+ *
+ * Configurable, like ENERGY_TOKEN_MINT above: the previous hardcoded devnet
+ * address did not match the mint trades actually settle in, so anything reading
+ * this showed a balance of zero for every user — a wallet that looks broken
+ * rather than one that looks empty. Set NEXT_PUBLIC_CURRENCY_TOKEN_MINT to the
+ * same value the backend uses; the fallback is the current local-dev mint.
+ *
+ * Note THBC is classic SPL Token while the energy mint is Token-2022, so ATAs
+ * for the two derive under different token programs — see resolveTokenProgram in
+ * lib/escrow-actions.ts. And it is 6-dec against energy's 9.
+ */
 export const THB_MINT = safePublicKey(
-  '3d79oe7AKxxHfLz11BXAnWqBX72rubLiQppUNoKGhMPk',
+  process.env.NEXT_PUBLIC_CURRENCY_TOKEN_MINT ||
+    '7hg4h2BJPSLZsxUJn7BPKkGMjEVS2wVk5iW7X1E9Be1Z',
   'THB_MINT'
 )
 export const THB_DECIMALS = 6

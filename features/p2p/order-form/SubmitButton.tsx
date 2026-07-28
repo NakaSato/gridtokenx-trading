@@ -1,9 +1,9 @@
 'use client'
-
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Loader2, Shield, Wallet2 } from 'lucide-react'
+import { Shield, Wallet2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface SubmitButtonProps {
   token: string | null
@@ -49,7 +49,7 @@ export function SubmitButton({
       type="submit"
       size="lg"
       className={cn(
-        'h-14 w-full rounded-xl font-semibold text-base shadow-xl transition-all duration-200 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2',
+        'h-14 w-full rounded-xl text-base font-semibold shadow-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]',
         orderType === 'buy'
           ? 'bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-emerald-500/25 hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/50'
           : 'bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-rose-500/25 hover:from-rose-400 hover:to-rose-500 hover:shadow-rose-500/30 focus-visible:ring-rose-500/50'
@@ -58,7 +58,7 @@ export function SubmitButton({
     >
       {loading ? (
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Spinner className="h-5 w-5" />
           <span>Processing...</span>
         </div>
       ) : (
@@ -69,7 +69,7 @@ export function SubmitButton({
             {orderType === 'buy' ? 'Buy' : 'Sell'} {amount || '0'} kWh
           </span>
           {amount && total > 0 && (
-            <span className="ml-1 text-white/80 font-mono">
+            <span className="ml-1 font-mono text-white/80">
               · {resting ? '~' : ''}฿{total.toFixed(2)}
             </span>
           )}

@@ -1,5 +1,4 @@
 'use client'
-
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -9,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   CheckCircle2,
-  Loader2,
   RefreshCw,
   Wallet,
   Copy,
@@ -21,6 +19,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import { Spinner } from '@/components/ui/spinner'
 
 type VerificationState = 'loading' | 'success' | 'error' | 'expired' | 'invalid'
 
@@ -101,7 +100,11 @@ function VerifyEmailContent() {
   }, [resendCooldown, canResend])
 
   // Helper: Handle verification errors
-  const handleVerificationError = (response: { status?: number; error?: unknown; retry_after?: number }) => {
+  const handleVerificationError = (response: {
+    status?: number
+    error?: unknown
+    retry_after?: number
+  }) => {
     const errorMsg = getErrorMessage(response.error)
 
     if (response.status === 400) {
@@ -146,7 +149,7 @@ function VerifyEmailContent() {
       setState('success')
       setMessage(
         response.data.message ||
-        'Email verified successfully! You can now sign in.'
+          'Email verified successfully! You can now sign in.'
       )
 
       if (response.data.wallet_address) {
@@ -170,7 +173,11 @@ function VerifyEmailContent() {
   }
 
   // Helper: Handle resend errors
-  const handleResendError = (response: { status?: number; error?: unknown; retry_after?: number }) => {
+  const handleResendError = (response: {
+    status?: number
+    error?: unknown
+    retry_after?: number
+  }) => {
     if (response.status === 429) {
       const retryAfter = response.retry_after || 30
       toast.error(`Rate limit exceeded. Please wait ${retryAfter} seconds.`)
@@ -275,7 +282,9 @@ function VerifyEmailContent() {
               />
             )}
 
-            {(state === 'error' || state === 'expired' || state === 'invalid') && (
+            {(state === 'error' ||
+              state === 'expired' ||
+              state === 'invalid') && (
               <ResendForm
                 email={email}
                 isResending={isResending}
@@ -319,7 +328,10 @@ function OnboardingStepper({ state }: { state: VerificationState }) {
   ]
 
   return (
-    <ol className="flex items-center justify-center gap-0" aria-label="Onboarding progress">
+    <ol
+      className="flex items-center justify-center gap-0"
+      aria-label="Onboarding progress"
+    >
       {steps.map((step, i) => (
         <li key={step.label} className="flex items-center">
           {i > 0 && (
@@ -409,7 +421,7 @@ function StateHero({
   return (
     <div className="space-y-3 text-center">
       <div
-        className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 ${tone} ${ring} animate-in zoom-in-75 fade-in`}
+        className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 ${tone} ${ring} animate-in fade-in zoom-in-75`}
         key={state} // re-trigger entrance animation on state change
       >
         {state === 'loading' && <Mail className="h-7 w-7" />}
@@ -438,7 +450,7 @@ function LoadingView() {
         <div className="h-full w-2/3 animate-pulse rounded-full bg-primary" />
       </div>
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Spinner className="h-3.5 w-3.5" />
         This usually takes a few seconds
       </div>
     </div>
@@ -503,7 +515,10 @@ function SuccessView({
           Continue to sign in
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-        <p className="text-center text-xs text-muted-foreground" aria-live="off">
+        <p
+          className="text-center text-xs text-muted-foreground"
+          aria-live="off"
+        >
           Redirecting automatically in {countdown}s
         </p>
       </div>
@@ -555,7 +570,7 @@ function ResendForm({
         className="h-11 w-full"
       >
         {isResending ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Spinner className="mr-2 h-4 w-4" />
         ) : (
           <RefreshCw className="mr-2 h-4 w-4" />
         )}
@@ -568,7 +583,10 @@ function ResendForm({
 
       <p className="text-center text-xs text-muted-foreground">
         Already verified?{' '}
-        <Link href="/login" className="font-medium text-primary hover:underline">
+        <Link
+          href="/login"
+          className="font-medium text-primary hover:underline"
+        >
           Sign in
         </Link>
       </p>
@@ -582,7 +600,7 @@ export default function VerifyEmailPage() {
       <Suspense
         fallback={
           <div className="flex min-h-screen items-center justify-center bg-background p-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Spinner className="h-8 w-8 text-primary" />
           </div>
         }
       >

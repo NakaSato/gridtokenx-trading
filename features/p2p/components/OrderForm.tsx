@@ -12,7 +12,12 @@ import type { EnergyNode } from '@/types/grid'
 import { RecurringOrderForm } from '@/features/trading/components/RecurringOrderForm'
 import { useCrypto } from '@/lib/wasm-hooks'
 import { useWalletBalance } from '@/features/wallet/hooks/useWalletBalance'
-import { useMarketConfig, useP2PMarketPrices, useP2PBestPrices } from '@/features/p2p/hooks/useP2PMarket'
+import { toBalanceNumber } from '@/features/wallet/lib/balance-display'
+import {
+  useMarketConfig,
+  useP2PMarketPrices,
+  useP2PBestPrices,
+} from '@/features/p2p/hooks/useP2PMarket'
 import { P2P_CONFIG } from '@/lib/constants'
 import { OrderTypeTabs } from '@/features/p2p/order-form/OrderTypeTabs'
 import { MatchTargetIndicator } from '@/features/p2p/order-form/MatchTargetIndicator'
@@ -38,14 +43,18 @@ const OrderForm = React.memo(function OrderForm({
   onClearNode,
 }: OrderFormProps) {
   const { token } = useAuth()
-  const [orderType, setOrderType] = useState<'buy' | 'sell' | 'recurring'>('buy')
+  const [orderType, setOrderType] = useState<'buy' | 'sell' | 'recurring'>(
+    'buy'
+  )
   const [priceType, setPriceType] = useState<'market' | 'limit'>('limit')
   const [amount, setAmount] = useState('')
   const [price, setPrice] = useState('')
   const [buyerZone, setBuyerZone] = useState<number>(0)
   const [sellerZone, setSellerZone] = useState<number>(0)
   const [message, setMessage] = useState('')
-  const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(null)
+  const [targetMatchOrder, setTargetMatchOrder] = useState<OrderAccount | null>(
+    null
+  )
   const { isLoaded: cryptoLoaded } = useCrypto()
   const queryClient = useQueryClient()
   const { marketConfig } = useMarketConfig(token ?? undefined)
@@ -55,9 +64,16 @@ const OrderForm = React.memo(function OrderForm({
   const { bestBid, bestAsk } = useP2PBestPrices(token ?? undefined)
   const { activeOrderFill, setActiveOrderFill } = useOrderFill()
 
-  const { data: balanceData, isLoading: balanceLoading } = useWalletBalance()
-  const rawBalance = balanceData?.token_balance
-  const balance = rawBalance != null ? Number(rawBalance) : null
+  const {
+    data: balanceData,
+    isLoading: balanceLoading,
+    isError: balanceUnavailable,
+  } = useWalletBalance()
+  // `null` = could not read (not zero). BalanceDisplay renders it as "—" and the
+  // sell-side check below skips rather than asserting a balance we don't have.
+  const balance = balanceUnavailable
+    ? null
+    : toBalanceNumber(balanceData?.token_balance)
 
   // Consume activeOrderFill if present
   useEffect(() => {
@@ -196,18 +212,28 @@ const OrderForm = React.memo(function OrderForm({
       if (marketConfig) {
         const priceVal = parseFloat(price)
         if (priceVal < marketConfig.min_price_per_kwh) {
-          setMessage(`Price cannot be lower than the minimum limit (฿${marketConfig.min_price_per_kwh})`)
+          setMessage(
+            `Price cannot be lower than the minimum limit (฿${marketConfig.min_price_per_kwh})`
+          )
           return
         }
         if (priceVal > marketConfig.max_price_per_kwh) {
-          setMessage(`Price cannot be higher than the maximum limit (฿${marketConfig.max_price_per_kwh})`)
+          setMessage(
+            `Price cannot be higher than the maximum limit (฿${marketConfig.max_price_per_kwh})`
+          )
           return
         }
       }
     }
 
-    if (orderType === 'sell' && balance !== null && parseFloat(amount) > balance) {
-      setMessage(`Insufficient balance. You have ${balance.toFixed(2)} GRX available.`)
+    if (
+      orderType === 'sell' &&
+      balance !== null &&
+      parseFloat(amount) > balance
+    ) {
+      setMessage(
+        `Insufficient balance. You have ${balance.toFixed(2)} GRX available.`
+      )
       return
     }
 
@@ -221,7 +247,8 @@ const OrderForm = React.memo(function OrderForm({
           amount,
           // Limit: the price. Market: omit (a market buy may still carry `price` as a
           // slippage ceiling; sell is always limit).
-          price_per_kwh: effectivePriceType === 'limit' ? price : (price || undefined),
+          price_per_kwh:
+            effectivePriceType === 'limit' ? price : price || undefined,
           zone_id,
           meter_serial: meterSerialFromNode(selectedNode),
         }),
@@ -246,22 +273,24 @@ const OrderForm = React.memo(function OrderForm({
   // sweep the resting book, so estimate against the side they'd actually fill
   // against: a market buy eats asks, a market sell eats bids. Falls back to
   // the typed price only while the book hasn't loaded yet.
-  const effectivePrice = priceType === 'market'
-    ? (orderType === 'buy' ? bestAsk : bestBid) ?? priceNum
-    : priceNum
+  const effectivePrice =
+    priceType === 'market'
+      ? ((orderType === 'buy' ? bestAsk : bestBid) ?? priceNum)
+      : priceNum
   const energyCost = amountNum * effectivePrice
 
   // A limit order priced worse than the current best opposing quote won't
   // fill immediately — it rests on the book until a counterparty crosses it.
-  const fillWarning = priceType === 'limit' && priceNum > 0
-    ? orderType === 'buy'
-      ? (bestAsk !== null && priceNum < bestAsk
-        ? `Price below best ask (฿${bestAsk.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
-        : null)
-      : (bestBid !== null && priceNum > bestBid
-        ? `Price above best bid (฿${bestBid.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
-        : null)
-    : null
+  const fillWarning =
+    priceType === 'limit' && priceNum > 0
+      ? orderType === 'buy'
+        ? bestAsk !== null && priceNum < bestAsk
+          ? `Price below best ask (฿${bestAsk.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
+          : null
+        : bestBid !== null && priceNum > bestBid
+          ? `Price above best bid (฿${bestBid.toFixed(2)}) — this order will rest unfilled until matched, not execute immediately.`
+          : null
+      : null
 
   // Wheeling charge + transmission loss for the selected zone pair — sourced
   // from the real market-prices endpoint, not the mocked /api/v1/quotes.
@@ -269,21 +298,22 @@ const OrderForm = React.memo(function OrderForm({
   const zoneKey = String(sellerZone)
   const homeZoneKey = String(buyerZone)
   const wheelingChargePerKwh = crossZone
-    ? (marketPrices?.wheeling_charges?.[zoneKey] ?? marketPrices?.wheeling_charges?.[homeZoneKey] ?? 0)
+    ? (marketPrices?.wheeling_charges?.[zoneKey] ??
+      marketPrices?.wheeling_charges?.[homeZoneKey] ??
+      0)
     : 0
   const wheelingCharge = wheelingChargePerKwh * amountNum
   const lossFactor = crossZone
-    ? (marketPrices?.loss_factors?.[zoneKey] ?? marketPrices?.loss_factors?.[homeZoneKey] ?? P2P_CONFIG.defaultCrossZoneLossFactor)
+    ? (marketPrices?.loss_factors?.[zoneKey] ??
+      marketPrices?.loss_factors?.[homeZoneKey] ??
+      P2P_CONFIG.defaultCrossZoneLossFactor)
     : 0
   const lossCost = energyCost * lossFactor
   const orderTotal = energyCost + wheelingCharge + lossCost
 
   return (
     <div className="flex w-full flex-col space-y-0 overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
-      <OrderTypeTabs
-        orderType={orderType}
-        setOrderType={handleSetOrderType}
-      />
+      <OrderTypeTabs orderType={orderType} setOrderType={handleSetOrderType} />
 
       <div className="flex flex-col space-y-4 p-4">
         <MatchTargetIndicator

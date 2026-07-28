@@ -1,6 +1,8 @@
 'use client'
 import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Spinner } from '@/components/ui/spinner'
 import TradingViewTopNav from '@/features/trading/components/TradingViewTopNav'
 import { tokenList } from '@/lib/data/tokenlist'
 import { useSidebar } from '@/components/shared/SidebarContext'
@@ -12,13 +14,13 @@ const TradingPositionsPanel = dynamic(
     loading: () => (
       <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <div className="h-5 w-40 animate-pulse rounded bg-secondary" />
-          <div className="h-8 w-24 animate-pulse rounded bg-secondary" />
+          <Skeleton className="h-5 w-40 rounded bg-secondary" />
+          <Skeleton className="h-8 w-24 rounded bg-secondary" />
         </div>
         <div className="space-y-2">
-          <div className="bg-secondary/30 h-10 w-full animate-pulse rounded" />
-          <div className="bg-secondary/30 h-10 w-full animate-pulse rounded" />
-          <div className="bg-secondary/30 h-10 w-full animate-pulse rounded" />
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded bg-secondary/30" />
+          ))}
         </div>
       </div>
     ),
@@ -28,34 +30,40 @@ const TradingPositionsPanel = dynamic(
 import { usePythPrice } from '@/features/trading/hooks/usePythPrice'
 import { usePythMarketData } from '@/features/trading/hooks/usePythMarketData'
 
-const TradeHistory = dynamic(() => import('@/features/trading/components/TradeHistory'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">
-      <div className="mb-4 h-5 w-32 animate-pulse rounded bg-secondary" />
-      <div className="space-y-3">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex justify-between">
-            <div className="bg-secondary/50 h-4 w-24 animate-pulse rounded" />
-            <div className="bg-secondary/50 h-4 w-16 animate-pulse rounded" />
-          </div>
-        ))}
+const TradeHistory = dynamic(
+  () => import('@/features/trading/components/TradeHistory'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">
+        <Skeleton className="mb-4 h-5 w-32 rounded bg-secondary" />
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex justify-between">
+              <Skeleton className="h-4 w-24 rounded bg-secondary/50" />
+              <Skeleton className="h-4 w-16 rounded bg-secondary/50" />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  ),
-})
+    ),
+  }
+)
 
 const EnergyGridMapWrapper = dynamic(
   () => import('@/features/energy-grid/components/EnergyGridMapWrapper'),
   {
     ssr: false,
     loading: () => (
-      <div className="bg-secondary/20 flex h-full w-full animate-pulse flex-col items-center justify-center rounded-lg">
-        <div className="mb-3 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      // The spinner stays: the map has no content shape to stand in for, so a
+      // skeleton would just be a pulsing rectangle. The surface behind it is
+      // the Skeleton.
+      <Skeleton className="flex h-full w-full flex-col items-center justify-center rounded-lg bg-secondary/20">
+        <Spinner className="mb-3 h-8 w-8 text-primary" />
         <p className="text-sm font-medium text-secondary-foreground">
           Loading map...
         </p>
-      </div>
+      </Skeleton>
     ),
   }
 )
@@ -68,12 +76,13 @@ import {
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
 
-const P2POrderForm = dynamic(() => import('@/features/p2p/components/OrderForm'), {
-  ssr: false,
-  loading: () => (
-    <div className="bg-secondary/50 h-full animate-pulse rounded-lg" />
-  ),
-})
+const P2POrderForm = dynamic(
+  () => import('@/features/p2p/components/OrderForm'),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-full rounded-lg bg-secondary/50" />,
+  }
+)
 
 import type { EnergyNode } from '@/types/grid'
 import { CAMPUS_CONFIG } from '@/lib/constants'
@@ -92,7 +101,14 @@ export default function Homepage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>('Crypto.GRX/THB')
   const [selectedLogo, setSelectedLogo] = useState<string>('/svgs/gridx.svg')
 
-  const { showLeftSidebar, showRightSidebar, showPositionsPanel, toggleLeftSidebar, toggleRightSidebar, togglePositionsPanel } = useSidebar()
+  const {
+    showLeftSidebar,
+    showRightSidebar,
+    showPositionsPanel,
+    toggleLeftSidebar,
+    toggleRightSidebar,
+    togglePositionsPanel,
+  } = useSidebar()
   const { priceData, loading: priceLoading } = usePythPrice(selectedSymbol)
   const { marketData, loading: marketLoading } =
     usePythMarketData(selectedSymbol)
@@ -165,7 +181,13 @@ export default function Homepage() {
             <ResizablePanel
               id="center-area"
               order={2}
-              defaultSize={showLeftSidebar && showRightSidebar ? 60 : showLeftSidebar || showRightSidebar ? 80 : 100}
+              defaultSize={
+                showLeftSidebar && showRightSidebar
+                  ? 60
+                  : showLeftSidebar || showRightSidebar
+                    ? 80
+                    : 100
+              }
               minSize={40}
             >
               <ResizablePanelGroup

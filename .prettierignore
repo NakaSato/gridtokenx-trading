@@ -5,3 +5,7 @@ node_modules
 public/charting_library
 lib/wasm
 lib/wasm-zk
+
+# Cargo build output for the in-repo wasm crate. Gitignored (wasm/.gitignore),
+# but prettier walks it anyway and rewrites .fingerprint/*.json.
+wasm/target

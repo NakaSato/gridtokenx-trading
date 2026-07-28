@@ -5,9 +5,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useEffect, useState, useCallback } from 'react'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { XIcon, BellOff, CheckCheck, Loader2, Settings2, Bell } from 'lucide-react'
+import { XIcon, BellOff, CheckCheck, Settings2, Bell } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
@@ -15,6 +20,7 @@ import type { Notification } from '@/types/features'
 import { formatDistanceToNow } from 'date-fns'
 import NotificationPreferences from '@/features/notifications/components/NotificationPreferences'
 import { cn } from '@/lib/utils'
+import { Spinner } from '@/components/ui/spinner'
 
 function NotificationItem({
   item,
@@ -26,26 +32,37 @@ function NotificationItem({
   onMarkRead: (id: string) => void
 }) {
   return (
-    <div className={cn("w-full p-4 transition-colors hover:bg-secondary/30", !item.is_read && "bg-primary/5")}>
+    <div
+      className={cn(
+        'w-full p-4 transition-colors hover:bg-secondary/30',
+        !item.is_read && 'bg-primary/5'
+      )}
+    >
       <div className="flex w-full space-x-3">
-        <div className={cn(
-          "h-fit rounded-sm p-[9px]",
-          item.is_read ? "bg-secondary text-secondary-foreground" : "bg-primary/20 text-primary"
-        )}>
+        <div
+          className={cn(
+            'h-fit rounded-sm p-[9px]',
+            item.is_read
+              ? 'bg-secondary text-secondary-foreground'
+              : 'bg-primary/20 text-primary'
+          )}
+        >
           <InfoIcon />
         </div>
         <div className="flex-1 space-y-1">
-          <p className="text-xs font-normal text-foreground leading-relaxed">
+          <p className="text-xs font-normal leading-relaxed text-foreground">
             {item.message}
           </p>
-          <div className="flex items-center justify-between mt-1">
+          <div className="mt-1 flex items-center justify-between">
             <span className="text-[10px] text-secondary-foreground opacity-70">
-              {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+              {formatDistanceToNow(new Date(item.created_at), {
+                addSuffix: true,
+              })}
             </span>
             {!item.is_read && (
               <button
                 onClick={() => onMarkRead(item.id)}
-                className="text-[10px] text-primary hover:underline font-medium"
+                className="text-[10px] font-medium text-primary hover:underline"
               >
                 Mark read
               </button>
@@ -100,8 +117,10 @@ export default function Notifications() {
     try {
       const apiClient = createApiClient(token)
       await apiClient.markNotificationAsRead(id)
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      )
+      setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (error) {
       console.error('Failed to mark notification as read:', error)
     }
@@ -112,7 +131,7 @@ export default function Notifications() {
     try {
       const apiClient = createApiClient(token)
       await apiClient.markAllNotificationsAsRead()
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
       setUnreadCount(0)
     } catch (error) {
       console.error('Failed to mark all as read:', error)
@@ -122,11 +141,11 @@ export default function Notifications() {
   return (
     <>
       <DropdownMenu onOpenChange={(open) => !open && setView('list')}>
-        <DropdownMenuTrigger className="hidden focus:outline-none sm:flex relative">
-          <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary transition-all">
+        <DropdownMenuTrigger className="relative hidden focus:outline-none sm:flex">
+          <div className="rounded-sm bg-secondary p-[9px] text-foreground transition-all hover:text-primary">
             <NotificationIcon />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -134,14 +153,12 @@ export default function Notifications() {
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="flex w-[350px] flex-col rounded-sm bg-accent p-0 shadow-2xl border border-border"
+          className="flex w-[350px] flex-col rounded-sm border border-border bg-accent p-0 shadow-2xl"
         >
-          <div className="flex items-center justify-between w-full px-4 py-3 border-b border-border/50">
-            <span className="text-xs font-semibold text-foreground flex items-center gap-2">
+          <div className="flex w-full items-center justify-between border-b border-border/50 px-4 py-3">
+            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
               {view === 'list' ? (
-                <>
-                  Notifications {unreadCount > 0 && `(${unreadCount})`}
-                </>
+                <>Notifications {unreadCount > 0 && `(${unreadCount})`}</>
               ) : (
                 <>
                   <Settings2 size={12} />
@@ -156,7 +173,7 @@ export default function Notifications() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-[10px] text-primary hover:text-primary/80 hover:bg-primary/5 gap-1 px-2"
+                      className="h-7 gap-1 px-2 text-[10px] text-primary hover:bg-primary/5 hover:text-primary/80"
                       onClick={markAllAsRead}
                     >
                       <CheckCheck size={12} />
@@ -184,12 +201,12 @@ export default function Notifications() {
               )}
             </div>
           </div>
-          <div className="max-h-[450px] overflow-y-auto custom-scrollbar p-3">
+          <div className="custom-scrollbar max-h-[450px] overflow-y-auto p-3">
             {view === 'list' ? (
               <>
                 {loading && notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-2 opacity-50">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="flex flex-col items-center justify-center space-y-2 py-12 opacity-50">
+                    <Spinner className="h-5 w-5 text-primary" />
                     <span className="text-xs">Loading alerts...</span>
                   </div>
                 ) : notifications.length > 0 ? (
@@ -202,7 +219,7 @@ export default function Notifications() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-2 opacity-50">
+                  <div className="flex flex-col items-center justify-center space-y-2 py-12 opacity-50">
                     <BellOff className="h-8 w-8 text-muted-foreground" />
                     <span className="text-xs">No notifications yet</span>
                   </div>
@@ -213,8 +230,11 @@ export default function Notifications() {
             )}
           </div>
           {view === 'list' && notifications.length > 0 && (
-            <div className="p-2 border-t border-border/50">
-              <Button variant="ghost" className="w-full h-8 text-xs text-secondary-foreground hover:text-foreground">
+            <div className="border-t border-border/50 p-2">
+              <Button
+                variant="ghost"
+                className="h-8 w-full text-xs text-secondary-foreground hover:text-foreground"
+              >
                 View All Activity
               </Button>
             </div>
@@ -223,18 +243,18 @@ export default function Notifications() {
       </DropdownMenu>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger className="focus:outline-none sm:hidden relative">
+        <DialogTrigger className="relative focus:outline-none sm:hidden">
           <div className="rounded-[12px] bg-secondary p-[9px] text-foreground hover:text-primary">
             <NotificationIcon />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
                 {unreadCount}
               </span>
             )}
           </div>
         </DialogTrigger>
         <DialogContent className="flex h-full w-full flex-col gap-0 border-none bg-accent p-0 outline-none">
-          <div className="flex w-full items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex w-full items-center justify-between border-b border-border px-4 py-3">
             <DialogTitle className="text-base font-medium text-foreground">
               Notifications
             </DialogTitle>
@@ -247,7 +267,7 @@ export default function Notifications() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="w-9 h-9 p-0"
+                className="h-9 w-9 p-0"
                 onClick={() => setIsOpen(false)}
               >
                 <XIcon size={18} className="text-secondary-foreground" />
@@ -263,7 +283,7 @@ export default function Notifications() {
                 </div>
               ))
             ) : (
-              <div className="flex flex-col items-center justify-center h-full space-y-4 opacity-50">
+              <div className="flex h-full flex-col items-center justify-center space-y-4 opacity-50">
                 <BellOff size={48} className="text-muted-foreground" />
                 <p>No notifications yet</p>
               </div>
@@ -274,4 +294,3 @@ export default function Notifications() {
     </>
   )
 }
-

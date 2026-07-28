@@ -1,11 +1,12 @@
 'use client'
-
-import { Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { useAuth } from '@/features/auth/provider'
-import { useExpiredOptions, useOptionSettlement } from '@/features/trading/hooks/useOptions'
+import {
+  useExpiredOptions,
+  useOptionSettlement,
+} from '@/features/trading/hooks/useOptions'
 import {
   usePositions,
   useOpenOrders,
@@ -24,6 +25,7 @@ import { connection } from '@/utils/const'
 import ExpiredOptions from '@/features/trading/components/ExpiredOptions'
 import { CarbonCredits } from '@/features/portfolio/components/carbon-credits'
 import P2PStatus from '@/features/p2p/components/P2PStatus'
+import { Spinner } from '@/components/ui/spinner'
 
 export function PortfolioTabs() {
   const { token } = useAuth()
@@ -35,8 +37,14 @@ export function PortfolioTabs() {
 
   const { program } = useContext(ContractContext)
 
-  const { data: expiredInfos = [], isLoading: expiredLoading } = useExpiredOptions(program, publicKey)
-  const { claimMutation, exerciseMutation } = useOptionSettlement(program, connection, publicKey, sendTransaction)
+  const { data: expiredInfos = [], isLoading: expiredLoading } =
+    useExpiredOptions(program, publicKey)
+  const { claimMutation, exerciseMutation } = useOptionSettlement(
+    program,
+    connection,
+    publicKey,
+    sendTransaction
+  )
 
   const onClaim = (optionindex: string | number, solPrice: number) => {
     claimMutation.mutate({ index: optionindex as any, solPrice })
@@ -61,7 +69,8 @@ export function PortfolioTabs() {
     }
   }
 
-  const loading = positionsLoading || ordersLoading || historyLoading || expiredLoading
+  const loading =
+    positionsLoading || ordersLoading || historyLoading || expiredLoading
 
   const renderEmptyState = (message: string, subMessage: string) => (
     <Card className="h-full rounded-sm border-dashed">
@@ -74,21 +83,59 @@ export function PortfolioTabs() {
 
   const renderLoading = () => (
     <div className="flex min-h-[300px] w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Spinner className="h-8 w-8 text-primary" />
     </div>
   )
 
   return (
-    <Tabs defaultValue="system-status" className="flex w-full flex-1 flex-col space-y-4">
+    <Tabs
+      defaultValue="system-status"
+      className="flex w-full flex-1 flex-col space-y-4"
+    >
       <div className="overflow-x-auto">
         <TabsList className="flex h-fit w-max rounded-sm border bg-inherit p-1">
-          <TabsTrigger value="system-status" className="whitespace-nowrap text-xs sm:text-sm">P2P Activity</TabsTrigger>
-          <TabsTrigger value="positions" className="whitespace-nowrap text-xs sm:text-sm">Positions</TabsTrigger>
-          <TabsTrigger value="orders" className="whitespace-nowrap text-xs sm:text-sm">Orders</TabsTrigger>
-          <TabsTrigger value="order-history" className="whitespace-nowrap text-xs sm:text-sm">Order History</TabsTrigger>
-          <TabsTrigger value="trade-history" className="whitespace-nowrap text-xs sm:text-sm">Trade History</TabsTrigger>
-          <TabsTrigger value="funding-history" className="whitespace-nowrap text-xs sm:text-sm">Funding</TabsTrigger>
-          <TabsTrigger value="carbon-credits" className="whitespace-nowrap text-xs sm:text-sm">Carbon Credits</TabsTrigger>
+          <TabsTrigger
+            value="system-status"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            P2P Activity
+          </TabsTrigger>
+          <TabsTrigger
+            value="positions"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Positions
+          </TabsTrigger>
+          <TabsTrigger
+            value="orders"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Orders
+          </TabsTrigger>
+          <TabsTrigger
+            value="order-history"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Order History
+          </TabsTrigger>
+          <TabsTrigger
+            value="trade-history"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Trade History
+          </TabsTrigger>
+          <TabsTrigger
+            value="funding-history"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Funding
+          </TabsTrigger>
+          <TabsTrigger
+            value="carbon-credits"
+            className="whitespace-nowrap text-xs sm:text-sm"
+          >
+            Carbon Credits
+          </TabsTrigger>
         </TabsList>
       </div>
 
@@ -100,21 +147,34 @@ export function PortfolioTabs() {
 
       <TabsContent value="positions" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
-          {loading ? renderLoading() : (
+          {loading ? (
+            renderLoading()
+          ) : (
             <div className="flex flex-col gap-3">
               {positions.length > 0 || expiredInfos.length > 0 ? (
                 <>
                   {positions.map((pos, idx) => (
-                    <OpenPositions key={idx} {...pos} onExercise={() => onExercise(pos.index)} />
+                    <OpenPositions
+                      key={idx}
+                      {...pos}
+                      onExercise={() => onExercise(pos.index)}
+                    />
                   ))}
                   {expiredInfos.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="mb-2 text-sm font-medium text-muted-foreground">Expired Positions</h4>
+                      <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+                        Expired Positions
+                      </h4>
                       <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
                     </div>
                   )}
                 </>
-              ) : renderEmptyState("No open positions", "Your trading positions will appear here")}
+              ) : (
+                renderEmptyState(
+                  'No open positions',
+                  'Your trading positions will appear here'
+                )
+              )}
             </div>
           )}
         </ProtectedRoute>
@@ -122,13 +182,23 @@ export function PortfolioTabs() {
 
       <TabsContent value="orders" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
-          {loading ? renderLoading() : (
+          {loading ? (
+            renderLoading()
+          ) : (
             <div className="flex flex-col gap-3">
-              {orders.length > 0 ? (
-                orders.map((order, idx) => (
-                  <OpenOptionOrders key={idx} {...order} orderId={order.index} onCancel={handleCancelOrder} />
-                ))
-              ) : renderEmptyState("No open orders", "Your pending orders will appear here")}
+              {orders.length > 0
+                ? orders.map((order, idx) => (
+                    <OpenOptionOrders
+                      key={idx}
+                      {...order}
+                      orderId={order.index}
+                      onCancel={handleCancelOrder}
+                    />
+                  ))
+                : renderEmptyState(
+                    'No open orders',
+                    'Your pending orders will appear here'
+                  )}
             </div>
           )}
         </ProtectedRoute>
@@ -136,27 +206,45 @@ export function PortfolioTabs() {
 
       <TabsContent value="order-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
-          {loading ? renderLoading() : (
-            history.length > 0 ? (
-              <OrderHistory doneOptioninfos={history} />
-            ) : renderEmptyState("No order history", "Your order history will appear here")
+          {loading ? (
+            renderLoading()
+          ) : history.length > 0 ? (
+            <OrderHistory doneOptioninfos={history} />
+          ) : (
+            renderEmptyState(
+              'No order history',
+              'Your order history will appear here'
+            )
           )}
         </ProtectedRoute>
       </TabsContent>
 
       <TabsContent value="trade-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
-          {loading ? renderLoading() : (
-            history.length > 0 ? (
-              <OrderHistory doneOptioninfos={history.filter((t: any) => t.transactionType === 'Buy' || t.transactionType === 'Sell')} />
-            ) : renderEmptyState("No trade history", "Your completed trades will appear here")
+          {loading ? (
+            renderLoading()
+          ) : history.length > 0 ? (
+            <OrderHistory
+              doneOptioninfos={history.filter(
+                (t: any) =>
+                  t.transactionType === 'Buy' || t.transactionType === 'Sell'
+              )}
+            />
+          ) : (
+            renderEmptyState(
+              'No trade history',
+              'Your completed trades will appear here'
+            )
           )}
         </ProtectedRoute>
       </TabsContent>
 
       <TabsContent value="funding-history" className="mt-6 min-h-[300px]">
         <ProtectedRoute requireWallet={false} requireAuth={true}>
-          {renderEmptyState("No funding history", "Funding payments will appear here")}
+          {renderEmptyState(
+            'No funding history',
+            'Funding payments will appear here'
+          )}
         </ProtectedRoute>
       </TabsContent>
 

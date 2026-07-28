@@ -103,12 +103,9 @@ export const API_ENDPOINTS = {
     status: `${API_CONFIG.baseUrl}/api/v1/public/grid-status`,
     topology: `${API_CONFIG.baseUrl}/api/v1/public/grid-topology`,
   },
-  // WebSocket
-  ws: {
-    orderBook: `${API_CONFIG.wsBaseUrl}/ws/orderbook`,
-    trades: `${API_CONFIG.wsBaseUrl}/ws/trades`,
-    epochs: `${API_CONFIG.wsBaseUrl}/ws/epochs`,
-  },
+  // WebSocket: no /ws/<channel> endpoints exist — the gateway routes only
+  // /ws (noti), /api/market/ws (simulator) and /api/v1/rpc-ws (solana).
+  // Socket URLs are built by getWsUrl() at the call site instead.
 } as const
 
 // -----------------------------------------------------------------------------

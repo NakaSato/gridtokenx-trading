@@ -1,16 +1,26 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { CopyIcon, LogOutIcon, SendIcon } from '@/public/svgs/icons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import WalletPortfolio from '@/features/wallet/components/WalletPortfolio'
 import WalletActivity from '@/features/wallet/components/WalletActivity'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/features/auth/provider'
 import { useUserBalance } from '@/features/wallet/hooks/useUserBalance'
+import {
+  BALANCE_UNAVAILABLE_HINT,
+  formatBalance,
+} from '@/features/wallet/lib/balance-display'
 import { allWallets } from '@/features/auth/components/WalletModal'
 import { XIcon, TrendingUp, TrendingDown } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -18,19 +28,50 @@ import { useP2POrderUpdates } from '@/features/trading/hooks/useTransactionUpdat
 import { createApiClient } from '@/lib/api-client'
 import MultiWalletManager from '@/features/wallet/components/MultiWalletManager'
 
-export default function WalletSideBar() {
+interface WalletSideBarProps {
+  /**
+   * Controlled open state. Omit it and the component stays self-contained,
+   * driven by its own address chip — that is how the desktop header uses it.
+   * Below 2xl the chip is gone and AccountMenu drives the sheet instead.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Suppress the address chip when something else owns the entry point. */
+  hideTrigger?: boolean
+}
+
+export default function WalletSideBar({
+  open,
+  onOpenChange,
+  hideTrigger = false,
+}: WalletSideBarProps = {}) {
   const { wallet, publicKey, disconnect, connected } = useWallet()
   const { user, isAuthenticated, logout, token } = useAuth()
   const [activeTab, setActiveTab] = useState<string>('portfolio')
-  const [isOpen, setIsOpen] = useState(false)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const [iconPath, setIconPath] = useState<string>('')
+
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : uncontrolledOpen
+  const setIsOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next)
+      onOpenChange?.(next)
+    },
+    [isControlled, onOpenChange]
+  )
 
   // Get balance data using the enhanced hook
   const walletAddress = publicKey?.toBase58() || user?.wallet_address
-  const { balance, loading: balanceLoading } = useUserBalance(
-    token || undefined,
-    walletAddress || undefined
-  )
+  const {
+    balance,
+    loading: balanceLoading,
+    error: balanceError,
+  } = useUserBalance(token || undefined, walletAddress || undefined)
+  // A failed read is not a zero balance — render "—", never "0.00".
+  // See features/wallet/lib/balance-display.ts.
+  const tokenBalance = balanceError ? null : balance?.token_balance
+  const solBalance = balanceError ? null : balance?.balance_sol
 
   // Active P2P orders from real-time updates
   // Note: Backend WebSocket already filters by authenticated user
@@ -107,22 +148,22 @@ export default function WalletSideBar() {
   }, [publicKey, connected, wallet])
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <button className="flex h-9 w-full items-center justify-center gap-2 rounded-sm border bg-inherit px-[15px] py-[5px] text-sm text-foreground hover:border-primary hover:bg-primary-foreground">
-          {iconPath && (
-            <Image
-              src={iconPath}
-              alt="Wallet Icon"
-              width={20}
-              height={20}
-              className="rounded-full"
-            />
-          )}
-          {walletAddress
-            ? truncateAddress(walletAddress)
-            : 'No Wallet'}
-        </button>
-      </SheetTrigger>
+      {!hideTrigger && (
+        <SheetTrigger asChild>
+          <button className="flex h-9 w-full items-center justify-center gap-2 rounded-sm border bg-inherit px-[15px] py-[5px] text-sm text-foreground hover:border-primary hover:bg-primary-foreground">
+            {iconPath && (
+              <Image
+                src={iconPath}
+                alt="Wallet Icon"
+                width={20}
+                height={20}
+                className="rounded-full"
+              />
+            )}
+            {walletAddress ? truncateAddress(walletAddress) : 'No Wallet'}
+          </button>
+        </SheetTrigger>
+      )}
       <SheetContent className="w-full space-y-4 rounded-none bg-accent p-6 md:w-[550px] md:rounded-l-sm">
         <SheetTitle className="flex justify-between">
           <div className="flex items-center space-x-2">
@@ -130,9 +171,7 @@ export default function WalletSideBar() {
               <Image src={iconPath} alt="Wallet Icon" width={20} height={20} />
             )}
             <span className="items-center pt-1 text-base font-medium text-foreground">
-              {walletAddress
-                ? truncateAddress(walletAddress)
-                : 'No Wallet'}
+              {walletAddress ? truncateAddress(walletAddress) : 'No Wallet'}
             </span>
             <SendIcon />
           </div>
@@ -163,19 +202,17 @@ export default function WalletSideBar() {
               Tokens
             </span>
             {balanceLoading ? (
-              <span className="animate-pulse text-[28px] font-medium text-foreground">
-                Loading...
-              </span>
-            ) : balance ? (
-              <span className="text-[28px] font-medium text-foreground">
-                {parseFloat(balance.token_balance).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}
-              </span>
+              // Sized to the 28px figure it stands in for, so the card doesn't
+              // jump when the number lands.
+              <Skeleton className="h-[34px] w-32" />
             ) : (
-              <span className="text-[28px] font-medium text-foreground">
-                0.00
+              <span
+                className="text-[28px] font-medium text-foreground"
+                title={
+                  tokenBalance == null ? BALANCE_UNAVAILABLE_HINT : undefined
+                }
+              >
+                {formatBalance(tokenBalance, { maximumFractionDigits: 6 })}
               </span>
             )}
           </div>
@@ -184,17 +221,15 @@ export default function WalletSideBar() {
               SOL
             </span>
             {balanceLoading ? (
-              <span className="animate-pulse text-[28px] font-medium text-foreground">
-                Loading...
-              </span>
+              <Skeleton className="h-[34px] w-32" />
             ) : (
-              <span className="text-[28px] font-medium text-foreground">
-                {balance?.balance_sol
-                  ? parseFloat(balance.balance_sol).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 6,
-                  })
-                  : '0.00'}
+              <span
+                className="text-[28px] font-medium text-foreground"
+                title={
+                  solBalance == null ? BALANCE_UNAVAILABLE_HINT : undefined
+                }
+              >
+                {formatBalance(solBalance, { maximumFractionDigits: 6 })}
               </span>
             )}
           </div>
@@ -202,18 +237,19 @@ export default function WalletSideBar() {
         {/* Financial Status - Locked Funds & Energy */}
         {user && (user.locked_amount || user.locked_energy) ? (
           <div className="flex w-full justify-between space-x-4">
-            <div className="flex w-full flex-col space-y-2 rounded-sm bg-yellow-500/10 border border-yellow-500/30 p-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm border border-yellow-500/30 bg-yellow-500/10 p-4">
               <span className="text-sm font-medium text-yellow-500">
                 🔒 Locked (Escrow)
               </span>
               <span className="text-[20px] font-medium text-yellow-400">
-                ฿{(user.locked_amount || 0).toLocaleString(undefined, {
+                ฿
+                {(user.locked_amount || 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </span>
             </div>
-            <div className="flex w-full flex-col space-y-2 rounded-sm bg-blue-500/10 border border-blue-500/30 p-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm border border-blue-500/30 bg-blue-500/10 p-4">
               <span className="text-sm font-medium text-blue-500">
                 ⚡ Locked Energy
               </span>
@@ -221,15 +257,20 @@ export default function WalletSideBar() {
                 {(user.locked_energy || 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })} kWh
+                })}{' '}
+                kWh
               </span>
             </div>
           </div>
         ) : null}
         {/* Active P2P Orders */}
-        {token && (orderCounts.buy > 0 || orderCounts.sell > 0 || activeBuyOrders.length > 0 || activeSellOrders.length > 0) ? (
+        {token &&
+        (orderCounts.buy > 0 ||
+          orderCounts.sell > 0 ||
+          activeBuyOrders.length > 0 ||
+          activeSellOrders.length > 0) ? (
           <div className="flex w-full justify-between space-x-4">
-            <div className="flex w-full flex-col space-y-2 rounded-sm bg-green-500/10 border border-green-500/30 p-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm border border-green-500/30 bg-green-500/10 p-4">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-500" />
                 <span className="text-sm font-medium text-green-500">
@@ -240,7 +281,7 @@ export default function WalletSideBar() {
                 {Math.max(orderCounts.buy, activeBuyOrders.length)}
               </span>
             </div>
-            <div className="flex w-full flex-col space-y-2 rounded-sm bg-red-500/10 border border-red-500/30 p-4">
+            <div className="flex w-full flex-col space-y-2 rounded-sm border border-red-500/30 bg-red-500/10 p-4">
               <div className="flex items-center gap-2">
                 <TrendingDown className="h-4 w-4 text-red-500" />
                 <span className="text-sm font-medium text-red-500">

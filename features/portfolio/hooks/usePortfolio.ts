@@ -15,72 +15,75 @@ import type { Transaction } from '@/types/wallet'
  * Hook for fetching user profile
  */
 export function useProfile() {
-    const { token, isAuthenticated } = useAuth()
-    const apiClient = createApiClient(token || '')
+  const { token, isAuthenticated } = useAuth()
+  const apiClient = createApiClient(token || '')
 
-    return useQuery<UserProfile | null>({
-        queryKey: ['user-profile', token],
-        queryFn: async () => {
-            if (!token) throw new Error('Authentication required')
-            const response = await apiClient.getProfile()
-            if (response.error) throw new Error(response.error)
-            // API returns flat UserResponse (not wrapped in { user: ... })
-            return (response.data as UserProfile) || null
-        },
-        enabled: !!token && isAuthenticated,
-    })
+  return useQuery<UserProfile | null>({
+    queryKey: ['user-profile', token],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required')
+      const response = await apiClient.getProfile()
+      if (response.error) throw new Error(response.error)
+      // API returns flat UserResponse (not wrapped in { user: ... })
+      return (response.data as UserProfile) || null
+    },
+    enabled: !!token && isAuthenticated,
+  })
 }
 
 /**
  * Hook for fetching the user's linked wallets (IAM GET /api/v1/me/wallets).
  */
 export function useWallets() {
-    const { token, isAuthenticated } = useAuth()
-    const apiClient = createApiClient(token || '')
+  const { token, isAuthenticated } = useAuth()
+  const apiClient = createApiClient(token || '')
 
-    return useQuery<import('@/types/features').UserWallet[]>({
-        queryKey: ['user-wallets', token],
-        queryFn: async () => {
-            if (!token) throw new Error('Authentication required')
-            const response = await apiClient.listWallets()
-            if (response.error) throw new Error(response.error)
-            return (response.data as import('@/types/features').UserWallet[]) || []
-        },
-        enabled: !!token && isAuthenticated,
-    })
+  return useQuery<import('@/types/features').UserWallet[]>({
+    queryKey: ['user-wallets', token],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required')
+      const response = await apiClient.listWallets()
+      if (response.error) throw new Error(response.error)
+      return (response.data as import('@/types/features').UserWallet[]) || []
+    },
+    enabled: !!token && isAuthenticated,
+  })
 }
 
 /**
  * Hook for fetching wallet balance
  */
 export function useWalletBalance(walletAddress?: string) {
-    const { token } = useAuth()
-    const apiClient = createApiClient(token || '')
+  const { token } = useAuth()
+  const apiClient = createApiClient(token || '')
 
-    return useQuery<TokenBalance>({
-        queryKey: ['wallet-balance', token, walletAddress],
-        queryFn: async () => {
-            if (!token) throw new Error('Authentication required')
-            if (!walletAddress) throw new Error('Wallet address required')
-            const response = await apiClient.getBalance(walletAddress)
-            if (response.error) throw new Error(response.error)
-            return response.data
-        },
-        enabled: !!token && !!walletAddress,
-        refetchInterval: 10000,
-    })
+  return useQuery<TokenBalance>({
+    queryKey: ['wallet-balance', token, walletAddress],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required')
+      if (!walletAddress) throw new Error('Wallet address required')
+      const response = await apiClient.getBalance(walletAddress)
+      if (response.error) throw new Error(response.error)
+      // See useWalletBalance: `data` is optional, so a bodyless 200 would
+      // resolve the query to `undefined` against a non-optional type.
+      if (!response.data) throw new Error('Balance response contained no data')
+      return response.data
+    },
+    enabled: !!token && !!walletAddress,
+    refetchInterval: 10000,
+  })
 }
 
 /** Shape returned by GET /api/v1/markets/price (all prices are decimal strings). */
 export interface MarketPrice {
-    vwap: string
-    last_price: string
-    high: string
-    low: string
-    volume_kwh: string
-    trade_count: number
-    window_hours: number
-    as_of: string
+  vwap: string
+  last_price: string
+  high: string
+  low: string
+  volume_kwh: string
+  trade_count: number
+  window_hours: number
+  as_of: string
 }
 
 /**
@@ -90,20 +93,19 @@ export interface MarketPrice {
  * yet" (every price field is "0"); callers should fall back, not render 0.
  */
 export function useMarketPrice(windowHours = 24, enabled = true) {
-    const { token } = useAuth()
-    const apiClient = createApiClient(token || '')
+  const { token } = useAuth()
+  const apiClient = createApiClient(token || '')
 
-    return useQuery<MarketPrice>({
-        queryKey: ['market-price', token, windowHours],
-        queryFn: async () => {
-            if (!token) throw new Error('Authentication required')
-            const response = await apiClient.getMarketPrice(windowHours)
-            if (response.error) throw new Error(response.error)
-            if (!response.data) throw new Error('No market price returned')
-            return response.data
-        },
-        enabled: !!token && enabled,
-        refetchInterval: 15000,
-    })
+  return useQuery<MarketPrice>({
+    queryKey: ['market-price', token, windowHours],
+    queryFn: async () => {
+      if (!token) throw new Error('Authentication required')
+      const response = await apiClient.getMarketPrice(windowHours)
+      if (response.error) throw new Error(response.error)
+      if (!response.data) throw new Error('No market price returned')
+      return response.data
+    },
+    enabled: !!token && enabled,
+    refetchInterval: 15000,
+  })
 }
-

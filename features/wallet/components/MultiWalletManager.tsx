@@ -1,15 +1,15 @@
 'use client'
-
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import type { UserWallet } from '@/types/features'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Link2, Trash2, Star, Plus, ShieldCheck } from 'lucide-react'
+import { Link2, Trash2, Star, Plus, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWallet } from '@solana/wallet-adapter-react'
 import toast from 'react-hot-toast'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function MultiWalletManager() {
   const { token } = useAuth()
@@ -109,7 +109,7 @@ export default function MultiWalletManager() {
   if (loading && wallets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center space-y-2 py-12 opacity-50">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Spinner className="h-6 w-6 text-primary" />
         <span className="text-sm">Loading linked wallets...</span>
       </div>
     )
@@ -144,7 +144,7 @@ export default function MultiWalletManager() {
             className="gap-2"
           >
             {actionLoading === 'link' ? (
-              <Loader2 size={14} className="animate-spin" />
+              <Spinner size={14} />
             ) : (
               <Plus size={14} />
             )}
@@ -167,7 +167,7 @@ export default function MultiWalletManager() {
                   'flex flex-col rounded-sm border p-4 transition-all',
                   w.is_primary
                     ? 'border-primary/40 bg-primary/5'
-                    : 'hover:border-border/80 bg-background'
+                    : 'bg-background hover:border-border/80'
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -210,7 +210,7 @@ export default function MultiWalletManager() {
                         title="Set as Primary"
                       >
                         {actionLoading === `primary-${w.id}` ? (
-                          <Loader2 size={12} className="animate-spin" />
+                          <Spinner size={12} />
                         ) : (
                           <Star size={14} />
                         )}
@@ -225,14 +225,14 @@ export default function MultiWalletManager() {
                       title="Remove Wallet"
                     >
                       {actionLoading === `remove-${w.id}` ? (
-                        <Loader2 size={12} className="animate-spin" />
+                        <Spinner size={12} />
                       ) : (
                         <Trash2 size={14} />
                       )}
                     </Button>
                   </div>
                 </div>
-                <div className="border-border/10 text-muted-foreground/60 mt-3 flex items-center justify-between border-t pt-3 text-[10px]">
+                <div className="mt-3 flex items-center justify-between border-t border-border/10 pt-3 text-[10px] text-muted-foreground/60">
                   <span>
                     Linked on {new Date(w.created_at).toLocaleDateString()}
                   </span>
@@ -241,11 +241,11 @@ export default function MultiWalletManager() {
             ))}
           </div>
         ) : (
-          <div className="bg-muted/5 flex flex-col items-center justify-center rounded-sm border border-dashed py-10 text-center">
+          <div className="flex flex-col items-center justify-center rounded-sm border border-dashed bg-muted/5 py-10 text-center">
             <p className="text-sm font-medium text-muted-foreground">
               No wallets linked yet
             </p>
-            <p className="text-muted-foreground/60 mt-1 text-xs">
+            <p className="mt-1 text-xs text-muted-foreground/60">
               Link your wallets to manage them across devices.
             </p>
           </div>

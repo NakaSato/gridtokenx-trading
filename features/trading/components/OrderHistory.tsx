@@ -1,19 +1,18 @@
 'use client'
-
 import { Transaction } from '@/types/wallet'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Copy, Download, FileDown, Loader2 } from 'lucide-react'
+import { Copy, Download, FileDown } from 'lucide-react'
 import { useState, memo } from 'react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
+import { Spinner } from '@/components/ui/spinner'
 
 /** Grid template shared by the desktop header and rows so they can't drift. */
-const GRID_COLS =
-  'grid-cols-[1.5fr_0.7fr_0.9fr_1fr_1.3fr_1fr]'
+const GRID_COLS = 'grid-cols-[1.5fr_0.7fr_0.9fr_1fr_1.3fr_1fr]'
 
 function SideChip({ side }: { side: string }) {
   const isBuy = side === 'Buy'
@@ -50,19 +49,32 @@ export default memo(function OrderHistory({
         toast.error(`Export failed: ${response.error}`)
       } else if (response.data == null) {
         toast.error('Export failed: empty response')
-      } else if (typeof response.data === 'string' && response.data.trim() === '') {
+      } else if (
+        typeof response.data === 'string' &&
+        response.data.trim() === ''
+      ) {
         // 200 with an empty CSV body — nothing to download, but don't go silent
         toast('No trade history to export')
       } else {
         // csv arrives as raw text, json as a parsed array — serialize either into a Blob
         const blob = new Blob(
-          [typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2)],
-          { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json' }
+          [
+            typeof response.data === 'string'
+              ? response.data
+              : JSON.stringify(response.data, null, 2),
+          ],
+          {
+            type:
+              format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json',
+          }
         )
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.setAttribute('download', `trade-history-${new Date().toISOString().split('T')[0]}.${format}`)
+        link.setAttribute(
+          'download',
+          `trade-history-${new Date().toISOString().split('T')[0]}.${format}`
+        )
         document.body.appendChild(link)
         link.click()
         link.parentNode?.removeChild(link)
@@ -106,7 +118,7 @@ export default memo(function OrderHistory({
             disabled={!!exporting}
           >
             {exporting === 'csv' ? (
-              <Loader2 size={11} className="animate-spin text-primary" />
+              <Spinner size={11} className="text-primary" />
             ) : (
               <Download size={11} className="text-muted-foreground" />
             )}
@@ -120,7 +132,7 @@ export default memo(function OrderHistory({
             disabled={!!exporting}
           >
             {exporting === 'json' ? (
-              <Loader2 size={11} className="animate-spin text-primary" />
+              <Spinner size={11} className="text-primary" />
             ) : (
               <FileDown size={11} className="text-muted-foreground" />
             )}
@@ -137,12 +149,24 @@ export default memo(function OrderHistory({
             GRID_COLS
           )}
         >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Asset & ID</span>
-          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Side</span>
-          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Volume</span>
-          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Price</span>
-          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Delivered / Fees</span>
-          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Time</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Asset & ID
+          </span>
+          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Side
+          </span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Volume
+          </span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Price
+          </span>
+          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Delivered / Fees
+          </span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Time
+          </span>
         </div>
 
         <div className="divide-y divide-border/50">
@@ -168,7 +192,9 @@ export default memo(function OrderHistory({
                     {tx.token.name}
                   </span>
                   <span className="flex items-center gap-1 font-mono text-[9px] text-muted-foreground">
-                    <span className="truncate">{tx.transactionID.slice(0, 12)}…</span>
+                    <span className="truncate">
+                      {tx.transactionID.slice(0, 12)}…
+                    </span>
                     <button
                       aria-label="Copy transaction ID"
                       className="opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
@@ -188,14 +214,18 @@ export default memo(function OrderHistory({
               {/* Volume */}
               <div className="text-right font-mono font-semibold text-foreground">
                 {tx.quantity?.toFixed(2) ?? '0.00'}
-                <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">kWh</span>
+                <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
+                  kWh
+                </span>
               </div>
 
               {/* Price (was missing entirely from the old table) */}
               <div className="flex flex-col items-end">
                 <span className="font-mono font-semibold text-foreground">
                   ฿{tx.strikePrice.toFixed(2)}
-                  <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">/kWh</span>
+                  <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
+                    /kWh
+                  </span>
                 </span>
                 {tx.totalValue != null && (
                   <span className="font-mono text-[9px] text-muted-foreground">
@@ -210,7 +240,9 @@ export default memo(function OrderHistory({
                   {(tx.effectiveEnergy ?? tx.quantity)?.toFixed(2) ?? '—'}
                 </span>
                 <span className="font-mono text-xs tabular-nums text-amber-500">
-                  {tx.wheelingCharge != null ? `฿${tx.wheelingCharge.toFixed(2)}` : '—'}
+                  {tx.wheelingCharge != null
+                    ? `฿${tx.wheelingCharge.toFixed(2)}`
+                    : '—'}
                 </span>
               </div>
 
@@ -255,27 +287,37 @@ export default memo(function OrderHistory({
 
             <div className="grid grid-cols-4 gap-2 border-y border-border/50 py-2">
               <div className="flex flex-col">
-                <span className="text-[9px] font-medium uppercase text-muted-foreground">Volume</span>
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">
+                  Volume
+                </span>
                 <span className="font-mono text-xs font-semibold">
                   {tx.quantity?.toFixed(1) ?? '0.0'}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-medium uppercase text-muted-foreground">Price</span>
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">
+                  Price
+                </span>
                 <span className="font-mono text-xs font-semibold">
                   ฿{tx.strikePrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-medium uppercase text-muted-foreground">Delivered</span>
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">
+                  Delivered
+                </span>
                 <span className="font-mono text-xs font-semibold text-emerald-500">
                   {(tx.effectiveEnergy ?? tx.quantity)?.toFixed(1) ?? '—'}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-medium uppercase text-muted-foreground">Fees</span>
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">
+                  Fees
+                </span>
                 <span className="font-mono text-xs font-semibold text-amber-500">
-                  {tx.wheelingCharge != null ? `฿${tx.wheelingCharge.toFixed(1)}` : '—'}
+                  {tx.wheelingCharge != null
+                    ? `฿${tx.wheelingCharge.toFixed(1)}`
+                    : '—'}
                 </span>
               </div>
             </div>

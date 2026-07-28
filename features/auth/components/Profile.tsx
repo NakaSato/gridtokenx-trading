@@ -6,13 +6,14 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { User, Upload, Copy, Check, Loader2 } from 'lucide-react'
+import { User, Upload, Copy, Check } from 'lucide-react'
 import Image from 'next/image'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/features/auth/provider'
 import { useApiClient } from '@/lib/api/useApiClient'
 import type { UserProfile } from '@/types/auth'
 import toast from 'react-hot-toast'
+import { Spinner } from '@/components/ui/spinner'
 
 interface TradingStats {
   totalTrades: number
@@ -21,7 +22,17 @@ interface TradingStats {
   totalPnl: string
 }
 
-export default function Profile() {
+interface ProfileProps {
+  /**
+   * Controlled mode, used by the account menu: pass `open`/`onOpenChange` and
+   * the built-in trigger is dropped, since the menu item is the trigger.
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export default function Profile({ open, onOpenChange }: ProfileProps = {}) {
+  const isControlled = open !== undefined
   const { publicKey, connected } = useWallet()
   const { user: authUser, isAuthenticated, token } = useAuth()
   const client = useApiClient(token || undefined)
@@ -31,7 +42,7 @@ export default function Profile() {
     totalTrades: 0,
     totalVolume: '0 kWh',
     winRate: '0%',
-    totalPnl: '+0 THB'
+    totalPnl: '+0 THB',
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -74,18 +85,22 @@ export default function Profile() {
       const statsResponse = await client.getUserAnalytics({ timeframe: '7d' })
       if (statsResponse.data) {
         const s = statsResponse.data
-        const totalCreated = (s.as_seller?.offers_created || 0) + (s.as_buyer?.orders_created || 0)
-        const totalFulfilled = (s.as_seller?.offers_fulfilled || 0) + (s.as_buyer?.orders_fulfilled || 0)
-        const winRate = totalCreated > 0
-          ? ((totalFulfilled / totalCreated) * 100).toFixed(1)
-          : '0.0'
+        const totalCreated =
+          (s.as_seller?.offers_created || 0) + (s.as_buyer?.orders_created || 0)
+        const totalFulfilled =
+          (s.as_seller?.offers_fulfilled || 0) +
+          (s.as_buyer?.orders_fulfilled || 0)
+        const winRate =
+          totalCreated > 0
+            ? ((totalFulfilled / totalCreated) * 100).toFixed(1)
+            : '0.0'
 
         const netRevenue = s.overall?.net_revenue_usd || 0
         setStats({
           totalTrades: s.overall?.total_transactions || 0,
           totalVolume: `${(s.overall?.total_volume_kwh || 0).toLocaleString()} kWh`,
           winRate: `${winRate}%`,
-          totalPnl: `${netRevenue >= 0 ? '+' : ''}${netRevenue.toLocaleString()} THB`
+          totalPnl: `${netRevenue >= 0 ? '+' : ''}${netRevenue.toLocaleString()} THB`,
         })
       }
     } catch (error) {
@@ -139,15 +154,17 @@ export default function Profile() {
   }
 
   return (
-    <Dialog>
-      <DialogTrigger className="hidden sm:flex">
-        <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
-          <User className="h-4 w-4" />
-        </div>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!isControlled && (
+        <DialogTrigger className="hidden sm:flex">
+          <div className="rounded-sm bg-secondary p-[9px] text-foreground hover:text-primary">
+            <User className="h-4 w-4" />
+          </div>
+        </DialogTrigger>
+      )}
       <DialogContent className="flex w-[520px] flex-col border-none bg-accent p-5 sm:rounded-sm">
         <DialogTitle className="text-base font-medium text-foreground">
-          Profile {isLoading && <Loader2 className="inline ml-2 h-4 w-4 animate-spin" />}
+          Profile {isLoading && <Spinner className="ml-2 inline h-4 w-4" />}
         </DialogTitle>
         <Separator className="bg-secondary" />
         <div className="flex w-full flex-col space-y-5">
@@ -190,19 +207,21 @@ export default function Profile() {
           {/* Wallet Address */}
           {(profile?.wallet_address || (connected && publicKey)) && (
             <div className="flex w-full flex-col space-y-[14px]">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium text-foreground">
                   Wallet Address
                 </Label>
                 {meterZone !== null && (
-                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
                     Zone {meterZone}
                   </span>
                 )}
               </div>
               <div className="flex items-center justify-between rounded-sm border bg-secondary px-3 py-2">
                 <span className="font-mono text-xs text-foreground">
-                  {shortenAddress(profile?.wallet_address || publicKey!.toBase58())}
+                  {shortenAddress(
+                    profile?.wallet_address || publicKey!.toBase58()
+                  )}
                 </span>
                 <Button
                   variant="ghost"
@@ -237,7 +256,9 @@ export default function Profile() {
           {/* Display Name */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex w-full flex-col space-y-[14px]">
-              <Label className="text-xs font-medium text-foreground">First Name</Label>
+              <Label className="text-xs font-medium text-foreground">
+                First Name
+              </Label>
               <Input
                 type="text"
                 value={firstName}
@@ -247,7 +268,9 @@ export default function Profile() {
               />
             </div>
             <div className="flex w-full flex-col space-y-[14px]">
-              <Label className="text-xs font-medium text-foreground">Last Name</Label>
+              <Label className="text-xs font-medium text-foreground">
+                Last Name
+              </Label>
               <Input
                 type="text"
                 value={lastName}
@@ -304,13 +327,14 @@ export default function Profile() {
                 <span className="text-xs text-secondary-foreground">
                   Net Revenue
                 </span>
-                <span className={`text-base font-semibold ${stats.totalPnl.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+                <span
+                  className={`text-base font-semibold ${stats.totalPnl.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}
+                >
                   {stats.totalPnl}
                 </span>
               </div>
             </div>
           </div>
-
         </div>
       </DialogContent>
     </Dialog>

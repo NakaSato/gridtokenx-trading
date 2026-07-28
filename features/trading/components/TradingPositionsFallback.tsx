@@ -1,5 +1,6 @@
 import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
 import WalletModal from '@/features/auth/components/WalletModal'
@@ -22,11 +23,8 @@ export default function TradingPositionsFallback() {
     <div className="flex h-full min-h-[250px] w-full flex-col rounded-lg border">
       <div className="border-b bg-muted/20 px-3 py-2 md:px-4">
         <div className="flex w-full items-center justify-between">
-          <Tabs
-            defaultValue="Positions"
-            className="h-6"
-          >
-            <TabsList className="h-full bg-secondary/50 p-0.5 gap-0.5 rounded-md">
+          <Tabs defaultValue="Positions" className="h-6">
+            <TabsList className="h-full gap-0.5 rounded-md bg-secondary/50 p-0.5">
               <TabsTrigger
                 value="Positions"
                 className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
@@ -108,13 +106,11 @@ export default function TradingPositionsFallback() {
           </span>
 
           {isLoading ? (
-            <div className="animate-pulse">
-              <div className="h-9 w-32 rounded bg-muted"></div>
-            </div>
+            <Skeleton className="h-9 w-32 rounded bg-muted" />
           ) : isAuthenticated && !connected ? (
             <Button
               onClick={() => setIsWalletModalOpen(true)}
-              className="rounded-sm bg-primary text-background hover:bg-gradient-primary gap-2"
+              className="gap-2 rounded-sm bg-primary text-background hover:bg-gradient-primary"
             >
               <WalletIcon />
               <span className="text-sm font-semibold">Connect Wallet</span>
@@ -122,7 +118,7 @@ export default function TradingPositionsFallback() {
           ) : connected && !isAuthenticated ? (
             <Button
               onClick={() => setIsWalletModalOpen(true)}
-              className="rounded-sm bg-primary text-background hover:bg-gradient-primary gap-2"
+              className="gap-2 rounded-sm bg-primary text-background hover:bg-gradient-primary"
             >
               <WalletIcon />
               <span className="text-sm font-semibold">Sign In</span>
@@ -130,7 +126,7 @@ export default function TradingPositionsFallback() {
           ) : (
             <Button
               onClick={() => setIsWalletModalOpen(true)}
-              className="rounded-sm bg-primary text-background hover:bg-gradient-primary gap-2"
+              className="gap-2 rounded-sm bg-primary text-background hover:bg-gradient-primary"
             >
               <WalletIcon />
               <span className="text-sm font-semibold">Connect Wallet</span>

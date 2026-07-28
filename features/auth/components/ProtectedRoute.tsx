@@ -4,6 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/features/auth/provider'
 import { useRouter } from 'next/navigation'
 import React, { useEffect } from 'react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -29,7 +30,8 @@ export default function ProtectedRoute({
   // Check authentication requirements
   const needsAuth = requireAuth && !isAuthenticated
   const needsWallet = requireWallet && !connected && !isAuthenticated
-  const isUnauthorized = allowedRoles && user && !allowedRoles.includes(user.role)
+  const isUnauthorized =
+    allowedRoles && user && !allowedRoles.includes(user.role)
 
   // Redirect to index if not authenticated or not authorized (after loading completes)
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function ProtectedRoute({
   if (authLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <Spinner className="h-8 w-8 text-primary" />
       </div>
     )
   }
@@ -60,9 +62,7 @@ export default function ProtectedRoute({
     // Show redirecting message while navigating to index
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="mb-4 animate-spin">
-          <div className="h-8 w-8 rounded-full border-b-2 border-primary"></div>
-        </div>
+        <Spinner className="mb-4 h-8 w-8 text-primary" />
         <p className="text-muted-foreground">{message}</p>
       </div>
     )

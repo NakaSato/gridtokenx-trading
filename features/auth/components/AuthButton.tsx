@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/provider'
 import SignIn from '@/features/auth/components/SignIn'
 import SignOut from '@/features/auth/components/SignOut'
 import AuthModalManager from '@/features/auth/components/AuthModalManager'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface AuthButtonProps {
   signInVariant?: 'default' | 'outline' | 'ghost'
@@ -33,8 +34,10 @@ export default function AuthButton({
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className={`animate-pulse ${className}`}>
-        <div className="h-9 w-24 rounded bg-muted"></div>
+      // className is the caller's button sizing, so it stays on the wrapper —
+      // the skeleton keeps the button's own footprint.
+      <div className={className}>
+        <Skeleton className="h-9 w-24 rounded bg-muted" />
       </div>
     )
   }

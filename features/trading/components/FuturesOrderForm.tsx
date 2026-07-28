@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,13 +13,13 @@ import {
   Info,
   AlertTriangle,
   ArrowRightLeft,
-  ShieldAlert
+  ShieldAlert,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import { toast } from 'react-hot-toast'
-import { Loader2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 
 interface FuturesOrderFormProps {
   productId: string
@@ -33,7 +32,7 @@ export function FuturesOrderForm({
   productId,
   symbol,
   currentPrice,
-  onOrderCreated
+  onOrderCreated,
 }: FuturesOrderFormProps) {
   const { token } = useAuth()
   const [side, setSide] = useState<'long' | 'short'>('long')
@@ -63,9 +62,9 @@ export function FuturesOrderForm({
     // maintenance margin assumed at 5%
     const mm = 0.05
     if (side === 'long') {
-      return numericPrice * (1 - (1 / leverage) + mm)
+      return numericPrice * (1 - 1 / leverage + mm)
     } else {
-      return numericPrice * (1 + (1 / leverage) - mm)
+      return numericPrice * (1 + 1 / leverage - mm)
     }
   }, [numericPrice, leverage, side])
 
@@ -90,7 +89,7 @@ export function FuturesOrderForm({
         order_type: orderType,
         quantity: numericQuantity,
         price: numericPrice,
-        leverage
+        leverage,
       })
 
       if (response.error) {
@@ -109,19 +108,19 @@ export function FuturesOrderForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 p-1 bg-muted/50 rounded-lg">
+      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-1">
         <Button
           type="button"
           variant="ghost"
           onClick={() => setSide('long')}
           className={cn(
-            "h-10 rounded-md transition-all",
+            'h-10 rounded-md transition-all',
             side === 'long'
-              ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? 'bg-green-500 text-white shadow-sm hover:bg-green-600'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <TrendingUp className="w-4 h-4 mr-2" />
+          <TrendingUp className="mr-2 h-4 w-4" />
           Buy / Long
         </Button>
         <Button
@@ -129,13 +128,13 @@ export function FuturesOrderForm({
           variant="ghost"
           onClick={() => setSide('short')}
           className={cn(
-            "h-10 rounded-md transition-all",
+            'h-10 rounded-md transition-all',
             side === 'short'
-              ? "bg-red-500 text-white hover:bg-red-600 shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <TrendingDown className="w-4 h-4 mr-2" />
+          <TrendingDown className="mr-2 h-4 w-4" />
           Sell / Short
         </Button>
       </div>
@@ -146,8 +145,10 @@ export function FuturesOrderForm({
             type="button"
             onClick={() => setOrderType('market')}
             className={cn(
-              "text-xs font-bold uppercase tracking-wider pb-1 transition-colors",
-              orderType === 'market' ? "text-primary border-b-2 border-primary" : "text-muted-foreground"
+              'pb-1 text-xs font-bold uppercase tracking-wider transition-colors',
+              orderType === 'market'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground'
             )}
           >
             Market
@@ -156,8 +157,10 @@ export function FuturesOrderForm({
             type="button"
             onClick={() => setOrderType('limit')}
             className={cn(
-              "text-xs font-bold uppercase tracking-wider pb-1 transition-colors",
-              orderType === 'limit' ? "text-primary border-b-2 border-primary" : "text-muted-foreground"
+              'pb-1 text-xs font-bold uppercase tracking-wider transition-colors',
+              orderType === 'limit'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground'
             )}
           >
             Limit
@@ -165,9 +168,11 @@ export function FuturesOrderForm({
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center px-1">
+          <div className="flex items-center justify-between px-1">
             <Label className="text-xs text-muted-foreground">Price</Label>
-            <span className="text-[10px] text-muted-foreground font-mono">USDC</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              USDC
+            </span>
           </div>
           <div className="relative">
             <Input
@@ -175,34 +180,41 @@ export function FuturesOrderForm({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={orderType === 'market'}
-              className="bg-muted/30 border-none font-mono text-sm h-10"
+              className="h-10 border-none bg-muted/30 font-mono text-sm"
             />
             {orderType === 'market' && (
-              <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
-                <span className="text-sm font-mono text-muted-foreground">Market Price</span>
+              <div className="pointer-events-none absolute inset-0 flex items-center px-3">
+                <span className="font-mono text-sm text-muted-foreground">
+                  Market Price
+                </span>
               </div>
             )}
           </div>
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center px-1">
+          <div className="flex items-center justify-between px-1">
             <Label className="text-xs text-muted-foreground">Amount</Label>
-            <span className="text-[10px] text-muted-foreground font-mono">kWh</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              kWh
+            </span>
           </div>
           <Input
             type="number"
             placeholder="0.00"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="bg-muted/30 border-none font-mono text-sm h-10"
+            className="h-10 border-none bg-muted/30 font-mono text-sm"
           />
         </div>
 
         <div className="space-y-4 pt-2">
-          <div className="flex justify-between items-center px-1">
+          <div className="flex items-center justify-between px-1">
             <Label className="text-xs text-muted-foreground">Leverage</Label>
-            <Badge variant="outline" className="font-mono text-primary bg-primary/5 border-primary/20">
+            <Badge
+              variant="outline"
+              className="border-primary/20 bg-primary/5 font-mono text-primary"
+            >
               {leverage}x
             </Badge>
           </div>
@@ -214,7 +226,7 @@ export function FuturesOrderForm({
             onValueChange={([val]) => setLeverage(val)}
             className="py-2"
           />
-          <div className="flex justify-between px-1 text-[10px] text-muted-foreground font-medium">
+          <div className="flex justify-between px-1 text-[10px] font-medium text-muted-foreground">
             <span>1x</span>
             <span>10x</span>
             <span>25x</span>
@@ -223,17 +235,21 @@ export function FuturesOrderForm({
         </div>
       </div>
 
-      <div className="p-3 bg-muted/30 rounded-xl space-y-2 border border-dashed border-border/50">
+      <div className="space-y-2 rounded-xl border border-dashed border-border/50 bg-muted/30 p-3">
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">Margin Required</span>
-          <span className="font-mono font-bold">฿{marginRequirement.toFixed(2)}</span>
+          <span className="font-mono font-bold">
+            ฿{marginRequirement.toFixed(2)}
+          </span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">Liquidation Price</span>
-          <span className={cn(
-            "font-mono font-bold",
-            side === 'long' ? "text-red-500" : "text-green-500"
-          )}>
+          <span
+            className={cn(
+              'font-mono font-bold',
+              side === 'long' ? 'text-red-500' : 'text-green-500'
+            )}
+          >
             ฿{liquidationPrice.toFixed(2)}
           </span>
         </div>
@@ -249,20 +265,21 @@ export function FuturesOrderForm({
         type="submit"
         disabled={loading}
         className={cn(
-          "w-full h-12 text-sm font-bold uppercase tracking-wider shadow-lg",
+          'h-12 w-full text-sm font-bold uppercase tracking-wider shadow-lg',
           side === 'long'
-            ? "bg-green-500 hover:bg-green-600"
-            : "bg-red-500 hover:bg-red-600"
+            ? 'bg-green-500 hover:bg-green-600'
+            : 'bg-red-500 hover:bg-red-600'
         )}
       >
-        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        {loading && <Spinner className="mr-2 h-4 w-4" />}
         {side === 'long' ? 'Open Long Position' : 'Open Short Position'}
       </Button>
 
-      <div className="flex items-center gap-2 p-2 bg-yellow-500/5 rounded-lg border border-yellow-500/10">
-        <ShieldAlert className="w-4 h-4 text-yellow-500 shrink-0" />
-        <p className="text-[10px] text-yellow-600 leading-tight">
-          Futures involve high risk. Leverage can lead to complete loss of margin. Use with caution.
+      <div className="flex items-center gap-2 rounded-lg border border-yellow-500/10 bg-yellow-500/5 p-2">
+        <ShieldAlert className="h-4 w-4 shrink-0 text-yellow-500" />
+        <p className="text-[10px] leading-tight text-yellow-600">
+          Futures involve high risk. Leverage can lead to complete loss of
+          margin. Use with caution.
         </p>
       </div>
     </form>

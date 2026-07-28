@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,6 @@ import {
   X as XMark,
   AlertTriangle,
   Mail,
-  Loader2,
 } from 'lucide-react'
 import {
   Dialog,
@@ -49,6 +47,7 @@ import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStreng
 import { useAuth } from '@/features/auth/provider'
 import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 import { useResendVerification } from '@/features/auth/lib/useResendVerification'
+import { Spinner } from '@/components/ui/spinner'
 
 export { allWallets }
 
@@ -56,10 +55,6 @@ interface WalletModalProps {
   isOpen: boolean
   onClose: () => void
 }
-
-
-
-
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter()
@@ -102,7 +97,6 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
       onClose()
     }
   }, [isAuthenticated, isOpen, onClose])
-
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -378,7 +372,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                         >
                           {isResendingVerification ? (
                             <>
-                              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                              <Spinner className="mr-1 h-4 w-4" />
                               Sending...
                             </>
                           ) : (

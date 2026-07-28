@@ -11,11 +11,11 @@ import {
   ChartLine,
   ExternalLink,
   Leaf,
+  Menu as MenuIcon,
   MessagesSquare,
   PanelBottom,
   PanelLeft,
   PanelRight,
-  ShieldCheck,
   TrendingUp,
 } from 'lucide-react'
 
@@ -23,7 +23,6 @@ import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
 import { useAuth } from '@/features/auth/provider'
 import { useSidebar } from '@/components/shared/SidebarContext'
-import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -34,17 +33,23 @@ import {
 } from '@/components/ui/dropdown-menu'
 import AuthButton from '@/features/auth/components/AuthButton'
 import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
-import { Logo } from '@/components/shared/Logo'
+import { Logo, LogoWordmark } from '@/components/shared/Logo'
 import dynamic from 'next/dynamic'
 import NavBarMobile from '@/components/shared/NavBarMobile'
 import { NetworkStatus } from '@/components/shared/NetworkStatus'
 
 // Dynamic Imports for Header Performance
-const WalletSideBar = dynamic(() => import('@/features/wallet/components/WalletSidebar'), { ssr: false })
-const Settings = dynamic(() => import('@/components/shared/Settings'), { ssr: false })
-const Profile = dynamic(() => import('@/features/auth/components/Profile'), { ssr: false })
-const Notifications = dynamic(() => import('@/features/notifications/components/Notifications'), { ssr: false })
-const PointsDropDown = dynamic(() => import('@/components/shared/PointsDropDown'), { ssr: false })
+const WalletSideBar = dynamic(
+  () => import('@/features/wallet/components/WalletSidebar'),
+  { ssr: false }
+)
+const Notifications = dynamic(
+  () => import('@/features/notifications/components/Notifications'),
+  { ssr: false }
+)
+const AccountMenu = dynamic(() => import('@/components/shared/AccountMenu'), {
+  ssr: false,
+})
 
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'
@@ -149,7 +154,13 @@ const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
 const SOCIAL_LINKS: SocialLink[] = [
   { name: 'X (Twitter)', href: EXTERNAL_LINKS.twitter, icon: x },
   { name: 'Telegram', href: EXTERNAL_LINKS.telegram, icon: telegram },
-  { name: 'Medium', href: EXTERNAL_LINKS.medium, icon: medium, width: 18, height: 18 },
+  {
+    name: 'Medium',
+    href: EXTERNAL_LINKS.medium,
+    icon: medium,
+    width: 18,
+    height: 18,
+  },
   { name: 'YouTube', href: EXTERNAL_LINKS.youtube, icon: yt },
   { name: 'Discord', href: EXTERNAL_LINKS.discord, icon: discord },
 ]
@@ -161,28 +172,34 @@ const SOCIAL_LINKS: SocialLink[] = [
 interface NavLinkProps {
   item: NavItem
   isActive: boolean
-  onClick: () => void
 }
 
-function NavLink({ item, isActive, onClick }: NavLinkProps) {
-  const { name, href, icon, badge, hideOnMobile } = item
+function NavLink({ item, isActive }: NavLinkProps) {
+  const { name, href, icon, badge } = item
 
   return (
     <Link
       href={href}
+      // Rendered only from 2xl, where six labelled items plus the brand and the
+      // right-hand controls measurably fit (~1500px of header). Below that the
+      // tablet dropdown carries these same entries. Badges wait for the custom
+      // `desktop` (1800px) screen.
+      title={name}
       className={cn(
-        buttonVariants({
-          variant: isActive ? 'active' : 'inactive',
-        }),
-        'group flex h-auto w-auto justify-between gap-1 p-0 hover:text-primary',
-        hideOnMobile && 'hidden lg:flex'
+        'group flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-sm font-medium transition-colors',
+        isActive
+          ? 'bg-secondary/60 text-primary'
+          : 'text-secondary-foreground hover:bg-secondary/40 hover:text-foreground'
       )}
-      onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
     >
       {icon}
-      <h1 className="text-sm font-medium group-hover:text-primary">{name}</h1>
-      {badge && <NavBadge badge={badge} isActive={isActive} />}
+      <span>{name}</span>
+      {badge && (
+        <span className="hidden 2xl:flex">
+          <NavBadge badge={badge} isActive={isActive} />
+        </span>
+      )}
     </Link>
   )
 }
@@ -197,8 +214,10 @@ function NavBadge({ badge, isActive }: NavBadgeProps) {
 
   if (variant === 'apy') {
     return (
-      <Badge className="h-3 rounded-[2px] border-none bg-gradient-primary px-1 pt-[3px]">
-        <span className="text-[8px] font-semibold text-background">{text}</span>
+      <Badge className="flex h-4 items-center rounded-[3px] border-none bg-gradient-primary px-1">
+        <span className="text-[8px] font-semibold leading-none text-background">
+          {text}
+        </span>
       </Badge>
     )
   }
@@ -208,12 +227,39 @@ function NavBadge({ badge, isActive }: NavBadgeProps) {
       className={cn(
         isActive
           ? 'text-gradient-primary border-primary'
-          : 'border-secondary-foreground text-secondary-foreground',
-        'flex h-3 rounded-[2px] border bg-transparent px-1 pt-[3px] text-center group-hover:border-primary group-hover:text-primary'
+          : 'border-secondary-foreground/60 text-secondary-foreground',
+        'flex h-4 items-center rounded-[3px] border bg-transparent px-1 group-hover:border-primary group-hover:text-primary'
       )}
     >
-      <span className="text-[8px] font-semibold">{text}</span>
+      <span className="text-[8px] font-semibold leading-none">{text}</span>
     </Badge>
+  )
+}
+
+interface PanelToggleProps {
+  shown: boolean
+  onToggle: () => void
+  label: string
+  children: ReactNode
+}
+
+/** One segmented-group button per layout panel; pressed = panel visible. */
+function PanelToggle({ shown, onToggle, label, children }: PanelToggleProps) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-pressed={shown}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'flex h-7 w-7 items-center justify-center rounded-[5px] transition-colors',
+        shown
+          ? 'bg-secondary text-primary shadow-inner'
+          : 'text-secondary-foreground hover:bg-secondary/50 hover:text-foreground'
+      )}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -224,91 +270,139 @@ function NavBadge({ badge, isActive }: NavBadgeProps) {
 export default function NavBar() {
   const pathname = usePathname()
   const { connected } = useWallet()
-  const { isAuthenticated, user } = useAuth()
-  const { showLeftSidebar, showRightSidebar, showPositionsPanel, toggleLeftSidebar, toggleRightSidebar, togglePositionsPanel } = useSidebar()
+  const { isAuthenticated } = useAuth()
+  const {
+    showLeftSidebar,
+    showRightSidebar,
+    showPositionsPanel,
+    toggleLeftSidebar,
+    toggleRightSidebar,
+    togglePositionsPanel,
+  } = useSidebar()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [activeItem, setActiveItem] = useState<string>('')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  // Derive active state from pathname
+  const visibleNavItems = useMemo(
+    () => NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated),
+    [isAuthenticated]
+  )
+
+  // Derive active state from pathname: exact match first, then the longest
+  // route prefix so nested routes (/futures/abc) keep their tab lit. Unknown
+  // routes highlight nothing — they used to fall back to "Trade".
   const activeRoute = useMemo(() => {
     if (!pathname) return 'Trade'
 
-    // Check exact matches first
-    const exactMatch = NAV_ITEMS.find((item) => item.href === pathname)
+    const routes = [
+      ...NAV_ITEMS.map((item) => ({ name: item.name, href: item.href })),
+      ...DROPDOWN_EXTERNAL_ITEMS.map((item) => ({
+        name: item.name,
+        href: item.link,
+      })),
+    ]
+
+    const exactMatch = routes.find((route) => route.href === pathname)
     if (exactMatch) return exactMatch.name
 
-    // Check dropdown items
-    const dropdownMatch = [...DROPDOWN_EXTERNAL_ITEMS].find(
-      (item) => item.link === pathname
-    )
-    if (dropdownMatch) return dropdownMatch.name
+    const prefixMatch = routes
+      .filter(
+        (route) => route.href !== '/' && pathname.startsWith(`${route.href}/`)
+      )
+      .sort((a, b) => b.href.length - a.href.length)[0]
+    if (prefixMatch) return prefixMatch.name
 
-    // Default to Trade for home
-    return 'Trade'
+    return ''
   }, [pathname])
 
   const isDropdownItemActive = useMemo(() => {
-    return [...DROPDOWN_EXTERNAL_ITEMS].some(
-      (item) => item.name === activeRoute
-    )
+    return DROPDOWN_EXTERNAL_ITEMS.some((item) => item.name === activeRoute)
   }, [activeRoute])
 
   return (
-    <header className="flex max-w-full items-center justify-between">
-      <div className="flex items-center justify-between gap-2 py-2 sm:gap-4 lg:gap-6">
-        <div className="flex items-center justify-center gap-2 px-1">
-          <Logo width={24} height={28} className="mb-1" />
-        </div>
+    <header className="flex h-14 max-w-full items-center justify-between gap-3 border-b border-border/40">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4 lg:gap-6">
+        <Link
+          href="/"
+          aria-label="GridTokenX home"
+          className="flex shrink-0 items-center gap-1.5 px-1"
+        >
+          {/* Square box, no margin: the viewBox is 70x70, so a 24x28 viewport
+              letterboxed the mark and the mb-1 pushed it off the text's centre. */}
+          <Logo width={24} height={24} />
+          <LogoWordmark className="whitespace-nowrap" />
+        </Link>
 
-        <nav className="hidden items-center justify-evenly gap-3 md:flex md:gap-4 lg:gap-8" aria-label="Main navigation">
-          {NAV_ITEMS.filter((item) => !item.requiresAuth || isAuthenticated).map((item) => (
-            <NavLink
-              key={item.name}
-              item={item}
-              isActive={activeRoute === item.name}
-              onClick={() => setActiveItem(item.name)}
-            />
-          ))}
-
+        {/* 2xl-gated as a whole: below that everything it holds is hidden, and an
+            empty nav still ate a gap slot next to the wordmark. */}
+        <nav
+          className="hidden items-center gap-1 2xl:flex"
+          aria-label="Main navigation"
+        >
+          {/* 2xl and up: the links have room to sit inline. Below that the
+              tablet dropdown in the right-hand control cluster carries them. */}
+          <div className="hidden items-center gap-1 2xl:flex">
+            {visibleNavItems.map((item) => (
+              <NavLink
+                key={item.name}
+                item={item}
+                isActive={activeRoute === item.name}
+              />
+            ))}
+          </div>
 
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger
               className={cn(
+                // Only at 2xl — below that the tablet dropdown already carries
+                // these entries.
+                'hidden h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring 2xl:flex',
                 isDropdownOpen || isDropdownItemActive
-                  ? 'text-primary'
-                  : 'text-secondary-foreground',
-                'hidden h-12 min-w-[48px] items-center justify-between gap-1 p-0 hover:text-primary focus:bg-transparent focus:outline-none md:flex'
+                  ? 'bg-secondary/60 text-primary'
+                  : 'text-secondary-foreground hover:bg-secondary/40 hover:text-foreground'
               )}
+              title="More"
               aria-label="More navigation options"
             >
               <MoreIcon />
-              <h1 className="hidden text-sm font-medium lg:inline">More</h1>
-              <span className="hidden lg:block"><ArrowDown /></span>
+              <span>More</span>
+              <span
+                className={cn(
+                  'transition-transform duration-200',
+                  isDropdownOpen && 'rotate-180'
+                )}
+              >
+                <ArrowDown />
+              </span>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
               align="start"
-              className="w-44 rounded-sm text-secondary-foreground"
+              className="w-48 rounded-md text-secondary-foreground"
             >
               {DROPDOWN_EXTERNAL_ITEMS.map((item) => (
-                <Link
-                  href={item.link}
-                  target={item.external ? '_blank' : undefined}
-                  rel={item.external ? 'noopener noreferrer' : undefined}
+                <DropdownMenuItem
                   key={item.name}
-                  className="w-full"
-                  onClick={() => setActiveItem(item.name)}
+                  asChild
+                  className="cursor-pointer justify-between px-2 py-2 focus:text-primary [&>svg]:size-4"
                 >
-                  <DropdownMenuItem className="cursor-pointer justify-between px-1 py-2 focus:text-primary [&>svg]:size-4">
+                  <Link
+                    href={item.link}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
+                  >
                     {item.name}
                     {item.external ? <ExternalLink /> : item.icon}
-                  </DropdownMenuItem>
-                </Link>
+                  </Link>
+                </DropdownMenuItem>
               ))}
 
               <DropdownMenuSeparator />
 
-              <div className="flex gap-3 px-1 py-2" role="list" aria-label="Social media links">
+              <div
+                className="flex gap-1 px-1 py-1"
+                role="list"
+                aria-label="Social media links"
+              >
                 {SOCIAL_LINKS.map((social) => (
                   <a
                     key={social.name}
@@ -316,6 +410,7 @@ export default function NavBar() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.name}
+                    className="flex h-7 w-7 items-center justify-center rounded-[5px] transition-colors hover:bg-secondary/60"
                   >
                     <Image
                       src={social.icon}
@@ -332,74 +427,128 @@ export default function NavBar() {
         </nav>
       </div>
 
-      <div className="flex items-center justify-between gap-1 py-2 sm:gap-2 md:gap-3">
-        <div className="hidden items-center gap-1 sm:flex">
-          <button
-            onClick={toggleLeftSidebar}
-            className={cn(
-              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
-              showLeftSidebar
-                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
-                : 'bg-secondary text-primary shadow-inner'
-            )}
-            title={showLeftSidebar ? 'Hide left sidebar' : 'Show left sidebar'}
-            aria-label={showLeftSidebar ? 'Hide left sidebar' : 'Show left sidebar'}
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div
+          className="hidden items-center gap-0.5 rounded-md border border-border/60 p-0.5 sm:flex"
+          role="group"
+          aria-label="Layout panels"
+        >
+          <PanelToggle
+            shown={showLeftSidebar}
+            onToggle={toggleLeftSidebar}
+            label="Left sidebar"
           >
-            <PanelLeft size={16} className="transition-transform duration-200 group-hover:scale-110" />
-          </button>
-
-          <button
-            onClick={toggleRightSidebar}
-            className={cn(
-              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
-              showRightSidebar
-                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
-                : 'bg-secondary text-primary shadow-inner'
-            )}
-            title={showRightSidebar ? 'Hide right sidebar' : 'Show right sidebar'}
-            aria-label={showRightSidebar ? 'Hide right sidebar' : 'Show right sidebar'}
+            <PanelLeft size={15} />
+          </PanelToggle>
+          <PanelToggle
+            shown={showRightSidebar}
+            onToggle={toggleRightSidebar}
+            label="Right sidebar"
           >
-            <PanelRight size={16} className="transition-transform duration-200 group-hover:scale-110" />
-          </button>
-
-          <button
-            onClick={togglePositionsPanel}
-            className={cn(
-              'group relative flex h-8 w-8 items-center justify-center rounded-md border border-border transition-all duration-200',
-              showPositionsPanel
-                ? 'bg-transparent text-secondary-foreground hover:bg-secondary hover:text-primary'
-                : 'bg-secondary text-primary shadow-inner'
-            )}
-            title={showPositionsPanel ? 'Hide positions panel' : 'Show positions panel'}
-            aria-label={showPositionsPanel ? 'Hide positions panel' : 'Show positions panel'}
+            <PanelRight size={15} />
+          </PanelToggle>
+          <PanelToggle
+            shown={showPositionsPanel}
+            onToggle={togglePositionsPanel}
+            label="Positions panel"
           >
-            <PanelBottom size={16} className="transition-transform duration-200 group-hover:scale-110" />
-          </button>
+            <PanelBottom size={15} />
+          </PanelToggle>
         </div>
 
         <NetworkStatus />
 
-        {isAuthenticated && (
-          <div className="hidden xs:block">
-            <PointsDropDown setActive={setActiveItem} />
-          </div>
-        )}
-        <div className="hidden sm:block">
-          <Settings />
-        </div>
-        {isAuthenticated && (
-          <div className="hidden sm:block">
-            <Profile />
-          </div>
-        )}
         {isAuthenticated && <Notifications />}
 
+        {/* Profile and settings collapsed into one avatar trigger. */}
+        <AccountMenu />
+
+        {/* Tablet range: one labelled dropdown, trailing the avatar at the far
+            right of the controls. Inline icon-only links were unreadable without
+            their labels, and the labels themselves only fit from 2xl. */}
+        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <DropdownMenuTrigger
+            className={cn(
+              'hidden h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-ring md:flex 2xl:hidden',
+              isMenuOpen
+                ? 'bg-secondary/60 text-primary'
+                : 'text-secondary-foreground hover:bg-secondary/40 hover:text-foreground'
+            )}
+            aria-label="Main menu"
+          >
+            <MenuIcon size={16} />
+            <span>{activeRoute || 'Menu'}</span>
+            <span
+              className={cn(
+                'transition-transform duration-200',
+                isMenuOpen && 'rotate-180'
+              )}
+            >
+              <ArrowDown />
+            </span>
+          </DropdownMenuTrigger>
+
+          {/* align="end": the trigger sits against the right edge, so a
+              start-aligned panel would hang off the viewport at 768px. */}
+          <DropdownMenuContent align="end" className="w-56 rounded-md p-1">
+            {visibleNavItems.map((item) => {
+              const isActive = activeRoute === item.name
+              return (
+                <DropdownMenuItem
+                  key={item.name}
+                  asChild
+                  className={cn(
+                    'cursor-pointer gap-2 px-2 py-2',
+                    isActive && 'text-primary'
+                  )}
+                >
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    {item.icon}
+                    <span>{item.name}</span>
+                    {item.badge && (
+                      <span className="ml-auto">
+                        <NavBadge badge={item.badge} isActive={isActive} />
+                      </span>
+                    )}
+                  </Link>
+                </DropdownMenuItem>
+              )
+            })}
+
+            <DropdownMenuSeparator />
+
+            {DROPDOWN_EXTERNAL_ITEMS.map((item) => (
+              <DropdownMenuItem
+                key={item.name}
+                asChild
+                className="cursor-pointer justify-between px-2 py-2 focus:text-primary [&>svg]:size-4"
+              >
+                <Link
+                  href={item.link}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                >
+                  {item.name}
+                  {item.external ? <ExternalLink /> : item.icon}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {connected || isAuthenticated ? (
-          <WalletSideBar />
+          // Only from 2xl. On tablets the address moved into AccountMenu, and
+          // below md into the mobile menu's Account row — see NavBarMobile.
+          <div className="hidden 2xl:block">
+            <WalletSideBar />
+          </div>
         ) : (
           <AuthButton
             signInVariant="default"
-            className="h-fit w-full whitespace-nowrap rounded-sm border border-transparent bg-primary px-1.5 py-1 text-xs text-background hover:bg-gradient-primary xs:px-2 xs:py-[7px] xs:text-sm sm:px-4"
+            className="h-fit w-full whitespace-nowrap rounded-sm border border-transparent bg-primary px-2 py-[7px] text-sm text-background hover:bg-gradient-primary sm:px-4"
             signInText="Connect"
           />
         )}
