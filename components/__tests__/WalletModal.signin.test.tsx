@@ -64,6 +64,10 @@ async function submitSignIn() {
   return user
 }
 
+// userEvent drives a Radix dialog here (per-keystroke re-render + focus
+// management), which overruns the 5s default when the suite runs in parallel.
+const SLOW_UI_TIMEOUT = 20_000
+
 describe('WalletModal email sign-in failure', () => {
   beforeEach(() => jest.clearAllMocks())
 
@@ -82,7 +86,7 @@ describe('WalletModal email sign-in failure', () => {
     expect(onClose).not.toHaveBeenCalled()
     // Modal content still mounted
     expect(screen.getByLabelText(/username or email/i)).toBeInTheDocument()
-  })
+  }, SLOW_UI_TIMEOUT)
 
   it('clears the inline error on a retry that verifies as unverified-email', async () => {
     mockLogin.mockRejectedValueOnce(
@@ -106,5 +110,5 @@ describe('WalletModal email sign-in failure', () => {
     })
     expect(screen.queryByText(/sign in failed/i)).not.toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
-  })
+  }, SLOW_UI_TIMEOUT)
 })

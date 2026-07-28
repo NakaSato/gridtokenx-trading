@@ -9,60 +9,14 @@ import {
   useWebSocketMessage,
 } from './useWebSocket'
 import { useAuth } from '@/contexts/AuthProvider'
-
-interface OrderFilledData {
-  order_id: string
-  amount: number
-  price: number
-  side: 'buy' | 'sell'
-}
-
-interface OrderMatchedData {
-  match_id: string
-  buy_order_id: string
-  sell_order_id: string
-  matched_amount: string
-  match_price: string
-}
-
-interface SettlementData {
-  settlement_id: string
-  buyer_id: string
-  seller_id: string
-  energy_amount: string
-  total_cost: string
-  transaction_signature?: string
-}
-
-interface P2POrderUpdateData {
-  order_id: string
-  user_id: string
-  side: string
-  status: string
-  original_amount: string
-  filled_amount: string
-  remaining_amount: string
-  price_per_kwh: string
-}
-
-interface ConditionalOrderTriggeredData {
-  order_id: string
-  user_id: string
-  trigger_type: string
-  side: string
-  trigger_price: string
-  market_price: string
-  timestamp: string
-}
-
-interface TransactionStatusData {
-  operation_id: string
-  transaction_type: string
-  old_status: string
-  new_status: string
-  signature?: string
-  error_message?: string
-}
+import type {
+  ConditionalOrderTriggered,
+  OrderFilled,
+  OrderMatched,
+  P2POrderUpdate,
+  SettlementComplete,
+  TransactionStatusUpdate,
+} from '@/types/ws'
 
 // Custom toast content components
 const OrderFilledToast = ({ side, amount, price }: { side: string; amount: number; price: number }) => (
@@ -168,7 +122,7 @@ export function useNotificationToast() {
 
   // Order filled notification
   useOrderFilledWebSocket(
-    useCallback((data: OrderFilledData) => {
+    useCallback((data: OrderFilled) => {
       const side = data.side === 'buy' ? 'Buy' : 'Sell'
       toast.success(
         <OrderFilledToast side={side} amount={data.amount} price={data.price} />,
@@ -179,7 +133,7 @@ export function useNotificationToast() {
 
   // Order matched notification
   useOrderMatchedWebSocket(
-    useCallback((data: OrderMatchedData) => {
+    useCallback((data: OrderMatched) => {
       if (!data) return
       const amount = data.matched_amount ?? (data as any).amount ?? '0'
       const price = data.match_price ?? (data as any).price ?? '0'
@@ -195,7 +149,7 @@ export function useNotificationToast() {
   useWebSocketMessage(
     'trades',
     'settlement_complete',
-    useCallback((data: SettlementData) => {
+    useCallback((data: SettlementComplete) => {
       // Only show if user is buyer or seller (compare by wallet address)
       const isBuyer = currentUserId === data.buyer_id
       const isSeller = currentUserId === data.seller_id
@@ -212,7 +166,7 @@ export function useNotificationToast() {
   useWebSocketMessage(
     'trades',
     'p2p_order_update',
-    useCallback((data: P2POrderUpdateData) => {
+    useCallback((data: P2POrderUpdate) => {
       // Only show for user's own orders (compare by wallet address)
       if (currentUserId !== data.user_id) return
 
@@ -240,7 +194,7 @@ export function useNotificationToast() {
   useWebSocketMessage(
     'trades',
     'transaction_status_update',
-    useCallback((data: TransactionStatusData) => {
+    useCallback((data: TransactionStatusUpdate) => {
       // Error notification
       if (data.error_message) {
         toast.error(
@@ -264,7 +218,7 @@ export function useNotificationToast() {
   useWebSocketMessage(
     'trades',
     'conditional_order_triggered',
-    useCallback((data: ConditionalOrderTriggeredData) => {
+    useCallback((data: ConditionalOrderTriggered) => {
       // Only show for user's own orders
       if (currentUserId !== data.user_id) return
 

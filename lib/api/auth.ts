@@ -9,7 +9,7 @@ import type {
   UserProfile,
   ResendVerificationRequest,
   ResendVerificationResponse,
-} from '../../types/auth'
+} from '@/types/auth'
 
 export class AuthApi {
   constructor(private getToken: () => string | undefined) { }

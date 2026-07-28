@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import type { EnergyNode, EnergyTransfer } from './types'
+import type { EnergyNode, EnergyTransfer } from '@/types/grid'
 import { API_ENDPOINTS, API_CONFIG } from '@/lib/config'
 import { useQuery } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'

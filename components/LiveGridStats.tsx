@@ -19,7 +19,7 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { useGridStatus } from '@/components/energy-grid/useGridStatus'
 import type { MeterReading } from '@/types/meter'
 import { useTrading } from '@/contexts/TradingProvider'
-import { useSidebar } from '@/contexts/SidebarContext'
+import { useSidebar } from '@/components/shared/SidebarContext'
 import { toast } from 'react-hot-toast'
 
 const READINGS_POLL_MS = 15000

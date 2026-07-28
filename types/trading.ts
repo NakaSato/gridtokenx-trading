@@ -177,3 +177,58 @@ export interface MarketStatsResponse {
     active_users: number;
     trade_count_24h: number;
 }
+
+// --- UI position/order shapes ---
+// Projections of the API types above into what the position/order tables
+// render. Kept distinct from ApiOrder because the tables carry display-only
+// fields (logo, symbol) the API never returns.
+
+export interface Position {
+  index: string
+  token: string
+  logo: string
+  symbol: string
+  type: string
+  strikePrice: number
+  expiry: string
+  size: number
+  pnl: number
+  greeks: {
+    delta: number
+    gamma: number
+    theta: number
+    vega: number
+  }
+}
+
+export interface Order {
+  index: string
+  token: string
+  logo: string
+  symbol: string
+  type: string
+  transaction: string
+  // null when there is no user-set price to display — market orders (they fill
+  // at the resting ask) and malformed/non-numeric prices. The renderer shows
+  // "Market" rather than a misleading "$0.0000".
+  limitPrice: number | null
+  strikePrice: number
+  expiry: string
+  orderDate: string
+  size: number
+  status: string
+}
+
+
+// Mirrors trading-api rest.rs ClearingEpochResponse — decimals stringified.
+export interface ClearingEpoch {
+    epoch_id: string
+    epoch_number: number
+    start_time: string
+    end_time: string
+    status: string
+    clearing_price: string | null
+    total_volume: string | null
+    total_orders: number | null
+    matched_orders: number | null
+}

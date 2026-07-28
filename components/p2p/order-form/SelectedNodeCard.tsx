@@ -3,7 +3,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Zap } from 'lucide-react'
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 
 interface SelectedNodeCardProps {
   selectedNode: EnergyNode | null

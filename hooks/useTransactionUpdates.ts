@@ -9,74 +9,22 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWebSocketMessage } from './useWebSocket'
 import toast from 'react-hot-toast'
 import throttle from 'lodash.throttle'
+import type {
+    ConditionalOrderTriggered,
+    OrderBookSnapshotUpdate,
+    P2POrderBookEntry,
+    P2POrderUpdate,
+    SettlementComplete,
+    TransactionStatusUpdate,
+} from '@/types/ws'
 
-/**
- * Transaction status update from WebSocket
- */
-export interface TransactionStatusUpdate {
-    operation_id: string
-    transaction_type: 'EnergyTrade' | 'TokenMint' | 'TokenBurn' | 'Stake' | 'Unstake' | 'Reward'
-    old_status: string
-    new_status: string
-    signature: string | null
-    error_message: string | null
-    timestamp: string
-}
-
-/**
- * OrderBook snapshot update from WebSocket
- */
-export interface OrderBookEntry {
-    price_per_kwh: number
-    energy_amount: number
-    username?: string
-}
-
-export interface OrderBookSnapshotUpdate {
-    bids: OrderBookEntry[]
-    asks: OrderBookEntry[]
-    timestamp: string
-}
-
-/**
- * P2P order update from WebSocket
- */
-export interface P2POrderUpdate {
-    order_id: string
-    user_id: string
-    side: 'buy' | 'sell'
-    status: 'open' | 'partially_filled' | 'filled' | 'cancelled'
-    original_amount: string
-    filled_amount: string
-    remaining_amount: string
-    price_per_kwh: string
-    timestamp: string
-}
-
-/**
- * Settlement complete notification from WebSocket
- */
-export interface SettlementComplete {
-    settlement_id: string
-    buyer_id: string
-    seller_id: string
-    energy_amount: string
-    total_cost: string
-    transaction_signature: string | null
-    timestamp: string
-}
-
-/**
- * Conditional order trigger notification from WebSocket
- */
-export interface ConditionalOrderTriggered {
-    order_id: string
-    user_id: string
-    trigger_type: 'StopLoss' | 'TakeProfit' | 'TrailingStop' | string
-    side: 'buy' | 'sell' | string
-    trigger_price: string
-    market_price: string
-    timestamp: string
+export type {
+    ConditionalOrderTriggered,
+    OrderBookSnapshotUpdate,
+    P2POrderBookEntry,
+    P2POrderUpdate,
+    SettlementComplete,
+    TransactionStatusUpdate,
 }
 
 /**

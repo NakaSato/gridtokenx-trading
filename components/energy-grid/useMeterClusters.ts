@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import Supercluster from 'supercluster'
-import type { EnergyNode } from './types'
+import type { EnergyNode } from '@/types/grid'
 
 export interface ClusterProperties {
     cluster: true

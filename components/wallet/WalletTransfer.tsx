@@ -8,7 +8,7 @@ import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet2 } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { FeedbackMessage } from '@/components/p2p/order-form'
+import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
 import { EscrowAmountInput } from './EscrowAmountInput'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
 import { useDepositEscrow, useWithdrawEscrow, useEscrowBalance } from '@/hooks/useEscrow'

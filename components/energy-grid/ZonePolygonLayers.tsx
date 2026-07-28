@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, memo } from 'react'
 import { Source, Layer } from 'react-map-gl/mapbox'
-import type { EnergyNode } from './types'
+import type { EnergyNode } from '@/types/grid'
 import type { ActiveTrade } from './useActiveTrades'
 
 // Zone colors matching the simulator

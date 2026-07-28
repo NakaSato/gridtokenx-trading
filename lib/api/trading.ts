@@ -3,28 +3,17 @@ import type {
     PriceAlert,
     RecurringOrder,
     CreateRecurringOrderRequest
-} from '../../types/features'
+} from '@/types/features'
 import type {
     ActiveOrderMetersResponse,
     ApiOrder,
+    ClearingEpoch,
     ListOrdersResponse,
     OrderBookResponse,
     SubmitOrderResponse,
     TradeHistory,
-} from '../../types/trading'
+} from '@/types/trading'
 
-// Mirrors trading-api rest.rs ClearingEpochResponse — decimals stringified.
-export interface ClearingEpoch {
-    epoch_id: string
-    epoch_number: number
-    start_time: string
-    end_time: string
-    status: string
-    clearing_price: string | null
-    total_volume: string | null
-    total_orders: number | null
-    matched_orders: number | null
-}
 
 export class TradingApi {
     constructor(private getToken: () => string | undefined) { }
@@ -60,8 +49,8 @@ export class TradingApi {
         })
     }
 
-    async getMarketStats(): Promise<ApiResponse<import('../../types/trading').MarketStatsResponse>> {
-        return apiRequest<import('../../types/trading').MarketStatsResponse>('/api/v1/stats', {
+    async getMarketStats(): Promise<ApiResponse<import('@/types/trading').MarketStatsResponse>> {
+        return apiRequest<import('@/types/trading').MarketStatsResponse>('/api/v1/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -121,7 +110,7 @@ export class TradingApi {
 
     async getTrades(filters?: { limit?: number; offset?: number }) {
         const params = new URLSearchParams(filters as any)
-        return apiRequest<import('../../types/trading').TradeHistory>(
+        return apiRequest<import('@/types/trading').TradeHistory>(
             `/api/v1/trades?${params.toString()}`,
             { method: 'GET', token: this.getToken() }
         )

@@ -12,17 +12,17 @@ import {
   TrendingUp,
   XIcon,
 } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import Image from 'next/image'
-import { Button, buttonVariants } from './ui/button'
-import { AuthButton } from './auth'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { AuthButton } from '@/components/auth'
 import { useState, useMemo } from 'react'
 import { MoreIcon, WalletIcon } from '@/public/svgs/icons'
-import { Badge } from './ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
 import { useRouter } from 'next/navigation'
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import x from '@/public/svgs/x.svg'
@@ -30,12 +30,12 @@ import discord from '@/public/svgs/discord.svg'
 import telegram from '@/public/svgs/telegram.svg'
 import medium from '@/public/images/medium.png'
 import yt from '@/public/svgs/youtube.svg'
-import { Logo } from './Logo'
+import { Logo } from '@/components/shared/Logo'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
-const SettingsMobile = dynamic(() => import('./SettingsMobile'), { ssr: false })
-const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
+const SettingsMobile = dynamic(() => import('@/components/shared/SettingsMobile'), { ssr: false })
+const WalletSideBar = dynamic(() => import('@/components/WalletSidebar'), { ssr: false })
 
 // ============================================================================
 // Types & Interfaces

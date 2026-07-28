@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { EnergyNode, EnergyTransfer, LiveNodeData, LiveTransferData } from './types'
+import type { EnergyNode, EnergyTransfer, LiveNodeData, LiveTransferData } from '@/types/grid'
 import { getInitialLiveValue, liveValueFor } from './utils'
 import type { MeterTelemetry } from './useMeterTelemetry'
 

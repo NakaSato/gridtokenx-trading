@@ -22,29 +22,29 @@ import {
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
 import { useAuth } from '@/contexts/AuthProvider'
-import { useSidebar } from '@/contexts/SidebarContext'
-import { buttonVariants } from './ui/button'
-import { Badge } from './ui/badge'
+import { useSidebar } from '@/components/shared/SidebarContext'
+import { buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import { AuthButton } from './auth'
+} from '@/components/ui/dropdown-menu'
+import { AuthButton } from '@/components/auth'
 import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
-import { Logo } from './Logo'
+import { Logo } from '@/components/shared/Logo'
 import dynamic from 'next/dynamic'
-import NavBarMobile from './NavBarMobile'
-import { NetworkStatus } from './NetworkStatus'
+import NavBarMobile from '@/components/shared/NavBarMobile'
+import { NetworkStatus } from '@/components/shared/NetworkStatus'
 
 // Dynamic Imports for Header Performance
-const WalletSideBar = dynamic(() => import('./WalletSidebar'), { ssr: false })
-const Settings = dynamic(() => import('./Settings'), { ssr: false })
-const Profile = dynamic(() => import('./Profile'), { ssr: false })
-const Notifications = dynamic(() => import('./Notifications'), { ssr: false })
-const PointsDropDown = dynamic(() => import('./PointsDropDown'), { ssr: false })
+const WalletSideBar = dynamic(() => import('@/components/WalletSidebar'), { ssr: false })
+const Settings = dynamic(() => import('@/components/shared/Settings'), { ssr: false })
+const Profile = dynamic(() => import('@/components/Profile'), { ssr: false })
+const Notifications = dynamic(() => import('@/components/Notifications'), { ssr: false })
+const PointsDropDown = dynamic(() => import('@/components/PointsDropDown'), { ssr: false })
 
 import x from '@/public/svgs/x.svg'
 import discord from '@/public/svgs/discord.svg'

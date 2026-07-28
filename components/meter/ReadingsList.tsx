@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowUpRight, ArrowDownRight, Loader2, Copy } from 'lucide-react'
 import { format } from 'date-fns'
 import { MeterReading, MeterResponse } from '@/types/meter'
-import Pagination from '@/components/Pagination'
+import Pagination from '@/components/shared/Pagination'
 import { P2P_CONFIG } from '@/lib/constants'
 
 type StatusFilter = 'all' | 'minted' | 'pending'

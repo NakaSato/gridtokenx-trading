@@ -3,7 +3,7 @@
 import { memo, useCallback } from 'react'
 import { Zap, Battery, BatteryCharging, ShoppingCart } from 'lucide-react'
 import { Marker } from 'react-map-gl/mapbox'
-import type { EnergyNode, LiveNodeData } from './types'
+import type { EnergyNode, LiveNodeData } from '@/types/grid'
 
 interface LightweightMarkerProps {
     node: EnergyNode

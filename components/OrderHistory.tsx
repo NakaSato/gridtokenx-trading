@@ -1,6 +1,6 @@
 'use client'
 
-import { Transaction } from '@/lib/data/WalletActivity'
+import { Transaction } from '@/types/wallet'
 import Image from 'next/image'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'

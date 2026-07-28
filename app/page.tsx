@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import TradingViewTopNav from '@/components/TradingViewTopNav'
 import { tokenList } from '@/lib/data/tokenlist'
-import { useSidebar } from '@/contexts/SidebarContext'
+import { useSidebar } from '@/components/shared/SidebarContext'
 
 const TradingPositionsPanel = dynamic(
   () => import('@/components/TradingPositionsPanel'),
@@ -75,7 +75,7 @@ const P2POrderForm = dynamic(() => import('@/components/p2p/OrderForm'), {
   ),
 })
 
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 import { CAMPUS_CONFIG } from '@/lib/constants'
 
 export default function Homepage() {

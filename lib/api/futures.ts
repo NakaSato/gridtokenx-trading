@@ -6,7 +6,7 @@ import type {
     Candle,
     OrderBook,
     FuturesOrder
-} from '../../types/futures'
+} from '@/types/futures'
 
 export class FuturesApi {
     constructor(private getToken: () => string | undefined) { }

@@ -7,7 +7,7 @@ import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useTrading, OrderAccount } from '@/contexts/TradingProvider'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 import { RecurringOrderForm } from '../trading/RecurringOrderForm'
 import { useCrypto } from '@/hooks/useCrypto'
 import { useWalletBalance } from '@/hooks/useWalletBalance'
@@ -23,8 +23,8 @@ import {
   PriceInput,
   OrderSummary,
   SubmitButton,
-  FeedbackMessage,
 } from './order-form'
+import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
 import { meterSerialFromNode } from './order-form/meterId'
 
 interface OrderFormProps {

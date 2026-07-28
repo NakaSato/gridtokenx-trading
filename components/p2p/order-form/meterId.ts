@@ -1,4 +1,4 @@
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 
 /**
  * The meter `serial_number` to attribute an order to, from the selected map node.

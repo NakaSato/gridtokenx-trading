@@ -1,4 +1,4 @@
-import { mapApiOrderToOrder } from '@/lib/data/Positions'
+import { mapApiOrderToOrder } from '@/lib/api/adapters'
 import type { ApiOrder } from '@/types/trading'
 
 function apiOrder(overrides: Partial<ApiOrder> = {}): ApiOrder {

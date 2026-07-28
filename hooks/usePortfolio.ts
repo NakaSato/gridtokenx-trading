@@ -7,9 +7,9 @@ import { useAuth } from '@/contexts/AuthProvider'
 import { format } from 'date-fns'
 import type { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 import type { UserProfile, TokenBalance } from '@/types/auth'
-import type { Position, Order } from '@/lib/data/Positions'
-import { mapApiOrderToOrder } from '@/lib/data/Positions'
-import type { Transaction } from '@/lib/data/WalletActivity'
+import type { Position, Order } from '@/types/trading'
+import { mapApiOrderToOrder } from '@/lib/api/adapters'
+import type { Transaction } from '@/types/wallet'
 
 /**
  * Hook for fetching user profile

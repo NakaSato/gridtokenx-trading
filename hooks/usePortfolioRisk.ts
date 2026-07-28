@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { calculatePortfolioRisk } from '@/lib/wasm-bridge'
-import type { Position } from '@/lib/data/Positions'
+import type { Position } from '@/types/trading'
 
 export interface PortfolioRisk {
   totalDelta: number

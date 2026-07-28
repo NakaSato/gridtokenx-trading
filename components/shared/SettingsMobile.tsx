@@ -1,16 +1,16 @@
 import { XIcon } from 'lucide-react'
-import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useState } from 'react'
 import solscan from '@/public/images/solscan.png'
-import { Label } from './ui/label'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './ui/select'
+} from '@/components/ui/select'
 import {
   ArrowDown,
   GreenCircleIcon,
@@ -20,7 +20,7 @@ import {
 } from '@/public/svgs/icons'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { Input } from './ui/input'
+import { Input } from '@/components/ui/input'
 import { useTheme } from 'next-themes'
 
 export default function SettingsMobile() {

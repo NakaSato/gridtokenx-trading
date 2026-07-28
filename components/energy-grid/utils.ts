@@ -1,4 +1,4 @@
-import type { EnergyNode } from './types'
+import type { EnergyNode } from '@/types/grid'
 import type { MeterTelemetry } from './useMeterTelemetry'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 

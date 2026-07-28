@@ -1,18 +1,18 @@
 import { DialogTitle } from '@radix-ui/react-dialog'
-import { Dialog, DialogContent, DialogTrigger } from './ui/dialog'
-import { Separator } from './ui/separator'
-import { Label } from './ui/label'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './ui/select'
+} from '@/components/ui/select'
 import solscan from '@/public/images/solscan.png'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import Image from 'next/image'
-import { Input } from './ui/input'
+import { Input } from '@/components/ui/input'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'

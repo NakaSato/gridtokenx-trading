@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import type { EnergyNode, EnergyTransfer } from './types'
+import type { EnergyNode, EnergyTransfer } from '@/types/grid'
 
 export interface PathResult {
     nodeIds: string[]

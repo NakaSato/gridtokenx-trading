@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/tooltip'
 import { MapPin, Info, ArrowRightLeft, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 import { P2P_CONFIG } from '@/lib/constants'
 
 interface ZoneSelectorProps {

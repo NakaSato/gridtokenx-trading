@@ -5,7 +5,7 @@ import type {
     GridHistoryStatus,
     GridFlow,
     GridFlowsResponse
-} from '../../types/grid'
+} from '@/types/grid'
 import type {
     PublicMeterResponse,
     MeterReading,
@@ -13,7 +13,7 @@ import type {
     MeterMapPoint,
     RegisterMeterResponse,
     MeterStats
-} from '../../types/meter'
+} from '@/types/meter'
 
 /** Raw meter shape returned by the GLM bus-network simulator's public endpoint. */
 interface RawPublicMeter {

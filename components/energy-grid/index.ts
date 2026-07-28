@@ -31,7 +31,7 @@ export type {
     LiveNodeData,
     LiveTransferData,
     CampusConfig,
-} from './types'
+} from '@/types/grid'
 export type { GridStatus, ZoneGridStatus } from '@/types/grid'
 export type { ClusterFeature, PointFeature, ClusterOrPoint } from './useMeterClusters'
 
@@ -48,4 +48,4 @@ export {
 export * from './GridFrequencyChart'
 export * from './GridForecastChart'
 export * from './EVManagementPanel'
-export * from './types'
+export * from '@/types/grid'

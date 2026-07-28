@@ -1,12 +1,12 @@
 import { apiRequest, ApiResponse } from './core'
-import type { UserProfile } from '../../types/auth'
+import type { UserProfile } from '@/types/auth'
 import type {
     UserWallet,
     LinkWalletRequest,
     OnChainOnboardingRequest,
     Notification,
     NotificationPreferences
-} from '../../types/features'
+} from '@/types/features'
 
 export class UserApi {
     constructor(private getToken: () => string | undefined) { }
@@ -106,7 +106,7 @@ export class UserApi {
             : '/api/v1/transactions'
 
         // Backend returns a bare array of TransactionData, not a wrapper object.
-        return apiRequest<import('../../types/transactions').UserTransaction[]>(
+        return apiRequest<import('@/types/transactions').UserTransaction[]>(
             endpoint,
             { method: 'GET', token: this.getToken() }
         )

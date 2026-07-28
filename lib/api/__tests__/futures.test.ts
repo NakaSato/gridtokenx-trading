@@ -1,5 +1,5 @@
 import { ApiClient } from '../../api-client'
-import type { FuturesProduct, FuturesPosition, OrderBook } from '../../../types/futures'
+import type { FuturesProduct, FuturesPosition, OrderBook } from '@/types/futures'
 
 // Mock fetch globally
 global.fetch = jest.fn()

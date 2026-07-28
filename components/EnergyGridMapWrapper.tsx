@@ -2,7 +2,7 @@
 import React from 'react'
 import dynamic from 'next/dynamic'
 import ErrorBoundary from './ui/ErrorBoundary'
-import type { EnergyNode } from './energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 
 const MapComponent = dynamic(() => import('./EnergyGridMap'), {
   ssr: false,

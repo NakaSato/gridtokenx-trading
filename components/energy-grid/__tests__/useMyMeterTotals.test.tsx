@@ -2,7 +2,7 @@ import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMyMeterTotals } from '../useMyMeterTotals'
-import type { EnergyNode } from '../types'
+import type { EnergyNode } from '@/types/grid'
 
 const mockGetMyMeters = jest.fn()
 jest.mock('@/lib/api-client', () => ({

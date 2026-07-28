@@ -1,5 +1,5 @@
 import { meterSerialFromNode } from '../order-form/meterId'
-import type { EnergyNode } from '@/components/energy-grid/types'
+import type { EnergyNode } from '@/types/grid'
 
 const node = (over: Partial<EnergyNode>): EnergyNode => ({
     id: 'a3f1c2d4-5b6e-4a7c-8d9e-0f1a2b3c4d5e',

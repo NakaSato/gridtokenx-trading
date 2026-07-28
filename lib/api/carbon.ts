@@ -3,7 +3,7 @@ import type {
     CarbonBalanceResponse,
     CarbonCredit,
     CarbonTransaction
-} from '../../types/features'
+} from '@/types/features'
 
 export class CarbonApi {
     constructor(private getToken: () => string | undefined) { }
