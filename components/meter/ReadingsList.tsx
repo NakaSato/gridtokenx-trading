@@ -41,6 +41,45 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
         return meters.find(m => m.serial_number === serial)
     }
 
+    // Per-meter telemetry interval, in seconds, derived from consecutive
+    // timestamps.
+    //
+    // A row's `kwh` is the ENERGY accrued over one telemetry tick, not a rate —
+    // at the simulator's 15 s tick a 7.4 kW array reports ~0.031 kWh, which
+    // `.toFixed(2)` then flattened to a uniform "0.03" for every export row.
+    // `meter_readings` carries no interval column (the aggregator does not
+    // persist `interval_seconds`), so it is inferred here as the MEDIAN gap
+    // between a meter's readings — median, not mean, so one gap across a
+    // restart or a pagination boundary cannot skew it. A meter with fewer than
+    // two readings on this page yields no interval, and its row falls back to
+    // energy rather than inventing a rate.
+    const intervalByMeter = useMemo(() => {
+        const stamps = new Map<string, number[]>()
+        for (const r of readings) {
+            const t = new Date(r.timestamp).getTime()
+            if (Number.isFinite(t)) {
+                const list = stamps.get(r.meter_serial)
+                if (list) list.push(t)
+                else stamps.set(r.meter_serial, [t])
+            }
+        }
+        const result = new Map<string, number>()
+        for (const [serial, times] of stamps) {
+            if (times.length < 2) continue
+            times.sort((a, b) => a - b)
+            const gaps: number[] = []
+            for (let i = 1; i < times.length; i++) {
+                const gap = (times[i] - times[i - 1]) / 1000
+                if (gap > 0) gaps.push(gap)
+            }
+            if (!gaps.length) continue
+            gaps.sort((a, b) => a - b)
+            const median = gaps[Math.floor(gaps.length / 2)]
+            if (median > 0) result.set(serial, median)
+        }
+        return result
+    }, [readings])
+
     // Apply filters to readings
     const filteredReadings = useMemo(() => {
         return readings.filter(reading => {
@@ -127,7 +166,7 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                                 <div>Time</div>
                                 <div className="col-span-1">Meter</div>
                                 <div>Type</div>
-                                <div>Amount</div>
+                                <div>Rate</div>
                                 <div>Status</div>
                                 <div>Tx Signature</div>
                             </div>
@@ -157,8 +196,22 @@ export function ReadingsList({ readings, meters, loading, onCopy, serverTotal, h
                                                         <span className="flex items-center text-orange-500"><ArrowDownRight className="mr-1 h-3 w-3" /> Cons</span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center font-medium">
-                                                    {Math.abs(reading.kwh).toFixed(2)} kWh
+                                                <div className="flex flex-col justify-center font-medium">
+                                                    {(() => {
+                                                        const kwh = Math.abs(reading.kwh)
+                                                        const interval = intervalByMeter.get(reading.meter_serial)
+                                                        // No interval known -> show energy at a precision that
+                                                        // survives a short tick, never a fabricated rate.
+                                                        if (!interval) return <span>{kwh.toFixed(3)} kWh</span>
+                                                        return (
+                                                            <>
+                                                                <span>{((kwh * 3600) / interval).toFixed(2)} kW</span>
+                                                                <span className="text-[10px] text-muted-foreground font-normal">
+                                                                    {kwh.toFixed(3)} kWh / {interval}s
+                                                                </span>
+                                                            </>
+                                                        )
+                                                    })()}
                                                 </div>
                                                 <div className="flex items-center">
                                                     {reading.mint_status === 'minted' ? (

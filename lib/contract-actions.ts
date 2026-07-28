@@ -69,23 +69,6 @@ export interface EncryptedBidParams {
     isBid: boolean
 }
 
-/** Parameters for settlement execution */
-export interface SettlementParams {
-    batch: PublicKey
-    bidIndex: number
-    askIndex: number
-    amount: number
-    buyerCurrency: PublicKey
-    sellerCurrency: PublicKey
-    sellerEnergy: PublicKey
-    buyerEnergy: PublicKey
-    currencyMint: PublicKey
-    energyMint: PublicKey
-    tokenProgram: PublicKey
-    buyerAuthority: PublicKey
-    sellerAuthority: PublicKey
-}
-
 export const openOption = async (
     program: Program<OptionContract>,
     connection: Connection,
@@ -437,19 +420,6 @@ export const removeLiquidity = async (
 // AUCTION ACTIONS
 // =============================================================================
 
-export const initializeAuction = async (
-    program: Program<any>,
-    connection: Connection,
-    publicKey: PublicKey,
-    sendTransaction: any,
-    batchId: BN,
-    duration: BN
-) => {
-    // Placeholder - requires market key
-    console.warn("initializeAuction: Market key handling not fully implemented in UI demo");
-    return false;
-}
-
 export const submitAuctionOrder = async (
     program: Program,
     connection: Connection,
@@ -560,86 +530,3 @@ export const submitEncryptedBid = async (
     return true
 }
 
-export const executeSettlement = async (
-    program: Program,
-    connection: Connection,
-    publicKey: PublicKey,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
-    params: SettlementParams
-): Promise<boolean> => {
-    const { batch, bidIndex, askIndex, amount, ...accounts } = params;
-
-    if (!(program.methods as any).executeSettlement) {
-        console.error("IDL outdated: executeSettlement not found");
-        return false;
-    }
-
-    const transaction = await (program.methods as any)
-        .executeSettlement(
-            bidIndex,
-            askIndex,
-            new BN(amount)
-        )
-        .accounts({
-            batch: batch,
-            ...accounts
-        })
-        .transaction();
-
-    const latestBlockHash = await connection.getLatestBlockhash()
-    const signature = await sendTransaction(transaction, connection)
-    await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: signature,
-    })
-    return true
-}
-
-// =============================================================================
-// DASHBOARD ACTIONS
-// =============================================================================
-
-export const fetchMeterHistory = async (
-    program: Program<any>,
-    publicKey: PublicKey
-) => {
-    try {
-        // Derive Meter History PDA using [b"meter_history", user_key]
-        const [historyPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("meter_history"), publicKey.toBuffer()],
-            program.programId
-        );
-
-        // Check if account exists before fetching to avoid console errors
-        const accountInfo = await program.provider.connection.getAccountInfo(historyPda);
-        if (!accountInfo) {
-            // Expected for new users - no meter history yet
-            return [];
-        }
-
-        const account = await (program.account as any).meterHistory.fetch(historyPda);
-
-        // Format for Recharts
-        const data = account.readings
-            .map((reading: any, index: number) => ({
-                reading: reading.toNumber(),
-                timestamp: account.timestamps[index].toNumber(),
-            }))
-            .filter((d: any) => d.timestamp > 0)
-            .sort((a: any, b: any) => a.timestamp - b.timestamp)
-            .map((d: any) => ({
-                time: new Date(d.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                value: d.reading
-            }));
-
-        return data;
-
-    } catch (e) {
-        // Only log actual errors, not "account not found" for new users
-        if (e instanceof Error && !e.message.includes('Account does not exist')) {
-            console.error("fetchMeterHistory failed:", e);
-        }
-        return [];
-    }
-}

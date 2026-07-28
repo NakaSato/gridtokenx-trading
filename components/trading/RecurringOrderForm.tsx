@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
-import { Loader2, CheckCircle2, AlertCircle, Repeat, ArrowRight, TrendingUp, TrendingDown, Clock, Sun, CalendarDays, CalendarRange, Hash } from 'lucide-react'
+import { Loader2, ChevronRight, TrendingUp, TrendingDown, Clock, Sun, CalendarDays, CalendarRange, Hash } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import type { IntervalType } from '@/types/features'
-import { P2PCostBreakdown } from './P2PCostBreakdown'
-import { useMeters } from '@/hooks/useApi'
 
 export function RecurringOrderForm() {
     const { token } = useAuth()
@@ -21,18 +20,9 @@ export function RecurringOrderForm() {
     const [maxExecutions, setMaxExecutions] = useState('')
     const [name, setName] = useState('')
     const [loading, setLoading] = useState(false)
-    const [message, setMessage] = useState('')
-    const [isSuccess, setIsSuccess] = useState(false)
-    const { meters } = useMeters(token ?? undefined)
-    const [sellerZoneId, setSellerZoneId] = useState(1)
 
     // Quick amount presets (kWh)
     const amountPresets = ['10', '50', '100', '500']
-
-    const buyerZoneId = useMemo(() => {
-        const m = meters as any[] | null
-        return m?.[0]?.zone_id || 1
-    }, [meters])
 
     const frequencyConfig: Record<IntervalType, { label: string; icon: keyof typeof freqIcons; color: string; bg: string }> = {
         hourly: { label: 'Hourly', icon: 'Clock', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
@@ -41,21 +31,16 @@ export function RecurringOrderForm() {
         monthly: { label: 'Monthly', icon: 'CalendarRange', color: 'text-purple-500', bg: 'bg-purple-500/10' }
     }
 
-    const handleSubmit = async (e: React.SyntheticEvent, sideOverride?: 'buy' | 'sell') => {
+    const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault()
         if (!token) return
 
-        const effSide = sideOverride ?? side
-        if (sideOverride && sideOverride !== side) setSide(sideOverride)
-
         setLoading(true)
-        setMessage('')
-        setIsSuccess(false)
 
         try {
             const apiClient = createApiClient(token)
             const payload: any = {
-                side: effSide,
+                side,
                 energy_amount: amount,
                 interval_type: intervalType,
                 interval_value: parseInt(intervalValue) || 1,
@@ -63,7 +48,7 @@ export function RecurringOrderForm() {
 
             // Add price limit based on side
             if (priceLimit) {
-                if (effSide === 'buy') {
+                if (side === 'buy') {
                     payload.max_price_per_kwh = priceLimit
                 } else {
                     payload.min_price_per_kwh = priceLimit
@@ -81,53 +66,59 @@ export function RecurringOrderForm() {
             const response = await apiClient.createRecurringOrder(payload)
 
             if (response.error) {
-                setMessage(response.error)
+                toast.error(response.error)
             } else {
                 const data = response.data as any
                 const nextRun = data?.next_execution_at
                     ? new Date(data.next_execution_at).toLocaleString()
                     : 'soon'
-                setMessage(`DCA strategy created! First execution: ${nextRun}`)
-                setIsSuccess(true)
+                toast.success(`DCA strategy created! First execution: ${nextRun}`, { duration: 5000 })
                 setAmount('')
                 setPriceLimit('')
                 setName('')
             }
         } catch (err) {
-            setMessage('Failed to schedule recurring order')
+            toast.error('Failed to schedule recurring order')
         } finally {
             setLoading(false)
         }
     }
 
     const intervalLabel = intervalType === 'hourly' ? 'hour' : intervalType === 'daily' ? 'day' : intervalType === 'weekly' ? 'week' : 'month'
-    const scheduleSummary = `Every ${intervalValue !== '1' ? `${intervalValue} ` : ''}${frequencyConfig[intervalType].label.toLowerCase()}${intervalValue !== '1' ? 's' : ''}`
     const isBuy = side === 'buy'
 
     return (
         <div className="flex flex-col h-full">
-            {/* Header — title + subtitle; padding inherited from parent (matches Buy/Sell) */}
-            <div className="flex items-center gap-3 pb-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-secondary">
-                    <Repeat className="h-4 w-4 text-primary" />
-                </span>
-                <div className="flex flex-col">
-                    <span className="text-sm font-semibold leading-tight text-foreground">DCA Strategy</span>
-                    <span className="text-[11px] leading-tight text-muted-foreground">Automated recurring orders</span>
-                </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 min-h-[380px]">
-                    {/* Strategy Name */}
-                    <Field label="Strategy Name" hint="optional">
-                        <Input
-                            type="text"
-                            placeholder="e.g. Daily Solar Buy"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className={cn(inputBase, "h-10 text-sm")}
-                        />
-                    </Field>
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-5 min-h-[380px]">
+                {/* ─── Section 1: Strategy ─── */}
+                <Section title="Strategy">
+                    {/* Side — explicit up front so the price-limit label (Max/Min) is coherent */}
+                    <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-secondary p-1">
+                        <button
+                            type="button"
+                            onClick={() => setSide('buy')}
+                            className={cn(
+                                'flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-all duration-200',
+                                isBuy
+                                    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+                                    : 'text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10'
+                            )}
+                        >
+                            <TrendingDown className="h-4 w-4" /> Buy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSide('sell')}
+                            className={cn(
+                                'flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-all duration-200',
+                                !isBuy
+                                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30'
+                                    : 'text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10'
+                            )}
+                        >
+                            <TrendingUp className="h-4 w-4" /> Sell
+                        </button>
+                    </div>
 
                     {/* Amount */}
                     <Field label="Amount per execution" hint="min 0.1 kWh">
@@ -184,42 +175,52 @@ export function RecurringOrderForm() {
                         </div>
                     </Field>
 
-                    {/* Frequency */}
-                    <Field label="Frequency">
-                        <div className="grid grid-cols-4 gap-2">
-                            {(Object.keys(frequencyConfig) as IntervalType[]).map((key) => {
-                                const config = frequencyConfig[key]
-                                const isActive = intervalType === key
-                                const Icon = freqIcons[config.icon]
-                                return (
-                                    <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() => setIntervalType(key)}
-                                        className={cn(
-                                            "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
-                                            isActive
-                                                ? "border-primary bg-background shadow-sm"
-                                                : "border-border bg-secondary hover:border-muted"
-                                        )}
-                                    >
-                                        <span className={cn(
-                                            "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
-                                            isActive ? config.bg : "bg-muted"
-                                        )}>
-                                            <Icon className={cn("h-4 w-4", isActive ? config.color : "text-muted-foreground")} />
-                                        </span>
-                                        <span className={cn(
-                                            "text-[11px] font-semibold",
-                                            isActive ? "text-foreground" : "text-muted-foreground"
-                                        )}>{config.label}</span>
-                                    </button>
-                                )
-                            })}
-                        </div>
+                    {/* Strategy Name — optional, so it sits last in the section */}
+                    <Field label="Strategy Name" hint="optional">
+                        <Input
+                            type="text"
+                            placeholder="e.g. Daily Solar Buy"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className={cn(inputBase, "h-10 text-sm")}
+                        />
                     </Field>
+                </Section>
 
-                    {/* Interval value + Max executions */}
+                {/* ─── Section 2: Schedule ─── */}
+                <Section title="Schedule">
+                    <div className="grid grid-cols-4 gap-2">
+                        {(Object.keys(frequencyConfig) as IntervalType[]).map((key) => {
+                            const config = frequencyConfig[key]
+                            const isActive = intervalType === key
+                            const Icon = freqIcons[config.icon]
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setIntervalType(key)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                                        isActive
+                                            ? "border-primary bg-background shadow-sm"
+                                            : "border-border bg-secondary hover:border-muted"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                                        isActive ? config.bg : "bg-muted"
+                                    )}>
+                                        <Icon className={cn("h-4 w-4", isActive ? config.color : "text-muted-foreground")} />
+                                    </span>
+                                    <span className={cn(
+                                        "text-[11px] font-semibold",
+                                        isActive ? "text-foreground" : "text-muted-foreground"
+                                    )}>{config.label}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                         <Field label={`Every N ${intervalLabel}s`} icon={Hash}>
                             <Input
@@ -242,79 +243,16 @@ export function RecurringOrderForm() {
                             />
                         </Field>
                     </div>
+                </Section>
 
-                    {/* Compact summary */}
-                    <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 space-y-1.5 text-xs">
-                        <SummaryRow label="Action">
-                            <span className={cn("font-semibold", isBuy ? "text-emerald-500" : "text-rose-500")}>
-                                {isBuy ? 'Buy' : 'Sell'}
-                            </span>
-                        </SummaryRow>
-                        <SummaryRow label="Amount">
-                            <span className="font-mono font-semibold text-foreground">{amount || '0'} kWh</span>
-                        </SummaryRow>
-                        <SummaryRow label="Schedule">
-                            <span className="font-semibold text-foreground">{scheduleSummary}</span>
-                        </SummaryRow>
-                        {priceLimit && (
-                            <SummaryRow label={isBuy ? 'Max Price' : 'Min Price'}>
-                                <span className="font-mono font-semibold text-foreground">฿{priceLimit}/kWh</span>
-                            </SummaryRow>
-                        )}
-                        {maxExecutions && (
-                            <SummaryRow label="Limit">
-                                <span className="font-mono font-semibold text-foreground">{maxExecutions} runs</span>
-                            </SummaryRow>
-                        )}
-                    </div>
-
-                    {/* Matching scenario */}
-                    <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center justify-between">
-                            <span>Simulated Matching</span>
-                            <span className="text-primary italic normal-case">Affects fees</span>
-                        </Label>
-                        <div className="grid grid-cols-3 gap-1.5">
-                            {[
-                                { id: buyerZoneId, label: 'Intra-zone', desc: 'Neighbor' },
-                                { id: (buyerZoneId % 3) + 1, label: 'Inter-zone', desc: 'Nearby' },
-                                { id: 0, label: 'Main Grid', desc: 'Import' }
-                            ].map((scenario) => (
-                                <button
-                                    key={scenario.label}
-                                    type="button"
-                                    onClick={() => setSellerZoneId(scenario.id)}
-                                    className={cn(
-                                        "flex flex-col items-center py-2 px-1 rounded-lg border transition-all",
-                                        sellerZoneId === scenario.id
-                                            ? "bg-primary/5 border-primary shadow-sm"
-                                            : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
-                                    )}
-                                >
-                                    <span className="text-[10px] font-bold">{scenario.label}</span>
-                                    <span className="text-[9px] opacity-70 leading-none">{scenario.desc}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Cost breakdown */}
-                    <P2PCostBreakdown
-                        amount={parseFloat(amount) || 0}
-                        agreedPrice={parseFloat(priceLimit) || undefined}
-                        buyerZoneId={buyerZoneId}
-                        sellerZoneId={sellerZoneId}
-                    />
-
-                    {/* Slide to confirm: right = Buy, left = Sell */}
-                    <SlideToConfirm
-                        loading={loading}
-                        disabled={loading || !token || !amount}
-                        idleHint={!token ? 'Sign in to trade' : !amount ? 'Enter an amount' : 'Slide to confirm'}
-                        onConfirm={(s) => handleSubmit({ preventDefault() {} } as React.SyntheticEvent, s)}
-                    />
-
-                    {message && <FormAlert success={isSuccess} message={message} />}
+                {/* Slide right to confirm; the thumb + fill take the selected side's color */}
+                <SlideToConfirm
+                    side={side}
+                    loading={loading}
+                    disabled={loading || !token || !amount}
+                    idleHint={!token ? 'Sign in to trade' : !amount ? 'Enter an amount' : `Slide to start ${isBuy ? 'buying' : 'selling'}`}
+                    onConfirm={() => handleSubmit({ preventDefault() {} } as React.SyntheticEvent)}
+                />
             </form>
         </div>
     )
@@ -322,22 +260,16 @@ export function RecurringOrderForm() {
 
 const freqIcons = { Clock, Sun, CalendarDays, CalendarRange }
 
-// Single alert style — one layout, accent swaps by success/error only
-function FormAlert({ success, message }: { success: boolean; message: string }) {
-    const Icon = success ? CheckCircle2 : AlertCircle
+// Numbered form section: micro-label + hairline divider, compact enough for the sidebar
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <div
-            role="status"
-            className={cn(
-                "flex items-start gap-2.5 rounded-xl border p-3 text-xs",
-                success
-                    ? "border-emerald-500/30 bg-emerald-500/5"
-                    : "border-rose-500/30 bg-rose-500/5"
-            )}
-        >
-            <Icon className={cn("mt-0.5 h-4 w-4 flex-shrink-0", success ? "text-emerald-500" : "text-rose-500")} />
-            <span className="leading-relaxed text-foreground">{message}</span>
-        </div>
+        <section className="space-y-3">
+            <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</span>
+                <div className="h-px flex-1 bg-border" />
+            </div>
+            {children}
+        </section>
     )
 }
 
@@ -349,11 +281,14 @@ const inputBase = "appearance-none rounded-xl border border-border bg-secondary 
 const THUMB_W = 48 // px, matches w-12
 const SLIDE_THRESHOLD = 0.7 // fraction of max travel to trigger
 
-function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onConfirm }: {
+// Single-direction slide (left → right). Side is chosen explicitly in the form,
+// so the slider only confirms — it no longer doubles as the buy/sell selector.
+function SlideToConfirm({ side, loading, disabled, idleHint = 'Slide to confirm', onConfirm }: {
+    side: 'buy' | 'sell'
     loading: boolean
     disabled: boolean
     idleHint?: string
-    onConfirm: (side: 'buy' | 'sell') => void
+    onConfirm: () => void
 }) {
     const trackRef = useRef<HTMLDivElement>(null)
     const drag = useRef({ startX: 0, max: 1, active: false })
@@ -361,9 +296,11 @@ function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onCo
     const [dragging, setDragging] = useState(false)
     const [maxPx, setMaxPx] = useState(1)
 
+    const isBuy = side === 'buy'
+
     const maxTravel = () => {
         const w = trackRef.current?.clientWidth ?? 0
-        return Math.max(1, (w - THUMB_W) / 2 - 4)
+        return Math.max(1, w - THUMB_W - 8)
     }
 
     const onDown = (e: React.PointerEvent) => {
@@ -377,7 +314,7 @@ function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onCo
     const onMove = (e: React.PointerEvent) => {
         if (!drag.current.active) return
         const { startX, max } = drag.current
-        const dx = Math.max(-max, Math.min(max, e.clientX - startX))
+        const dx = Math.max(0, Math.min(max, e.clientX - startX))
         setOffset(dx)
     }
     const onUp = (e: React.PointerEvent) => {
@@ -385,18 +322,13 @@ function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onCo
         drag.current.active = false
         setDragging(false)
         try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { }
-        const ratio = offset / drag.current.max
-        if (ratio >= SLIDE_THRESHOLD) onConfirm('buy')
-        else if (ratio <= -SLIDE_THRESHOLD) onConfirm('sell')
+        if (offset / drag.current.max >= SLIDE_THRESHOLD) onConfirm()
         setOffset(0)
     }
 
-    const ratio = offset / maxPx
-    const towardBuy = offset > 0
-    const intensity = Math.min(1, Math.abs(ratio))
+    const intensity = Math.min(1, offset / maxPx)
 
     return (
-        <div className="space-y-1.5">
         <div
             ref={trackRef}
             data-testid="slide-to-confirm-track"
@@ -405,26 +337,31 @@ function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onCo
                 disabled && "opacity-50"
             )}
         >
-            {/* Fill that grows toward the dragged side */}
+            {/* Fill trailing the thumb, in the selected side's color */}
             <div
                 className={cn(
-                    "absolute inset-y-0 w-1/2 transition-colors",
-                    towardBuy
-                        ? "right-0 bg-gradient-to-r from-transparent to-emerald-500/30"
-                        : "left-0 bg-gradient-to-l from-transparent to-rose-500/30"
+                    "absolute inset-y-0 left-0 rounded-full",
+                    isBuy ? "bg-emerald-500/20" : "bg-rose-500/20"
                 )}
-                style={{ opacity: dragging ? intensity : 0 }}
+                style={{ width: THUMB_W + offset, opacity: dragging ? Math.max(0.35, intensity) : 0 }}
             />
 
-            {/* Side hints */}
-            <div className="absolute inset-0 flex items-center justify-between px-5 text-xs font-semibold pointer-events-none">
-                <span className={cn("flex items-center gap-1 transition-colors", !towardBuy && dragging ? "text-rose-500" : "text-muted-foreground")}>
-                    <TrendingDown className="h-3.5 w-3.5" /> Sell
-                </span>
-                <span className={cn("flex items-center gap-1 transition-colors", towardBuy && dragging ? "text-emerald-500" : "text-muted-foreground")}>
-                    Buy <TrendingUp className="h-3.5 w-3.5" />
-                </span>
+            {/* Centered hint — thumb rests at the left edge, so this stays visible
+                until the drag itself sweeps across it. Height reserved by the track. */}
+            <div
+                className={cn(
+                    "absolute inset-0 flex items-center justify-center text-xs font-medium text-muted-foreground pointer-events-none transition-opacity",
+                    (dragging || loading) && "opacity-0"
+                )}
+            >
+                {idleHint}
             </div>
+
+            {/* Destination chevron */}
+            <ChevronRight className={cn(
+                "absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none transition-colors",
+                dragging ? (isBuy ? "text-emerald-500" : "text-rose-500") : "text-muted-foreground/50"
+            )} />
 
             {/* Thumb */}
             <div
@@ -434,42 +371,24 @@ function SlideToConfirm({ loading, disabled, idleHint = 'Slide to confirm', onCo
                 onPointerUp={onUp}
                 onPointerCancel={onUp}
                 className={cn(
-                    "absolute top-1/2 left-1/2 flex h-10 w-12 -mt-5 -ml-6 items-center justify-center rounded-full shadow-lg touch-none",
+                    "absolute top-1/2 left-1 flex h-10 w-12 -mt-5 items-center justify-center rounded-full shadow-lg touch-none text-white",
                     disabled || loading ? "cursor-not-allowed" : "cursor-grab active:cursor-grabbing",
                     !dragging && "transition-transform duration-200",
-                    towardBuy && dragging
-                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600 text-white"
-                        : !towardBuy && dragging
-                            ? "bg-gradient-to-b from-rose-500 to-rose-600 text-white"
-                            : "bg-primary text-primary-foreground"
+                    isBuy
+                        ? "bg-gradient-to-b from-emerald-500 to-emerald-600"
+                        : "bg-gradient-to-b from-rose-500 to-rose-600"
                 )}
                 style={{ transform: `translateX(${offset}px)` }}
             >
                 {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
-                ) : towardBuy && dragging ? (
-                    <ArrowRight className="h-4 w-4" />
-                ) : !towardBuy && dragging ? (
-                    <ArrowRight className="h-4 w-4 rotate-180" />
                 ) : (
-                    <span className="flex items-center text-muted-foreground/60">
-                        <ArrowRight className="h-3.5 w-3.5 rotate-180 -mr-1" />
-                        <ArrowRight className="h-3.5 w-3.5" />
+                    <span className="flex items-center">
+                        <ChevronRight className="h-4 w-4 -mr-2" />
+                        <ChevronRight className="h-4 w-4 opacity-50" />
                     </span>
                 )}
             </div>
-        </div>
-
-        {/* Hint below the track — the thumb sits dead-center, so an in-track
-            label is always occluded. Height is reserved to avoid layout shift. */}
-        <p
-            className={cn(
-                "h-4 text-center text-[11px] font-medium text-muted-foreground/70 transition-opacity",
-                (dragging || loading) && "opacity-0"
-            )}
-        >
-            {idleHint}
-        </p>
         </div>
     )
 }
@@ -489,15 +408,6 @@ function Field({ label, hint, icon: Icon, children }: {
                 </span>
                 {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
             </Label>
-            {children}
-        </div>
-    )
-}
-
-function SummaryRow({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div className="flex justify-between">
-            <span className="text-muted-foreground">{label}</span>
             {children}
         </div>
     )

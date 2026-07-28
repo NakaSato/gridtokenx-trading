@@ -38,7 +38,7 @@ app/                    Next.js App Router (routes, layouts, route handlers)
 └── api/                Server route handlers (BFF) — auth proxy, pyth-price, option txns
 components/             UI — feature dirs (trading/ p2p/ auction/ charts/ energy-grid/ …) + ui/ (shadcn)
 contexts/              React Context providers (Auth, Trading, Energy, Privacy, Marketplace, Socket, …)
-hooks/                 Data/logic hooks (useApi, useOptions, useOracle, usePythPrice, useWebSocket, …)
+hooks/                 Data/logic hooks (useApi, useOptions, usePythPrice, useWebSocket, …)
 lib/                   Core client logic
 │   ├── config.ts          Env-driven API/WS/Solana endpoints + helpers
 │   ├── api-client.ts      Facade over lib/api/* domain modules

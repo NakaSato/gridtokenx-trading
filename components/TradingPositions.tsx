@@ -1,6 +1,12 @@
 'use client'
 
-import { useCallback, useContext, useEffect, useState, memo } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  memo,
+  type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader } from './ui/card'
 import { Skeleton } from './ui/skeleton'
@@ -13,39 +19,28 @@ import {
   BookOpen,
   Clock,
   RotateCw,
-  Ban,
   Bell,
-  Repeat,
   AlertCircle,
   Zap,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import OpenPositions from './OpenPositions'
 import OrderHistory from './OrderHistory'
 import { Position, mapApiOrderToOrder } from '@/lib/data/Positions'
 import LiveGridStats from './LiveGridStats'
-import ExpiredOptions from './ExpiredOptions'
+import P2PActivityPanel from './p2p/P2PActivityPanel'
 import PriceAlerts from './trading/PriceAlerts'
-import RecurringOrdersList from './trading/RecurringOrdersList'
-import { RecurringOrderForm } from './trading/RecurringOrderForm'
-import { ContractContext } from '@/contexts/contractProvider'
 import { Transaction } from '@/lib/data/WalletActivity'
 import Pagination from './Pagination'
 import OpenOptionOrders from './OpenOptionOrders'
 import { useAuth } from '@/contexts/AuthProvider'
+import { useSidebar } from '@/contexts/SidebarContext'
 import { createApiClient } from '@/lib/api-client'
 import type { Order } from '@/lib/data/Positions'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
-import { useOptionPositions } from '@/hooks/useOptions'
-import {
-  ApiFuturesPosition,
-  ApiOrder,
-  TradeRecord,
-  OnChainTradeRecord,
-} from '@/types/trading'
-
-import { PublicKey } from '@solana/web3.js'
+import { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab Configuration
@@ -56,10 +51,8 @@ type TabValue =
   | 'OpenOrders'
   | 'History'
   | 'Alerts'
-  | 'Expired'
-  | 'DCA'
   | 'LiveGrid'
-  | 'OrderBook'
+  | 'P2PActivity'
 
 interface TabConfig {
   value: TabValue
@@ -71,13 +64,22 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   { value: 'Positions', label: 'Positions', icon: Activity, showBadge: true },
   { value: 'LiveGrid', label: 'Live Grid', icon: Zap },
-
-  { value: 'OpenOrders', label: 'My Orders', icon: BookOpen },
+  { value: 'P2PActivity', label: 'P2P Activity', icon: Users },
+  { value: 'OpenOrders', label: 'My Orders', icon: BookOpen, showBadge: true },
   { value: 'History', label: 'History', icon: History },
   { value: 'Alerts', label: 'Alerts', icon: Bell },
-  { value: 'Expired', label: 'Expired', icon: Ban },
-  { value: 'DCA', label: 'DCA', icon: Repeat },
 ]
+
+// Tabs whose content comes from fetchData — only these sit behind the
+// loading/error gate. Live Grid, P2P Activity, and Alerts have their own data
+// sources and render regardless of fetch state.
+const DATA_TABS: ReadonlySet<TabValue> = new Set([
+  'Positions',
+  'OpenOrders',
+  'History',
+])
+
+const ITEMS_PER_PAGE = 5
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EmptyState Component
@@ -99,11 +101,11 @@ function EmptyState({
   onAction,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-      <div className="bg-muted/50 flex h-12 w-12 items-center justify-center rounded-full">
-        <Icon className="h-6 w-6 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+      <div className="bg-muted/50 flex h-10 w-10 items-center justify-center rounded-full">
+        <Icon className="h-5 w-5 text-muted-foreground" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <p className="text-sm font-medium">{title}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
@@ -111,7 +113,7 @@ function EmptyState({
         <Button
           variant="outline"
           size="sm"
-          className="mt-2 text-xs"
+          className="mt-1 h-7 text-xs"
           onClick={onAction}
         >
           {actionLabel}
@@ -132,18 +134,18 @@ interface ErrorStateProps {
 
 function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 py-10 text-center">
-      <div className="bg-destructive/10 flex h-12 w-12 items-center justify-center rounded-full">
-        <AlertCircle className="h-6 w-6 text-destructive" />
+    <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+      <div className="bg-destructive/10 flex h-10 w-10 items-center justify-center rounded-full">
+        <AlertCircle className="h-5 w-5 text-destructive" />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <p className="text-sm font-medium">Failed to load data</p>
         <p className="text-xs text-muted-foreground">{message}</p>
       </div>
       <Button
         variant="outline"
         size="sm"
-        className="mt-2 text-xs"
+        className="mt-1 h-7 text-xs"
         onClick={onRetry}
       >
         <RotateCw className="mr-1 h-3 w-3" />
@@ -154,12 +156,75 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Panel building blocks
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Scrollable list with footer pagination; centered empty state otherwise. */
+function PaginatedPanel<T>({
+  items,
+  page,
+  onPageChange,
+  renderItem,
+  empty,
+}: {
+  items: T[]
+  page: number
+  onPageChange: (page: number) => void
+  renderItem: (item: T, index: number) => ReactNode
+  empty: ReactNode
+}) {
+  if (items.length === 0) {
+    return <div className="flex h-full items-center justify-center">{empty}</div>
+  }
+  const start = (page - 1) * ITEMS_PER_PAGE
+  return (
+    <div className="flex h-full flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col space-y-3">
+          {items.slice(start, start + ITEMS_PER_PAGE).map(renderItem)}
+        </div>
+      </div>
+      <div className="flex-shrink-0 border-t border-border">
+        <Pagination
+          currentPage={page}
+          totalItems={items.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={onPageChange}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Scroll container for tabs that render a single child (History, Alerts, …). */
+function ScrollPanel({
+  centered,
+  children,
+}: {
+  centered?: boolean
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'flex h-full flex-col overflow-y-auto',
+        centered && 'items-center justify-center'
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default memo(function TradingPositions() {
   const { token } = useAuth()
+  const { showRightSidebar, toggleRightSidebar } = useSidebar()
   const [activeTab, setActiveTab] = useState<TabValue>('Positions')
+  const [currentPage, setCurrentPage] = useState(1)
   const [optioninfos, setOptionInfos] = useState<Position[]>([])
   const [orderInfos, setOrderInfos] = useState<Order[]>([])
   const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
@@ -167,10 +232,16 @@ export default memo(function TradingPositions() {
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
 
-  const { program, pub, onClaimOption, onExerciseOption } =
-    useContext(ContractContext)
-
-  const { data: blockchainPositions } = useOptionPositions(program, pub || null)
+  // "Start Trading" CTA — reveal the P2P order form in the right sidebar
+  const handleStartTrading = useCallback(() => {
+    if (!showRightSidebar) toggleRightSidebar()
+    // Wait a frame so the panel is mounted before scrolling to it
+    requestAnimationFrame(() => {
+      document
+        .getElementById('p2p-order-form')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }, [showRightSidebar, toggleRightSidebar])
 
   // Reset pagination when switching tabs
   const handleTabChange = useCallback((value: string) => {
@@ -178,22 +249,12 @@ export default memo(function TradingPositions() {
     setCurrentPage(1)
   }, [])
 
-  const onClaim = useCallback(
-    (optionindex: number, solPrice: number) => {
-      onClaimOption(optionindex, solPrice)
-    },
-    [onClaimOption]
-  )
-
-  const onExercise = useCallback(
-    (index: number) => {
-      onExerciseOption(index)
-    },
-    [onExerciseOption]
-  )
-
   const fetchData = useCallback(async () => {
-    if (!token) return
+    if (!token) {
+      // Don't leave the skeleton up forever when signed out / token expired
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -211,7 +272,7 @@ export default memo(function TradingPositions() {
             token: pos.product_symbol || 'Unknown',
             logo: '/images/solana.png',
             symbol: pos.product_symbol || 'GRX',
-            type: pos.side === 'long' ? 'Call' : 'Put',
+            type: pos.side === 'long' ? 'Long' : 'Short',
             strikePrice: parseFloat(pos.entry_price),
             expiry: 'Perpetual',
             size: parseFloat(pos.quantity),
@@ -229,7 +290,9 @@ export default memo(function TradingPositions() {
       // until that async promotion happened. Fetch everything and keep the
       // still-open statuses client-side instead.
       const OPEN_STATUSES = new Set(['pending', 'active', 'partially_filled'])
-      const ordersRes = (await apiClient.getOrders({})) as unknown as { data: { data: ApiOrder[] } }
+      const ordersRes = (await apiClient.getOrders({})) as unknown as {
+        data: { data: ApiOrder[] }
+      }
       if (ordersRes.data?.data) {
         const mappedOrders: Order[] = ordersRes.data.data
           .filter((o) => OPEN_STATUSES.has(o.status))
@@ -237,72 +300,40 @@ export default memo(function TradingPositions() {
         setOrderInfos(mappedOrders)
       }
 
-      // 3. Fetch Trade History from Blockchain
-      if (program && pub) {
-        try {
-          // @ts-ignore
-          const tradeRecordsRaw = await program.account.tradeRecord.all()
-          const userTrades = tradeRecordsRaw
-            .map((r: any) => r.account as OnChainTradeRecord)
-            .filter(
-              (t: OnChainTradeRecord) =>
-                t.buyer.toBase58() === pub.toBase58() ||
-                t.seller.toBase58() === pub.toBase58()
-            )
-            .sort(
-              (a: OnChainTradeRecord, b: OnChainTradeRecord) =>
-                b.executedAt.toNumber() - a.executedAt.toNumber()
-            )
-
-          const mappedHistory: Transaction[] = userTrades.map(
-            (trade: OnChainTradeRecord) => ({
-              transactionID: trade.executedAt.toString(), // Using timestamp as ID for now
-              token: {
-                name: 'GridToken',
-                symbol: 'GRX',
-                logo: '/images/grid.png',
-              },
-              transactionType:
-                trade.buyer.toBase58() === pub.toBase58() ? 'Buy' : 'Sell',
-              optionType: 'Spot',
-              strikePrice: trade.pricePerKwh.toNumber() / 1000000, // micro-units to standard
-              quantity: trade.amount.toNumber() / 1000, // Wh to kWh
-              totalValue: trade.totalValue.toNumber() / 1000000, // micro-units
-              expiry: format(
-                new Date(trade.executedAt.toNumber() * 1000),
-                'dd MMM, yyy HH:mm:ss'
-              ),
-            })
-          )
-          setDoneInfo(mappedHistory)
-        } catch (e) {
-          console.error('Failed to fetch on-chain trade history', e)
-        }
-      } else {
-        // Fallback to API if program not ready (or keep existing logic)
-        const tradesRes = (await apiClient.getTrades({
-          limit: 50,
-        })) as unknown as { data: { trades: TradeRecord[] } }
-        if (tradesRes.data?.trades) {
-          const mappedHistory: Transaction[] = tradesRes.data.trades.map(
-            (trade: TradeRecord) => ({
-              transactionID: trade.id,
-              token: {
-                name: 'GridToken',
-                symbol: 'GRX',
-                logo: '/images/grid.png',
-              },
-              transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
-              optionType: 'Spot',
-              strikePrice: parseFloat(trade.price),
-              expiry: format(
-                new Date(trade.executed_at),
-                'dd MMM, yyy HH:mm:ss'
-              ),
-            })
-          )
-          setDoneInfo(mappedHistory)
-        }
+      // 3. Fetch Trade History (API only — no direct on-chain reads; all
+      // blockchain access goes through the backend / Chain Bridge)
+      const tradesRes = (await apiClient.getTrades({
+        limit: 50,
+      })) as unknown as { data: { trades: TradeRecord[] } }
+      if (tradesRes.data?.trades) {
+        const mappedHistory: Transaction[] = tradesRes.data.trades.map(
+          (trade: TradeRecord) => ({
+            transactionID: trade.id,
+            token: {
+              name: 'GridToken',
+              symbol: 'GRX',
+              logo: '/images/grid.png',
+            },
+            transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
+            optionType: 'Spot',
+            strikePrice: parseFloat(trade.price_per_kwh ?? trade.price),
+            quantity: parseFloat(trade.energy_amount ?? trade.quantity),
+            totalValue: parseFloat(trade.total_value),
+            wheelingCharge:
+              trade.wheeling_charge != null
+                ? parseFloat(trade.wheeling_charge)
+                : undefined,
+            effectiveEnergy:
+              trade.effective_energy != null
+                ? parseFloat(trade.effective_energy)
+                : undefined,
+            expiry: format(
+              new Date(trade.executed_at),
+              'dd MMM, yyy HH:mm:ss'
+            ),
+          })
+        )
+        setDoneInfo(mappedHistory)
       }
       setLastRefreshed(new Date())
     } catch (err) {
@@ -313,7 +344,7 @@ export default memo(function TradingPositions() {
     } finally {
       setLoading(false)
     }
-  }, [token, program, pub])
+  }, [token])
 
   useEffect(() => {
     fetchData()
@@ -340,14 +371,8 @@ export default memo(function TradingPositions() {
     [token, fetchData]
   )
 
-  // Consolidate positions: futures + blockchain options
-  const allPositions = [...optioninfos, ...(blockchainPositions?.active || [])]
-  const expiredInfos = blockchainPositions?.expired || []
-
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  // Positions come from the futures API only (no direct on-chain reads)
+  const allPositions = optioninfos
 
   // Get badge count for tabs
   const getBadgeCount = (tabValue: TabValue): number | null => {
@@ -361,44 +386,156 @@ export default memo(function TradingPositions() {
     }
   }
 
+  // ── Per-tab content ────────────────────────────────────────────────────────
+
+  const renderDataTab = () => {
+    if (loading) {
+      return (
+        <div className="flex h-full flex-col space-y-3 overflow-hidden p-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex flex-col space-y-2">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      )
+    }
+    if (error) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <ErrorState message={error} onRetry={fetchData} />
+        </div>
+      )
+    }
+
+    switch (activeTab) {
+      case 'Positions':
+        return (
+          <PaginatedPanel
+            items={allPositions}
+            page={currentPage}
+            onPageChange={setCurrentPage}
+            renderItem={(position, index) => (
+              <OpenPositions
+                key={position.index ?? index}
+                index={position.index}
+                token={position.token}
+                logo={position.logo}
+                symbol={position.symbol}
+                type={position.type}
+                strikePrice={position.strikePrice}
+                expiry={position.expiry}
+                size={position.size}
+                pnl={position.pnl}
+                greeks={position.greeks}
+              />
+            )}
+            empty={
+              <EmptyState
+                icon={Activity}
+                title="No Positions Open"
+                description="Your active futures positions will appear here."
+                actionLabel="Start Trading"
+                onAction={handleStartTrading}
+              />
+            }
+          />
+        )
+      case 'OpenOrders':
+        return (
+          <PaginatedPanel
+            items={orderInfos}
+            page={currentPage}
+            onPageChange={setCurrentPage}
+            renderItem={(pos, idx) => (
+              <OpenOptionOrders
+                key={pos.index ?? idx}
+                orderId={pos.index}
+                logo={pos.logo}
+                token={pos.token}
+                symbol={pos.symbol}
+                type={pos.type}
+                limitPrice={pos.limitPrice}
+                transaction={pos.transaction}
+                size={pos.size}
+                orderDate={pos.orderDate}
+                status={pos.status}
+                onCancel={handleCancelOrder}
+              />
+            )}
+            empty={
+              <EmptyState
+                icon={BookOpen}
+                title="No Orders Open"
+                description="Your pending limit orders will be listed here."
+              />
+            }
+          />
+        )
+      case 'History':
+        return (
+          <ScrollPanel centered={doneInfo.length === 0}>
+            {doneInfo.length > 0 ? (
+              <OrderHistory doneOptioninfos={doneInfo} />
+            ) : (
+              <EmptyState
+                icon={History}
+                title="No History Available"
+                description="Your trade history will be compiled once you start trading."
+              />
+            )}
+          </ScrollPanel>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <Card className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-      <CardHeader className="bg-muted/20 p-0">
-        <div className="flex w-full items-center justify-between">
+      <CardHeader className="flex-shrink-0 border-b border-border bg-muted/20 px-1 py-0.5">
+        <div className="flex w-full items-center justify-between gap-2">
+          {/* Tab strip — scrolls horizontally instead of clipping on narrow panels */}
           <Tabs
             value={activeTab}
             onValueChange={handleTabChange}
-            className="h-6"
+            className="min-w-0 flex-1"
           >
-            <TabsList className="bg-secondary/50 h-full gap-0.5 rounded-md p-0.5">
-              {TABS.map(({ value, label, icon: Icon, showBadge }) => {
-                const badgeCount = showBadge ? getBadgeCount(value) : null
-                return (
-                  <TabsTrigger
-                    key={value}
-                    value={value}
-                    data-testid={`positions-tab-${value.toLowerCase()}`}
-                    className="h-full rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                  >
-                    <div className="flex items-center gap-1">
-                      <Icon className="h-3 w-3" />
-                      <span>{label}</span>
-                      {badgeCount !== null && (
-                        <Badge
-                          variant="secondary"
-                          className="h-3.5 px-1 text-[8px]"
-                        >
-                          {badgeCount}
-                        </Badge>
-                      )}
-                    </div>
-                  </TabsTrigger>
-                )
-              })}
-            </TabsList>
+            <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TabsList className="bg-secondary/50 h-6 w-max gap-0.5 rounded-md p-0.5">
+                {TABS.map(({ value, label, icon: Icon, showBadge }) => {
+                  const badgeCount = showBadge ? getBadgeCount(value) : null
+                  return (
+                    <TabsTrigger
+                      key={value}
+                      value={value}
+                      data-testid={`positions-tab-${value.toLowerCase()}`}
+                      className="h-full whitespace-nowrap rounded-sm px-2 text-[10px] data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                    >
+                      <div className="flex items-center gap-1">
+                        <Icon className="h-3 w-3" />
+                        <span>{label}</span>
+                        {badgeCount !== null && (
+                          <Badge
+                            variant="secondary"
+                            className="h-3.5 px-1 text-[8px]"
+                          >
+                            {badgeCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </div>
           </Tabs>
 
-          <div className="flex h-6 items-center gap-1.5">
+          <div className="flex h-6 flex-shrink-0 items-center gap-1.5">
             <div className="hidden items-center gap-1 text-[10px] text-muted-foreground md:flex">
               <Clock className="h-3 w-3" />
               <span>
@@ -409,22 +546,9 @@ export default memo(function TradingPositions() {
               </span>
             </div>
             <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[10px] font-medium leading-none"
-            >
-              Liq
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[10px] font-medium leading-none"
-            >
-              TP/SL
-            </Button>
-            <Button
               variant="ghost"
               size="icon"
+              aria-label="Refresh"
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={fetchData}
             >
@@ -437,177 +561,29 @@ export default memo(function TradingPositions() {
       </CardHeader>
 
       <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
-        <div className="flex h-full flex-col">
-          {loading ? (
-            <div className="flex flex-1 flex-col space-y-3 p-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex flex-col space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-5 w-24" />
-                  </div>
-                  <Skeleton className="h-12 w-full" />
+        {/* Only fetchData-backed tabs sit behind the loading/error gate */}
+        {DATA_TABS.has(activeTab) ? (
+          renderDataTab()
+        ) : (
+          <div className="h-full min-h-0 overflow-hidden">
+            {activeTab === 'LiveGrid' && <LiveGridStats />}
+
+            {activeTab === 'Alerts' && <PriceAlerts />}
+
+            {activeTab === 'P2PActivity' &&
+              (token ? (
+                <P2PActivityPanel />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <EmptyState
+                    icon={Users}
+                    title="Sign In Required"
+                    description="P2P matching and settlement activity is only available once you're signed in."
+                  />
                 </div>
               ))}
-            </div>
-          ) : error ? (
-            <div className="flex flex-1 items-center justify-center">
-              <ErrorState message={error} onRetry={fetchData} />
-            </div>
-          ) : (
-            <div className="min-h-0 flex-1 overflow-hidden">
-              {activeTab === 'Positions' && (
-                <div className="flex h-full flex-col">
-                  {allPositions.length > 0 ? (
-                    <>
-                      <div className="min-h-0 flex-1 overflow-y-auto">
-                        <div className="flex flex-col space-y-3">
-                          {allPositions
-                            .slice(indexOfFirstItem, indexOfLastItem)
-                            .map((position, index) => (
-                              <OpenPositions
-                                key={position.index ?? index}
-                                index={position.index}
-                                token={position.token}
-                                logo={position.logo}
-                                symbol={position.symbol}
-                                type={position.type}
-                                strikePrice={position.strikePrice}
-                                expiry={position.expiry}
-                                size={position.size}
-                                pnl={position.pnl}
-                                greeks={position.greeks}
-                                onExercise={() => onExercise(position.index)}
-                              />
-                            ))}
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 border-t border-border">
-                        <Pagination
-                          currentPage={currentPage}
-                          totalItems={allPositions.length}
-                          itemsPerPage={itemsPerPage}
-                          onPageChange={setCurrentPage}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-1 items-center justify-center">
-                      <EmptyState
-                        icon={Activity}
-                        title="No Positions Open"
-                        description="Your active futures and options will appear here."
-                        actionLabel="Start Trading"
-                        onAction={() => {}}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'OpenOrders' && (
-                <div className="flex h-full flex-col">
-                  {orderInfos.length > 0 ? (
-                    <>
-                      <div className="min-h-0 flex-1 overflow-y-auto">
-                        <div className="flex flex-col space-y-3">
-                          {orderInfos
-                            .slice(indexOfFirstItem, indexOfLastItem)
-                            .map((pos, idx) => (
-                              <OpenOptionOrders
-                                key={pos.index ?? idx}
-                                orderId={pos.index}
-                                logo={pos.logo}
-                                token={pos.token}
-                                symbol={pos.symbol}
-                                type={pos.type}
-                                limitPrice={pos.limitPrice}
-                                transaction={pos.transaction}
-                                strikePrice={pos.strikePrice}
-                                expiry={pos.expiry}
-                                size={pos.size}
-                                orderDate={pos.orderDate}
-                                onCancel={handleCancelOrder}
-                              />
-                            ))}
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 border-t border-border">
-                        <Pagination
-                          currentPage={currentPage}
-                          totalItems={orderInfos.length}
-                          itemsPerPage={itemsPerPage}
-                          onPageChange={setCurrentPage}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-1 items-center justify-center">
-                      <EmptyState
-                        icon={BookOpen}
-                        title="No Orders Open"
-                        description="Your pending limit orders will be listed here."
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'History' && (
-                <div
-                  className={cn(
-                    'flex h-full flex-col overflow-y-auto',
-                    doneInfo.length > 0 ? '' : 'items-center justify-center'
-                  )}
-                >
-                  {doneInfo.length > 0 ? (
-                    <OrderHistory doneOptioninfos={doneInfo} />
-                  ) : (
-                    <EmptyState
-                      icon={History}
-                      title="No History Available"
-                      description="Your trade history will be compiled once you start trading."
-                    />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'Alerts' && (
-                <div className="flex h-full flex-col overflow-y-auto">
-                  <PriceAlerts />
-                </div>
-              )}
-
-              {activeTab === 'Expired' && (
-                <div
-                  className={cn(
-                    'flex h-full flex-col overflow-y-auto',
-                    expiredInfos.length > 0 ? '' : 'items-center justify-center'
-                  )}
-                >
-                  {expiredInfos.length > 0 ? (
-                    <ExpiredOptions infos={expiredInfos} onClaim={onClaim} />
-                  ) : (
-                    <EmptyState
-                      icon={Ban}
-                      title="No Expired Positions"
-                      description="Your expired options and claims will appear here."
-                    />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'DCA' && (
-                <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
-                  <RecurringOrderForm />
-                  <RecurringOrdersList />
-                </div>
-              )}
-
-              {activeTab === 'LiveGrid' && <LiveGridStats />}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

@@ -267,30 +267,6 @@ export class WebSocketClient {
 }
 
 /**
- * Create WebSocket clients for different channels
- */
-
-export function createOrderBookWS(token?: string): WebSocketClient {
-  return new WebSocketClient('/ws/orderbook', { token })
-}
-
-export function createTradesWS(token?: string): WebSocketClient {
-  return new WebSocketClient('/ws/trades', { token })
-}
-
-export function createEpochsWS(token?: string): WebSocketClient {
-  return new WebSocketClient('/ws/epochs', { token })
-}
-
-/**
- * Create a public market WebSocket (no auth required)
- * Falls back to this when user is not authenticated
- */
-export function createPublicMarketWS(): WebSocketClient {
-  return new WebSocketClient('/api/market/ws', { isPublic: true })
-}
-
-/**
  * Hook-friendly WebSocket manager for React components
  */
 export class WebSocketManager {

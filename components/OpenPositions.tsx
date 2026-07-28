@@ -1,13 +1,9 @@
 import Image from 'next/image'
 import { Badge } from './ui/badge'
 import { useState, memo } from 'react'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
-import PositionOverview from './PositionOverview'
-import PositionGreeks from './PositionGreeks'
-import { ArrowDown, ArrowUp, SendIcon } from '@/public/svgs/icons'
-import PositionDetails from './PositionDetails'
-import { Separator } from './ui/separator'
+import { ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface OpenPositionProps {
   index: string | number
@@ -15,6 +11,7 @@ interface OpenPositionProps {
   logo: string
   symbol: string
   strikePrice: number
+  // 'Long' | 'Short' (futures) or 'Call' | 'Put' (options)
   type: string
   expiry: string
   size: number
@@ -25,9 +22,38 @@ interface OpenPositionProps {
     theta: number
     vega: number
   }
-  onExercise: () => void
+  // Optional — on-chain options only. API futures positions aren't
+  // exercisable, so the button is hidden when no handler is provided.
+  onExercise?: () => void
 }
 
+/** One label/value column on the right-hand side of the position row. */
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn('flex flex-col items-end', className)}>
+      <span className="text-[9px] font-medium uppercase text-muted-foreground">
+        {label}
+      </span>
+      <span className="font-mono text-xs font-semibold text-foreground">
+        {children}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Flat, information-dense position row: everything important is visible
+ * without expanding. A chevron reveals greeks when they carry data (options);
+ * futures rows (all-zero greeks) have nothing to expand.
+ */
 export default memo(function OpenPositions({
   token,
   logo,
@@ -38,107 +64,136 @@ export default memo(function OpenPositions({
   pnl,
   greeks,
   strikePrice,
-  index,
   onExercise,
 }: OpenPositionProps) {
-  const [isOpen, setIsOpen] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<string>('Overview')
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Long/Call = bullish (emerald); Short/Put = bearish (red)
+  const isBull = type === 'Long' || type === 'Call'
+  const isFutures = type === 'Long' || type === 'Short'
+  const hasGreeks =
+    greeks.delta !== 0 ||
+    greeks.gamma !== 0 ||
+    greeks.theta !== 0 ||
+    greeks.vega !== 0
+  const pnlPositive = pnl >= 0
+
   return (
-    <div className="flex w-full flex-col rounded-sm bg-accent">
+    <div className="rounded-lg border border-border bg-card">
       <div
-        className="flex w-full cursor-pointer items-center justify-between px-4 py-3"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex items-center space-x-[6px]">
-          <Image
-            src={logo}
-            alt={token}
-            width={16}
-            height={16}
-            className="h-4 w-4 rounded-full"
-          />
-          <span className="text-sm font-medium text-foreground">{symbol}</span>
-          <Badge className="flex h-3 w-7 items-center justify-center rounded-[3px] border-none bg-gradient-primary px-1 py-[3px] text-[8px] font-semibold text-black">
-            {type}
-          </Badge>
-        </div>
-        {isOpen ? (
-          <span className="text-secondary-foreground">
-            <ArrowUp />
-          </span>
-        ) : (
-          <span className="text-secondary-foreground">
-            <ArrowDown />
-          </span>
+        className={cn(
+          'flex items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-muted/10',
+          hasGreeks && 'cursor-pointer'
         )}
-      </div>
-      {isOpen && (
-        <div className="w-full space-y-4 px-4 pb-4">
-          <div className="flex w-full justify-center md:justify-between">
-            <Tabs defaultValue={activeTab}>
-              <TabsList className="flex bg-inherit p-0 text-sm font-medium text-secondary-foreground md:space-x-3">
-                <TabsTrigger
-                  value="Overview"
-                  className="w-full rounded-sm px-5 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  onClick={() => setActiveTab('Overview')}
-                >
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger
-                  value="Greeks"
-                  className="w-full rounded-sm px-5 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  onClick={() => setActiveTab('Greeks')}
-                >
-                  Greeks
-                </TabsTrigger>
-                <TabsTrigger
-                  value="Details"
-                  className="w-full rounded-sm px-5 py-2 data-[state=active]:bg-background data-[state=active]:text-foreground"
-                  onClick={() => setActiveTab('Details')}
-                >
-                  Details
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="hidden space-x-3 md:flex">
-              <Button className="h-fit w-fit rounded-sm bg-secondary p-2">
-                <SendIcon />
-              </Button>
-              <Button
-                className="h-fit w-fit rounded-sm bg-secondary px-[10px] py-[6px] text-sm font-normal text-secondary-foreground"
-                onClick={onExercise}
-              >
-                Exercise
-              </Button>
-            </div>
+        onClick={hasGreeks ? () => setIsOpen((o) => !o) : undefined}
+      >
+        {/* Identity: side accent, logo, type + symbol, expiry */}
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div
+            className={cn(
+              'h-8 w-1 flex-shrink-0 rounded-full',
+              isBull ? 'bg-emerald-500' : 'bg-destructive'
+            )}
+          />
+          <div className="relative h-6 w-6 flex-shrink-0 overflow-hidden rounded-full">
+            <Image src={logo} alt={token} fill className="object-cover" />
           </div>
-          {activeTab === 'Overview' && (
-            <PositionOverview
-              type={type}
-              expiry={expiry}
-              size={size}
-              pnl={pnl}
-              strikePrice={strikePrice}
-            />
-          )}
-          {activeTab === 'Greeks' && (
-            <PositionGreeks
-              delta={greeks.delta}
-              gamma={greeks.gamma}
-              theta={greeks.theta}
-              vega={greeks.vega}
-            />
-          )}
-          {activeTab === 'Details' && <PositionDetails type={type} />}
-          <Separator className="my-4 md:hidden" />
-          <div className="flex space-x-3 md:hidden">
-            <Button className="h-fit w-fit rounded-sm bg-secondary p-2">
-              <SendIcon />
-            </Button>
-            <Button className="h-fit w-fit rounded-sm bg-secondary px-[10px] py-[6px] text-sm font-normal text-secondary-foreground">
+          <div className="flex min-w-0 flex-col">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  'text-[10px] font-bold uppercase',
+                  isBull ? 'text-emerald-500' : 'text-destructive'
+                )}
+              >
+                {type}
+              </span>
+              <span className="text-xs font-semibold">{symbol}</span>
+            </div>
+            <span className="truncate text-[10px] text-muted-foreground">
+              {expiry === 'Perpetual' ? 'Perpetual' : `Expires ${expiry}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Numbers + actions */}
+        <div className="flex flex-shrink-0 items-center gap-4">
+          <Field label={isFutures ? 'Entry' : 'Strike'}>
+            {isFutures ? (
+              <>
+                ฿{strikePrice.toFixed(2)}
+                <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
+                  /kWh
+                </span>
+              </>
+            ) : (
+              strikePrice
+            )}
+          </Field>
+          <Field label="Size" className="hidden sm:flex">
+            {size.toFixed(2)}
+            {isFutures && (
+              <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">
+                kWh
+              </span>
+            )}
+          </Field>
+          <Field label="PnL">
+            <span
+              className={cn(
+                'font-mono',
+                pnlPositive ? 'text-emerald-500' : 'text-destructive'
+              )}
+            >
+              {pnlPositive ? '+' : '−'}฿{Math.abs(pnl).toFixed(2)}
+            </span>
+          </Field>
+
+          {onExercise && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[10px]"
+              onClick={(e) => {
+                e.stopPropagation()
+                onExercise()
+              }}
+            >
               Exercise
             </Button>
-          </div>
+          )}
+
+          {hasGreeks && (
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 text-muted-foreground transition-transform',
+                isOpen && 'rotate-180'
+              )}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Greeks — options only */}
+      {isOpen && hasGreeks && (
+        <div className="grid grid-cols-4 gap-2 border-t border-border px-3 py-2 duration-200 animate-in fade-in slide-in-from-top-1">
+          {(
+            [
+              ['Delta', greeks.delta],
+              ['Gamma', greeks.gamma],
+              ['Theta', greeks.theta],
+              ['Vega', greeks.vega],
+            ] as const
+          ).map(([label, value]) => (
+            <div key={label} className="flex flex-col items-center">
+              <span className="text-[9px] font-medium uppercase text-muted-foreground">
+                {label}
+              </span>
+              <span className="font-mono text-xs font-semibold tabular-nums">
+                {value.toFixed(4)}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

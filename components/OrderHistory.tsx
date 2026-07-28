@@ -1,20 +1,35 @@
 'use client'
 
 import { Transaction } from '@/lib/data/WalletActivity'
-import {
-  CallIconDark,
-  CopyIcon,
-  PutIconDark,
-  SendIcon,
-} from '@/public/svgs/icons'
 import Image from 'next/image'
-import { Separator } from './ui/separator'
 import { Button } from './ui/button'
-import { Download, FileDown, Loader2 } from 'lucide-react'
-import { useState, memo, Fragment } from 'react'
+import { Badge } from './ui/badge'
+import { Copy, Download, FileDown, Loader2 } from 'lucide-react'
+import { useState, memo } from 'react'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
+
+/** Grid template shared by the desktop header and rows so they can't drift. */
+const GRID_COLS =
+  'grid-cols-[1.5fr_0.7fr_0.9fr_1fr_1.3fr_1fr]'
+
+function SideChip({ side }: { side: string }) {
+  const isBuy = side === 'Buy'
+  return (
+    <span
+      className={cn(
+        'rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight',
+        isBuy
+          ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+          : 'border border-destructive/20 bg-destructive/10 text-destructive'
+      )}
+    >
+      {side}
+    </span>
+  )
+}
 
 export default memo(function OrderHistory({
   doneOptioninfos,
@@ -61,211 +76,215 @@ export default memo(function OrderHistory({
     }
   }
 
+  const handleCopyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id)
+      toast.success('Transaction ID copied')
+    } catch {
+      toast.error('Failed to copy')
+    }
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with Export Actions */}
-      <div className="flex items-center justify-between mb-6 px-4">
-        <div className="flex flex-col">
-          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+    <div className="flex h-full flex-col">
+      {/* Header: count + export actions */}
+      <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/10 px-3 py-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase text-muted-foreground">
             Trade History
-          </h3>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Recent Activity</p>
+          </span>
+          <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
+            {doneOptioninfos.length}
+          </Badge>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-[11px] gap-2 px-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 transition-all active:scale-95"
+            className="h-6 gap-1 px-2 text-[10px]"
             onClick={() => handleExport('csv')}
             disabled={!!exporting}
           >
-            {exporting === 'csv' ? <Loader2 size={13} className="animate-spin text-primary" /> : <Download size={13} className="text-muted-foreground" />}
-            <span>CSV</span>
+            {exporting === 'csv' ? (
+              <Loader2 size={11} className="animate-spin text-primary" />
+            ) : (
+              <Download size={11} className="text-muted-foreground" />
+            )}
+            CSV
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-[11px] gap-2 px-3 bg-secondary/30 hover:bg-secondary/60 border border-border/50 transition-all active:scale-95"
+            className="h-6 gap-1 px-2 text-[10px]"
             onClick={() => handleExport('json')}
             disabled={!!exporting}
           >
-            {exporting === 'json' ? <Loader2 size={13} className="animate-spin text-primary" /> : <FileDown size={13} className="text-muted-foreground" />}
-            <span>JSON</span>
+            {exporting === 'json' ? (
+              <Loader2 size={11} className="animate-spin text-primary" />
+            ) : (
+              <FileDown size={11} className="text-muted-foreground" />
+            )}
+            JSON
           </Button>
         </div>
       </div>
 
-      {/* Desktop Table-like Grid */}
-      <div className="hidden w-full flex-col md:flex">
-        {/* Table Header */}
-        <div className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_1fr] px-4 py-2 border-y border-border/40 bg-secondary/10 mb-2">
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Asset & ID</span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Side</span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Volume (kWh)</span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Settlement Status</span>
-          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Time</span>
+      {/* Desktop table */}
+      <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto md:flex">
+        <div
+          className={cn(
+            'sticky top-0 z-10 grid border-b border-border bg-card px-3 py-1.5',
+            GRID_COLS
+          )}
+        >
+          <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Asset & ID</span>
+          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Side</span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Volume</span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Price</span>
+          <span className="text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Delivered / Fees</span>
+          <span className="text-right text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Time</span>
         </div>
 
-        <div className="space-y-1 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar">
-          {doneOptioninfos && doneOptioninfos.length > 0 ? (
-            doneOptioninfos.map((tx) => (
-              <div
-                className="grid grid-cols-[1.5fr_1fr_1fr_1.5fr_1fr] items-center px-4 py-3 hover:bg-secondary/30 rounded-lg transition-colors border-b border-border/10 last:border-0 group"
-                key={tx.transactionID}
-              >
-                {/* Asset & ID */}
-                <div className="flex items-center space-x-3">
-                  <div className="relative flex-shrink-0">
-                    <Image
-                      src={tx.token.logo}
-                      alt={tx.token.name}
-                      width={28}
-                      height={28}
-                      className="rounded-full ring-1 ring-border group-hover:ring-primary/50 transition-all"
-                    />
-                    <div className="absolute -bottom-1 -right-1 rounded-full bg-background border border-border p-[2px]">
-                      {tx.transactionType === 'Buy' ? (
-                        <div className="text-green-500"><CallIconDark width="10" height="10" /></div>
-                      ) : (
-                        <div className="text-red-500"><PutIconDark width="10" height="10" /></div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-foreground truncate">
-                      {tx.token.name}
-                    </span>
-                    <span className="text-[10px] font-mono text-muted-foreground truncate opacity-70">
-                      {tx.transactionID.slice(0, 16)}...
-                    </span>
-                  </div>
-                </div>
-
-                {/* Side */}
-                <div className="flex justify-center">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${tx.transactionType === 'Buy'
-                    ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                    }`}>
-                    {tx.transactionType}
+        <div className="divide-y divide-border/50">
+          {doneOptioninfos.map((tx) => (
+            <div
+              key={tx.transactionID}
+              className={cn(
+                'group grid items-center px-3 py-1.5 text-xs transition-colors hover:bg-muted/10',
+                GRID_COLS
+              )}
+            >
+              {/* Asset & ID */}
+              <div className="flex min-w-0 items-center gap-2">
+                <Image
+                  src={tx.token.logo}
+                  alt={tx.token.name}
+                  width={20}
+                  height={20}
+                  className="flex-shrink-0 rounded-full ring-1 ring-border"
+                />
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-xs font-semibold text-foreground">
+                    {tx.token.name}
                   </span>
-                </div>
-
-                {/* Volume */}
-                <div className="flex flex-col items-center">
-                  <span className="text-xs font-bold text-foreground">
-                    {tx.quantity?.toFixed(2) ?? '0.00'}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground font-medium">kWh</span>
-                </div>
-
-                {/* Settlement Details */}
-                <div className="flex items-center justify-center gap-4">
-                  <div className="flex flex-col items-center">
-                    <span className="text-[9px] text-muted-foreground uppercase font-bold opacity-60">Delivered</span>
-                    <span className="text-xs text-green-500 font-bold tabular-nums">
-                      {tx.effectiveEnergy !== undefined && tx.effectiveEnergy !== null
-                        ? tx.effectiveEnergy.toFixed(2)
-                        : (tx.quantity?.toFixed(2) ?? '0.00')}
-                    </span>
-                  </div>
-                  {tx.wheelingCharge !== undefined && tx.wheelingCharge !== null && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] text-muted-foreground uppercase font-bold opacity-60">Fees</span>
-                      <span className="text-xs text-yellow-500/90 font-bold tabular-nums">฿{tx.wheelingCharge.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Time & Actions */}
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-1.5 mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="text-muted-foreground hover:text-foreground transition-colors"><CopyIcon /></button>
-                    <button className="text-muted-foreground hover:text-foreground transition-colors"><SendIcon /></button>
-                  </div>
-                  <span className="text-[10px] font-medium text-muted-foreground tabular-nums">
-                    {tx.expiry}
+                  <span className="flex items-center gap-1 font-mono text-[9px] text-muted-foreground">
+                    <span className="truncate">{tx.transactionID.slice(0, 12)}…</span>
+                    <button
+                      aria-label="Copy transaction ID"
+                      className="opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                      onClick={() => handleCopyId(tx.transactionID)}
+                    >
+                      <Copy className="h-2.5 w-2.5" />
+                    </button>
                   </span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 opacity-50">
-              <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center">
-                <FileDown size={24} className="text-muted-foreground" />
+
+              {/* Side */}
+              <div className="flex justify-center">
+                <SideChip side={tx.transactionType} />
               </div>
-              <p className="text-sm font-medium">No swap history found</p>
+
+              {/* Volume */}
+              <div className="text-right font-mono font-semibold text-foreground">
+                {tx.quantity?.toFixed(2) ?? '0.00'}
+                <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">kWh</span>
+              </div>
+
+              {/* Price (was missing entirely from the old table) */}
+              <div className="flex flex-col items-end">
+                <span className="font-mono font-semibold text-foreground">
+                  ฿{tx.strikePrice.toFixed(2)}
+                  <span className="ml-0.5 text-[9px] font-normal text-muted-foreground">/kWh</span>
+                </span>
+                {tx.totalValue != null && (
+                  <span className="font-mono text-[9px] text-muted-foreground">
+                    ฿{tx.totalValue.toFixed(2)} total
+                  </span>
+                )}
+              </div>
+
+              {/* Delivered / Fees — fixed sub-columns so rows can't misalign */}
+              <div className="flex items-center justify-center gap-3">
+                <span className="font-mono text-xs font-semibold tabular-nums text-emerald-500">
+                  {(tx.effectiveEnergy ?? tx.quantity)?.toFixed(2) ?? '—'}
+                </span>
+                <span className="font-mono text-xs tabular-nums text-amber-500">
+                  {tx.wheelingCharge != null ? `฿${tx.wheelingCharge.toFixed(2)}` : '—'}
+                </span>
+              </div>
+
+              {/* Time */}
+              <span className="text-right text-[10px] tabular-nums text-muted-foreground">
+                {tx.expiry}
+              </span>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Mobile Card Layout */}
-      <div className="flex w-full flex-col md:hidden space-y-3 px-4">
-        {doneOptioninfos && doneOptioninfos.length > 0 ? (
-          doneOptioninfos.map((tx, index) => (
-            <Fragment key={tx.transactionID}>
-              <div className="bg-secondary/10 rounded-xl p-4 border border-border/40 hover:bg-secondary/20 transition-all active:scale-[0.98]">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-full ring-2 ring-background ring-offset-1 ring-offset-border relative">
-                      <Image
-                        src={tx.token.logo}
-                        alt={tx.token.name}
-                        fill
-                        className="rounded-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold leading-none mb-1">{tx.token.name}</h4>
-                      <p className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">{tx.transactionID}</p>
-                    </div>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${tx.transactionType === 'Buy'
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
-                    }`}>
-                    {tx.transactionType}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 py-3 border-y border-border/10 mb-3">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] text-muted-foreground uppercase font-bold mb-0.5">Matched</span>
-                    <span className="text-xs font-bold">{tx.quantity?.toFixed(1) ?? '0.0'} kWh</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-[9px] text-muted-foreground uppercase font-bold mb-0.5 text-center">Delivered</span>
-                    <span className="text-xs font-bold text-green-500">
-                      {tx.effectiveEnergy !== undefined && tx.effectiveEnergy !== null
-                        ? tx.effectiveEnergy.toFixed(1)
-                        : (tx.quantity?.toFixed(1) ?? '0.0')} kWh
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[9px] text-muted-foreground uppercase font-bold mb-0.5 text-right">Wheeling</span>
-                    <span className="text-xs font-bold text-yellow-500">฿{tx.wheelingCharge?.toFixed(1) ?? '0.0'}</span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums">
-                    {tx.expiry}
-                  </span>
-                  <div className="flex space-x-4">
-                    <button className="text-muted-foreground scale-90"><CopyIcon /></button>
-                    <button className="text-muted-foreground scale-90"><SendIcon /></button>
-                  </div>
+      {/* Mobile cards */}
+      <div className="flex min-h-0 flex-1 flex-col space-y-2 overflow-y-auto p-3 md:hidden">
+        {doneOptioninfos.map((tx) => (
+          <div
+            key={tx.transactionID}
+            className="rounded-lg border border-border bg-card p-3"
+          >
+            <div className="mb-2 flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <Image
+                  src={tx.token.logo}
+                  alt={tx.token.name}
+                  width={24}
+                  height={24}
+                  className="rounded-full ring-1 ring-border"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold">{tx.token.name}</span>
+                  <button
+                    className="flex items-center gap-1 font-mono text-[9px] text-muted-foreground"
+                    onClick={() => handleCopyId(tx.transactionID)}
+                  >
+                    {tx.transactionID.slice(0, 12)}…
+                    <Copy className="h-2.5 w-2.5" />
+                  </button>
                 </div>
               </div>
-            </Fragment>
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-2 opacity-40">
-            <p className="text-xs font-medium">No recent trades</p>
+              <SideChip side={tx.transactionType} />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 border-y border-border/50 py-2">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">Volume</span>
+                <span className="font-mono text-xs font-semibold">
+                  {tx.quantity?.toFixed(1) ?? '0.0'}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">Price</span>
+                <span className="font-mono text-xs font-semibold">
+                  ฿{tx.strikePrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">Delivered</span>
+                <span className="font-mono text-xs font-semibold text-emerald-500">
+                  {(tx.effectiveEnergy ?? tx.quantity)?.toFixed(1) ?? '—'}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-medium uppercase text-muted-foreground">Fees</span>
+                <span className="font-mono text-xs font-semibold text-amber-500">
+                  {tx.wheelingCharge != null ? `฿${tx.wheelingCharge.toFixed(1)}` : '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-1.5 text-right text-[10px] tabular-nums text-muted-foreground">
+              {tx.expiry}
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   )

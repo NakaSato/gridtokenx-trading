@@ -43,7 +43,7 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
             const parsed = message as unknown as Record<string, any>
             const data = message.type === 'grid_status' && message.data ? (message.data as Record<string, any>) : parsed
 
-            const updatedStatus: GridStatus = {
+            const incoming: Partial<GridStatus> = {
                 total_generation: data.total_generation,
                 total_consumption: data.total_consumption,
                 net_balance: data.net_balance,
@@ -63,8 +63,17 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
                 carbon_intensity: data.carbon_intensity,
                 peak_capacity_kw: data.peak_capacity_kw
             }
-            // Update cache immediately on WS message
-            queryClient.setQueryData(['grid-status'], updatedStatus)
+
+            // Merge over the cached value instead of replacing it: a partial
+            // push (a message carrying only some fields) must not blank out
+            // numbers the REST poll already provided — consumers call
+            // .toLocaleString()/.toFixed() on them.
+            queryClient.setQueryData(['grid-status'], (prev: GridStatus | null | undefined) => {
+                const defined = Object.fromEntries(
+                    Object.entries(incoming).filter(([, v]) => v !== undefined)
+                ) as Partial<GridStatus>
+                return { ...(prev ?? {}), ...defined } as GridStatus
+            })
         }
 
         client.on('grid_status_updated', handler)
