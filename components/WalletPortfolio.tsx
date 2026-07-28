@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp } from '@/public/svgs/icons'
 import Image from 'next/image'
 import { Separator } from './ui/separator'
 import { useState } from 'react'
-import { usePortfolioPositions } from '@/hooks/usePortfolio'
+import { usePositions } from '@/features/trading/hooks/usePositionsData'
 import { usePortfolioRisk } from '@/hooks/usePortfolioRisk'
 
 export default function WalletPortfolio() {
@@ -10,7 +10,7 @@ export default function WalletPortfolio() {
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [futuresOpen, setFuturesOpen] = useState(false)
 
-  const { data: positions, isLoading } = usePortfolioPositions()
+  const { data: positions, isLoading } = usePositions()
   const risk = usePortfolioRisk(positions)
 
   const totalValue = (positions || []).reduce((sum, p) => sum + (p.size * p.strikePrice + p.pnl), 0)

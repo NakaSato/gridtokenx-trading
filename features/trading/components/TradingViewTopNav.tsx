@@ -5,10 +5,10 @@ import { ArrowDown, ArrowUp, TableColumnsSplit, TrendingUp, Clock, Users } from 
 import { PythIcon } from '@/public/svgs/icons'
 import { formatPrice } from '@/utils/formatter'
 import { memo } from 'react'
-import MarketDetails from './MarketDetails'
-import { Button } from './ui/button'
+import MarketDetails from '@/features/trading/components/MarketDetails'
+import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
-import { Badge } from './ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 interface TradingViewTopNavProps {

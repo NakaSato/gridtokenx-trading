@@ -1,12 +1,12 @@
 import { ChevronDown, XIcon } from 'lucide-react'
-import { Button } from './ui/button'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from './ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useState } from 'react'
 import Image from 'next/image'
-import { DropdownMenu, DropdownMenuTrigger } from './ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { DollarIcon, InfoIcon, PythIcon } from '@/public/svgs/icons'
 import { formatPrice } from '@/utils/formatter'
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 
 interface MarketDetailsProps {
   logo: string

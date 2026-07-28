@@ -2,8 +2,8 @@
 
 import React from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import TradingPositionsFallback from '@/components/TradingPositionsFallback'
-import TradingPositions from '@/components/TradingPositions'
+import TradingPositionsFallback from '@/features/trading/components/TradingPositionsFallback'
+import TradingPositions from '@/features/trading/components/TradingPositions'
 
 const TradingPositionsPanel = React.memo(function TradingPositionsPanel() {
   return (

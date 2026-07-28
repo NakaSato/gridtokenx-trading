@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import TradingViewTopNav from '@/components/TradingViewTopNav'
+import TradingViewTopNav from '@/features/trading/components/TradingViewTopNav'
 import { useAuth } from '@/contexts/AuthProvider'
 import { createApiClient } from '@/lib/api-client'
 import { FuturesProduct, FuturesPosition, OrderBook } from '@/types/futures'
@@ -18,16 +18,16 @@ import { toast } from 'react-hot-toast'
 import type { OrderBookEntry } from '@/types/futures'
 
 // Components
-import { FuturesOrderForm } from '@/components/trading/FuturesOrderForm'
-import { FuturesOrderBook } from '@/components/trading/FuturesOrderBook'
-import { FuturesPositionList } from '@/components/trading/FuturesPositionList'
+import { FuturesOrderForm } from '@/features/trading/components/FuturesOrderForm'
+import { FuturesOrderBook } from '@/features/trading/components/FuturesOrderBook'
+import { FuturesPositionList } from '@/features/trading/components/FuturesPositionList'
 
-const PriceChart = dynamic(() => import('@/components/trading/PriceChart'), {
+const PriceChart = dynamic(() => import('@/features/trading/components/PriceChart'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-full bg-muted/20 rounded-xl" />
 })
 
-const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
+const TradeHistory = dynamic(() => import('@/features/trading/components/TradeHistory'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-full bg-muted/20 rounded-xl" />
 })

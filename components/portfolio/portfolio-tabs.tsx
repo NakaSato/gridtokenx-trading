@@ -5,27 +5,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { Card, CardContent } from '../ui/card'
 import ProtectedRoute from '../ProtectedRoute'
 import { useAuth } from '@/contexts/AuthProvider'
-import { usePortfolioPositions, usePortfolioOrders, usePortfolioTradeHistory, useExpiredOptions, useOptionSettlement } from '@/hooks/usePortfolio'
+import { useExpiredOptions, useOptionSettlement } from '@/hooks/useOptions'
+import {
+  usePositions,
+  useOpenOrders,
+  useTradeHistory,
+} from '@/features/trading/hooks/usePositionsData'
 import { useQueryClient } from '@tanstack/react-query'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
-import OpenPositions from '../OpenPositions'
-import OpenOptionOrders from '../OpenOptionOrders'
-import OrderHistory from '../OrderHistory'
+import OpenPositions from '@/features/trading/components/OpenPositions'
+import OpenOptionOrders from '@/features/trading/components/OpenOptionOrders'
+import OrderHistory from '@/features/trading/components/OrderHistory'
 import { useContext } from 'react'
 import { ContractContext } from '@/contexts/contractProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { connection } from '@/utils/const'
-import ExpiredOptions from '../ExpiredOptions'
+import ExpiredOptions from '@/features/trading/components/ExpiredOptions'
 import { CarbonCredits } from './carbon-credits'
 import P2PStatus from '@/features/p2p/components/P2PStatus'
 
 export function PortfolioTabs() {
   const { token } = useAuth()
   const queryClient = useQueryClient()
-  const { data: positions = [], isLoading: positionsLoading } = usePortfolioPositions()
-  const { data: orders = [], isLoading: ordersLoading } = usePortfolioOrders()
-  const { data: history = [], isLoading: historyLoading } = usePortfolioTradeHistory()
+  const { data: positions = [], isLoading: positionsLoading } = usePositions()
+  const { data: orders = [], isLoading: ordersLoading } = useOpenOrders()
+  const { data: history = [], isLoading: historyLoading } = useTradeHistory()
   const { publicKey, sendTransaction } = useWallet()
 
   const { program } = useContext(ContractContext)

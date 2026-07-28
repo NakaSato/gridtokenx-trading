@@ -1,7 +1,7 @@
 import Image from 'next/image'
-import { Badge } from './ui/badge'
+import { Badge } from '@/components/ui/badge'
 import { useState, memo } from 'react'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

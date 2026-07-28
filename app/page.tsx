@@ -1,12 +1,12 @@
 'use client'
 import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import TradingViewTopNav from '@/components/TradingViewTopNav'
+import TradingViewTopNav from '@/features/trading/components/TradingViewTopNav'
 import { tokenList } from '@/lib/data/tokenlist'
 import { useSidebar } from '@/components/shared/SidebarContext'
 
 const TradingPositionsPanel = dynamic(
-  () => import('@/components/TradingPositionsPanel'),
+  () => import('@/features/trading/components/TradingPositionsPanel'),
   {
     ssr: false,
     loading: () => (
@@ -28,7 +28,7 @@ const TradingPositionsPanel = dynamic(
 import { usePythPrice } from '@/hooks/usePythPrice'
 import { usePythMarketData } from '@/hooks/usePythMarketData'
 
-const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
+const TradeHistory = dynamic(() => import('@/features/trading/components/TradeHistory'), {
   ssr: false,
   loading: () => (
     <div className="h-full w-full rounded-lg border border-border bg-card p-4 shadow-sm">

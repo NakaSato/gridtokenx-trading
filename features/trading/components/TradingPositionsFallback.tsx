@@ -1,14 +1,14 @@
 import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
-import { Button } from './ui/button'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
-import WalletModal from './WalletModal'
+import WalletModal from '@/components/WalletModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu'
 import { WalletIcon } from '@/public/svgs/icons'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'

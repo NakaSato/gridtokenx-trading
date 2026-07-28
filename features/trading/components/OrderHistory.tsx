@@ -2,8 +2,8 @@
 
 import { Transaction } from '@/types/wallet'
 import Image from 'next/image'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Copy, Download, FileDown, Loader2 } from 'lucide-react'
 import { useState, memo } from 'react'
 import { cn } from '@/lib/utils'

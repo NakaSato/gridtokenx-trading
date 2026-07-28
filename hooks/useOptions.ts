@@ -13,7 +13,8 @@ import {
 import { getPoolPDA, getCustodyPDA, getOptionDetailPDA, getUserPDA } from '@/lib/pda-utils'
 import { calculateGreeks } from '@/lib/wasm-bridge'
 import { getPythPrice } from './usePythPrice'
-import * as actions from '@/lib/contract-actions'
+import * as optionActions from '@/features/trading/lib/options'
+import * as liquidityActions from '@/features/trading/lib/liquidity'
 import { Connection } from '@solana/web3.js'
 
 export function useOptionPositions(program: Program<OptionContract> | undefined, publicKey: PublicKey | null) {
@@ -173,7 +174,7 @@ export function useOptionSettlement(
     const claimMutation = useMutation({
         mutationFn: async ({ index, solPrice }: { index: number, solPrice: number }) => {
             if (!program || !publicKey) throw new Error('Not connected')
-            return actions.claimOption(program, connection, publicKey, sendTransaction, index, solPrice)
+            return optionActions.claimOption(program, connection, publicKey, sendTransaction, index, solPrice)
         },
         onSuccess: (success) => { if (success) invalidateAll() }
     })
@@ -181,7 +182,7 @@ export function useOptionSettlement(
     const exerciseMutation = useMutation({
         mutationFn: async (index: number) => {
             if (!program || !publicKey) throw new Error('Not connected')
-            return actions.exerciseOption(program, connection, publicKey, sendTransaction, index)
+            return optionActions.exerciseOption(program, connection, publicKey, sendTransaction, index)
         },
         onSuccess: (success) => { if (success) invalidateAll() }
     })

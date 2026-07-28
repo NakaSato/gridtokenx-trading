@@ -11,7 +11,8 @@ import { connection } from '@/utils/const'
 import { getOptionDetailPDA } from '@/lib/pda-utils'
 import { useOptionPositions, useCustodies } from '@/hooks/useOptions'
 import { ExpiredOption } from '@/types/contract'
-import * as actions from '@/lib/contract-actions'
+import * as optionActions from '@/features/trading/lib/options'
+import * as liquidityActions from '@/features/trading/lib/liquidity'
 
 export type { ExpiredOption }
 
@@ -57,9 +58,9 @@ function useContractMutations(
   }
 
   const openOptionMutation = useMutation({
-    mutationFn: async (params: Parameters<typeof actions.openOption>[4]) => {
+    mutationFn: async (params: Parameters<typeof optionActions.openOption>[4]) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.openOption(program, conn, publicKey, sendTransaction, params)
+      return optionActions.openOption(program, conn, publicKey, sendTransaction, params)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })
@@ -67,7 +68,7 @@ function useContractMutations(
   const closeOptionMutation = useMutation({
     mutationFn: async (index: number) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.closeOption(program, conn, publicKey, sendTransaction, index)
+      return optionActions.closeOption(program, conn, publicKey, sendTransaction, index)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })
@@ -75,7 +76,7 @@ function useContractMutations(
   const claimOptionMutation = useMutation({
     mutationFn: async ({ index, solPrice }: { index: number, solPrice: number }) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.claimOption(program, conn, publicKey, sendTransaction, index, solPrice)
+      return optionActions.claimOption(program, conn, publicKey, sendTransaction, index, solPrice)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })
@@ -83,23 +84,23 @@ function useContractMutations(
   const exerciseOptionMutation = useMutation({
     mutationFn: async (index: number) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.exerciseOption(program, conn, publicKey, sendTransaction, index)
+      return optionActions.exerciseOption(program, conn, publicKey, sendTransaction, index)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })
 
   const addLiquidityMutation = useMutation({
-    mutationFn: async (params: Parameters<typeof actions.addLiquidity>[4]) => {
+    mutationFn: async (params: Parameters<typeof liquidityActions.addLiquidity>[4]) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.addLiquidity(program, conn, publicKey, sendTransaction, params)
+      return liquidityActions.addLiquidity(program, conn, publicKey, sendTransaction, params)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })
 
   const removeLiquidityMutation = useMutation({
-    mutationFn: async (params: Parameters<typeof actions.removeLiquidity>[4]) => {
+    mutationFn: async (params: Parameters<typeof liquidityActions.removeLiquidity>[4]) => {
       if (!program || !publicKey) throw new Error('Not connected')
-      return actions.removeLiquidity(program, conn, publicKey, sendTransaction, params)
+      return liquidityActions.removeLiquidity(program, conn, publicKey, sendTransaction, params)
     },
     onSuccess: (success) => { if (success) invalidateAll() }
   })

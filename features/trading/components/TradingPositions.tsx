@@ -8,11 +8,11 @@ import {
   type ReactNode,
 } from 'react'
 import { cn } from '@/lib/utils'
-import { Card, CardContent, CardHeader } from './ui/card'
-import { Skeleton } from './ui/skeleton'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
-import { Tabs, TabsList, TabsTrigger } from './ui/tabs'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Activity,
   History,
@@ -25,23 +25,22 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import OpenPositions from './OpenPositions'
-import OrderHistory from './OrderHistory'
-import { Position } from '@/types/trading'
-import { mapApiOrderToOrder } from '@/lib/api/adapters'
+import OpenPositions from '@/features/trading/components/OpenPositions'
+import OrderHistory from '@/features/trading/components/OrderHistory'
 import LiveGridStats from '@/features/energy-grid/components/LiveGridStats'
 import P2PActivityPanel from '@/features/p2p/components/P2PActivityPanel'
-import PriceAlerts from './trading/PriceAlerts'
+import PriceAlerts from '@/features/trading/components/PriceAlerts'
 import { Transaction } from '@/types/wallet'
 import Pagination from '@/components/shared/Pagination'
-import OpenOptionOrders from './OpenOptionOrders'
+import OpenOptionOrders from '@/features/trading/components/OpenOptionOrders'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useSidebar } from '@/components/shared/SidebarContext'
-import { createApiClient } from '@/lib/api-client'
-import type { Order } from '@/types/trading'
-import { format } from 'date-fns'
-import toast from 'react-hot-toast'
-import { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
+import {
+  usePositions,
+  useOpenOrders,
+  useTradeHistory,
+  useCancelOrder,
+} from '@/features/trading/hooks/usePositionsData'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab Configuration
@@ -226,12 +225,34 @@ export default memo(function TradingPositions() {
   const { showRightSidebar, toggleRightSidebar } = useSidebar()
   const [activeTab, setActiveTab] = useState<TabValue>('Positions')
   const [currentPage, setCurrentPage] = useState(1)
-  const [optioninfos, setOptionInfos] = useState<Position[]>([])
-  const [orderInfos, setOrderInfos] = useState<Order[]>([])
-  const [doneInfo, setDoneInfo] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date())
+
+  const positionsQuery = usePositions()
+  const ordersQuery = useOpenOrders()
+  const historyQuery = useTradeHistory()
+  const cancelOrder = useCancelOrder()
+
+  const optioninfos = positionsQuery.data ?? []
+  const orderInfos = ordersQuery.data ?? []
+  const doneInfo = historyQuery.data ?? []
+  const loading =
+    !!token &&
+    (positionsQuery.isLoading || ordersQuery.isLoading || historyQuery.isLoading)
+  const error =
+    (positionsQuery.error || ordersQuery.error || historyQuery.error)?.message ??
+    null
+  const lastRefreshed = new Date(
+    Math.max(
+      positionsQuery.dataUpdatedAt,
+      ordersQuery.dataUpdatedAt,
+      historyQuery.dataUpdatedAt
+    ) || Date.now()
+  )
+
+  const fetchData = useCallback(() => {
+    positionsQuery.refetch()
+    ordersQuery.refetch()
+    historyQuery.refetch()
+  }, [positionsQuery, ordersQuery, historyQuery])
 
   // "Start Trading" CTA — reveal the P2P order form in the right sidebar
   const handleStartTrading = useCallback(() => {
@@ -250,126 +271,10 @@ export default memo(function TradingPositions() {
     setCurrentPage(1)
   }, [])
 
-  const fetchData = useCallback(async () => {
-    if (!token) {
-      // Don't leave the skeleton up forever when signed out / token expired
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    setError(null)
-    try {
-      const apiClient = createApiClient(token)
-
-      // 1. Fetch Futures Positions
-      const positionsRes =
-        (await apiClient.getFuturesPositions()) as unknown as {
-          data: { data: ApiFuturesPosition[] }
-        }
-      if (positionsRes.data?.data) {
-        const mappedPositions: Position[] = positionsRes.data.data.map(
-          (pos: ApiFuturesPosition) => ({
-            index: pos.id,
-            token: pos.product_symbol || 'Unknown',
-            logo: '/images/solana.png',
-            symbol: pos.product_symbol || 'GRX',
-            type: pos.side === 'long' ? 'Long' : 'Short',
-            strikePrice: parseFloat(pos.entry_price),
-            expiry: 'Perpetual',
-            size: parseFloat(pos.quantity),
-            pnl: parseFloat(pos.unrealized_pnl || '0'),
-            greeks: { delta: 0, gamma: 0, theta: 0, vega: 0 },
-          })
-        )
-        setOptionInfos(mappedPositions)
-      }
-
-      // 2. Fetch Trading Orders
-      // No status filter server-side — a freshly placed order starts 'pending'
-      // and only becomes 'active' once the matcher processes it (trading-api
-      // rest.rs submit_order), so filtering to status=active hid every order
-      // until that async promotion happened. Fetch everything and keep the
-      // still-open statuses client-side instead.
-      const OPEN_STATUSES = new Set(['pending', 'active', 'partially_filled'])
-      const ordersRes = (await apiClient.getOrders({})) as unknown as {
-        data: { data: ApiOrder[] }
-      }
-      if (ordersRes.data?.data) {
-        const mappedOrders: Order[] = ordersRes.data.data
-          .filter((o) => OPEN_STATUSES.has(o.status))
-          .map(mapApiOrderToOrder)
-        setOrderInfos(mappedOrders)
-      }
-
-      // 3. Fetch Trade History (API only — no direct on-chain reads; all
-      // blockchain access goes through the backend / Chain Bridge)
-      const tradesRes = (await apiClient.getTrades({
-        limit: 50,
-      })) as unknown as { data: { trades: TradeRecord[] } }
-      if (tradesRes.data?.trades) {
-        const mappedHistory: Transaction[] = tradesRes.data.trades.map(
-          (trade: TradeRecord) => ({
-            transactionID: trade.id,
-            token: {
-              name: 'GridToken',
-              symbol: 'GRX',
-              logo: '/images/grid.png',
-            },
-            transactionType: trade.role === 'buyer' ? 'Buy' : 'Sell',
-            optionType: 'Spot',
-            strikePrice: parseFloat(trade.price_per_kwh ?? trade.price),
-            quantity: parseFloat(trade.energy_amount ?? trade.quantity),
-            totalValue: parseFloat(trade.total_value),
-            wheelingCharge:
-              trade.wheeling_charge != null
-                ? parseFloat(trade.wheeling_charge)
-                : undefined,
-            effectiveEnergy:
-              trade.effective_energy != null
-                ? parseFloat(trade.effective_energy)
-                : undefined,
-            expiry: format(
-              new Date(trade.executed_at),
-              'dd MMM, yyy HH:mm:ss'
-            ),
-          })
-        )
-        setDoneInfo(mappedHistory)
-      }
-      setLastRefreshed(new Date())
-    } catch (err) {
-      console.error('Error fetching trading data:', err)
-      setError(
-        err instanceof Error ? err.message : 'An unexpected error occurred'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [token])
-
-  useEffect(() => {
-    fetchData()
-    const interval = setInterval(fetchData, 60000)
-    return () => clearInterval(interval)
-  }, [fetchData])
 
   const handleCancelOrder = useCallback(
-    async (orderId: string) => {
-      if (!token) return
-      try {
-        const apiClient = createApiClient(token)
-        const res = await apiClient.cancelOrder(orderId)
-        if (res.error) {
-          toast.error(res.error)
-        } else {
-          toast.success('Order canceled successfully')
-          fetchData()
-        }
-      } catch {
-        toast.error('Failed to cancel order')
-      }
-    },
-    [token, fetchData]
+    (orderId: string) => cancelOrder.mutate(orderId),
+    [cancelOrder]
   )
 
   // Positions come from the futures API only (no direct on-chain reads)

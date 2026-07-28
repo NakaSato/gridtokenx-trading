@@ -45,6 +45,21 @@ const eslintConfig = [
                 'Moved to features/p2p. Order-fill state is features/p2p/order-fill-context.',
             },
             {
+              group: [
+                '@/components/trading/*',
+                '@/lib/contract-actions',
+                '@/components/TradingPositions*',
+                '@/components/Open*',
+                '@/components/OrderHistory',
+                '@/components/TradeHistory',
+                '@/components/TradingViewTopNav',
+                '@/components/MarketDetails',
+                '@/components/ExpiredOptions',
+              ],
+              message:
+                'Moved to features/trading (components/ or lib/). Shared position data: features/trading/hooks/usePositionsData.',
+            },
+            {
               group: ['@/hooks/useApi', '@/contexts/SocketContext'],
               message:
                 'Removed. Use TanStack Query (lib/query/keys.ts) and lib/ws/useWsChannel.',

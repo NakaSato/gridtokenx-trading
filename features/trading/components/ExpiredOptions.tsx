@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -7,9 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './ui/table'
+} from '@/components/ui/table'
 import { CallIconDark, PutIconDark } from '@/public/svgs/icons'
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 import { ExpiredOption } from '@/contexts/contractProvider'
 
 const expiredPositions = [
