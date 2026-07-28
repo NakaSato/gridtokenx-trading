@@ -3,7 +3,7 @@
 import { useState, memo } from 'react'
 import { Zap, Battery, BatteryCharging, Leaf, Activity, ChevronUp, ChevronDown, ShieldAlert, Globe, WifiOff } from 'lucide-react'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
-import { EVManagementPanel } from './EVManagementPanel'
+import { EVManagementPanel } from '@/features/energy-grid/components/EVManagementPanel'
 import { FrequencyStatus, IslandStatus, ZoneGridStatus, TariffStatus, ADREvent, LoadForecast, EVFleetStatus } from '@/types/grid'
 
 interface GridStatsPanelProps {

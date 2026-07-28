@@ -1,10 +1,10 @@
 'use client'
 import React from 'react'
 import dynamic from 'next/dynamic'
-import ErrorBoundary from './ui/ErrorBoundary'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import type { EnergyNode } from '@/types/grid'
 
-const MapComponent = dynamic(() => import('./EnergyGridMap'), {
+const MapComponent = dynamic(() => import('@/features/energy-grid/components/EnergyGridMap'), {
   ssr: false,
   loading: () => (
     <div className="relative flex h-full w-full flex-col overflow-hidden rounded-b-sm bg-background/50">

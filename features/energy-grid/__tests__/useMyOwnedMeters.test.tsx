@@ -1,8 +1,8 @@
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useMyOwnedMeters } from '../useMyOwnedMeters'
-import { isAccountActive } from '../utils'
+import { useMyOwnedMeters } from '@/features/energy-grid/hooks/useMyOwnedMeters'
+import { isAccountActive } from '@/features/energy-grid/hooks/utils'
 
 const mockGetMyMeters = jest.fn()
 jest.mock('@/lib/api-client', () => ({

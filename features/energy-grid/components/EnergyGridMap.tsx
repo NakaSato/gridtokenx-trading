@@ -7,28 +7,29 @@ import { Maximize2, Minimize2, AlertTriangle, Zap, Radio, Loader2, RefreshCw, Ma
 import { Button } from '@/components/ui/button'
 import throttle from 'lodash.throttle'
 
-// Import from energy-grid sub-components
-import {
-  ZonePolygonLayers,
-  useActiveTrades,
-  LightweightMarker,
-  ClusterMarker,
-  GridStatsPanel,
-  MapLegend,
-  useLiveMeterData,
-  useMeterMapData,
-  useMeterClusters,
-  useGridStatus,
-  useGridTopology,
-  useGridFlows,
-  useMeterTelemetry,
-  useActiveOrderMeters,
-  useMyMeterTotals,
-  useMyOwnedMeters,
-  isAccountActive,
-} from './energy-grid'
-import { useTopology } from './energy-grid/useTopology'
-import type { EnergyNode, ClusterOrPoint, ClusterFeature } from './energy-grid'
+import { ZonePolygonLayers } from '@/features/energy-grid/components/ZonePolygonLayers'
+import { LightweightMarker } from '@/features/energy-grid/components/LightweightMarker'
+import { ClusterMarker } from '@/features/energy-grid/components/ClusterMarker'
+import { GridStatsPanel } from '@/features/energy-grid/components/GridStatsPanel'
+import { MapLegend } from '@/features/energy-grid/components/MapLegend'
+import { useActiveTrades } from '@/features/energy-grid/hooks/useActiveTrades'
+import { useLiveMeterData } from '@/features/energy-grid/hooks/useLiveMeterData'
+import { useMeterMapData } from '@/features/energy-grid/hooks/useMeterMapData'
+import { useMeterClusters } from '@/features/energy-grid/hooks/useMeterClusters'
+import { useGridStatus } from '@/features/energy-grid/hooks/useGridStatus'
+import { useGridTopology } from '@/features/energy-grid/hooks/useGridTopology'
+import { useGridFlows } from '@/features/energy-grid/hooks/useGridFlows'
+import { useMeterTelemetry } from '@/features/energy-grid/hooks/useMeterTelemetry'
+import { useActiveOrderMeters } from '@/features/energy-grid/hooks/useActiveOrderMeters'
+import { useMyMeterTotals } from '@/features/energy-grid/hooks/useMyMeterTotals'
+import { useMyOwnedMeters } from '@/features/energy-grid/hooks/useMyOwnedMeters'
+import { isAccountActive } from '@/features/energy-grid/hooks/utils'
+import { useTopology } from '@/features/energy-grid/hooks/useTopology'
+import type { EnergyNode } from '@/types/grid'
+import type {
+  ClusterOrPoint,
+  ClusterFeature,
+} from '@/features/energy-grid/hooks/useMeterClusters'
 import { useAuth } from '@/contexts/AuthProvider'
 
 // Load config

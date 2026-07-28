@@ -46,7 +46,7 @@ const TradeHistory = dynamic(() => import('@/components/TradeHistory'), {
 })
 
 const EnergyGridMapWrapper = dynamic(
-  () => import('@/components/EnergyGridMapWrapper'),
+  () => import('@/features/energy-grid/components/EnergyGridMapWrapper'),
   {
     ssr: false,
     loading: () => (

@@ -1,7 +1,7 @@
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useActiveOrderMeters } from '../useActiveOrderMeters'
+import { useActiveOrderMeters } from '@/features/energy-grid/hooks/useActiveOrderMeters'
 
 const mockGetPublicActiveOrderMeters = jest.fn()
 jest.mock('@/lib/api-client', () => ({

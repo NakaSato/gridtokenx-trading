@@ -17,7 +17,7 @@ import {
     AccordionTrigger,
 } from '@/components/ui/accordion'
 import type { EnergyNode, LiveNodeData } from '@/types/grid'
-import { getStatusColor, parseNumericValue } from './utils'
+import { getStatusColor, parseNumericValue } from '@/features/energy-grid/hooks/utils'
 
 interface EnergyNodeMarkerProps {
     node: EnergyNode

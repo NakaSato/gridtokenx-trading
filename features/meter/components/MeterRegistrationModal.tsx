@@ -7,9 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/contexts/AuthProvider'
 import toast from 'react-hot-toast'
@@ -25,7 +25,7 @@ import {
   ArrowUpFromLine,
 } from 'lucide-react'
 import { PublicMeterResponse } from '@/types/meter'
-import { Label } from './ui/label'
+import { Label } from '@/components/ui/label'
 
 interface MeterRegistrationModalProps {
   isOpen: boolean

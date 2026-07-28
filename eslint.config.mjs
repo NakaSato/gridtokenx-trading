@@ -27,7 +27,29 @@ const eslintConfig = [
       'no-restricted-imports': [
         'error',
         {
-          patterns: [],
+          patterns: [
+            {
+              group: [
+                '@/components/energy-grid/*',
+                '@/components/meter/*',
+                '@/components/EnergyGridMap*',
+                '@/components/LiveGridStats',
+                '@/components/MeterRegistrationModal',
+              ],
+              message:
+                'Moved to features/energy-grid or features/meter — import from there.',
+            },
+            {
+              group: ['@/hooks/useApi', '@/contexts/SocketContext'],
+              message:
+                'Removed. Use TanStack Query (lib/query/keys.ts) and lib/ws/useWsChannel.',
+            },
+            {
+              group: ['@/lib/data/Positions', '@/lib/data/WalletActivity'],
+              message:
+                'Types live in types/trading.ts and types/wallet.ts; mapApiOrderToOrder in lib/api/adapters.ts.',
+            },
+          ],
         },
       ],
     },

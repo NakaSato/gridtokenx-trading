@@ -1,7 +1,7 @@
 'use client'
 
 import { Marker } from 'react-map-gl/mapbox'
-import type { ClusterFeature } from './useMeterClusters'
+import type { ClusterFeature } from '@/features/energy-grid/hooks/useMeterClusters'
 
 interface ClusterMarkerProps {
     cluster: ClusterFeature

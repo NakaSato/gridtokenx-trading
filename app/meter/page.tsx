@@ -4,15 +4,15 @@ import { useState } from 'react'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
-import { MeterRegistrationModal } from '@/components/MeterRegistrationModal'
-import { MeterHeader } from '@/components/meter/MeterHeader'
+import { MeterRegistrationModal } from '@/features/meter/components/MeterRegistrationModal'
+import { MeterHeader } from '@/features/meter/components/MeterHeader'
 import { useSmartMeter } from '@/hooks/useSmartMeter'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import dynamic from 'next/dynamic'
 
 // Lazy load heavy components with skeletons
 const MeterStats = dynamic(
-  () => import('@/components/meter/MeterStats').then(m => m.MemoizedMeterStats),
+  () => import('@/features/meter/components/MeterStats').then(m => m.MemoizedMeterStats),
   {
     loading: () => (
       <div className="flex items-center justify-center h-32">
@@ -23,7 +23,7 @@ const MeterStats = dynamic(
 )
 
 const ReadingsList = dynamic(
-  () => import('@/components/meter/ReadingsList').then(m => m.MemoizedReadingsList),
+  () => import('@/features/meter/components/ReadingsList').then(m => m.MemoizedReadingsList),
   {
     loading: () => (
       <div className="flex items-center justify-center h-48">
@@ -34,7 +34,7 @@ const ReadingsList = dynamic(
 )
 
 const MeterList = dynamic(
-  () => import('@/components/meter/MeterList').then(m => m.MemoizedMeterList),
+  () => import('@/features/meter/components/MeterList').then(m => m.MemoizedMeterList),
   {
     loading: () => (
       <div className="flex items-center justify-center h-64">

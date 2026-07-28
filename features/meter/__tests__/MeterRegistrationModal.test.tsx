@@ -9,7 +9,7 @@ import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
-import { MeterRegistrationModal } from '../MeterRegistrationModal'
+import { MeterRegistrationModal } from '../components/MeterRegistrationModal'
 import toast from 'react-hot-toast'
 
 const mockGetPublicMeters = jest.fn()

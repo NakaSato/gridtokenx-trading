@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react'
 import type { EnergyNode, EnergyTransfer, LiveNodeData, LiveTransferData } from '@/types/grid'
-import { getInitialLiveValue, liveValueFor } from './utils'
-import type { MeterTelemetry } from './useMeterTelemetry'
+import { getInitialLiveValue, liveValueFor } from '@/features/energy-grid/hooks/utils'
+import type { MeterTelemetry } from '@/features/energy-grid/hooks/useMeterTelemetry'
 
 interface UseLiveMeterDataProps {
     energyNodes: EnergyNode[]

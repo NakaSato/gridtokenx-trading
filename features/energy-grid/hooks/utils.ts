@@ -1,5 +1,5 @@
 import type { EnergyNode } from '@/types/grid'
-import type { MeterTelemetry } from './useMeterTelemetry'
+import type { MeterTelemetry } from '@/features/energy-grid/hooks/useMeterTelemetry'
 import { ENERGY_GRID_CONFIG } from '@/lib/constants'
 
 // Helper to parse numeric value from string like "280 kW" or "150 kWh"
