@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { CarbonCredits } from '../carbon-credits'
+import { CarbonCredits } from '@/features/portfolio/components/carbon-credits'
 
 jest.mock('@/contexts/AuthProvider', () => ({
     useAuth: () => ({ token: 'test-token', isAuthenticated: true }),

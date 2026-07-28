@@ -60,6 +60,23 @@ const eslintConfig = [
                 'Moved to features/trading (components/ or lib/). Shared position data: features/trading/hooks/usePositionsData.',
             },
             {
+              group: [
+                '@/components/auth',
+                '@/components/auth/*',
+                '@/components/wallet/*',
+                '@/components/portfolio/*',
+                '@/components/Wallet*',
+                '@/components/ProtectedRoute',
+                '@/components/Profile',
+                '@/components/EmailVerificationBanner',
+                '@/components/MultiWalletManager',
+                '@/components/ClaimStealthModal',
+                '@/components/DevFaucet',
+              ],
+              message:
+                'Moved to features/auth, features/wallet or features/portfolio.',
+            },
+            {
               group: ['@/hooks/useApi', '@/contexts/SocketContext'],
               message:
                 'Removed. Use TanStack Query (lib/query/keys.ts) and lib/ws/useWsChannel.',

@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
-import { PortfolioHero } from '@/components/portfolio/portfolio-hero'
-import { PortfolioTabs } from '@/components/portfolio/portfolio-tabs'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import { PortfolioHero } from '@/features/portfolio/components/portfolio-hero'
+import { PortfolioTabs } from '@/features/portfolio/components/portfolio-tabs'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {

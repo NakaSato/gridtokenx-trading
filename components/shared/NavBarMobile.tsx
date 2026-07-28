@@ -15,7 +15,7 @@ import {
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import Image from 'next/image'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { AuthButton } from '@/components/auth'
+import AuthButton from '@/features/auth/components/AuthButton'
 import { useState, useMemo } from 'react'
 import { MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +35,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
 const SettingsMobile = dynamic(() => import('@/components/shared/SettingsMobile'), { ssr: false })
-const WalletSideBar = dynamic(() => import('@/components/WalletSidebar'), { ssr: false })
+const WalletSideBar = dynamic(() => import('@/features/wallet/components/WalletSidebar'), { ssr: false })
 
 // ============================================================================
 // Types & Interfaces

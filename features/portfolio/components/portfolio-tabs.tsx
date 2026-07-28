@@ -1,9 +1,9 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { Card, CardContent } from '../ui/card'
-import ProtectedRoute from '../ProtectedRoute'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useExpiredOptions, useOptionSettlement } from '@/hooks/useOptions'
 import {
@@ -22,7 +22,7 @@ import { ContractContext } from '@/contexts/contractProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { connection } from '@/utils/const'
 import ExpiredOptions from '@/features/trading/components/ExpiredOptions'
-import { CarbonCredits } from './carbon-credits'
+import { CarbonCredits } from '@/features/portfolio/components/carbon-credits'
 import P2PStatus from '@/features/p2p/components/P2PStatus'
 
 export function PortfolioTabs() {

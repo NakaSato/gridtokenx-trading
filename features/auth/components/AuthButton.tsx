@@ -2,9 +2,9 @@
 
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/contexts/AuthProvider'
-import SignIn from './SignIn'
-import SignOut from './SignOut'
-import AuthModalManager from './AuthModalManager'
+import SignIn from '@/features/auth/components/SignIn'
+import SignOut from '@/features/auth/components/SignOut'
+import AuthModalManager from '@/features/auth/components/AuthModalManager'
 
 interface AuthButtonProps {
   signInVariant?: 'default' | 'outline' | 'ghost'

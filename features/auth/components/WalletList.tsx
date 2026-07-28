@@ -1,8 +1,8 @@
 'use client'
 
 import { memo } from 'react'
-import WalletButton from './WalletButton'
-import type { Wallet } from '../types/wallet'
+import WalletButton from '@/features/auth/components/WalletButton'
+import type { Wallet } from '@/types/wallet'
 
 interface WalletListProps {
   wallets: Wallet[]

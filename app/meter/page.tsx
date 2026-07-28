@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { MeterRegistrationModal } from '@/features/meter/components/MeterRegistrationModal'

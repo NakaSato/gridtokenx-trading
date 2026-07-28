@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import { WalletIcon } from '@/public/svgs/icons'
-import WalletModal from '../WalletModal'
+import WalletModal from '@/features/auth/components/WalletModal'
 import { useWallet } from '@solana/wallet-adapter-react'
 
 interface SignInProps {

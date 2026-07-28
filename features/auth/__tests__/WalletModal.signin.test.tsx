@@ -8,7 +8,7 @@ import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom'
-import WalletModal from '../WalletModal'
+import WalletModal from '@/features/auth/components/WalletModal'
 import { ApiClientError } from '@/lib/api/core'
 
 const mockLogin = jest.fn()
@@ -48,7 +48,7 @@ jest.mock('@/hooks/useResendVerification', () => ({
 }))
 
 // WalletList pulls in the Solana wallet adapter context — irrelevant here.
-jest.mock('../WalletList', () => ({
+jest.mock('@/features/auth/components/WalletList', () => ({
   __esModule: true,
   default: () => <div data-testid="wallet-list" />,
 }))

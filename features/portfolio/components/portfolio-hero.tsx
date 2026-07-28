@@ -4,11 +4,11 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useMarketPrice, useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
-import { Card, CardContent } from '../ui/card'
-import { Button } from '../ui/button'
-import { Skeleton } from '../ui/skeleton'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Check, Coins, Copy, RefreshCw, User, Wallet } from 'lucide-react'
-import { PortfolioStatsRow } from './portfolio-stats-row'
+import { PortfolioStatsRow } from '@/features/portfolio/components/portfolio-stats-row'
 
 // No static prices. GRX (the only platform token) is priced from the real trade
 // VWAP (useMarketPrice); when the market has never traded, ฿-value renders "—".

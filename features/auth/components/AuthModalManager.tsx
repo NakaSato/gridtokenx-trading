@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import WalletModal from '../WalletModal'
+import WalletModal from '@/features/auth/components/WalletModal'
 
 /**
  * Global auth modal manager that listens for custom events

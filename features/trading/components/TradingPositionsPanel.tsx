@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import TradingPositionsFallback from '@/features/trading/components/TradingPositionsFallback'
 import TradingPositions from '@/features/trading/components/TradingPositions'
 

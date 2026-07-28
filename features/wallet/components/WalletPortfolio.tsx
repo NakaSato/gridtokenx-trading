@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp } from '@/public/svgs/icons'
 import Image from 'next/image'
-import { Separator } from './ui/separator'
+import { Separator } from '@/components/ui/separator'
 import { useState } from 'react'
 import { usePositions } from '@/features/trading/hooks/usePositionsData'
 import { usePortfolioRisk } from '@/hooks/usePortfolioRisk'

@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { Button } from '../ui/button'
+import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import { LogOutIcon } from '@/public/svgs/icons'
 

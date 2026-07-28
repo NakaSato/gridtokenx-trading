@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
-import { WalletTransfer } from '@/components/wallet/WalletTransfer'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import { WalletTransfer } from '@/features/wallet/components/WalletTransfer'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {

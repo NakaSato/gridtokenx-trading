@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { WalletTransfer } from '../WalletTransfer'
+import { WalletTransfer } from '@/features/wallet/components/WalletTransfer'
 
 // The real PublicKey works fine for construction; only the wallet adapter,
 // hooks, and toast layers are mocked.

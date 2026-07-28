@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
-import { CarbonCredits } from '@/components/portfolio/carbon-credits'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import { CarbonCredits } from '@/features/portfolio/components/carbon-credits'
+import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {

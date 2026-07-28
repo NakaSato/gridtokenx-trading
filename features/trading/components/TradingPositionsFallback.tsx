@@ -2,7 +2,7 @@ import { Ban, EllipsisVertical, RotateCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useState } from 'react'
-import WalletModal from '@/components/WalletModal'
+import WalletModal from '@/features/auth/components/WalletModal'
 import {
   DropdownMenu,
   DropdownMenuContent,

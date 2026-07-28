@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import { memo } from 'react'
-import type { Wallet } from '../types/wallet'
+import type { Wallet } from '@/types/wallet'
 
 interface WalletButtonProps {
   name: string

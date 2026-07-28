@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { AuthButton } from '@/components/auth'
+import AuthButton from '@/features/auth/components/AuthButton'
 import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
 import { Logo } from '@/components/shared/Logo'
 import dynamic from 'next/dynamic'
@@ -40,9 +40,9 @@ import NavBarMobile from '@/components/shared/NavBarMobile'
 import { NetworkStatus } from '@/components/shared/NetworkStatus'
 
 // Dynamic Imports for Header Performance
-const WalletSideBar = dynamic(() => import('@/components/WalletSidebar'), { ssr: false })
+const WalletSideBar = dynamic(() => import('@/features/wallet/components/WalletSidebar'), { ssr: false })
 const Settings = dynamic(() => import('@/components/shared/Settings'), { ssr: false })
-const Profile = dynamic(() => import('@/components/Profile'), { ssr: false })
+const Profile = dynamic(() => import('@/features/auth/components/Profile'), { ssr: false })
 const Notifications = dynamic(() => import('@/components/Notifications'), { ssr: false })
 const PointsDropDown = dynamic(() => import('@/components/PointsDropDown'), { ssr: false })
 

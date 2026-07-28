@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import {
   XIcon,
   Eye,
@@ -19,68 +19,47 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog'
-import WalletList from './WalletList'
+} from '@/components/ui/dialog'
+import WalletList from '@/features/auth/components/WalletList'
 import toast from 'react-hot-toast'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Separator } from './ui/separator'
-import { Checkbox } from './ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './ui/select'
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import type { Wallet } from '../types/wallet'
-import { defaultApiClient } from '../lib/api-client'
-import { ApiClientError } from '../lib/api/core'
-import type { RegisterResponse, Role } from '../types/auth'
+import type { Wallet } from '@/types/wallet'
+import { defaultApiClient } from '@/lib/api-client'
+import { ApiClientError } from '@/lib/api/core'
+import type { RegisterResponse, Role } from '@/types/auth'
+import { allWallets } from '@/features/wallet/lib/wallets'
+import { ROLE_OPTIONS } from '@/features/auth/lib/roles'
+import {
+  getPasswordChecks,
+  passwordScore,
+  EMAIL_PATTERN,
+} from '@/features/auth/lib/password'
+import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter'
 import { useAuth } from '@/contexts/AuthProvider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import { useResendVerification } from '@/hooks/useResendVerification'
+
+export { allWallets }
 
 interface WalletModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-// Memoized wallet configuration to prevent recreation on every render
-export const allWallets: Wallet[] = [
-  { name: 'Phantom', iconPath: '/images/phantom.png', id: 'phantom' },
-  { name: 'Solflare', iconPath: '/images/solflare.png', id: 'solflare' },
-  { name: 'Trust', iconPath: '/images/trust.png', id: 'trust' },
-  { name: 'SafePal', iconPath: '/images/safepal.png', id: 'safepal' },
-] as const
 
-// Role options for the signup account-type selector.
-const ROLE_OPTIONS = [
-  { value: 'prosumer', label: 'Prosumer', hint: 'Buy & sell energy' },
-  { value: 'consumer', label: 'Consumer', hint: 'Buy energy only' },
-] as const
 
-// Password rules — single source for both the live strength meter and the
-// submit-time validation in handleEmailSignUp.
-function getPasswordChecks(password: string) {
-  return {
-    length: password.length >= 8,
-    lower: /[a-z]/.test(password),
-    upper: /[A-Z]/.test(password),
-    digit: /\d/.test(password),
-    special: /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password),
-  }
-}
 
-const STRENGTH_META = [
-  { label: 'Too weak', color: 'bg-red-500', text: 'text-red-500' },
-  { label: 'Weak', color: 'bg-red-500', text: 'text-red-500' },
-  { label: 'Fair', color: 'bg-yellow-500', text: 'text-yellow-500' },
-  { label: 'Good', color: 'bg-yellow-400', text: 'text-yellow-400' },
-  { label: 'Strong', color: 'bg-green-500', text: 'text-green-500' },
-  { label: 'Very strong', color: 'bg-green-500', text: 'text-green-500' },
-] as const
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter()
@@ -325,9 +304,8 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   // Derived signup validation — computed each render, cheap, keeps the meter
   // and inline hints in sync with the live field values.
   const pwChecks = getPasswordChecks(password)
-  const pwScore = Object.values(pwChecks).filter(Boolean).length
-  const strength = STRENGTH_META[pwScore]
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const pwScore = passwordScore(pwChecks)
+  const emailValid = EMAIL_PATTERN.test(email)
   const confirmMatches =
     confirmPassword.length > 0 && password === confirmPassword
 
@@ -702,58 +680,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     </button>
                   </div>
 
-                  {/* Strength meter + requirement checklist */}
-                  {password.length > 0 && (
-                    <div className="space-y-2 pt-1">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-1.5 flex-1 gap-1">
-                          {[0, 1, 2, 3, 4].map((i) => (
-                            <div
-                              key={i}
-                              className={cn(
-                                'flex-1 rounded-full transition-colors',
-                                i < pwScore ? strength.color : 'bg-border'
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <span
-                          className={cn(
-                            'w-20 text-right text-xs font-medium',
-                            strength.text
-                          )}
-                        >
-                          {strength.label}
-                        </span>
-                      </div>
-                      <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
-                        {[
-                          { ok: pwChecks.length, label: '8+ characters' },
-                          { ok: pwChecks.lower, label: 'Lowercase' },
-                          { ok: pwChecks.upper, label: 'Uppercase' },
-                          { ok: pwChecks.digit, label: 'Number' },
-                          { ok: pwChecks.special, label: 'Symbol' },
-                        ].map((r) => (
-                          <li
-                            key={r.label}
-                            className={cn(
-                              'flex items-center gap-1.5 text-xs',
-                              r.ok
-                                ? 'text-green-500'
-                                : 'text-muted-foreground'
-                            )}
-                          >
-                            {r.ok ? (
-                              <Check className="h-3 w-3 shrink-0" />
-                            ) : (
-                              <XMark className="h-3 w-3 shrink-0" />
-                            )}
-                            {r.label}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  <PasswordStrengthMeter password={password} />
                 </div>
 
                 <div className="space-y-1.5">
