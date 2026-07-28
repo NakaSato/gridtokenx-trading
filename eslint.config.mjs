@@ -12,6 +12,7 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
       'lib/wasm/**',
+      'lib/wasm-zk/**',
     ],
   },
   ...nextCoreWebVitals,
@@ -21,6 +22,14 @@ const eslintConfig = [
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       'prefer-const': 'off',
+      // Boundary ratchet: as each feature migrates to features/<x>/, its
+      // legacy path is added here so nothing re-imports the old location.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [],
+        },
+      ],
     },
   },
 ]

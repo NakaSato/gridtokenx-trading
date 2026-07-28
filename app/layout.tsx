@@ -3,25 +3,16 @@ import { Suspense } from 'react'
 import { Poppins } from 'next/font/google'
 import './globals.css'
 import NavBar from '@/components/NavBar'
-import { ThemeProvider } from '@/components/ThemeProvider'
 import Script from 'next/script'
-import Connectionprovider from '@/contexts/connectionprovider'
-import { AuthProvider } from '@/contexts/AuthProvider'
 import { Toaster } from 'react-hot-toast'
-import { SocketProvider } from '@/contexts/SocketContext'
 import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 import DevFaucet from '@/components/DevFaucet'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
-import { WasmProvider } from '@/lib/wasm-provider'
-import QueryProvider from '@/components/QueryProvider'
 import Footer from '@/components/Footer'
-import { PrivacyProvider } from '@/contexts/PrivacyProvider'
-import { SidebarProvider } from '@/contexts/SidebarContext'
 import ClaimStealthModal from '@/components/ClaimStealthModal'
 import FulfillTradeModal from '@/components/FulfillTradeModal'
-import { TradingProvider } from '@/contexts/TradingProvider'
-import { NotificationToastProvider } from '../hooks/useNotificationToast'
+import Providers from './providers'
 import { reportWebVitals } from '@/lib/web-vitals'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://app.gridtokenx.com'
@@ -162,40 +153,22 @@ export default function RootLayout({
         className={`${poppins.variable} min-h-screen overflow-hidden bg-background font-sans antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
-          <QueryProvider>
-            <Connectionprovider>
-              <AuthProvider>
-                <SocketProvider>
-                  <PrivacyProvider>
-                    <SidebarProvider>
-                      <WasmProvider>
-                        <TradingProvider>
-                          <NotificationToastProvider>
-                            <AuthModalManager />
-                            <DevFaucet />
-                            <EmailVerificationBanner />
-                            <ClaimStealthModal />
-                            <Suspense fallback={null}>
-                              <FulfillTradeModal />
-                            </Suspense>
-                            <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
-                              <NavBar />
-                              <main className="flex flex-1 flex-col overflow-hidden">
-                                {children}
-                              </main>
-                              <Footer />
-                            </div>
-                          </NotificationToastProvider>
-                        </TradingProvider>
-                      </WasmProvider>
-                    </SidebarProvider>
-                  </PrivacyProvider>
-                </SocketProvider>
-              </AuthProvider>
-            </Connectionprovider>
-        </QueryProvider>
-        </ThemeProvider>
+        <Providers>
+          <AuthModalManager />
+          <DevFaucet />
+          <EmailVerificationBanner />
+          <ClaimStealthModal />
+          <Suspense fallback={null}>
+            <FulfillTradeModal />
+          </Suspense>
+          <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
+            <NavBar />
+            <main className="flex flex-1 flex-col overflow-hidden">
+              {children}
+            </main>
+            <Footer />
+          </div>
+        </Providers>
         <Toaster
           position="bottom-right"
           toastOptions={{

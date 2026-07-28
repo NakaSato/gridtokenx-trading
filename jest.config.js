@@ -13,19 +13,24 @@ const customJestConfig = {
     // jsdom's "browser" export condition resolves uuid (via @solana/web3.js →
     // jayson) to its ESM build, which Jest can't parse — force the CJS entry.
     '^uuid$': require.resolve('uuid'),
-    '^@/components/(.*)$': '<rootDir>/components/$1',
-    '^@/lib/(.*)$': '<rootDir>/lib/$1',
-    '^@/types/(.*)$': '<rootDir>/types/$1',
-    '^@/utils/(.*)$': '<rootDir>/utils/$1',
-    '^@/contexts/(.*)$': '<rootDir>/contexts/$1',
-    '^@/hooks/(.*)$': '<rootDir>/hooks/$1',
+    // Catch-all mirror of the tsconfig "@/*" → repo-root alias, so directory
+    // moves never need a jest config change.
+    '^@/(.*)$': '<rootDir>/$1',
   },
   testEnvironmentOptions: {
     url: 'http://localhost:3000',
   },
   collectCoverageFrom: [
+    'app/**/*.{js,jsx,ts,tsx}',
     'components/**/*.{js,jsx,ts,tsx}',
+    'contexts/**/*.{js,jsx,ts,tsx}',
+    'features/**/*.{js,jsx,ts,tsx}',
+    'hooks/**/*.{js,jsx,ts,tsx}',
     'lib/**/*.{js,jsx,ts,tsx}',
+    'types/**/*.{js,jsx,ts,tsx}',
+    'utils/**/*.{js,jsx,ts,tsx}',
+    '!lib/wasm/**',
+    '!lib/wasm-zk/**',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',

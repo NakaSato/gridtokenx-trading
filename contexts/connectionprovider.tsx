@@ -5,7 +5,6 @@ import {
 } from '@solana/wallet-adapter-react'
 import { WalletAdapterNetwork, Adapter } from '@solana/wallet-adapter-base'
 import { useMemo, useState, useEffect } from 'react'
-import { ContractProvider } from './contractProvider'
 
 function SolanaConnectionProvider({
   children,
@@ -57,7 +56,7 @@ function SolanaConnectionProvider({
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
-        <ContractProvider>{children}</ContractProvider>
+        {children}
       </WalletProvider>
     </ConnectionProvider>
   )

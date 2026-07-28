@@ -3,3 +3,5 @@ dist
 build
 node_modules
 public/charting_library
+lib/wasm
+lib/wasm-zk
