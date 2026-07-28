@@ -9,7 +9,6 @@ import Connectionprovider from '@/contexts/connectionprovider'
 import { AuthProvider } from '@/contexts/AuthProvider'
 import { Toaster } from 'react-hot-toast'
 import { SocketProvider } from '@/contexts/SocketContext'
-import { SystemConfigProvider } from '@/contexts/systemConfigProvider'
 import { generateStructuredData } from '@/lib/metadata'
 import AuthModalManager from '@/components/auth/AuthModalManager'
 import DevFaucet from '@/components/DevFaucet'
@@ -17,13 +16,10 @@ import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { WasmProvider } from '@/lib/wasm-provider'
 import QueryProvider from '@/components/QueryProvider'
 import Footer from '@/components/Footer'
-import { EnergyProvider } from '@/contexts/EnergyProvider'
 import { PrivacyProvider } from '@/contexts/PrivacyProvider'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import ClaimStealthModal from '@/components/ClaimStealthModal'
 import FulfillTradeModal from '@/components/FulfillTradeModal'
-import { LendingProvider } from '@/contexts/LendingProvider'
-import { MarketplaceProvider } from '@/contexts/MarketplaceProvider'
 import { TradingProvider } from '@/contexts/TradingProvider'
 import { NotificationToastProvider } from '../hooks/useNotificationToast'
 import { reportWebVitals } from '@/lib/web-vitals'
@@ -168,44 +164,36 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="data-theme" defaultTheme="dark-purple">
           <QueryProvider>
-            <SystemConfigProvider>
-              <Connectionprovider>
+            <Connectionprovider>
               <AuthProvider>
                 <SocketProvider>
-                  <EnergyProvider>
-                    <PrivacyProvider>
-                      <SidebarProvider>
-                        <WasmProvider>
-                          <LendingProvider>
-                            <MarketplaceProvider>
-                              <TradingProvider>
-                                <NotificationToastProvider>
-                                  <AuthModalManager />
-                                  <DevFaucet />
-                                  <EmailVerificationBanner />
-                                  <ClaimStealthModal />
-                                  <Suspense fallback={null}>
-                                    <FulfillTradeModal />
-                                  </Suspense>
-                                  <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
-                                    <NavBar />
-                                    <main className="flex flex-1 flex-col overflow-hidden">
-                                      {children}
-                                    </main>
-                                    <Footer />
-                                  </div>
-                                </NotificationToastProvider>
-                              </TradingProvider>
-                            </MarketplaceProvider>
-                          </LendingProvider>
-                        </WasmProvider>
-                      </SidebarProvider>
-                    </PrivacyProvider>
-                  </EnergyProvider>
+                  <PrivacyProvider>
+                    <SidebarProvider>
+                      <WasmProvider>
+                        <TradingProvider>
+                          <NotificationToastProvider>
+                            <AuthModalManager />
+                            <DevFaucet />
+                            <EmailVerificationBanner />
+                            <ClaimStealthModal />
+                            <Suspense fallback={null}>
+                              <FulfillTradeModal />
+                            </Suspense>
+                            <div className="mx-auto flex h-screen w-full max-w-[1920px] flex-col px-2 sm:px-4 md:px-6">
+                              <NavBar />
+                              <main className="flex flex-1 flex-col overflow-hidden">
+                                {children}
+                              </main>
+                              <Footer />
+                            </div>
+                          </NotificationToastProvider>
+                        </TradingProvider>
+                      </WasmProvider>
+                    </SidebarProvider>
+                  </PrivacyProvider>
                 </SocketProvider>
               </AuthProvider>
             </Connectionprovider>
-          </SystemConfigProvider>
         </QueryProvider>
         </ThemeProvider>
         <Toaster
