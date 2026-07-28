@@ -11,7 +11,7 @@ import DevFaucet from '@/features/wallet/components/DevFaucet'
 import { EmailVerificationBanner } from '@/features/auth/components/EmailVerificationBanner'
 import Footer from '@/components/shared/Footer'
 import ClaimStealthModal from '@/features/wallet/components/ClaimStealthModal'
-import FulfillTradeModal from '@/components/FulfillTradeModal'
+import FulfillTradeModal from '@/features/privacy/components/FulfillTradeModal'
 import Providers from './providers'
 import { reportWebVitals } from '@/lib/web-vitals'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import SignIn from '@/features/auth/components/SignIn'
 import SignOut from '@/features/auth/components/SignOut'
 import AuthModalManager from '@/features/auth/components/AuthModalManager'

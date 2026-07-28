@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import WalletList from '@/features/auth/components/WalletList'
 import { allWallets } from '@/features/auth/components/WalletModal'

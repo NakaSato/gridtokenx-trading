@@ -12,7 +12,7 @@ jest.mock('@/lib/api-client', () => ({
 }))
 
 let mockIsAuthenticated = true
-jest.mock('@/contexts/AuthProvider', () => ({
+jest.mock('@/features/auth/provider', () => ({
     useAuth: () => ({ isAuthenticated: mockIsAuthenticated }),
 }))
 

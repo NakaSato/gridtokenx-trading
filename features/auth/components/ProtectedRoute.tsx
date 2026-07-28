@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useRouter } from 'next/navigation'
 import React, { useEffect } from 'react'
 

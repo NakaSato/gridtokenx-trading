@@ -10,7 +10,7 @@ import { Loader2, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 
 interface PriceChartProps {
     symbol?: string

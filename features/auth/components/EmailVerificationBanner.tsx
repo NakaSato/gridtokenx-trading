@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { AlertTriangle, X, Mail, Loader2 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { Button } from '@/components/ui/button'
 import { defaultApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'

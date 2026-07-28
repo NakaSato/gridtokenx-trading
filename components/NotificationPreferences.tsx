@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import type { NotificationPreferences } from '@/types/features'
 import { Button } from './ui/button'

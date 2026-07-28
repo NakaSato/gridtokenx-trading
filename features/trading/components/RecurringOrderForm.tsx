@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import { Loader2, ChevronRight, TrendingUp, TrendingDown, Clock, Sun, CalendarDays, CalendarRange, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Copy, Download, FileDown, Loader2 } from 'lucide-react'
 import { useState, memo } from 'react'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import toast from 'react-hot-toast'
 

@@ -46,7 +46,7 @@ import {
   EMAIL_PATTERN,
 } from '@/features/auth/lib/password'
 import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStrengthMeter'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useWalletAuth } from '@/hooks/useWalletAuth'
 import { useResendVerification } from '@/hooks/useResendVerification'
 

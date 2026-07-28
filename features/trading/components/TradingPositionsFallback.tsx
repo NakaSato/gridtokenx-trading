@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { WalletIcon } from '@/public/svgs/icons'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 
 export default function TradingPositionsFallback() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false)

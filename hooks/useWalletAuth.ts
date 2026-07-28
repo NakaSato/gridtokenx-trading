@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useWallet } from '@solana/wallet-adapter-react'
 import toast from 'react-hot-toast'
 import bs58 from 'bs58'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 
 // Wallet-name → install URL for the adapters wired in connectionprovider.tsx.
 const WALLET_INSTALL_URLS: Record<string, string> = {

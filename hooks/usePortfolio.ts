@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { format } from 'date-fns'
 import type { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 import type { UserProfile, TokenBalance } from '@/types/auth'

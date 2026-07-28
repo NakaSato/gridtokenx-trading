@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { usePrivacy } from '@/contexts/PrivacyProvider'
+import { usePrivacy } from '@/features/privacy/provider'
 import { toast } from 'react-hot-toast'
 import { ShoppingCart, ShieldCheck, DollarSign, ArrowRight } from 'lucide-react'
 

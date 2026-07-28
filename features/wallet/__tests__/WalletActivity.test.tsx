@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import WalletActivity from '@/features/wallet/components/WalletActivity'
 
-jest.mock('@/contexts/AuthProvider', () => ({
+jest.mock('@/features/auth/provider', () => ({
     useAuth: () => ({ token: 'test-token', user: null }),
 }))
 

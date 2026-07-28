@@ -120,3 +120,25 @@ export interface TokenBalance {
   token_mint: string;
   token_account: string;
 }
+
+
+/**
+ * The user shape the client keeps in the session. Looser than UserProfile
+ * because it is rehydrated from web storage before the profile fetch resolves,
+ * so optional fields may be absent on the first render after a reload.
+ * Previously declared privately inside AuthProvider, which is why the provider
+ * had to merge two disagreeing shapes by hand.
+ */
+export interface AuthUser {
+  id: string
+  username: string
+  email: string
+  role: string
+  first_name?: string | null
+  last_name?: string | null
+  wallet_address?: string | null
+  status?: string
+  balance?: number | string
+  locked_amount?: number | string
+  locked_energy?: number | string
+}

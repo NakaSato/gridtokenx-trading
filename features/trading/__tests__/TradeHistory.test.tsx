@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import TradeHistory from '@/features/trading/components/TradeHistory'
 
-jest.mock('@/contexts/AuthProvider', () => ({
+jest.mock('@/features/auth/provider', () => ({
     useAuth: () => ({ token: 'test-token' }),
 }))
 

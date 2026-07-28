@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useExpiredOptions, useOptionSettlement } from '@/hooks/useOptions'
 import {
   usePositions,

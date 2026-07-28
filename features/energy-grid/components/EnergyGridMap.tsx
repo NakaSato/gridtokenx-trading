@@ -30,7 +30,7 @@ import type {
   ClusterOrPoint,
   ClusterFeature,
 } from '@/features/energy-grid/hooks/useMeterClusters'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 
 // Load config
 import { CAMPUS_CONFIG } from '@/lib/constants'

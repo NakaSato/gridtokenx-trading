@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import type { EnergyNode } from '@/types/grid'
 import type { MeterTelemetry } from '@/features/energy-grid/hooks/useMeterTelemetry'
 import { liveValueFor } from '@/features/energy-grid/hooks/utils'

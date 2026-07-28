@@ -23,7 +23,7 @@ import {
 import { cn } from '@/lib/utils'
 import { FuturesPosition } from '@/types/futures'
 import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { toast } from 'react-hot-toast'
 
 interface FuturesPositionListProps {

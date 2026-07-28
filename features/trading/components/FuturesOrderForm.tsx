@@ -17,7 +17,7 @@ import {
   ShieldAlert
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'

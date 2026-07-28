@@ -21,7 +21,7 @@ import {
 
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useSidebar } from '@/components/shared/SidebarContext'
 import { buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

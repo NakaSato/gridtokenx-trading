@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import Link from 'next/link'
 
 export default function Footer() {

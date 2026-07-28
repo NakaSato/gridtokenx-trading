@@ -10,7 +10,6 @@ import {
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Program, AnchorProvider, BN } from '@coral-xyz/anchor'
 import { PublicKey, SystemProgram } from '@solana/web3.js'
-import * as privacyUtils from '@/lib/privacy-utils'
 import { getPrivateBalancePDA, getPrivVaultPDA, getPrivVaultAuthPDA } from '@/lib/pda-utils'
 import {
   getAssociatedTokenAddressSync,
@@ -19,7 +18,8 @@ import {
 import { ENERGY_TOKEN_MINT } from '@/utils/const'
 import tradingIdl from '@/lib/idl/trading.json'
 import { toast } from 'react-hot-toast'
-import * as historyUtils from '@/lib/history-utils'
+import { deriveKeys, unlockMessage } from '@/features/privacy/lib/keyring'
+import { appendEntry } from '@/features/privacy/lib/history-store'
 
 interface PrivateBalanceState {
   commitment: number[]
@@ -144,7 +144,7 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
   const unlockPrivacy = async () => {
     if (!wallet) throw new Error('Wallet not connected')
 
-    // Use wallet.signMessage if available (Standard but optional in AnchorWallet)
+    // AnchorWallet does not expose signMessage; go to the injected provider.
     const provider = (window as any).solana
     if (!provider?.signMessage) {
       throw new Error(
@@ -152,22 +152,12 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
       )
     }
 
-    const message = new TextEncoder().encode(
-      `GridTokenX Privacy Access\n\nAuthorize access to your confidential GridToken assets.\nYour balance will be recovered using your signature.\n\nWallet: ${wallet.publicKey.toBase58()}`
+    const signed = await provider.signMessage(
+      unlockMessage(wallet.publicKey.toBase58())
     )
-
-    const signedMessage = await provider.signMessage(message)
-    const signature = signedMessage.signature
-
-    const seed = privacyUtils.derivePrivacyRootSeed(signature)
-    setRootSeed(seed)
-
-    // Derive a separate encryption key for history (first 32 bytes of sha256(seed))
-    const encKey = await window.crypto.subtle.digest(
-      'SHA-256',
-      new Uint8Array(seed).buffer
-    )
-    setEncryptionKey(new Uint8Array(encKey))
+    const keys = await deriveKeys(signed.signature)
+    setRootSeed(keys.rootSeed)
+    setEncryptionKey(keys.encryptionKey)
 
     await refresh()
   }
@@ -175,26 +165,15 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
   const pushToHistory = async (
     type: string,
     amount: number,
-    details: any = {}
+    details: Record<string, unknown> = {}
   ) => {
     if (!wallet || !encryptionKey) return
-
-    const entry = {
+    await appendEntry(wallet.publicKey.toBase58(), encryptionKey, {
       type,
       amount,
       ...details,
       timestamp: Date.now(),
-    }
-
-    const encrypted = await historyUtils.encryptHistoryBlob(
-      entry,
-      encryptionKey
-    )
-
-    const storageKey = `gtx_priv_history_${wallet.publicKey.toBase58()}`
-    const current = JSON.parse(localStorage.getItem(storageKey) || '[]')
-    current.push(encrypted)
-    localStorage.setItem(storageKey, JSON.stringify(current))
+    })
   }
 
   // Shield amount is PUBLIC. The instruction moves tokens user→pool vault and

@@ -27,7 +27,7 @@ jest.mock('react-hot-toast', () => ({
   },
 }))
 
-jest.mock('@/contexts/AuthProvider', () => ({
+jest.mock('@/features/auth/provider', () => ({
   useAuth: () => ({
     login: mockLogin,
     isLoading: false,

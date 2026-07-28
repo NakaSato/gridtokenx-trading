@@ -15,7 +15,7 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useGridStatus } from '@/features/energy-grid/hooks/useGridStatus'
 import type { MeterReading } from '@/types/meter'
 import { useOrderFill } from '@/features/p2p/order-fill-context'

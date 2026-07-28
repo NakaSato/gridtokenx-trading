@@ -13,7 +13,7 @@ jest.mock('@solana/wallet-adapter-react', () => ({
   useWallet: () => ({ select: mockSelect, wallets: mockWallets }),
 }))
 
-jest.mock('@/contexts/AuthProvider', () => ({
+jest.mock('@/features/auth/provider', () => ({
   useAuth: () => ({
     loginWithWallet: mockLoginWithWallet,
     updateWallet: mockUpdateWallet,

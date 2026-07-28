@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import TradingViewTopNav from '@/features/trading/components/TradingViewTopNav'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { createApiClient } from '@/lib/api-client'
 import { FuturesProduct, FuturesPosition, OrderBook } from '@/types/futures'
 import {

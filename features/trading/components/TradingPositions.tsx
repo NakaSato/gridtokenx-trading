@@ -33,7 +33,7 @@ import PriceAlerts from '@/features/trading/components/PriceAlerts'
 import { Transaction } from '@/types/wallet'
 import Pagination from '@/components/shared/Pagination'
 import OpenOptionOrders from '@/features/trading/components/OpenOptionOrders'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useSidebar } from '@/components/shared/SidebarContext'
 import {
   usePositions,

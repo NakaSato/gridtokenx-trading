@@ -77,6 +77,15 @@ const eslintConfig = [
                 'Moved to features/auth, features/wallet or features/portfolio.',
             },
             {
+              group: [
+                '@/contexts/AuthProvider',
+                '@/contexts/PrivacyProvider',
+                '@/components/FulfillTradeModal',
+              ],
+              message:
+                'Moved to features/auth/provider and features/privacy.',
+            },
+            {
               group: ['@/hooks/useApi', '@/contexts/SocketContext'],
               message:
                 'Removed. Use TanStack Query (lib/query/keys.ts) and lib/ws/useWsChannel.',

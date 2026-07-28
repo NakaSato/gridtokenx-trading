@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useMarketPrice, useProfile, useWalletBalance, useWallets } from '@/hooks/usePortfolio'
 import { Card, CardContent } from '@/components/ui/card'

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createApiClient } from '@/lib/api-client'
-import { useAuth } from '@/contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useProfile } from '@/hooks/usePortfolio'
 import type { TokenBalance } from '@/types/auth'

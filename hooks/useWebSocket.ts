@@ -12,7 +12,7 @@ import {
   WebSocketEventHandler,
   defaultWSManager,
 } from '../lib/websocket-client'
-import { useAuth } from '../contexts/AuthProvider'
+import { useAuth } from '@/features/auth/provider'
 
 /**
  * Hook for WebSocket connection with automatic cleanup

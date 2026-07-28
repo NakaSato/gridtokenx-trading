@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAuth } from "@/contexts/AuthProvider";
+import { useAuth } from "@/features/auth/provider";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ChevronDown, ChevronUp, X, Bell } from "lucide-react";
 
