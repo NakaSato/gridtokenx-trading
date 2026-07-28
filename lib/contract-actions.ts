@@ -1,7 +1,7 @@
-import { Connection, PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
+import { Connection, PublicKey, Transaction } from '@solana/web3.js'
 import { Program, BN } from '@coral-xyz/anchor'
 import { OptionContract } from '@/lib/idl/option_contract'
-import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { getAssociatedTokenAddressSync } from '@solana/spl-token'
 import {
     WSOL_MINT,
     WSOL_ORACLE,
@@ -43,31 +43,6 @@ export interface LiquidityParams {
     poolName: string
 }
 
-/** Parameters for auction orders */
-export interface AuctionOrderParams {
-    batch: PublicKey
-    price: number
-    amount: number
-    isBid: boolean
-    tokenMint: PublicKey
-    userTokenAccount: PublicKey
-}
-
-/** Parameters for canceling auction orders */
-export interface CancelAuctionParams {
-    batch: PublicKey
-    orderIndex: number
-    tokenMint: PublicKey
-    userTokenAccount: PublicKey
-}
-
-/** Parameters for encrypted bids */
-export interface EncryptedBidParams {
-    batch: PublicKey
-    encryptedPrice: number[] // 64 bytes
-    encryptedAmount: number[] // 64 bytes
-    isBid: boolean
-}
 
 export const openOption = async (
     program: Program<OptionContract>,
@@ -416,117 +391,4 @@ export const removeLiquidity = async (
     return true
 }
 
-// =============================================================================
-// AUCTION ACTIONS
-// =============================================================================
-
-export const submitAuctionOrder = async (
-    program: Program,
-    connection: Connection,
-    publicKey: PublicKey,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
-    params: AuctionOrderParams
-): Promise<boolean> => {
-    const { batch, price, amount, isBid, tokenMint, userTokenAccount } = params;
-
-    // Derive Vault PDA: [b"batch_vault", batch, mint]
-    const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("batch_vault"), batch.toBuffer(), tokenMint.toBuffer()],
-        program.programId
-    );
-
-    const transaction = await (program.methods as any)
-        .submitAuctionOrder(
-            new BN(price),
-            new BN(amount),
-            isBid
-        )
-        .accounts({
-            batch: batch,
-            userTokenAccount: userTokenAccount,
-            vault: vaultPda,
-            tokenMint: tokenMint,
-            authority: publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-        })
-        .transaction();
-
-    const latestBlockHash = await connection.getLatestBlockhash()
-    const signature = await sendTransaction(transaction, connection)
-    await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: signature,
-    })
-    return true
-}
-
-export const cancelAuctionOrder = async (
-    program: Program,
-    connection: Connection,
-    publicKey: PublicKey,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
-    params: CancelAuctionParams
-): Promise<boolean> => {
-    const { batch, orderIndex, tokenMint, userTokenAccount } = params;
-
-    const [vaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("batch_vault"), batch.toBuffer(), tokenMint.toBuffer()],
-        program.programId
-    );
-
-    const transaction = await (program.methods as any)
-        .cancelAuctionOrder(orderIndex)
-        .accounts({
-            batch: batch,
-            userTokenAccount: userTokenAccount,
-            vault: vaultPda,
-            tokenMint: tokenMint,
-            authority: publicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
-        })
-        .transaction();
-
-    const latestBlockHash = await connection.getLatestBlockhash()
-    const signature = await sendTransaction(transaction, connection)
-    await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: signature,
-    })
-    return true
-}
-
-export const submitEncryptedBid = async (
-    program: Program,
-    connection: Connection,
-    publicKey: PublicKey,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
-    params: EncryptedBidParams
-): Promise<boolean> => {
-    const { batch, encryptedPrice, encryptedAmount, isBid } = params;
-
-    const transaction = await (program.methods as any)
-        .submitEncryptedBid(
-            encryptedPrice,
-            encryptedAmount,
-            isBid
-        )
-        .accounts({
-            batch: batch,
-            authority: publicKey,
-            systemProgram: PublicKey.default, // Will be resolved by Anchor if using .accounts()
-        })
-        .transaction();
-
-    const latestBlockHash = await connection.getLatestBlockhash()
-    const signature = await sendTransaction(transaction, connection)
-    await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: signature,
-    })
-    return true
-}
 

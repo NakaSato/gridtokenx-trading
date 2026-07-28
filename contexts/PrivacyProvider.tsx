@@ -9,21 +9,13 @@ import {
 } from 'react'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Program, AnchorProvider, BN } from '@coral-xyz/anchor'
-import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js'
-import * as zk from '@/lib/zk-utils'
+import { PublicKey, SystemProgram } from '@solana/web3.js'
 import * as privacyUtils from '@/lib/privacy-utils'
-import * as stealthUtils from '@/lib/stealth-utils'
-import {
-  getPrivateBalancePDA,
-  getPrivVaultPDA,
-  getPrivVaultAuthPDA,
-  getPrivNullifierPDA,
-} from '@/lib/pda-utils'
+import { getPrivateBalancePDA, getPrivVaultPDA, getPrivVaultAuthPDA } from '@/lib/pda-utils'
 import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import { buildRangeProofContext } from '@/lib/zk-proof-program'
 import { ENERGY_TOKEN_MINT } from '@/utils/const'
 import tradingIdl from '@/lib/idl/trading.json'
 import { toast } from 'react-hot-toast'
@@ -39,31 +31,9 @@ interface PrivateBalanceState {
 }
 
 interface PrivacyContextType {
-  privateBalance: PrivateBalanceState | null
-  rootSeed: Uint8Array | null
   isUnlocked: boolean
-  isLoading: boolean
   unlockPrivacy: () => Promise<void>
-  shield: (amount: number, origin?: 'Solar' | 'Wind') => Promise<string>
-  transfer: (recipient: PublicKey, amount: number) => Promise<string>
-  unshield: (amount: number) => Promise<string>
-  createStealthLink: (amount: number) => Promise<string>
-  claimStealthLink: (link: string) => Promise<string>
-  stakePrivate: (amount: number) => Promise<string>
-  unstakePrivate: (amount: number) => Promise<string>
-  batchShield: (amounts: number[]) => Promise<string>
-  createTradeOffer: (amount: number, price: number) => Promise<string>
   fulfillTradeOffer: (invite: string) => Promise<string>
-  verifySolvency: () => Promise<boolean>
-  transactionHistory: any[]
-  isReadOnly: boolean
-  exportViewKey: () => string
-  loginWithViewKey: (key: string) => Promise<void>
-  submitRollup: (proofs: any[]) => Promise<string>
-  rollupQueue: any[]
-  privacyPolicies: any[]
-  addPolicy: (policy: any) => void
-  removePolicy: (id: string) => void
   refresh: () => Promise<void>
 }
 
@@ -87,6 +57,10 @@ try {
   )
 }
 
+// Slimmed to the surface FulfillTradeModal actually uses (unlock → fulfill →
+// refresh, with shield/history as internal steps). The former shield/unshield/
+// transfer/stealth/staking/rollup/policy/view-key API had no UI entry points
+// and was removed; see git history if a flow gets resurrected.
 export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -96,11 +70,6 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     useState<PrivateBalanceState | null>(null)
   const [rootSeed, setRootSeed] = useState<Uint8Array | null>(null)
   const [encryptionKey, setEncryptionKey] = useState<Uint8Array | null>(null)
-  const [transactionHistory, setTransactionHistory] = useState<any[]>([])
-  const [isReadOnly, setIsReadOnly] = useState(false)
-  const [rollupQueue, setRollupQueue] = useState<any[]>([])
-  const [privacyPolicies, setPrivacyPolicies] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [program, setProgram] = useState<Program<any>>()
 
   const isUnlocked = !!rootSeed
@@ -118,7 +87,6 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
   const refresh = async () => {
     if (!wallet || !program) return
 
-    setIsLoading(true)
     try {
       const pda = getPrivateBalancePDA(
         wallet.publicKey,
@@ -166,8 +134,6 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
       }
     } catch (error) {
       console.error('[PrivacyProvider] Failed to fetch balance:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -179,7 +145,6 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     if (!wallet) throw new Error('Wallet not connected')
 
     // Use wallet.signMessage if available (Standard but optional in AnchorWallet)
-    // If not available, we use a custom approach or prompt.
     const provider = (window as any).solana
     if (!provider?.signMessage) {
       throw new Error(
@@ -204,9 +169,7 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     )
     setEncryptionKey(new Uint8Array(encKey))
 
-    // Fetch balance and history immediately after unlock
     await refresh()
-    await loadHistory(new Uint8Array(encKey))
   }
 
   const pushToHistory = async (
@@ -228,386 +191,18 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
       encryptionKey
     )
 
-    // In demo, we store in a list in localStorage
     const storageKey = `gtx_priv_history_${wallet.publicKey.toBase58()}`
     const current = JSON.parse(localStorage.getItem(storageKey) || '[]')
     current.push(encrypted)
     localStorage.setItem(storageKey, JSON.stringify(current))
-
-    // Update local state
-    setTransactionHistory((prev) => [entry, ...prev])
   }
 
-  const loadHistory = async (key: Uint8Array) => {
-    if (!wallet) return
-    const storageKey = `gtx_priv_history_${wallet.publicKey.toBase58()}`
-    const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
-
-    const decrypted = []
-    for (const blob of stored) {
-      try {
-        const entry = await historyUtils.decryptHistoryBlob(blob, key)
-        decrypted.push(entry)
-      } catch (e) {
-        console.error('History decryption failed', e)
-      }
-    }
-    setTransactionHistory(decrypted.sort((a, b) => b.timestamp - a.timestamp))
-  }
-
-  const exportViewKey = () => {
-    if (!encryptionKey) throw new Error('Not unlocked')
-    return Buffer.from(encryptionKey).toString('hex')
-  }
-
-  const loginWithViewKey = async (viewKeyHex: string) => {
-    const key = new Uint8Array(Buffer.from(viewKeyHex, 'hex'))
-    setEncryptionKey(key)
-    setIsReadOnly(true)
-    // Set a mock root seed that cannot sign but enables 'isUnlocked'
-    setRootSeed(new Uint8Array(32))
-    await loadHistory(key)
-    toast.success('Logged in with View Key (Read-Only)')
-  }
-
-  const submitRollup = async (proofs: any[]) => {
-    if (!program || !wallet) throw new Error('Not connected')
-
-    const toastId = toast.loading(
-      `Aggregating ${proofs.length} ZK Proofs into Rollup...`
-    )
-
-    try {
-      // Simulation of Recursive Proof generation
-      // In a real system (e.g., Plonky2 or Halo2), this involves:
-      // 1. Verifying proofs 1..N inside a new ZK circuit
-      // 2. Generating a single "Master Proof" of their correctness
-      await new Promise((r) => setTimeout(r, 2000))
-
-      const sig =
-        'ROLLUP_SIG_' + Math.random().toString(36).substr(2, 12).toUpperCase()
-
-      // Log entries for each proof in the rollup
-      for (const p of proofs) {
-        await pushToHistory('ROLLUP_SETTLEMENT', p.amount, { rollupId: sig })
-      }
-
-      setRollupQueue([])
-      toast.success(
-        `Rollup Successful: Aggregated ${proofs.length} transactions!`,
-        { id: toastId }
-      )
-      return sig
-    } catch (e) {
-      toast.error('Rollup aggregation failed', { id: toastId })
-      throw e
-    }
-  }
-
-  const checkPolicy = (action: string, amount: number, details: any = {}) => {
-    for (const policy of privacyPolicies) {
-      if (policy.type === 'MAX_AMOUNT' && amount > policy.value) {
-        throw new Error(
-          `Policy Violation: Amount exceeds maximum of ${policy.value} GRX`
-        )
-      }
-      if (
-        policy.type === 'SOLAR_ONLY' &&
-        details.origin &&
-        details.origin !== 'Solar'
-      ) {
-        throw new Error(
-          `Policy Violation: This transfer requires Solar energy origin`
-        )
-      }
-    }
-    return true
-  }
-
-  const addPolicy = (policy: any) => {
-    const newPolicies = [
-      ...privacyPolicies,
-      { ...policy, id: Math.random().toString(36).substr(2, 9) },
-    ]
-    setPrivacyPolicies(newPolicies)
-    toast.success(`Policy Added: ${policy.name}`)
-  }
-
-  const removePolicy = (id: string) => {
-    setPrivacyPolicies((prev) => prev.filter((p) => p.id !== id))
-    toast.success('Policy Removed')
-  }
-
-  const transfer = async (recipient: PublicKey, amount: number) => {
-    if (!wallet || !program || !rootSeed || !privateBalance)
-      throw new Error('Not connected or locked')
-    if (privateBalance.amount === null)
-      throw new Error('Private balance amount unknown. Sync first.')
-    if (privateBalance.amount < amount)
-      throw new Error('Insufficient private balance')
-
-    // 1. Blinding Factors
-    // b_old logic: In this prototype, we'll keep it simple
-    const currentIdx = privateBalance.txCounter
-    const b_old = privacyUtils.deriveBlindingFactor(rootSeed, currentIdx)
-    // Note: In real deterministic chain, b_new = b_old - b_tr.
-    // We'd need to store the "cumulative blinding delta".
-    // For simplicity in this demo, we'll assume currentIdx manages b_old.
-
-    const b_tr = window.crypto.getRandomValues(new Uint8Array(32))
-
-    // 2. Generate Transfer Proof
-    const proof = await zk.createTransferProof(
-      amount,
-      privateBalance.amount,
-      b_old,
-      b_tr
-    )
-
-    // 3. Commitments the on-chain instruction takes: C_amt (amount) and the
-    //    sender's new commitment C_new (= remaining). Conservation C_old ==
-    //    C_amt + C_new and the Okamoto balance PoK are verified on-chain.
-    const amountCommitment = Array.from(proof.amount_commitment.point)
-    const senderNewCommitment = Array.from(proof.remaining_commitment.point)
-
-    // 4. PDAs + per-transfer nullifier
-    const senderBalance = getPrivateBalancePDA(
-      wallet.publicKey,
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-    const recipientBalance = getPrivateBalancePDA(
-      recipient,
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-    const nullifier = window.crypto.getRandomValues(new Uint8Array(32))
-    const nullifierPda = getPrivNullifierPDA(nullifier, TRADING_PROGRAM_ID)
-
-    // 5. Range proof (amount, remaining ∈ [0,2^64)): verify the batched U128
-    //    proof via the ZK ElGamal Proof Program into a context-state account
-    //    that private_transfer reads. The ~1000-byte proof + createAccount
-    //    exceed one tx's size limit, so setup runs as two SEPARATE txs before
-    //    the transfer (verified against a live validator).
-    const { contextAccount, createIx, verifyIx, closeIx } =
-      await buildRangeProofContext(
-        connection,
-        wallet.publicKey,
-        proof.range_proof_data,
-        'u128'
-      )
-    await program.provider.sendAndConfirm!(
-      new Transaction().add(createIx),
-      [contextAccount]
-    )
-    await program.provider.sendAndConfirm!(new Transaction().add(verifyIx))
-
-    const sig = await (program.methods as any)
-      .privateTransfer(
-        Array.from(nullifier),
-        amountCommitment,
-        senderNewCommitment,
-        {
-          challenge: Array.from(proof.balance_proof.challenge),
-          response: Array.from(proof.balance_proof.response),
-        }
-      )
-      .accounts({
-        senderBalance,
-        recipientBalance,
-        nullifierPda,
-        recipient,
-        mint: ENERGY_TOKEN_MINT,
-        rangeProofContext: contextAccount.publicKey,
-        sender: wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      } as any)
-      // Reclaim the context-state rent after private_transfer reads it.
-      .postInstructions([closeIx])
-      .rpc()
-
-    // Update local balance
-    const newBal = privateBalance.amount - amount
-    localStorage.setItem(
-      `gtx_priv_bal_${wallet.publicKey.toBase58()}`,
-      newBal.toString()
-    )
-
-    await pushToHistory('TRANSFER', amount, { recipient: recipient.toBase58() })
-    await refresh()
-    return sig
-  }
-
-  const unshield = async (amount: number) => {
-    if (!wallet || !program || !rootSeed || !privateBalance)
-      throw new Error('Not connected or locked')
-    if (privateBalance.amount === null)
-      throw new Error('Private balance amount unknown. Sync first.')
-    if (privateBalance.amount < amount)
-      throw new Error('Insufficient private balance')
-
-    // Unshield amount is PUBLIC (tokens cross back to the public ledger). The
-    // on-chain instruction subtracts amount·G from the shielded commitment and
-    // pays out of the per-mint pool vault, gated on a range proof that the
-    // REMAINING balance is still in [0,2^64) (prevents over-unshield underflow).
-    const senderBalance = getPrivateBalancePDA(
-      wallet.publicKey,
-      ENERGY_TOKEN_MINT,
-      TRADING_PROGRAM_ID
-    )
-    const vault = getPrivVaultPDA(ENERGY_TOKEN_MINT, TRADING_PROGRAM_ID)
-    const vaultAuthority = getPrivVaultAuthPDA(TRADING_PROGRAM_ID)
-    const userWallet = getAssociatedTokenAddressSync(
-      ENERGY_TOKEN_MINT,
-      wallet.publicKey
-    )
-
-    // Range proof over C_new = C_old − amount·G, blinded by the CURRENT balance
-    // blinding b_old (unchanged by unshield). Verified via the ZK ElGamal Proof
-    // Program into a context-state account that unshield reads.
-    const b_old = privacyUtils.deriveBlindingFactor(
-      rootSeed,
-      privateBalance.txCounter
-    )
-    const remainingProof = await zk.createUnshieldProof(
-      privateBalance.amount - amount,
-      b_old
-    )
-    const { contextAccount, createIx, verifyIx, closeIx } =
-      await buildRangeProofContext(
-        connection,
-        wallet.publicKey,
-        remainingProof.range_proof_data,
-        'u64'
-      )
-    await program.provider.sendAndConfirm!(
-      new Transaction().add(createIx),
-      [contextAccount]
-    )
-    await program.provider.sendAndConfirm!(new Transaction().add(verifyIx))
-
-    const sig = await (program.methods as any)
-      .unshield(new BN(amount))
-      .accounts({
-        sender: wallet.publicKey,
-        mint: ENERGY_TOKEN_MINT,
-        userWallet,
-        vault,
-        vaultAuthority,
-        senderBalance,
-        rangeProofContext: contextAccount.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      } as any)
-      .postInstructions([closeIx])
-      .rpc()
-
-    // Update local balance
-    const newBal = privateBalance.amount - amount
-    localStorage.setItem(
-      `gtx_priv_bal_${wallet.publicKey.toBase58()}`,
-      newBal.toString()
-    )
-
-    await pushToHistory('WITHDRAW', amount)
-    await refresh()
-    return sig
-  }
-
-  const createStealthLink = async (amount: number) => {
-    if (!wallet || !rootSeed || !privateBalance)
-      throw new Error('Not connected or locked')
-    if ((privateBalance.amount || 0) < amount)
-      throw new Error('Insufficient private balance')
-
-    // Logic: For a stealth link to be "claimable", the sender effectively
-    // does a "transfer" to an ephemeral state.
-    // For simplicity in this demo, the link will contain the blinding factor
-    // needed to prove ownership of a specific "spent" commitment piece.
-    const nextIdx = privateBalance.txCounter + 1
-    const blinding = privacyUtils.deriveBlindingFactor(rootSeed, nextIdx)
-
-    // Use stealth-utils to pack it
-    const link = await stealthUtils.createStealthLink(amount, blinding, nextIdx)
-
-    // In a real flow, the sender might "escrow" funds or just share the secret info
-    // for a pending transaction. Here we'll just return the encoded link.
-    return link
-  }
-
-  const claimStealthLink = async (link: string) => {
-    if (!wallet || !program || !rootSeed)
-      throw new Error('Not connected or locked')
-
-    const data = stealthUtils.parseStealthLink(link)
-
-    // Claiming: The recipient "shields" the incoming stealth tokens
-    // using the recovered blinding factor from the link.
-    const blinding = Uint8Array.from(Buffer.from(data.blinding, 'hex'))
-
-    // This is a specialized shield that uses an existing commitment piece
-    // For this demo, we'll re-shield it into the user's private balance.
-    return await shield(data.amount)
-  }
-
-  const stakePrivate = async (amount: number) => {
-    if (!wallet || !program || !rootSeed || !privateBalance)
-      throw new Error('Not connected or locked')
-    if ((privateBalance.amount || 0) < amount)
-      throw new Error('Insufficient private balance')
-
-    // Logic: Staking is a transfer to a program-controlled "Stake Pool"
-    // For this prototype, we'll use a fixed 'Staking Vault' address
-    const STAKING_VAULT = new PublicKey(
-      'GridStakeVault11111111111111111111111111'
-    )
-
-    const sig = await transfer(STAKING_VAULT, amount)
-
-    // Update local staked balance
-    if (wallet) {
-      const currentStaked = parseInt(
-        localStorage.getItem(
-          `gtx_priv_staked_${wallet.publicKey.toBase58()}`
-        ) || '0'
-      )
-      localStorage.setItem(
-        `gtx_priv_staked_${wallet.publicKey.toBase58()}`,
-        (currentStaked + amount).toString()
-      )
-    }
-
-    await refresh()
-    return sig
-  }
-
-  const unstakePrivate = async (amount: number) => {
-    if (!wallet) throw new Error('Not connected')
-
-    // Unstaking is essentially the Stake Vault "shielding" tokens back to the user
-    // In a real system, the Vault would sign. For this demo, we'll simulate the reduction.
-    const currentStaked = parseInt(
-      localStorage.getItem(`gtx_priv_staked_${wallet.publicKey.toBase58()}`) ||
-        '0'
-    )
-    if (currentStaked < amount) throw new Error('Insufficient staked balance')
-
-    localStorage.setItem(
-      `gtx_priv_staked_${wallet.publicKey.toBase58()}`,
-      (currentStaked - amount).toString()
-    )
-
-    // In demo, we "mint" or "shield" the tokens back to private balance
-    return await shield(amount)
-  }
-
+  // Shield amount is PUBLIC. The instruction moves tokens user→pool vault and
+  // adds amount·G to the shielded commitment (blinding accrues via transfers).
   const shield = async (amount: number, origin: 'Solar' | 'Wind' = 'Solar') => {
     if (!wallet || !program || !rootSeed)
       throw new Error('Not connected or locked')
 
-    checkPolicy('SHIELD', amount, { origin })
-
-    // Shield amount is PUBLIC. The instruction moves tokens user→pool vault and
-    // adds amount·G to the shielded commitment (blinding accrues via transfers).
     const senderBalance = getPrivateBalancePDA(
       wallet.publicKey,
       ENERGY_TOKEN_MINT,
@@ -649,104 +244,6 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     return sig
   }
 
-  const batchShield = async (amounts: number[]) => {
-    if (!wallet || !program || !rootSeed)
-      throw new Error('Not connected or locked')
-
-    // 1. Generate multiple proofs
-    const instructions = []
-    let totalAmount = 0
-    let currentIdx = privateBalance?.txCounter || 0
-
-    for (const amount of amounts) {
-      currentIdx += 1
-      const blinding = privacyUtils.deriveBlindingFactor(rootSeed, currentIdx)
-      const proof = await zk.createRangeProof(amount, blinding)
-
-      const pda = getPrivateBalancePDA(
-        wallet.publicKey,
-        ENERGY_TOKEN_MINT,
-        TRADING_PROGRAM_ID
-      )
-
-      const ix = await (program.methods as any)
-        .shieldTokens(
-          new BN(amount),
-          { point: Array.from(proof.commitment.point) },
-          Array.from(proof.proof_data)
-        )
-        .accounts({
-          privateBalance: pda,
-          mint: ENERGY_TOKEN_MINT,
-          owner: wallet.publicKey,
-        } as any)
-        .instruction()
-
-      instructions.push(ix)
-      totalAmount += amount
-    }
-
-    // 2. Execute Batch
-    const tx = new Transaction()
-    instructions.forEach((ix) => tx.add(ix))
-
-    const sig = await program.provider.sendAndConfirm!(tx)
-
-    // Update local balance
-    const currentBal = privateBalance?.amount || 0
-    localStorage.setItem(
-      `gtx_priv_bal_${wallet.publicKey.toBase58()}`,
-      (currentBal + totalAmount).toString()
-    )
-
-    await refresh()
-    return sig
-  }
-
-  const createTradeOffer = async (amount: number, price: number) => {
-    if (!wallet || !program || !rootSeed || !privateBalance)
-      throw new Error('Not connected or locked')
-    if ((privateBalance.amount || 0) < amount)
-      throw new Error('Insufficient private balance')
-
-    // Logic: Create a trade link by transferring to a Market Escrow vault
-    const MARKET_ESCROW = new PublicKey(
-      'GridMarketEscrow11111111111111111111111111'
-    )
-
-    const sig = await transfer(MARKET_ESCROW, amount)
-
-    // Generate an ephemeral "Trade ID" and "Invite Code"
-    const tradeId = Math.random().toString(36).substring(7).toUpperCase()
-    const tradeData = {
-      id: tradeId,
-      amount,
-      price,
-      seller: wallet.publicKey.toBase58(),
-      timestamp: Date.now(),
-    }
-
-    // Pack into an invite link
-    const invite = btoa(JSON.stringify(tradeData))
-
-    // Save locally for owner
-    if (wallet) {
-      const currentOffers = JSON.parse(
-        localStorage.getItem(
-          `gtx_priv_offers_${wallet.publicKey.toBase58()}`
-        ) || '[]'
-      )
-      currentOffers.push({ ...tradeData, status: 'OPEN', sig })
-      localStorage.setItem(
-        `gtx_priv_offers_${wallet.publicKey.toBase58()}`,
-        JSON.stringify(currentOffers)
-      )
-    }
-
-    await refresh()
-    return invite
-  }
-
   const fulfillTradeOffer = async (invite: string) => {
     if (!wallet || !program || !rootSeed)
       throw new Error('Not connected or locked')
@@ -784,70 +281,12 @@ export const PrivacyProvider: React.FC<{ children: ReactNode }> = ({
     }
   }
 
-  const verifySolvency = async () => {
-    if (!program) throw new Error('Program not initialized')
-
-    // In a real ZK system:
-    // 1. Fetch 'Global Privacy State' which holds Sum(commitments)
-    // 2. Fetch the 'Mint Authority' public vault balance
-    // 3. Verify they match homomorphically
-
-    // For this prototype, we simulate the fetch and comparison
-    const toastId = toast.loading('Auditing ZK Solvency Proofs...')
-
-    try {
-      // Mimic a slow cryptographic verification
-      await new Promise((r) => setTimeout(r, 1500))
-
-      // Simulation check: total in vault (public) vs total private (simulated)
-      const publicVaultBal = 10000 // Mock public backing
-      const totalShielded = 10000 // Mock sum of all Ristretto points
-
-      const isSolvent = publicVaultBal >= totalShielded
-
-      if (isSolvent) {
-        toast.success('ZK Solvency Verified: System 100% Backed', {
-          id: toastId,
-        })
-      } else {
-        toast.error('Audit Failure: Insufficient Backing!', { id: toastId })
-      }
-
-      return isSolvent
-    } catch (e) {
-      toast.error('Audit Verification Error', { id: toastId })
-      return false
-    }
-  }
-
   return (
     <PrivacyContext.Provider
       value={{
-        privateBalance,
-        rootSeed,
         isUnlocked,
-        isLoading,
         unlockPrivacy,
-        shield,
-        transfer,
-        unshield,
-        createStealthLink,
-        claimStealthLink,
-        stakePrivate,
-        unstakePrivate,
-        batchShield,
-        createTradeOffer,
         fulfillTradeOffer,
-        verifySolvency,
-        transactionHistory,
-        isReadOnly,
-        exportViewKey,
-        loginWithViewKey,
-        submitRollup,
-        rollupQueue,
-        privacyPolicies,
-        addPolicy,
-        removePolicy,
         refresh,
       }}
     >
