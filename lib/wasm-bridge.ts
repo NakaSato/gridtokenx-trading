@@ -418,21 +418,6 @@ export function hmacVerify(
   )
 }
 
-/**
- * High-level wrapper for P2P order signing
- * NOTE: This function is currently disabled as wasm_sign_p2p_order is not available
- */
-export function signP2POrder(
-  side: string,
-  amount: string,
-  price: string,
-  timestamp: number,
-  secret_key: Uint8Array
-): string {
-  console.warn('[WASM] signP2POrder is not implemented in WASM module')
-  return ''
-}
-
 export async function createCommitment(
   value: number,
   blinding: Uint8Array

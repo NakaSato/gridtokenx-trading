@@ -197,33 +197,13 @@ export function calculate_greeks(s: number, k: number, t: number, is_call: boole
 export function calculate_portfolio_risk(positions_js: any): any;
 
 /**
- * Compute PDA for PoA config account
- */
-export function compute_poa_config_pda(program_id: string): string;
-
-/**
- * Double SHA-256 (hash of hash) commonly used in blockchains
- */
-export function crypto_msg_hash(data: Uint8Array): string;
-
-/**
  * Verify an HMAC-SHA256 signature
  */
 export function crypto_verify(key: Uint8Array, message: Uint8Array, signature_hex: string): boolean;
 
-/**
- * Decode fixed-size byte array to string (helper for PoA config)
- */
-export function decode_fixed_string(bytes: Uint8Array, len: number): string;
-
 export function delta_calc(s: number, k: number, t: number, is_call: boolean): number;
 
 export function gamma_calc(s: number, k: number, t: number): number;
-
-/**
- * Generate ZK proof for stake-weighted voting
- */
-export function generate_zk_vote_proof(balance: bigint, root_seed: string, proposal_id: string): string;
 
 /**
  * Compute HMAC-SHA256
@@ -246,19 +226,9 @@ export function rho_calc(s: number, k: number, t: number, is_call: boolean): num
  */
 export function sha256(data: Uint8Array): string;
 
-/**
- * Standardized P2P order message construction and signing
- */
-export function sign_p2p_order(side: string, amount: string, price: string, timestamp: bigint, secret_key: Uint8Array): string;
-
 export function theta_calc(s: number, k: number, t: number, is_call: boolean): number;
 
 export function vega_calc(s: number, k: number, t: number): number;
-
-/**
- * Verify a ZK vote proof
- */
-export function verify_zk_vote_proof(proof: string, proposal_id: string): boolean;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -288,13 +258,9 @@ export interface InitOutput {
     readonly calculate_bezier: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly calculate_greeks: (a: number, b: number, c: number, d: number) => number;
     readonly calculate_portfolio_risk: (a: any) => [number, number, number];
-    readonly compute_poa_config_pda: (a: number, b: number) => [number, number, number, number];
-    readonly crypto_msg_hash: (a: number, b: number) => [number, number];
     readonly crypto_verify: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly decode_fixed_string: (a: number, b: number, c: number) => [number, number];
     readonly delta_calc: (a: number, b: number, c: number, d: number) => number;
     readonly gamma_calc: (a: number, b: number, c: number) => number;
-    readonly generate_zk_vote_proof: (a: bigint, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly governanceclient_connect: (a: number) => number;
     readonly governanceclient_create_proposal: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly governanceclient_fetch_poa_config: (a: number) => [number, number, number];
@@ -324,7 +290,6 @@ export interface InitOutput {
     readonly perform_clustering: (a: any) => [number, number, number];
     readonly rho_calc: (a: number, b: number, c: number, d: number) => number;
     readonly sha256: (a: number, b: number) => [number, number];
-    readonly sign_p2p_order: (a: number, b: number, c: number, d: number, e: number, f: number, g: bigint, h: number, i: number) => [number, number, number, number];
     readonly simulation_get_flows: (a: number) => [number, number, number];
     readonly simulation_get_grid_totals: (a: number) => [number, number, number];
     readonly simulation_get_nodes: (a: number) => [number, number, number];
@@ -334,7 +299,6 @@ export interface InitOutput {
     readonly simulation_update: (a: number, b: number, c: number) => void;
     readonly theta_calc: (a: number, b: number, c: number, d: number) => number;
     readonly vega_calc: (a: number, b: number, c: number) => number;
-    readonly verify_zk_vote_proof: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

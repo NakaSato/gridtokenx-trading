@@ -58,14 +58,13 @@ Client-side matching engine for P2P market visualization.
 
 ### 3. Crypto (`crypto.rs`)
 Cryptographic primitives for secure message signing and verification using `sha2` and `hmac` crates.
-- **Features**: SHA-256, double SHA-256, HMAC-SHA256 signing and verification.
+- **Features**: SHA-256, HMAC-SHA256 signing and verification.
 
 | Export | Signature | Description |
 |--------|-----------|-------------|
 | `sha256()` | `(data: &[u8]) → String` | SHA-256 hash (hex-encoded) |
 | `hmac_sha256()` | `(key: &[u8], message: &[u8]) → String` | HMAC-SHA256 signature (hex-encoded) |
 | `crypto_verify()` | `(key: &[u8], message: &[u8], signature_hex: &str) → bool` | Verify HMAC-SHA256 signature |
-| `crypto_msg_hash()` | `(data: &[u8]) → String` | Double SHA-256 (blockchain-style) |
 
 ### 4. Bezier (`bezier.rs`)
 Quadratic Bezier curve generation for energy flow visualization on maps.
@@ -111,10 +110,6 @@ Solana governance client with ZK-weighted voting. Replaces the TypeScript `Gover
 | `GovernanceClient::vote_private()` | `(proposal_id, support, balance, root_seed) → String` | Cast ZK-weighted vote |
 | `GovernanceClient::create_proposal()` | `(title, description) → String` | Create new proposal |
 | `GovernanceClient::get_state()` | `() → JsValue` | Full governance state |
-| `decode_fixed_string()` | `(bytes, len) → String` | Decode fixed-size byte array |
-| `compute_poa_config_pda()` | `(program_id) → String` | Compute PoA config PDA |
-| `generate_zk_vote_proof()` | `(balance, root_seed, proposal_id) → String` | Generate ZK proof for voting |
-| `verify_zk_vote_proof()` | `(proof, proposal_id) → bool` | Verify ZK vote proof |
 
 ### Global
 

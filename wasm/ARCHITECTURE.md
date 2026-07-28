@@ -41,8 +41,8 @@ src/
     ├── auction.rs        AuctionSimulator — uniform Market Clearing Price (add_order/clear/calculate_clearing_price)
     ├── bezier.rs         calculate_bezier() → quadratic Bezier points as a flat Float64Array
     ├── clustering.rs     perform_clustering() → energy-profile archetype clusters (ClusterCenter/ClusteringResult)
-    ├── crypto.rs         sha256 / hmac_sha256 / crypto_verify / crypto_msg_hash (real sha2 + hmac)
-    ├── governance.rs     GovernanceClient + ZK-vote helpers — STUB: simulates RPC, returns mock data (see §4)
+    ├── crypto.rs         sha256 / hmac_sha256 / crypto_verify (real sha2 + hmac)
+    ├── governance.rs     GovernanceClient — STUB: simulates RPC, returns mock data (see §4)
     ├── orderbook.rs      OrderBook — price-time-priority matching engine + depth chart
     ├── portfolio.rs      calculate_portfolio_risk() → aggregated PortfolioRisk from PortfolioPosition[]
     ├── pricing.rs        black_scholes + calculate_greeks/delta/gamma/vega/theta/rho_calc (Greeks struct)

@@ -320,61 +320,6 @@ impl GovernanceClient {
     }
 }
 
-// ============================================================================
-// Standalone Functions
-// ============================================================================
-
-/// Decode fixed-size byte array to string (helper for PoA config)
-#[wasm_bindgen]
-pub fn decode_fixed_string(bytes: &[u8], len: usize) -> String {
-    let slice = &bytes[..len.min(bytes.len())];
-    String::from_utf8_lossy(slice)
-        .replace('\0', "")
-        .trim()
-        .to_string()
-}
-
-/// Compute PDA for PoA config account
-#[wasm_bindgen]
-pub fn compute_poa_config_pda(program_id: &str) -> Result<String, JsValue> {
-    // In real implementation:
-    // use solana_program::pubkey::Pubkey;
-    // let program_pubkey = Pubkey::from_str(program_id)
-    //     .map_err(|e| JsValue::from_str("Invalid program ID"))?;
-    // let seeds = [b"poa_config"];
-    // let (pda, _) = Pubkey::find_program_address(&seeds, &program_pubkey);
-    // Ok(pda.to_string())
-
-    // Mock implementation
-    Ok(format!("poa_config_pda_for_{}", program_id))
-}
-
-/// Generate ZK proof for stake-weighted voting
-#[wasm_bindgen]
-pub fn generate_zk_vote_proof(
-    balance: u64,
-    root_seed: &str,
-    proposal_id: &str,
-) -> Result<String, JsValue> {
-    // In real implementation, this would:
-    // 1. Derive keys from root_seed
-    // 2. Create commitment to balance
-    // 3. Generate ZK proof that balance > 0 without revealing amount
-    // For now, return a mock proof
-
-    let proof_input = format!("{}:{}:{}", balance, root_seed, proposal_id);
-    let proof_hash = crate::sha256(proof_input.as_bytes());
-
-    Ok(format!("ZK_PROOF_{}", &proof_hash[..32]))
-}
-
-/// Verify a ZK vote proof
-#[wasm_bindgen]
-pub fn verify_zk_vote_proof(proof: &str, proposal_id: &str) -> bool {
-    // In real implementation, verify the ZK proof
-    proof.starts_with("ZK_PROOF_") && !proposal_id.is_empty()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -397,25 +342,5 @@ mod tests {
         );
         assert!(client.connect());
         assert!(client.is_connected());
-    }
-
-    #[test]
-    fn test_decode_fixed_string() {
-        let bytes = b"Hello\0\0\0\0World";
-        let result = decode_fixed_string(bytes, 5);
-        assert_eq!(result, "Hello");
-    }
-
-    #[test]
-    fn test_compute_poa_config_pda() {
-        let result = compute_poa_config_pda("TestProgramId").unwrap();
-        assert!(result.contains("poa_config_pda"));
-    }
-
-    #[test]
-    fn test_zk_proof_functions() {
-        let proof = generate_zk_vote_proof(1000, "seed123", "PROP-001").unwrap();
-        assert!(proof.starts_with("ZK_PROOF_"));
-        assert!(verify_zk_vote_proof(&proof, "PROP-001"));
     }
 }
