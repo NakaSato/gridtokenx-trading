@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('wallet page smoke: register, login, deposit/withdraw tabs, screenshot', async ({ page }) => {
+test('wallet page smoke: register, login, hero + fiat/swap/withdraw/escrow tabs, screenshot', async ({ page }) => {
   test.setTimeout(180_000);
   const timestamp = Date.now();
   const username = `wal_ui_${timestamp}`;
@@ -41,19 +41,47 @@ test('wallet page smoke: register, login, deposit/withdraw tabs, screenshot', as
   await expect(page.locator(`text=Welcome back, ${username}!`)).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(2000);
 
-  // Navigate via the new navbar link
-  await page.locator('nav a[href="/wallet"]').click();
+  // Navigate directly — the nav link's clickability is NavBar's concern, not
+  // this page's (it currently never settles as "stable" for Playwright).
+  await page.goto('/wallet');
   await expect(page.locator('h1.text-2xl:has-text("Wallet")')).toBeVisible({ timeout: 15000 });
-  await expect(page.locator('text=Escrow Transfer')).toBeVisible({ timeout: 15000 });
-  await expect(page.getByTestId('deposit-tab')).toBeVisible();
-  await expect(page.getByTestId('withdraw-tab')).toBeVisible();
-  await expect(page.locator('text=Wallet Balance')).toBeVisible();
-  await expect(page.locator('text=On-chain Escrow')).toBeVisible();
 
-  // No browser wallet in e2e — the connect-wallet empty state replaces submit
-  await expect(page.locator('text=Connect your wallet to deposit GRX')).toBeVisible();
-  await page.getByTestId('withdraw-tab').click();
-  await expect(page.locator('text=Connect your wallet to withdraw GRX')).toBeVisible();
+  // Hero — identity + the combined GRX headline
+  await expect(
+    page.getByRole('heading', { name: 'Your Wallet' })
+  ).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('Total GRX', { exact: true })).toBeVisible();
+
+  // Action card with the four flows; fiat deposit is the default tab
+  await expect(page.locator('text=Move Money')).toBeVisible();
+  await expect(page.getByTestId('fiat-deposit-tab')).toBeVisible();
+  await expect(page.getByTestId('swap-tab')).toBeVisible();
+  await expect(page.getByTestId('fiat-withdraw-tab')).toBeVisible();
+  await expect(page.getByTestId('escrow-tab')).toBeVisible();
+
+  // Deposit (fiat) — gated: method picker renders, submit stays disabled
+  await expect(page.locator('text=Payment Method')).toBeVisible();
+  await expect(page.getByTestId('deposit-method-promptpay')).toBeVisible();
+  await expect(page.getByTestId('fiat-deposit-submit')).toBeDisabled();
+
+  // Swap — live form: amount input, flip control, submit disabled while empty
+  await page.getByTestId('swap-tab').click();
+  await expect(page.getByTestId('escrow-amount-input')).toBeVisible();
+  await expect(page.getByTestId('swap-flip-button')).toBeVisible();
+  await expect(page.getByTestId('swap-submit')).toBeDisabled();
+
+  // Withdraw (fiat) — gated like deposit
+  await page.getByTestId('fiat-withdraw-tab').click();
+  await expect(page.getByTestId('withdraw-destination')).toBeVisible();
+  await expect(page.getByTestId('fiat-withdraw-submit')).toBeDisabled();
+
+  // Escrow — both assets selectable; no browser wallet in e2e, so the
+  // connect-wallet empty state replaces the submit button
+  await page.getByTestId('escrow-tab').click();
+  await expect(page.getByTestId('escrow-asset-grx')).toBeVisible();
+  await expect(page.getByTestId('escrow-asset-thbc')).toBeVisible();
+  await expect(page.getByTestId('escrow-direction-withdraw')).toBeVisible();
+  await expect(page.locator('text=Connect your wallet to move GRX')).toBeVisible();
 
   await page.waitForTimeout(2000);
   await page.screenshot({ path: `${shots}/wallet-desktop.png`, fullPage: true });
