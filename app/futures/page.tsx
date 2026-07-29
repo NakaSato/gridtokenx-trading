@@ -21,33 +21,46 @@ import type { OrderBookEntry } from '@/types/futures'
 import { FuturesOrderForm } from '@/features/trading/components/FuturesOrderForm'
 import { FuturesOrderBook } from '@/features/trading/components/FuturesOrderBook'
 import { FuturesPositionList } from '@/features/trading/components/FuturesPositionList'
+import AuthButton from '@/features/auth/components/AuthButton'
 
-const PriceChart = dynamic(() => import('@/features/trading/components/PriceChart'), {
-  ssr: false,
-  loading: () => <Skeleton className="w-full h-full bg-muted/20 rounded-xl" />
-})
+const PriceChart = dynamic(
+  () => import('@/features/trading/components/PriceChart'),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="h-full w-full rounded-xl bg-muted/20" />
+    ),
+  }
+)
 
-const TradeHistory = dynamic(() => import('@/features/trading/components/TradeHistory'), {
-  ssr: false,
-  loading: () => <Skeleton className="w-full h-full bg-muted/20 rounded-xl" />
-})
+const TradeHistory = dynamic(
+  () => import('@/features/trading/components/TradeHistory'),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton className="h-full w-full rounded-xl bg-muted/20" />
+    ),
+  }
+)
 
 export default function FuturesPage() {
   const { token, isAuthenticated } = useAuth()
   const [products, setProducts] = useState<FuturesProduct[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<FuturesProduct | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<FuturesProduct | null>(
+    null
+  )
   const [positions, setPositions] = useState<FuturesPosition[]>([])
   const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchMarketData = useCallback(async () => {
-    if (!token) return
-
     try {
-      const api = createApiClient(token)
+      const api = createApiClient(token ?? undefined)
+      // Market data is public; positions belong to a session, so they're only
+      // requested once there is a token to request them with.
       const [productsRes, positionsRes] = await Promise.all([
         api.getFuturesProducts(),
-        api.getFuturesPositions()
+        token ? api.getFuturesPositions() : Promise.resolve(null),
       ])
 
       if (productsRes.data) {
@@ -57,9 +70,7 @@ export default function FuturesPage() {
         }
       }
 
-      if (positionsRes.data) {
-        setPositions(positionsRes.data)
-      }
+      setPositions(positionsRes?.data ?? [])
     } catch (err) {
       console.error('Failed to fetch futures data:', err)
     } finally {
@@ -68,10 +79,10 @@ export default function FuturesPage() {
   }, [token, selectedProduct])
 
   const fetchOrderBook = useCallback(async () => {
-    if (!token || !selectedProduct) return
+    if (!selectedProduct) return
 
     try {
-      const api = createApiClient(token)
+      const api = createApiClient(token ?? undefined)
       const response = await api.getFuturesOrderBook(selectedProduct.id)
       if (response.data) {
         setOrderBook(response.data)
@@ -93,21 +104,12 @@ export default function FuturesPage() {
     return () => clearInterval(obInterval)
   }, [fetchOrderBook])
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <div className="max-w-md space-y-4">
-          <h2 className="text-2xl font-black text-foreground">Futures Trading</h2>
-          <p className="text-muted-foreground">Please connect your wallet or sign in to access leveraged futures trading.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const currentPrice = selectedProduct ? parseFloat(selectedProduct.current_price) : 0
+  const currentPrice = selectedProduct
+    ? parseFloat(selectedProduct.current_price)
+    : 0
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] overflow-hidden">
+    <div className="flex h-[calc(100vh-100px)] flex-col overflow-hidden">
       <TradingViewTopNav
         symbol={selectedProduct?.symbol || 'GRX'}
         pythSymbol="Crypto.GRX/THB" // Fallback for demonstration
@@ -116,14 +118,14 @@ export default function FuturesPage() {
         marketData={{
           high24h: currentPrice * 1.05,
           low24h: currentPrice * 0.95,
-          volume24h: 1250000
+          volume24h: 1250000,
         }}
         priceLoading={loading}
         marketLoading={loading}
         type="futures"
       />
 
-      <div className="flex-1 mt-4 rounded-xl overflow-hidden border border-border/50">
+      <div className="mt-4 flex-1 overflow-hidden rounded-xl border border-border/50">
         <ResizablePanelGroup direction="horizontal">
           {/* Left: Chart & Positions */}
           <ResizablePanel defaultSize={75} minSize={40}>
@@ -138,12 +140,18 @@ export default function FuturesPage() {
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize={30} minSize={10}>
-                <div className="h-full p-4 overflow-y-auto">
-                  <FuturesPositionList
-                    positions={positions}
-                    onRefresh={fetchMarketData}
-                    loading={loading}
-                  />
+                <div className="h-full overflow-y-auto p-4">
+                  {isAuthenticated ? (
+                    <FuturesPositionList
+                      positions={positions}
+                      onRefresh={fetchMarketData}
+                      loading={loading}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Sign in to see your open positions.
+                    </p>
+                  )}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -155,15 +163,33 @@ export default function FuturesPage() {
           <ResizablePanel defaultSize={25} minSize={20}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={50} minSize={30}>
-                <div className="h-full p-4 overflow-y-auto border-b border-border/50">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Trade Futures</h3>
-                  {selectedProduct && (
-                    <FuturesOrderForm
-                      productId={selectedProduct.id}
-                      symbol={selectedProduct.symbol}
-                      currentPrice={currentPrice}
-                      onOrderCreated={fetchMarketData}
-                    />
+                <div className="h-full overflow-y-auto border-b border-border/50 p-4">
+                  <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Trade Futures
+                  </h3>
+                  {/* The page is public, but placing an order isn't — the
+                      endpoint needs a token, so the form waits for a session. */}
+                  {!isAuthenticated ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Connect your wallet or sign in to place leveraged
+                        futures orders.
+                      </p>
+                      <AuthButton
+                        signInVariant="default"
+                        className="h-fit w-full rounded-sm border border-transparent bg-primary px-4 py-[7px] text-sm text-background hover:bg-gradient-primary"
+                        signInText="Connect"
+                      />
+                    </div>
+                  ) : (
+                    selectedProduct && (
+                      <FuturesOrderForm
+                        productId={selectedProduct.id}
+                        symbol={selectedProduct.symbol}
+                        currentPrice={currentPrice}
+                        onOrderCreated={fetchMarketData}
+                      />
+                    )
                   )}
                 </div>
               </ResizablePanel>
@@ -176,12 +202,12 @@ export default function FuturesPage() {
                     bids={(orderBook?.bids || []).map((b: OrderBookEntry) => ({
                       price: parseFloat(b.price),
                       quantity: parseFloat(b.quantity),
-                      total: parseFloat(b.total)
+                      total: parseFloat(b.total),
                     }))}
                     asks={(orderBook?.asks || []).map((a: OrderBookEntry) => ({
                       price: parseFloat(a.price),
                       quantity: parseFloat(a.quantity),
-                      total: parseFloat(a.total)
+                      total: parseFloat(a.total),
                     }))}
                   />
                 </div>

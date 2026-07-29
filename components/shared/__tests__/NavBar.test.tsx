@@ -67,14 +67,19 @@ describe('NavBar', () => {
   it('hides auth-gated links until the user is authenticated', () => {
     render(<NavBar />)
     expect(screen.getByRole('link', { name: /Trade/ })).toBeInTheDocument()
+    // Futures is public — the page renders market data signed out and only
+    // gates the order form.
+    expect(screen.getByRole('link', { name: /Futures/ })).toBeInTheDocument()
     expect(
-      screen.queryByRole('link', { name: /Futures/ })
+      screen.queryByRole('link', { name: /Smart Meter/ })
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Connect' })).toBeInTheDocument()
 
     mockIsAuthenticated = true
     render(<NavBar />)
-    expect(screen.getByRole('link', { name: /Futures/ })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Smart Meter/ })
+    ).toBeInTheDocument()
   })
 
   it('groups the brand and nav on the left, controls on the right', () => {

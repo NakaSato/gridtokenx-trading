@@ -102,7 +102,6 @@ const NAV_ITEMS: NavItem[] = [
     href: '/futures',
     icon: <TrendingUp size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
-    requiresAuth: true,
   },
   {
     name: 'Portfolio',

@@ -80,8 +80,10 @@ describe('NavBarMobile', () => {
   it('hides auth-gated links until the user is authenticated', async () => {
     await openMenu()
     expect(screen.getByRole('link', { name: /Trade/ })).toBeInTheDocument()
+    // Futures is public — see the desktop NavBar test.
+    expect(screen.getByRole('link', { name: /Futures/ })).toBeInTheDocument()
     expect(
-      screen.queryByRole('link', { name: /Futures/ })
+      screen.queryByRole('link', { name: /Smart Meter/ })
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Connect Wallet' })
