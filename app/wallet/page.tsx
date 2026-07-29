@@ -1,11 +1,12 @@
 import { Metadata } from 'next'
-import { WalletTransfer } from '@/features/wallet/components/WalletTransfer'
+import { WalletHero } from '@/features/wallet/components/WalletHero'
+import { WalletActions } from '@/features/wallet/components/WalletActions'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'Wallet | GridTokenX',
-  description: 'Deposit GRX into your on-chain trading escrow and withdraw it back to your wallet.',
+  description: 'Deposit baht, swap between THBC and GRX, and withdraw back to your bank.',
 }
 
 export default function WalletPage() {
@@ -15,13 +16,21 @@ export default function WalletPage() {
         <header className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Wallet</h1>
           <p className="text-sm text-muted-foreground">
-            Deposit and withdraw GRX between your wallet and your on-chain trading escrow
+            Deposit baht, swap between THBC and GRX, or withdraw to your bank
           </p>
         </header>
 
-        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          <ErrorBoundary name="Wallet Transfer">
-            <WalletTransfer />
+        {/* Hero - connection, address, live GRX + THBC balances */}
+        <section className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+          <ErrorBoundary name="Wallet Hero">
+            <WalletHero />
+          </ErrorBoundary>
+        </section>
+
+        {/* The three money flows: deposit fiat, swap, withdraw */}
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+          <ErrorBoundary name="Wallet Actions">
+            <WalletActions />
           </ErrorBoundary>
         </section>
       </main>
