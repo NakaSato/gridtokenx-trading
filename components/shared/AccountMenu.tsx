@@ -60,6 +60,9 @@ export default function AccountMenu() {
   // Same precedence as the header chip and the mobile menu: the live adapter
   // key wins over the address the session was created with.
   const walletAddress = publicKey?.toBase58() || user?.wallet_address
+  // A wallet-only session has an address but no JWT, and still owns account
+  // rows in this menu — so the avatar tracks "has a session", not just the JWT.
+  const hasSession = isAuthenticated || Boolean(walletAddress)
 
   const copyAddress = () => {
     if (!walletAddress) return
@@ -73,6 +76,27 @@ export default function AccountMenu() {
     event.preventDefault()
     setMenuOpen(false)
     setOpen(true)
+  }
+
+  // Signed out with no wallet there is no account to show, so the avatar is
+  // hidden entirely. Settings still has to be reachable — it owns the theme
+  // switcher, and the mobile sheet that also carries it is md:hidden — so the
+  // gear stands on its own instead.
+  if (!hasSession) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          title="Settings"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-secondary/40 text-secondary-foreground transition-colors hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <SettingsIcon className="h-4 w-4" />
+        </button>
+        <Settings open={settingsOpen} onOpenChange={setSettingsOpen} />
+      </>
+    )
   }
 
   return (
@@ -187,7 +211,8 @@ export default function AccountMenu() {
             </div>
           )}
 
-          {/* Settings stays available signed out — it owns the theme switcher. */}
+          {/* Settings stays available to a wallet-only session, which has no
+              JWT and so none of the rows above. */}
           <DropdownMenuItem
             className="cursor-pointer gap-2 px-2 py-2"
             onSelect={openDialog(setSettingsOpen)}

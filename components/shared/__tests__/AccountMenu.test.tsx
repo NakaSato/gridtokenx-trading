@@ -81,14 +81,23 @@ describe('AccountMenu', () => {
     ).toHaveTextContent('W')
   })
 
-  it('offers only settings when signed out, so the theme stays reachable', async () => {
-    await openMenu()
+  // No JWT and no wallet means there is no account behind the avatar, so it
+  // shouldn't advertise one.
+  it('hides the avatar when there is no session', () => {
+    render(<AccountMenu />)
+
     expect(
-      screen.getByRole('menuitem', { name: /Settings/ })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('menuitem', { name: /Profile/ })
+      screen.queryByRole('button', { name: 'Account menu' })
     ).not.toBeInTheDocument()
+  })
+
+  it('leaves a bare settings button when signed out, so the theme stays reachable', async () => {
+    const user = userEvent.setup()
+    render(<AccountMenu />)
+
+    await user.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(await screen.findByTestId('settings-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('profile-dialog')).not.toBeInTheDocument()
     expect(screen.queryByText('Season 1 Points')).not.toBeInTheDocument()
   })
 
@@ -133,6 +142,8 @@ describe('AccountMenu', () => {
   })
 
   it('opens the settings dialog from its menu item', async () => {
+    mockIsAuthenticated = true
+    mockUser = { username: 'wit', email: 'wit@example.com' }
     const user = await openMenu()
     await user.click(screen.getByRole('menuitem', { name: /Settings/ }))
 
