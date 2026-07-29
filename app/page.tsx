@@ -68,6 +68,21 @@ const EnergyGridMapWrapper = dynamic(
   }
 )
 
+// Horizontal panel defaults. The centre is derived from these rather than
+// hard-coded per combination: react-resizable-panels warns and renormalizes
+// unless the visible panels' defaults sum to exactly 100, and the old literals
+// summed to 95 with the left sidebar shown.
+const LEFT_SIDEBAR_DEFAULT_SIZE = 15
+const RIGHT_SIDEBAR_DEFAULT_SIZE = 20
+
+function centerDefaultSize(showLeft: boolean, showRight: boolean) {
+  return (
+    100 -
+    (showLeft ? LEFT_SIDEBAR_DEFAULT_SIZE : 0) -
+    (showRight ? RIGHT_SIDEBAR_DEFAULT_SIZE : 0)
+  )
+}
+
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 import {
@@ -162,7 +177,7 @@ export default function Homepage() {
                 <ResizablePanel
                   id="left-sidebar"
                   order={1}
-                  defaultSize={15}
+                  defaultSize={LEFT_SIDEBAR_DEFAULT_SIZE}
                   minSize={10}
                   maxSize={25}
                 >
@@ -181,13 +196,7 @@ export default function Homepage() {
             <ResizablePanel
               id="center-area"
               order={2}
-              defaultSize={
-                showLeftSidebar && showRightSidebar
-                  ? 60
-                  : showLeftSidebar || showRightSidebar
-                    ? 80
-                    : 100
-              }
+              defaultSize={centerDefaultSize(showLeftSidebar, showRightSidebar)}
               minSize={40}
             >
               <ResizablePanelGroup
@@ -242,7 +251,7 @@ export default function Homepage() {
                 <ResizablePanel
                   id="right-sidebar"
                   order={3}
-                  defaultSize={20}
+                  defaultSize={RIGHT_SIDEBAR_DEFAULT_SIZE}
                   minSize={12}
                   maxSize={30}
                 >
