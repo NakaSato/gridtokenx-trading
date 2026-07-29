@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/
 import { useState } from 'react'
 import Image from 'next/image'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { DollarIcon, InfoIcon, PythIcon } from '@/public/svgs/icons'
-import { formatPrice } from '@/utils/formatter'
+import { DollarIcon, InfoIcon, PythIcon } from '@/components/shared/icons'
+import { formatPrice } from '@/lib/formatter'
 import { Separator } from '@/components/ui/separator'
 
 interface MarketDetailsProps {

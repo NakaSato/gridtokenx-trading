@@ -19,17 +19,17 @@ import {
   useP2PBestPrices,
 } from '@/features/p2p/hooks/useP2PMarket'
 import { P2P_CONFIG } from '@/lib/constants'
-import { OrderTypeTabs } from '@/features/p2p/order-form/OrderTypeTabs'
-import { MatchTargetIndicator } from '@/features/p2p/order-form/MatchTargetIndicator'
-import { BalanceDisplay } from '@/features/p2p/order-form/BalanceDisplay'
-import { SelectedNodeCard } from '@/features/p2p/order-form/SelectedNodeCard'
-import { ZoneSelector } from '@/features/p2p/order-form/ZoneSelector'
-import { AmountInput } from '@/features/p2p/order-form/AmountInput'
-import { PriceInput } from '@/features/p2p/order-form/PriceInput'
-import { OrderSummary } from '@/features/p2p/order-form/OrderSummary'
-import { SubmitButton } from '@/features/p2p/order-form/SubmitButton'
+import { OrderTypeTabs } from '@/features/p2p/components/order-form/OrderTypeTabs'
+import { MatchTargetIndicator } from '@/features/p2p/components/order-form/MatchTargetIndicator'
+import { BalanceDisplay } from '@/features/p2p/components/order-form/BalanceDisplay'
+import { SelectedNodeCard } from '@/features/p2p/components/order-form/SelectedNodeCard'
+import { ZoneSelector } from '@/features/p2p/components/order-form/ZoneSelector'
+import { AmountInput } from '@/features/p2p/components/order-form/AmountInput'
+import { PriceInput } from '@/features/p2p/components/order-form/PriceInput'
+import { OrderSummary } from '@/features/p2p/components/order-form/OrderSummary'
+import { SubmitButton } from '@/features/p2p/components/order-form/SubmitButton'
 import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
-import { meterSerialFromNode } from '@/features/p2p/order-form/meterId'
+import { meterSerialFromNode } from '@/features/p2p/components/order-form/meterId'
 
 interface OrderFormProps {
   onOrderPlaced?: () => void

@@ -1,4 +1,4 @@
-import { InfoIcon, NotificationIcon, RedCircle } from '@/public/svgs/icons'
+import { InfoIcon, NotificationIcon, RedCircle } from '@/components/shared/icons'
 import {
   DropdownMenu,
   DropdownMenuContent,

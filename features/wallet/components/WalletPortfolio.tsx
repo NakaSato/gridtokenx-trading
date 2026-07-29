@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp } from '@/public/svgs/icons'
+import { ArrowDown, ArrowUp } from '@/components/shared/icons'
 import Image from 'next/image'
 import { Separator } from '@/components/ui/separator'
 import { useState } from 'react'

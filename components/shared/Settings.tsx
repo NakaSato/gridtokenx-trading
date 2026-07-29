@@ -24,7 +24,7 @@ import {
   PurpleCircleIcon,
   SettingsIcon,
   SunIcon,
-} from '@/public/svgs/icons'
+} from '@/components/shared/icons'
 
 interface SettingsProps {
   /**

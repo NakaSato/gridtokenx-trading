@@ -82,7 +82,7 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
 - See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for code/style rules, [`docs/UI_SYSTEM_DESIGN.md`](docs/UI_SYSTEM_DESIGN.md)
   and [`docs/SYSTEM_DESIGN_MOBILE.md`](docs/SYSTEM_DESIGN_MOBILE.md) for UI/responsive design.
 - Config from env with dev fallbacks: every endpoint/mint/oracle is centralized in `lib/config.ts`
-  and `utils/const.ts` behind `NEXT_PUBLIC_*` (listed in `.env.example`). Copy `.env.example` → `.env`.
+  and `lib/const.ts` behind `NEXT_PUBLIC_*` (listed in `.env.example`). Copy `.env.example` → `.env`.
 - `next.config.ts` `rewrites()` proxy `/api/:path*` and `/health` to APISIX; thin server-side BFF
   handlers live in `app/api/*` (e.g. `app/api/auth/login/route.ts`). Standalone build, image
   domains allow-listed there.

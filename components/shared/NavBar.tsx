@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import AuthButton from '@/features/auth/components/AuthButton'
-import { ArrowDown, MoreIcon, WalletIcon } from '@/public/svgs/icons'
+import { ArrowDown, MoreIcon, WalletIcon } from '@/components/shared/icons'
 import { Logo, LogoWordmark } from '@/components/shared/Logo'
 import dynamic from 'next/dynamic'
 import NavBarMobile from '@/components/shared/NavBarMobile'

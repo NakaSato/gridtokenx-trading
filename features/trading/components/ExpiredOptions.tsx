@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { CallIconDark, PutIconDark } from '@/public/svgs/icons'
+import { CallIconDark, PutIconDark } from '@/components/shared/icons'
 import { Separator } from '@/components/ui/separator'
 import { ExpiredOption } from '@/features/trading/contract-provider'
 

@@ -2,8 +2,8 @@
 
 import Image from 'next/image'
 import { ArrowDown, ArrowUp } from 'lucide-react'
-import { PythIcon } from '@/public/svgs/icons'
-import { formatPrice } from '@/utils/formatter'
+import { PythIcon } from '@/components/shared/icons'
+import { formatPrice } from '@/lib/formatter'
 import { memo, useState } from 'react'
 import MarketDetails from '@/features/trading/components/MarketDetails'
 import { useRouter } from 'next/navigation'

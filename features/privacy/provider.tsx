@@ -15,7 +15,7 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token'
-import { ENERGY_TOKEN_MINT } from '@/utils/const'
+import { ENERGY_TOKEN_MINT } from '@/lib/const'
 import tradingIdl from '@/lib/idl/trading.json'
 import { toast } from 'react-hot-toast'
 import { deriveKeys, unlockMessage } from '@/features/privacy/lib/keyring'

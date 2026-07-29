@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAnchorWallet, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import { Program } from '@coral-xyz/anchor'
-import { connection } from '@/utils/const'
+import { connection } from '@/lib/const'
 import { getProgram } from '@/lib/program'
 import {
     depositEscrow,

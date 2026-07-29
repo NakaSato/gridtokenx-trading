@@ -82,8 +82,7 @@ const eslintConfig = [
                 '@/contexts/PrivacyProvider',
                 '@/components/FulfillTradeModal',
               ],
-              message:
-                'Moved to features/auth/provider and features/privacy.',
+              message: 'Moved to features/auth/provider and features/privacy.',
             },
             {
               group: ['@/hooks/useApi', '@/contexts/SocketContext'],
@@ -94,6 +93,26 @@ const eslintConfig = [
               group: ['@/lib/data/Positions', '@/lib/data/WalletActivity'],
               message:
                 'Types live in types/trading.ts and types/wallet.ts; mapApiOrderToOrder in lib/api/adapters.ts.',
+            },
+            {
+              group: ['@/public/svgs/icons'],
+              message:
+                'Moved to components/shared/icons — public/ is for statically served assets, not components.',
+            },
+            {
+              group: ['@/utils/*'],
+              message:
+                'utils/ folded into lib/: const → @/lib/const, formatter → @/lib/formatter. dateUtils was unused and removed.',
+            },
+            {
+              group: ['@/features/p2p/order-form/*'],
+              message:
+                'Moved to features/p2p/components/order-form, matching the components/hooks/lib shape of every other feature.',
+            },
+            {
+              group: ['@/lib/zk-utils', '@/lib/stealth-utils'],
+              message:
+                'Removed as unused — the live implementations are in lib/wasm-bridge and lib/privacy-utils.',
             },
           ],
         },

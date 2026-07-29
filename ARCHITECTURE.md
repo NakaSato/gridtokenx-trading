@@ -58,9 +58,9 @@ lib/                    Core client logic (no feature knowledge)
 │   ├── wasm-bridge.ts / wasm-provider.tsx / wasm-hooks.ts  WASM loader, provider, hooks
 │   ├── idl/               Anchor IDLs (trading, energy_token, governance, option_contract, …)
 │   ├── pda-utils.ts / program.ts   Solana PDA + program helpers
-│   └── zk-utils.ts / stealth-utils.ts / privacy-utils.ts  Privacy primitives (WASM-backed)
+│   ├── privacy-utils.ts   Privacy primitives (WASM-backed, via wasm-bridge)
+│   └── const.ts / formatter.ts     Solana mints/oracles/connection + formatters
 types/                  Shared TS types (trading, futures, meter, grid, wallet, auth, ws, …)
-utils/                  const.ts (Solana mints/oracles/connection), formatters, date helpers
 next.config.ts          Standalone output, image domains, /api rewrite to APISIX, WASM webpack rules
 public/  scripts/  docs/  tests/
 ```
@@ -135,7 +135,7 @@ it to `ApiClient`. A proactive timer refreshes the token before expiry
    `NEXT_PUBLIC_WS_BASE_URL`), not hardcoded hosts.
 2. **One fetch wrapper.** All REST goes through `lib/api/core.ts#apiRequest` via the `ApiClient`
    facade — add new calls as domain methods, don't sprinkle raw `fetch`.
-3. **Config from env, with dev fallbacks.** `lib/config.ts` and `utils/const.ts` centralize every
+3. **Config from env, with dev fallbacks.** `lib/config.ts` and `lib/const.ts` centralize every
    endpoint, mint, and oracle behind `NEXT_PUBLIC_*` vars; `.env.example` lists them.
 4. **Non-custodial signing.** Transaction signing happens in the user's wallet extension via the
    adapter — the app holds no private keys. The only secret it persists is the backend JWT (in web

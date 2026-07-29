@@ -20,7 +20,7 @@ import {
   GrayPointsIcon,
   RankingIcon,
   WalletIcon,
-} from '@/public/svgs/icons'
+} from '@/components/shared/icons'
 import { POINTS, formatPointsFull } from '@/components/shared/points'
 
 // Static imports are fine here: NavBar loads AccountMenu itself via

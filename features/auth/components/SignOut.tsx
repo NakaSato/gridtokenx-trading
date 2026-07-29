@@ -3,7 +3,7 @@
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
-import { LogOutIcon } from '@/public/svgs/icons'
+import { LogOutIcon } from '@/components/shared/icons'
 
 interface SignOutProps {
   variant?: 'default' | 'outline' | 'ghost' | 'destructive'

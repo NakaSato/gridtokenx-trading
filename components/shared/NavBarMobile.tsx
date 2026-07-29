@@ -22,7 +22,7 @@ import {
 import Image, { type StaticImageData } from 'next/image'
 import AuthButton from '@/features/auth/components/AuthButton'
 import { useState, useMemo } from 'react'
-import { WalletIcon } from '@/public/svgs/icons'
+import { WalletIcon } from '@/components/shared/icons'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { EXTERNAL_LINKS } from '@/lib/links'

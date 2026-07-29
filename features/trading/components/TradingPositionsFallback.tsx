@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { WalletIcon } from '@/public/svgs/icons'
+import { WalletIcon } from '@/components/shared/icons'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useAuth } from '@/features/auth/provider'
 

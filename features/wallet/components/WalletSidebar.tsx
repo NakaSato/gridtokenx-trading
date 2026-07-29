@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sheet'
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
-import { CopyIcon, LogOutIcon, SendIcon } from '@/public/svgs/icons'
+import { CopyIcon, LogOutIcon, SendIcon } from '@/components/shared/icons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import WalletPortfolio from '@/features/wallet/components/WalletPortfolio'

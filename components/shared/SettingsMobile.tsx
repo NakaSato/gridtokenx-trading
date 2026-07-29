@@ -17,7 +17,7 @@ import {
   MoonIcon,
   PurpleCircleIcon,
   SunIcon,
-} from '@/public/svgs/icons'
+} from '@/components/shared/icons'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { Input } from '@/components/ui/input'

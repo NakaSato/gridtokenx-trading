@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { HELIUS_API_KEY, HELIUS_ENDPOINT } from '@/utils/const'
+import { HELIUS_API_KEY, HELIUS_ENDPOINT } from '@/lib/const'
 
 // GET handler
 export async function GET(request: NextRequest) {

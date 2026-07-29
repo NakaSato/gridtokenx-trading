@@ -9,7 +9,7 @@ import {
     USDC_ORACLE,
     THB_MINT,
     THB_ORACLE
-} from '@/utils/const'
+} from '@/lib/const'
 import {
     getPoolPDA,
     getCustodyPDA,

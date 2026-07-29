@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { WalletIcon } from '@/public/svgs/icons'
+import { WalletIcon } from '@/components/shared/icons'
 import WalletModal from '@/features/auth/components/WalletModal'
 import { useWallet } from '@solana/wallet-adapter-react'
 
