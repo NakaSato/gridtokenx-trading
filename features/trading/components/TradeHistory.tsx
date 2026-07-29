@@ -2,10 +2,11 @@
 
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultApiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query/keys'
 import { useAuth } from '@/features/auth/provider'
+import { useSequencedChannel } from '@/lib/ws/useSequencedChannel'
 import { History, TrendingUp, BarChart3, AlertOctagon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -61,20 +62,32 @@ function PanelHeader({ tradeCount }: { tradeCount?: number }) {
 const TradeHistory = React.memo(function TradeHistory() {
   const { token } = useAuth()
 
+  const queryClient = useQueryClient()
+  const historyKey = React.useMemo(() => queryKeys.trading.tradeHistory(), [])
+
   const { data: trades = [], isLoading } = useQuery({
-    queryKey: queryKeys.trading.tradeHistory(),
+    queryKey: historyKey,
     queryFn: async (): Promise<TradeRecord[]> => {
       defaultApiClient.setToken(token!)
       const response = await defaultApiClient.getTrades({ limit: 20 })
       return response.data?.trades ?? []
     },
     enabled: !!token,
-    refetchInterval: 10_000,
+    // Was 10s. Matches now push over /ws/trading; this is the outage fallback.
+    refetchInterval: 60_000,
   })
 
-  // No realtime push for settled trades: there is no /ws/trades endpoint (see
-  // ROUTED_WS_CHANNELS in lib/websocket-client.ts). The 10s poll above is the
-  // only refresh path until trading-service grows a WebSocket surface.
+  // Settled trades now arrive over /ws/trading — a match is a trade. Market-wide,
+  // so no zone filter. Refetching is idempotent, so a duplicate frame (the
+  // outbox race puts Postgres ahead of Kafka) costs a request and nothing else.
+  useSequencedChannel({
+    messageTypes: ['order_matched'],
+    snapshotKey: historyKey,
+    enabled: !!token,
+    onFrame: () => {
+      void queryClient.invalidateQueries({ queryKey: historyKey })
+    },
+  })
 
   const loading = !!token && isLoading
 

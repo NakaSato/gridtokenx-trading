@@ -22,6 +22,17 @@ export type WebSocketMessageType =
   // Emitted on the trades channel when a trade settles. Was previously only
   // observed via a raw socket in SocketContext, so it never reached this union.
   | 'trade_executed'
+  // Sequenced market data from /ws/trading. These names are the gateway's wire
+  // contract, declared in `routable()` in crates/trading-api/src/websocket.rs —
+  // they are deliberately decoupled from the Rust `Event` variant names, so
+  // renaming one is a two-sided change. ('order_matched' is already above.)
+  | 'order_created'
+  | 'order_update'
+  | 'peak_price_update'
+  | 'settlement_requested'
+  // Control frame from /ws/trading: the gateway dropped our backlog rather than
+  // buffering it, so the local view is stale and must be re-seeded from REST.
+  | 'resync'
   // Public /api/market/ws stream (energy-grid map)
   | 'grid_status_updated'
   | 'grid_status'
@@ -47,10 +58,24 @@ export interface WebSocketClientOptions {
   token?: string
   /** If true, this is a public endpoint that doesn't require authentication */
   isPublic?: boolean
+  /**
+   * Extra query parameters for the handshake, e.g. `{ zone_id: 1 }` for
+   * `/ws/trading`. Merged with `token` through URLSearchParams — appending a
+   * second `?` by hand produces a URL the gateway rejects.
+   */
+  params?: Record<string, string | number>
 }
 
 /** Event handler type for WebSocket messages */
 export type WebSocketEventHandler<T = unknown> = (message: WebSocketMessage<T>) => void
+
+/**
+ * Outbound backpressure ceiling. Past this many bytes still sitting in the
+ * socket's send buffer, `send()` drops rather than queues. This app sends
+ * almost nothing (subscriptions are fixed at handshake time via the query
+ * string), so hitting it means the connection is degraded, not busy.
+ */
+const MAX_BUFFERED_BYTES = 1_000_000
 
 /**
  * WebSocket Client for real-time updates
@@ -75,7 +100,23 @@ export class WebSocketClient {
       maxReconnectAttempts: options.maxReconnectAttempts ?? 5,
       token: options.token ?? '',
       isPublic: options.isPublic ?? false,
+      params: options.params ?? {},
     }
+  }
+
+  /**
+   * Handshake URL with `params` and `token` merged into one query string.
+   * `/ws/trading` needs both `zone_id` and `token`; string-concatenating a
+   * second `?token=` yields `...?zone_id=1?token=...`, which APISIX rejects.
+   */
+  private buildUrl(): string {
+    const qs = new URLSearchParams()
+    for (const [key, value] of Object.entries(this.options.params)) {
+      qs.set(key, String(value))
+    }
+    if (this.options.token) qs.set('token', this.options.token)
+    const query = qs.toString()
+    return query ? `${this.url}?${query}` : this.url
   }
 
   /**
@@ -89,10 +130,7 @@ export class WebSocketClient {
     }
 
     try {
-      // Add token to URL if provided
-      const url = this.options.token
-        ? `${this.url}?token=${this.options.token}`
-        : this.url
+      const url = this.buildUrl()
 
       // Guard: Don't connect to authenticated /ws/* paths without a valid-looking token
       // The path /api/market/ws is public and doesn't require auth
@@ -199,11 +237,24 @@ export class WebSocketClient {
    * Send a message to the server
    */
   send(message: any): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message))
-    } else {
+    if (this.ws?.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket is not connected')
+      return
     }
+
+    // Backpressure. bufferedAmount is what the socket has accepted but not yet
+    // put on the wire; if it keeps climbing the peer is slower than we are and
+    // queueing more just grows memory until the tab dies. Drop instead — the
+    // stream is recoverable (the gateway resyncs), an OOM tab is not.
+    // `?? 0` because the jsdom mock in the unit tests has no bufferedAmount.
+    if ((this.ws.bufferedAmount ?? 0) > MAX_BUFFERED_BYTES) {
+      console.warn(
+        `WebSocket send dropped [${this.url}]: ${this.ws.bufferedAmount} bytes still buffered`
+      )
+      return
+    }
+
+    this.ws.send(JSON.stringify(message))
   }
 
   /**
@@ -274,13 +325,32 @@ export class WebSocketClient {
  */
 /**
  * Authenticated channels that actually have a `/ws/<channel>` route on the
- * gateway. Deliberately empty: APISIX defines exactly three websocket routes
- * (`/ws` → noti, `/api/market/ws` → simulator, `/api/v1/rpc-ws` → solana), and
- * trading-service ships no websocket handler at all, so every `/ws/<channel>`
- * dial 404s at the gateway and burns the reconnect budget. Add a channel here
- * once a route and an upstream handler exist for it.
+ * gateway. Anything not listed here is a no-op rather than a dial that 404s and
+ * burns the reconnect budget.
+ *
+ * `trading` → APISIX route 23 (`apisix_conf/apisix.yaml`) → trading-api's
+ * `ws_handler` (`crates/trading-api/src/websocket.rs`). It requires a `zone_id`
+ * param alongside the token, and streams per-zone sequenced market data.
+ *
+ * Still absent, deliberately: `orderbook`, `trades`, `epochs`. APISIX has no
+ * route for those paths and trading-service serves no handler at them.
  */
-const ROUTED_WS_CHANNELS: ReadonlySet<string> = new Set<string>()
+const ROUTED_WS_CHANNELS: ReadonlySet<string> = new Set<string>(['trading'])
+
+/**
+ * Identity of a subscription: the channel plus its params, sorted so key order
+ * never affects the result. Two callers asking for the same channel+params
+ * share one socket; different params get their own.
+ */
+function paramKey(
+  channel: string,
+  params?: Record<string, string | number>
+): string {
+  if (!params) return channel
+  const entries = Object.entries(params).sort(([a], [b]) => a.localeCompare(b))
+  if (!entries.length) return channel
+  return `${channel}?${entries.map(([k, v]) => `${k}=${v}`).join('&')}`
+}
 
 export class WebSocketManager {
   private clients: Map<string, WebSocketClient> = new Map()
@@ -293,7 +363,11 @@ export class WebSocketManager {
    * If no token is provided, returns a public market WebSocket instead.
    * Returns null for channels with no gateway route — callers must no-op.
    */
-  getOrCreate(channel: string, token?: string): WebSocketClient | null {
+  getOrCreate(
+    channel: string,
+    token?: string,
+    params?: Record<string, string | number>
+  ): WebSocketClient | null {
     // If no token, use public market WebSocket as fallback
     if (!token) {
       return this.getOrCreatePublic()
@@ -303,17 +377,21 @@ export class WebSocketManager {
       return null
     }
 
-    let client = this.clients.get(channel)
-    const path = `/ws/${channel}`
+    // Params are part of the identity, not just the URL: /ws/trading?zone_id=1
+    // and ?zone_id=2 are different streams. Keying on channel alone would hand
+    // a zone-2 subscriber the zone-1 socket and silently show it another zone's
+    // book.
+    const key = paramKey(channel, params)
+    let client = this.clients.get(key)
 
     if (!client) {
-      client = new WebSocketClient(path, { token })
-      this.clients.set(channel, client)
-      this.refCounts.set(channel, 1)
+      client = new WebSocketClient(`/ws/${channel}`, { token, params })
+      this.clients.set(key, client)
+      this.refCounts.set(key, 1)
     } else {
       // Increment ref count
-      const count = this.refCounts.get(channel) || 0
-      this.refCounts.set(channel, count + 1)
+      const count = this.refCounts.get(key) || 0
+      this.refCounts.set(key, count + 1)
 
       if (token && client.options.token !== token) {
         // Token changed, update it
@@ -335,17 +413,19 @@ export class WebSocketManager {
     return this.publicClient
   }
 
-  disconnect(channel: string): void {
-    const count = this.refCounts.get(channel) || 0
+  /** Must be called with the same `params` passed to `getOrCreate`. */
+  disconnect(channel: string, params?: Record<string, string | number>): void {
+    const key = paramKey(channel, params)
+    const count = this.refCounts.get(key) || 0
     if (count <= 1) {
-      const client = this.clients.get(channel)
+      const client = this.clients.get(key)
       if (client) {
         client.disconnect()
-        this.clients.delete(channel)
+        this.clients.delete(key)
       }
-      this.refCounts.delete(channel)
+      this.refCounts.delete(key)
     } else {
-      this.refCounts.set(channel, count - 1)
+      this.refCounts.set(key, count - 1)
     }
   }
 

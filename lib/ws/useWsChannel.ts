@@ -17,6 +17,8 @@ export interface UseWsChannelOptions<T> {
   onMessage?: (data: T) => void
   /** Set false to keep the hook mounted but idle. Default true. */
   enabled?: boolean
+  /** Handshake query params, e.g. `{ zone_id: 1 }` for the trading channel. */
+  params?: Record<string, string | number>
 }
 
 /**
@@ -30,13 +32,20 @@ export function useWsChannel<T = unknown>(
   messageType: WebSocketMessageType,
   options: UseWsChannelOptions<T> = {}
 ) {
-  const { bufferSize = 50, publicOnly = false, onMessage, enabled = true } = options
+  const {
+    bufferSize = 50,
+    publicOnly = false,
+    onMessage,
+    enabled = true,
+    params,
+  } = options
 
   const { connected, client, send } = useWebSocket(
     channel,
     undefined,
     enabled,
-    publicOnly
+    publicOnly,
+    params
   )
   const [latest, setLatest] = useState<T | null>(null)
   const [buffer, setBuffer] = useState<T[]>([])

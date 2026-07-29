@@ -21,7 +21,9 @@ export function useWebSocket(
   channel: string,
   token?: string,
   autoConnect: boolean = true,
-  publicOnly: boolean = false
+  publicOnly: boolean = false,
+  /** Handshake query params, e.g. `{ zone_id: 1 }` for the trading channel. */
+  params?: Record<string, string | number>
 ) {
   const { token: authToken } = useAuth()
   const [connected, setConnected] = useState(false)
@@ -33,15 +35,35 @@ export function useWebSocket(
   // Track whether we're using the public client for this instance
   const isUsingPublicRef = useRef(false)
 
+  // Callers pass params as an object literal, whose identity changes every
+  // render. Depend on its *contents* instead, or the effect would tear the
+  // socket down and redial on every render.
+  const paramsKey = params
+    ? Object.entries(params)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${v}`)
+        .join('&')
+    : ''
+  // Assigned after commit, and declared before the connect effect below so it
+  // is already up to date when that effect re-runs on a paramsKey change.
+  const paramsRef = useRef(params)
+  useEffect(() => {
+    paramsRef.current = params
+  })
+
   useEffect(() => {
     if (!autoConnect) return
 
     // Determine if we'll use public client
     isUsingPublicRef.current = !effectiveToken
 
+    // Captured once so cleanup releases the same key it acquired — reading the
+    // ref again at teardown could see params from a later render.
+    const activeParams = paramsRef.current
+
     // null = the channel has no gateway route (see ROUTED_WS_CHANNELS in
     // lib/websocket-client.ts). Stay idle rather than dialing a 404.
-    const client = defaultWSManager.getOrCreate(channel, effectiveToken)
+    const client = defaultWSManager.getOrCreate(channel, effectiveToken, activeParams)
     clientRef.current = client
     if (!client) {
       setConnected(false)
@@ -60,10 +82,10 @@ export function useWebSocket(
       if (isUsingPublicRef.current) {
         defaultWSManager.disconnectPublic()
       } else {
-        defaultWSManager.disconnect(channel)
+        defaultWSManager.disconnect(channel, activeParams)
       }
     }
-  }, [channel, effectiveToken, autoConnect])
+  }, [channel, effectiveToken, autoConnect, paramsKey])
 
   const connect = useCallback(() => {
     if (clientRef.current) {
