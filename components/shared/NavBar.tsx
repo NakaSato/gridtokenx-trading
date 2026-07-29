@@ -146,7 +146,8 @@ const DROPDOWN_EXTERNAL_ITEMS: DropdownItem[] = [
   {
     name: 'Feedback',
     icon: <MessagesSquare />,
-    link: '/feedback',
+    link: EXTERNAL_LINKS.feedback,
+    external: true,
   },
 ]
 

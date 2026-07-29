@@ -138,15 +138,16 @@ describe('NavBarMobile', () => {
     )
   })
 
-  it('renders Docs as an external link and Feedback as internal', async () => {
+  // Both resource links leave the app: there is no /feedback route, so that
+  // entry points at the community channel like Docs points at the docs site.
+  it('renders both resource links as external', async () => {
     await openMenu()
-    expect(screen.getByRole('link', { name: /Docs/ })).toHaveAttribute(
-      'target',
-      '_blank'
-    )
-    expect(screen.getByRole('link', { name: /Feedback/ })).not.toHaveAttribute(
-      'target'
-    )
+    for (const name of [/Docs/, /Feedback/]) {
+      const link = screen.getByRole('link', { name })
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      expect(link.getAttribute('href')).toMatch(/^https:\/\//)
+    }
   })
 
   it('closes the menu when a nav link is clicked', async () => {

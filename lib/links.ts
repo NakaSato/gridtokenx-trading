@@ -18,6 +18,11 @@ export const EXTERNAL_LINKS = {
     // Company
     website: process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://gridtokenx.com',
 
+    // Feedback. Defaults to the Discord community — there is no in-app feedback
+    // page or endpoint, so this has to resolve somewhere real. Repoint via env
+    // when a dedicated form exists.
+    feedback: process.env.NEXT_PUBLIC_FEEDBACK_URL || 'https://discord.gg/gridtokenx',
+
     // Blockchain Explorer
     solanaExplorer: process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || 'https://explorer.gridtokenx.com',
 } as const

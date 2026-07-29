@@ -136,7 +136,8 @@ const RESOURCE_ITEMS: ResourceItem[] = [
   {
     name: 'Feedback',
     icon: <MessagesSquare size={16} />,
-    link: '/feedback',
+    link: EXTERNAL_LINKS.feedback,
+    external: true,
   },
 ]
 
