@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { CopyIcon, LogOutIcon, SendIcon } from '@/components/shared/icons'
 import { Skeleton } from '@/components/ui/skeleton'
+import { copyText } from '@/lib/clipboard'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import WalletPortfolio from '@/features/wallet/components/WalletPortfolio'
 import WalletActivity from '@/features/wallet/components/WalletActivity'
@@ -114,13 +115,16 @@ export default function WalletSideBar({
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
-  const copyAddress = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress)
-      toast.success('Address Copied')
-    } else {
+  const copyAddress = async () => {
+    if (!walletAddress) {
       toast.error('No wallet address available')
+      return
     }
+    // See lib/clipboard: navigator.clipboard is undefined outside a secure
+    // context, so calling it directly threw and skipped the toast below.
+    const ok = await copyText(walletAddress)
+    if (ok) toast.success('Address Copied')
+    else toast.error('Could not copy address')
   }
   const handleClickTab = (state: string) => {
     if (activeTab !== state) {

@@ -1,4 +1,5 @@
 import { useMemo, useEffect } from 'react'
+import { copyText } from '@/lib/clipboard'
 import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/features/auth/provider'
 import toast from 'react-hot-toast'
@@ -54,7 +55,7 @@ export function useSmartMeter() {
 
     const copyToClipboard = async (text: string) => {
         try {
-            await navigator.clipboard.writeText(text)
+            if (!(await copyText(text))) throw new Error('copy failed')
             toast.success('Tx signature copied to clipboard!')
         } catch (err) {
             toast.error('Failed to copy')

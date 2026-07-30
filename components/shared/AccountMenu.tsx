@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Copy, Settings as SettingsIcon, User } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import toast from 'react-hot-toast'
+import { copyText } from '@/lib/clipboard'
 
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth/provider'
@@ -64,10 +65,15 @@ export default function AccountMenu() {
   // rows in this menu — so the avatar tracks "has a session", not just the JWT.
   const hasSession = isAuthenticated || Boolean(walletAddress)
 
-  const copyAddress = () => {
+  const copyAddress = async () => {
     if (!walletAddress) return
-    navigator.clipboard.writeText(walletAddress)
-    toast.success('Address Copied')
+    // Not `navigator.clipboard` directly: that is undefined outside a secure
+    // context (this app is served over plain HTTP on an .orb.local host), so the
+    // call threw and the success toast below never ran — the click silently did
+    // nothing. copyText falls back and reports whether it actually copied.
+    const ok = await copyText(walletAddress)
+    if (ok) toast.success('Address Copied')
+    else toast.error('Could not copy address')
   }
 
   // Close the menu ourselves, then open the dialog, so the two don't race for

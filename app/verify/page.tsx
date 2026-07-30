@@ -1,5 +1,6 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
+import { copyText } from '@/lib/clipboard'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { defaultApiClient } from '@/lib/api-client'
@@ -239,7 +240,7 @@ function VerifyEmailContent() {
   const handleCopyWallet = async () => {
     if (!walletAddress) return
     try {
-      await navigator.clipboard.writeText(walletAddress)
+      if (!(await copyText(walletAddress))) throw new Error('copy failed')
       setCopied(true)
       toast.success('Wallet address copied!')
       setTimeout(() => setCopied(false), 2000)

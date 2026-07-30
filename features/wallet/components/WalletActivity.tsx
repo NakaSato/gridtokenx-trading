@@ -1,4 +1,5 @@
 'use client'
+import { copyText } from '@/lib/clipboard'
 import { useEffect, useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { Copy, RefreshCw } from 'lucide-react'
@@ -110,9 +111,12 @@ export default function WalletActivity() {
     fetchTransactions()
   }, [fetchTransactions])
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success('Copied to clipboard')
+  const copyToClipboard = async (text: string) => {
+    // See lib/clipboard: navigator.clipboard is undefined outside a secure
+    // context, so this threw and the toast below never ran.
+    const ok = await copyText(text)
+    if (ok) toast.success('Copied to clipboard')
+    else toast.error('Could not copy')
   }
 
   const truncateId = (id: string) => `${id.slice(0, 8)}...${id.slice(-4)}`
