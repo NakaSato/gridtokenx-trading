@@ -1,8 +1,6 @@
 import { apiRequest, ApiResponse } from './core'
 import type {
-    GridStatus,
     GridTopologyResponse,
-    GridHistoryStatus,
     GridFlow,
     GridFlowsResponse
 } from '@/types/grid'
@@ -45,6 +43,16 @@ interface RawGridFlow {
     description?: string
 }
 
+/**
+ * meter-service client.
+ *
+ * Caller-scoped routes live under `/api/v1/me/meters*` — the platform user-self
+ * base (same convention as `/api/v1/me/wallets`, `/api/v1/me/orders`). The bare
+ * `/api/v1/meters*` forms this client used to call are dual-served legacy
+ * aliases on the backend and are slated for removal; don't reintroduce them.
+ * The sole exception is `/api/v1/meters/map`, which is grid-wide rather than
+ * caller-scoped and so is NOT under `/me` — see `getMetersMap()`.
+ */
 export class MetersApi {
     constructor(private getToken: () => string | undefined) { }
 
@@ -53,7 +61,7 @@ export class MetersApi {
     // former submitMeterData() POST to /api/v1/meters/{serial}/readings is gone.
 
     async getMeterStats(): Promise<ApiResponse<MeterStats>> {
-        return apiRequest<MeterStats>('/api/v1/meters/stats', {
+        return apiRequest<MeterStats>('/api/v1/me/meters/stats', {
             method: 'GET',
             token: this.getToken(),
         })
@@ -61,7 +69,7 @@ export class MetersApi {
 
     async getMyReadings(limit = 10, offset = 0): Promise<ApiResponse<MeterReading[]>> {
         const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() })
-        return apiRequest<MeterReading[]>(`/api/v1/meters/readings?${params.toString()}`, {
+        return apiRequest<MeterReading[]>(`/api/v1/me/meters/readings?${params.toString()}`, {
             method: 'GET',
             token: this.getToken(),
         })
@@ -107,6 +115,10 @@ export class MetersApi {
      * Every located meter (latitude/longitude present) across ALL users, as map
      * markers. Requires a valid JWT but is intentionally not caller-scoped — the
      * map shows the whole grid. GET /api/v1/meters/map.
+     *
+     * This is the one meter route that deliberately stays OFF the `/api/v1/me`
+     * base: `/me/*` means "scoped to the caller", which this is not. There is no
+     * `/api/v1/me/meters/map` — the backend 404s it on purpose.
      */
     async getMetersMap(): Promise<ApiResponse<MeterMapPoint[]>> {
         return apiRequest<MeterMapPoint[]>('/api/v1/meters/map', {
@@ -116,7 +128,7 @@ export class MetersApi {
     }
 
     async registerMeter(data: { serial_number: string; meter_type?: string; location?: string; latitude?: number; longitude?: number }): Promise<ApiResponse<RegisterMeterResponse>> {
-        return apiRequest<RegisterMeterResponse>('/api/v1/meters', {
+        return apiRequest<RegisterMeterResponse>('/api/v1/me/meters', {
             method: 'POST',
             body: data,
             token: this.getToken(),
@@ -127,9 +139,9 @@ export class MetersApi {
     // billing bin (via Chain Bridge). There is no meter-service mint endpoint and
     // no client-initiated mint — the former POST .../readings/{id}/mint is gone.
 
-    async getGridStatus(): Promise<ApiResponse<GridStatus>> {
-        return apiRequest<GridStatus>('/api/v1/public/grid-status', { method: 'GET' })
-    }
+    // No getGridStatus/getGridHistory: GET /api/v1/public/grid-status is gone.
+    // Aggregate grid state now arrives only over the public WS
+    // (features/energy-grid/hooks/useGridStatus.ts).
 
     async getGridTopology(): Promise<ApiResponse<GridTopologyResponse>> {
         return apiRequest<GridTopologyResponse>('/api/v1/public/grid-topology', { method: 'GET' })
@@ -211,7 +223,4 @@ export class MetersApi {
         return { data: { flows }, status: res.status }
     }
 
-    async getGridHistory(limit = 30): Promise<ApiResponse<GridHistoryStatus[]>> {
-        return apiRequest<GridHistoryStatus[]>(`/api/v1/public/grid-status?history=true&limit=${limit}`, { method: 'GET' })
-    }
 }

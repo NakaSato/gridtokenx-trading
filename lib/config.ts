@@ -92,15 +92,16 @@ export const API_ENDPOINTS = {
     notifications: `${API_CONFIG.baseUrl}/api/v1/noti`,
     carbon: `${API_CONFIG.baseUrl}/api/v1/carbon`,
   },
-  // Meters
-  meters: {
-    data: `${API_CONFIG.baseUrl}/api/v1/meters`,
-    submit: `${API_CONFIG.baseUrl}/api/v1/meters`,
-    myMeters: `${API_CONFIG.baseUrl}/api/v1/me/meters`,
-  },
+  // No `meters` block: it held `data`/`submit` (both the legacy `/api/v1/meters`)
+  // and `myMeters`, none of which was ever read — every meter call goes through
+  // MetersApi (`lib/api/meters.ts`), which now targets the caller-scoped
+  // `/api/v1/me/meters*` routes. A second, unread copy of these URLs is how the
+  // legacy paths silently outlived their replacement; keep meter endpoints in
+  // the api module only.
   // Grid
   grid: {
-    status: `${API_CONFIG.baseUrl}/api/v1/public/grid-status`,
+    // No `status`: GET /api/v1/public/grid-status was removed — aggregate grid
+    // state comes over the public WS only.
     topology: `${API_CONFIG.baseUrl}/api/v1/public/grid-topology`,
   },
   // WebSocket: no /ws/<channel> endpoints exist — the gateway routes only

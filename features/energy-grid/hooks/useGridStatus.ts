@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { defaultApiClient } from '@/lib/api-client'
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultWSManager, WebSocketEventHandler } from '@/lib/websocket-client'
 import { GridStatus, ZoneGridStatus } from '@/types/grid'
 
@@ -16,20 +15,23 @@ export interface UseGridStatusResult {
 }
 
 /**
- * Hook to fetch real-time aggregate grid status from the PUBLIC API.
- * Supports both polling and persistent WebSocket updates.
+ * Hook exposing real-time aggregate grid status, WebSocket-only.
+ *
+ * The REST poll of GET /api/v1/public/grid-status was removed — the
+ * `['grid-status']` key is now a push-only cache written by the effect below,
+ * so there is nothing to fetch or refetch. `refreshIntervalMs` is accepted for
+ * call-site compatibility and ignored; `refresh` is a no-op and `error` never
+ * populates, since a socket that never delivers just leaves `status` null.
  */
-export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
+export function useGridStatus(_refreshIntervalMs = 30000): UseGridStatusResult {
     const queryClient = useQueryClient()
 
-    const { data: status = null, isLoading, error, refetch } = useQuery({
+    // skipToken (not enabled:false) so the missing queryFn is a typed,
+    // deliberate "never fetches" rather than a runtime throw if anything
+    // invalidates this key.
+    const { data: status = null, isLoading, error } = useQuery<GridStatus | null>({
         queryKey: ['grid-status'],
-        queryFn: async () => {
-            const response = await defaultApiClient.getGridStatus()
-            if (response.error) throw new Error(response.error)
-            return response.data || null
-        },
-        refetchInterval: refreshIntervalMs > 0 ? refreshIntervalMs : false,
+        queryFn: skipToken,
     })
 
     // WebSocket updates over the shared public market socket
@@ -91,6 +93,6 @@ export function useGridStatus(refreshIntervalMs = 30000): UseGridStatusResult {
         status,
         isLoading,
         error: error ? (error as Error).message : null,
-        refresh: async () => { await refetch() }
+        refresh: async () => { }
     }
 }

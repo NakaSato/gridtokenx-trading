@@ -136,11 +136,9 @@ export class ApiClient {
   async getMyMeters() { return this.metersApi.getMyMeters() }
   async getMetersMap() { return this.metersApi.getMetersMap() }
   async registerMeter(data: any) { return this.metersApi.registerMeter(data) }
-  async getGridStatus() { return this.metersApi.getGridStatus() }
   async getGridTopology() { return this.metersApi.getGridTopology() }
   async getGridFlows() { return this.metersApi.getGridFlows() }
   async getPublicMeters() { return this.metersApi.getPublicMeters() }
-  async getGridHistory(limit?: number) { return this.metersApi.getGridHistory(limit) }
 
   // ==========================================
   // CARBON CREDITS

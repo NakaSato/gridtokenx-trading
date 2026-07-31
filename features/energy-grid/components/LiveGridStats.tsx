@@ -25,7 +25,7 @@ import { toast } from 'react-hot-toast'
 const READINGS_POLL_MS = 15000
 
 /**
- * Format a possibly-missing numeric field. The grid-status payload is not
+ * Format a possibly-missing numeric field. The grid_status payload is not
  * guaranteed to carry every field (partial WS pushes, older backends), so
  * never call .toLocaleString() on it unguarded.
  */
@@ -78,8 +78,8 @@ const MINT_BADGES: Record<
 }
 
 /**
- * Live grid view, API-only: aggregate grid stats from the public grid-status
- * API (+ gateway WS updates via useGridStatus) and the caller's own meter
+ * Live grid view: aggregate grid stats pushed over the public WS (via
+ * useGridStatus — the grid-status REST poll is gone) and the caller's own meter
  * readings from the meter API. No direct on-chain reads — all blockchain
  * state (mint status, tx signatures) arrives via the backend.
  */
