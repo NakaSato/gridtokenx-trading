@@ -137,7 +137,6 @@ export function useWalletAuth() {
             router.refresh()
           } catch (error: unknown) {
             toast.dismiss('signing-message')
-            console.error('Wallet login failed:', error)
 
             // Reset wallet state so a connected-but-unauthed session doesn't
             // linger (e.g. user rejected the signature).
@@ -150,8 +149,11 @@ export function useWalletAuth() {
             const errorMessage =
               error instanceof Error ? error.message : 'Unknown error'
             if (errorMessage.includes('User rejected')) {
+              // Clicking "cancel" in the wallet is a decision, not a fault —
+              // console.error here trips Next's dev error overlay.
               toast.error('Login cancelled: Signature rejected')
             } else {
+              console.error('Wallet login failed:', error)
               toast.error(`Wallet login failed: ${errorMessage}`)
             }
           }

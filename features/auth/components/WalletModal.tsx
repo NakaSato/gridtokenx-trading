@@ -47,6 +47,10 @@ import { PasswordStrengthMeter } from '@/features/auth/components/PasswordStreng
 import { useAuth } from '@/features/auth/provider'
 import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 import { useResendVerification } from '@/features/auth/lib/useResendVerification'
+import {
+  loginErrorMessage,
+  isExpectedLoginError,
+} from '@/features/auth/lib/login-error'
 import { Spinner } from '@/components/ui/spinner'
 
 export { allWallets }
@@ -54,6 +58,24 @@ export { allWallets }
 interface WalletModalProps {
   isOpen: boolean
   onClose: () => void
+}
+
+/**
+ * Client-side sign-in validation, mirroring IAM's own field limits so an
+ * obviously-malformed attempt never costs a round trip. Returns null when the
+ * fields are worth submitting.
+ */
+function signInFieldError(username: string, password: string): string | null {
+  if (!username || !password) {
+    return 'Enter your username (or email) and password.'
+  }
+  if (username.length < 3 || username.length > 50) {
+    return 'Username must be between 3 and 50 characters.'
+  }
+  if (password.length < 8 || password.length > 128) {
+    return 'Password must be between 8 and 128 characters.'
+  }
+  return null
 }
 
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
@@ -101,26 +123,20 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation
-    if (!username || !password) {
-      toast.error('Please fill in all fields')
-      return
-    }
+    setShowUnverifiedAlert(false)
+    setSignInError(null)
 
-    if (username.length < 3 || username.length > 50) {
-      toast.error('Username must be between 3 and 50 characters')
-      return
-    }
-
-    if (password.length < 8 || password.length > 128) {
-      toast.error('Password must be between 8 and 128 characters')
+    // Pre-flight validation lands in the same inline slot as a server
+    // rejection: one place to look for "why didn't that work", instead of a
+    // toast that disappears while the form is still on screen.
+    const invalid = signInFieldError(username, password)
+    if (invalid) {
+      setSignInError(invalid)
       return
     }
 
     setIsLoading(true)
     try {
-      setShowUnverifiedAlert(false)
-      setSignInError(null)
       const loginData = await login(username, password, rememberMe)
       toast.success(`Welcome back, ${loginData.user.username}!`)
 
@@ -131,16 +147,21 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         router.push('/')
       }, 100)
     } catch (error: unknown) {
-      console.error('Sign in error:', error)
       if (error instanceof ApiClientError && error.code === 'AUTH_1005') {
         // Credentials are right but the email is unverified — show the
         // actionable inline alert instead of the generic failure message.
         setShowUnverifiedAlert(true)
         return
       }
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
-      setSignInError(errorMessage)
+      // Only log what the UI can't explain. A rejected password or an
+      // unverified email is a normal outcome, and console.error on it is not
+      // free in dev: Next's overlay hooks console.error and throws a
+      // full-screen "Console ApiClientError" over a form the user was about
+      // to correct.
+      if (!isExpectedLoginError(error)) {
+        console.error('Unexpected sign-in failure:', error)
+      }
+      setSignInError(loginErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -361,7 +382,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                         Check your inbox for the verification link before
                         signing in.
                       </p>
-                      {canResendVerification && (
+                      {canResendVerification ? (
                         <Button
                           type="button"
                           variant="outline"
@@ -382,6 +403,14 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                             </>
                           )}
                         </Button>
+                      ) : (
+                        // Resending needs an email address; the field above
+                        // accepts a username too. Say so, rather than leaving
+                        // the alert with no way forward.
+                        <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                          Enter your email address above to resend the
+                          verification link.
+                        </p>
                       )}
                     </div>
                   </div>

@@ -82,7 +82,8 @@ describe('WalletModal email sign-in failure', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/sign in failed/i)
-    expect(alert).toHaveTextContent('Invalid username or password')
+    // App-owned copy from loginErrorMessage, not IAM's raw prose.
+    expect(alert).toHaveTextContent('Incorrect username or password.')
     expect(onClose).not.toHaveBeenCalled()
     // Modal content still mounted
     expect(screen.getByLabelText(/username or email/i)).toBeInTheDocument()
@@ -110,5 +111,55 @@ describe('WalletModal email sign-in failure', () => {
     })
     expect(screen.queryByText(/sign in failed/i)).not.toBeInTheDocument()
     expect(onClose).not.toHaveBeenCalled()
+  }, SLOW_UI_TIMEOUT)
+
+  it('does not console.error an outcome it already explains to the user', async () => {
+    // Next's dev overlay hooks console.error, so logging an expected rejection
+    // throws a full-screen "Console ApiClientError" over the form the user was
+    // about to correct.
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    mockLogin.mockRejectedValue(
+      new ApiClientError('Email not verified', 'AUTH_1005', 403)
+    )
+    render(<WalletModal isOpen={true} onClose={jest.fn()} />)
+
+    await submitSignIn()
+    await screen.findByText(/isn't verified yet/i)
+
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  }, SLOW_UI_TIMEOUT)
+
+  it('still logs a failure the UI cannot explain', async () => {
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    mockLogin.mockRejectedValue(new TypeError('r.map is not a function'))
+    render(<WalletModal isOpen={true} onClose={jest.fn()} />)
+
+    await submitSignIn()
+    await screen.findByRole('alert')
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Unexpected sign-in failure:',
+      expect.any(TypeError)
+    )
+    consoleError.mockRestore()
+  }, SLOW_UI_TIMEOUT)
+
+  it('reports a too-short username inline instead of a vanishing toast', async () => {
+    const user = userEvent.setup()
+    render(<WalletModal isOpen={true} onClose={jest.fn()} />)
+
+    await user.type(screen.getByLabelText(/username or email/i), 'ab')
+    await user.type(screen.getByLabelText(/^password$/i), 'password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /between 3 and 50 characters/i
+    )
+    expect(mockLogin).not.toHaveBeenCalled()
   }, SLOW_UI_TIMEOUT)
 })

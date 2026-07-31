@@ -8,6 +8,10 @@ import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 import WalletList from '@/features/auth/components/WalletList'
 import { allWallets } from '@/features/auth/components/WalletModal'
 import { ApiClientError } from '@/lib/api/core'
+import {
+  loginErrorMessage,
+  isExpectedLoginError,
+} from '@/features/auth/lib/login-error'
 import { useResendVerification } from '@/features/auth/lib/useResendVerification'
 
 export default function LoginPage() {
@@ -54,8 +58,12 @@ export default function LoginPage() {
         setShowUnverifiedAlert(true)
         return
       }
-      const message = error instanceof Error ? error.message : 'Sign in failed'
-      setSignInError(message)
+      // Expected rejections are already spelled out inline; only log what the
+      // UI can't explain, so a real defect isn't buried under failed logins.
+      if (!isExpectedLoginError(error)) {
+        console.error('Unexpected sign-in failure:', error)
+      }
+      setSignInError(loginErrorMessage(error))
     } finally {
       setLoading(false)
     }
