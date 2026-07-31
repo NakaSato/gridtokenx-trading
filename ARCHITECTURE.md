@@ -140,9 +140,13 @@ it to `ApiClient`. A proactive timer refreshes the token before expiry
 4. **Non-custodial signing.** Transaction signing happens in the user's wallet extension via the
    adapter — the app holds no private keys. The only secret it persists is the backend JWT (in web
    storage). Don't log it or move keys client-side beyond the adapter.
-5. **WASM is required for crypto/pricing.** `lib/wasm` ships the prebuilt module; rebuild with
-   `bun run build:wasm` (compiles the in-repo `wasm/` crate). `next.config.ts` enables
-   `asyncWebAssembly` and stubs `fs`/`path` on the client.
+5. **WASM is required for crypto/pricing.** `lib/wasm` and `lib/wasm-zk` ship the prebuilt
+   modules; rebuild with `bun run build:wasm` (`scripts/build-wasm.mjs:1`, compiles the in-repo
+   `wasm/` and `wasm-zk/` crates) and commit the output. Those committed artifacts are the
+   fallback the script uses when `wasm-pack` is unavailable, which is what lets a host with no
+   Rust toolchain build the app; with neither toolchain nor artifacts it exits 1 rather than
+   emitting a broken bundle. `next.config.ts` enables `asyncWebAssembly` and stubs `fs`/`path`
+   on the client.
 6. **Standalone build.** `output: 'standalone'` (Dockerfile-friendly); image domains are
    allow-listed in `next.config.ts`. Bundle size is guarded by `scripts/check-bundle-size.js`
    (`bun run check:bundle`).
@@ -168,7 +172,7 @@ bun run test             # jest (jsdom unit tests)
 bun run test:watch       # jest --watch
 bun run test:coverage    # jest --coverage
 bun run test:e2e         # playwright test
-bun run build:wasm       # build the in-repo wasm/ crate into lib/wasm
+bun run build:wasm       # build wasm/ → lib/wasm and wasm-zk/ → lib/wasm-zk
 bun run analyze          # ANALYZE=true next build (bundle analyzer)
 bun run check:bundle     # scripts/check-bundle-size.js
 bun run clean            # rm -rf .next

@@ -21,12 +21,12 @@ Tailwind 3 + shadcn/ui (`@/*` alias → repo root).
 
 ```bash
 bun run dev              # next dev --turbopack (or: just dev)
-bun run build            # build:wasm THEN next build (output: 'standalone') — always recompiles wasm
+bun run build            # build:wasm THEN next build (output: 'standalone')
 bun run lint             # eslint .
 bun run format           # prettier --write .
 bun run test             # jest unit tests (jsdom)
 bun run test:e2e         # playwright e2e
-bun run build:wasm       # rebuild lib/wasm from the in-repo wasm/ crate
+bun run build:wasm       # rebuild lib/wasm + lib/wasm-zk from the in-repo crates
 bun run check:bundle     # scripts/check-bundle-size.js (bundle-size guard)
 ```
 
@@ -63,9 +63,13 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
   `lib/ws/useWsChannel.ts`. Price candles stream separately from Pyth/TradingView
   (`lib/streaming.ts`).
 - **WASM is required for crypto/pricing.** `lib/wasm/` ships a prebuilt module (order-book/auction
-  sim, Black-Scholes + Greeks, risk, ZK/stealth helpers) compiled from the in-repo
-  `wasm/` crate. Rebuild with `bun run build:wasm` after changing that crate.
-  `next.config.ts` enables `asyncWebAssembly` and stubs `fs`/`path` on the client.
+  sim, Black-Scholes + Greeks, risk) compiled from the in-repo `wasm/` crate; ZK/stealth helpers
+  live in `lib/wasm-zk/` from `wasm-zk/`. Rebuild with `bun run build:wasm` after changing either
+  crate — **and commit the regenerated output**, because the build artifacts are checked in on
+  purpose: `scripts/build-wasm.mjs` falls back to them when `wasm-pack` is absent, which is the
+  only reason a Rust-less deploy host (Vercel) can build this app at all. It fails loudly if the
+  toolchain *and* the artifacts are both missing. `next.config.ts` enables `asyncWebAssembly` and
+  stubs `fs`/`path` on the client.
 - **Feature modules are the unit of organisation.** Code lives in `features/<name>/`
   (`auth`, `trading`, `p2p`, `energy-grid`, `meter`, `portfolio`, `wallet`, `privacy`,
   `notifications`), each owning its `components/`, `hooks/`, `lib/` and tests. Only genuinely

@@ -11,7 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "build:wasm": "bun run build:wasm:main && bun run build:wasm:zk",
+    "build:wasm": "node scripts/build-wasm.mjs",
     "build:wasm:main": "cd wasm && PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir ../lib/wasm --out-name main && cp ../lib/wasm/main_bg.wasm ../public/main.wasm && rm -f ../lib/wasm/.gitignore",
     "build:wasm:zk": "cd wasm-zk && PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir ../lib/wasm-zk --out-name zk && rm -f ../lib/wasm-zk/.gitignore",
     "format": "prettier --write .",
