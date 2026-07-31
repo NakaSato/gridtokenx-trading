@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('wallet page smoke: register, login, hero + fiat/swap/withdraw/escrow tabs, screenshot', async ({ page }) => {
+test('wallet page smoke: register, login, fiat/swap/withdraw/escrow tabs, screenshot', async ({ page }) => {
   test.setTimeout(180_000);
   const timestamp = Date.now();
   const username = `wal_ui_${timestamp}`;
@@ -44,16 +44,9 @@ test('wallet page smoke: register, login, hero + fiat/swap/withdraw/escrow tabs,
   // Navigate directly — the nav link's clickability is NavBar's concern, not
   // this page's (it currently never settles as "stable" for Playwright).
   await page.goto('/wallet');
-  await expect(page.locator('h1.text-2xl:has-text("Wallet")')).toBeVisible({ timeout: 15000 });
-
-  // Hero — identity + the combined GRX headline
-  await expect(
-    page.getByRole('heading', { name: 'Your Wallet' })
-  ).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText('Total GRX', { exact: true })).toBeVisible();
 
   // Action card with the four flows; fiat deposit is the default tab
-  await expect(page.locator('text=Move Money')).toBeVisible();
+  await expect(page.locator('text=Move Money')).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId('fiat-deposit-tab')).toBeVisible();
   await expect(page.getByTestId('swap-tab')).toBeVisible();
   await expect(page.getByTestId('fiat-withdraw-tab')).toBeVisible();

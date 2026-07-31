@@ -91,22 +91,15 @@ const NAV_ITEMS: NavItem[] = [
     badge: { text: 'NEW', variant: 'new' },
   },
   {
-    name: 'Smart Meter',
-    href: '/meter',
-    icon: <Activity size={16} />,
-    badge: { text: 'BETA', variant: 'beta' },
-    requiresAuth: true,
-  },
-  {
     name: 'Futures',
     href: '/futures',
     icon: <TrendingUp size={16} />,
     badge: { text: 'BETA', variant: 'beta' },
   },
   {
-    name: 'Portfolio',
-    href: '/portfolio',
-    icon: <WalletIcon />,
+    name: 'Wallet',
+    href: '/wallet',
+    icon: <ArrowDownUp size={16} />,
     requiresAuth: true,
     hideOnMobile: true,
   },
@@ -118,11 +111,18 @@ const NAV_ITEMS: NavItem[] = [
     hideOnMobile: true,
   },
   {
-    name: 'Wallet',
-    href: '/wallet',
-    icon: <ArrowDownUp size={16} />,
+    name: 'Portfolio',
+    href: '/portfolio',
+    icon: <WalletIcon />,
     requiresAuth: true,
     hideOnMobile: true,
+  },
+  {
+    name: 'Smart Meter',
+    href: '/meter',
+    icon: <Activity size={16} />,
+    badge: { text: 'BETA', variant: 'beta' },
+    requiresAuth: true,
   },
 ]
 
