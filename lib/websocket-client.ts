@@ -22,6 +22,15 @@ export type WebSocketMessageType =
   // Emitted on the trades channel when a trade settles. Was previously only
   // observed via a raw socket in SocketContext, so it never reached this union.
   | 'trade_executed'
+  // /ws/trading emits these around every match, and they CONSUME SEQUENCE
+  // NUMBERS. Verified live on 2026-07-31, one trade produced:
+  //   order_created 22 · order_created 23 · order_matched 24 · order_update 25,26
+  // Leaving them out of the union did not stop the server sending them — it only
+  // stopped `useSequencedChannel` from seeing them, so a subscriber filtering to
+  // `order_matched` observed 24 then ~30, read the jump as a dropped frame, and
+  // resynced on every single trade.
+  | 'order_created'
+  | 'order_update'
   // Sequenced market data from /ws/trading. These names are the gateway's wire
   // contract, declared in `routable()` in crates/trading-api/src/websocket.rs —
   // they are deliberately decoupled from the Rust `Event` variant names, so

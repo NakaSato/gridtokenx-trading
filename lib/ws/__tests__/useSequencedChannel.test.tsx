@@ -170,4 +170,52 @@ describe('useSequencedChannel', () => {
         expect(result.current.seqByZone).toEqual({ 1: 5 })
         expect(result.current.gapCount).toBe(0)
     })
+
+    it('does not resync when OTHER sequenced types consume the numbers', async () => {
+        // The real /ws/trading stream around one match (captured live 2026-07-31):
+        //   order_created 22 · order_created 23 · order_matched 24 · order_update 25,26
+        // A subscriber filtering to order_matched used to see 24 then ~30 next trade,
+        // read the jump as dropped frames, and resync on EVERY trade — which is what
+        // made Recent Trades depend on a manual page refresh.
+        const seen: SequencedFrame[] = []
+        renderHook(
+            () =>
+                useSequencedChannel({
+                    messageTypes: ['order_matched'],
+                    snapshotKey: SNAPSHOT_KEY,
+                    onFrame: (f) => seen.push(f),
+                }),
+            { wrapper }
+        )
+        invalidateSpy.mockClear()
+
+        fire(frame(1, 22, 'order_created'))
+        fire(frame(1, 23, 'order_created'))
+        fire(frame(1, 24, 'order_matched'))
+        fire(frame(1, 25, 'order_update'))
+        fire(frame(1, 26, 'order_update'))
+        // Next trade continues the same unbroken run.
+        fire(frame(1, 27, 'order_created'))
+        fire(frame(1, 28, 'order_matched'))
+
+        // Only the subscribed type reaches the callback...
+        expect(seen.map((f) => f.seq)).toEqual([24, 28])
+        // ...and no gap was ever declared, so no resync churn.
+        expect(invalidateSpy).not.toHaveBeenCalled()
+    })
+
+    it('still resyncs on a genuine gap in the full stream', async () => {
+        renderHook(
+            () =>
+                useSequencedChannel({
+                    messageTypes: ['order_matched'],
+                    snapshotKey: SNAPSHOT_KEY,
+                }),
+            { wrapper }
+        )
+        invalidateSpy.mockClear()
+        fire(frame(1, 10, 'order_created'))
+        fire(frame(1, 14, 'order_matched')) // 11-13 genuinely missing
+        await waitFor(() => expect(invalidateSpy).toHaveBeenCalled())
+    })
 })

@@ -81,6 +81,22 @@ export interface UseSequencedChannelResult {
   resyncing: boolean
 }
 
+/**
+ * Every type `/ws/trading` emits that advances the per-zone sequence. The tracker
+ * subscribes to all of them so continuity is judged on the real stream; a
+ * subscriber's `messageTypes` only decides which frames reach its callback.
+ *
+ * Keep in step with the server's emitter — a sequenced type missing here reads as
+ * a permanent gap and resyncs on every occurrence.
+ */
+const SEQUENCED_MESSAGE_TYPES: WebSocketMessageType[] = [
+  'order_created',
+  'order_matched',
+  'order_update',
+  'order_filled',
+  'order_cancelled',
+]
+
 export function useSequencedChannel<T = unknown>(
   options: UseSequencedChannelOptions<T>
 ): UseSequencedChannelResult {
@@ -135,6 +151,15 @@ export function useSequencedChannel<T = unknown>(
   useEffect(() => {
     if (!client || !enabled) return
 
+    // `wanted` are the types this subscriber cares about. The sequence itself is
+    // per zone and spans EVERY type the channel emits, so the tracker must see
+    // them all: judging continuity from a filtered subset reads the numbers other
+    // types consumed as dropped frames. Observed live — a subscriber filtering to
+    // `order_matched` saw seq 24 then ~30 and resynced on every trade.
+    const wanted = new Set(
+      typesKey ? (typesKey.split(',') as WebSocketMessageType[]) : []
+    )
+
     const handler = (message: WebSocketMessage<unknown>) => {
       const frame = message as unknown as SequencedFrame<T>
       if (typeof frame.seq !== 'number' || typeof frame.zone_id !== 'number') return
@@ -142,6 +167,7 @@ export function useSequencedChannel<T = unknown>(
       // Defensive: in single-zone mode the gateway already scopes the socket.
       if (zoneId !== undefined && frame.zone_id !== zoneId) return
 
+      const isWanted = wanted.has(frame.type as WebSocketMessageType)
       const known = seqRef.current.get(frame.zone_id)
 
       if (known !== undefined && frame.seq !== known + 1) {
@@ -156,13 +182,18 @@ export function useSequencedChannel<T = unknown>(
       // to — that is the outbox race — so there is nothing to check it against.
       seqRef.current.set(frame.zone_id, frame.seq)
       setSeqByZone(Object.fromEntries(seqRef.current))
-      onFrameRef.current?.(frame)
+      // Sequence advances on every frame; the callback only fires for the types
+      // this subscriber asked for.
+      if (isWanted) onFrameRef.current?.(frame)
     }
 
     // Sent when the gateway drops our backlog rather than buffering it.
     const resyncHandler = () => resync('gateway reported lag')
 
-    const types = typesKey ? (typesKey.split(',') as WebSocketMessageType[]) : []
+    // Register on every SEQUENCED type, not just the wanted ones — the handler
+    // needs to see the frames that consume sequence numbers or it cannot tell a
+    // real gap from a filtered-out frame. `wanted` still gates the callback.
+    const types = SEQUENCED_MESSAGE_TYPES
     types.forEach((t) => client.on(t, handler as WebSocketEventHandler))
     client.on('resync', resyncHandler as WebSocketEventHandler)
 
