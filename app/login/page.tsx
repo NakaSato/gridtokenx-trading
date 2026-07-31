@@ -17,7 +17,8 @@ import { useResendVerification } from '@/features/auth/lib/useResendVerification
 export default function LoginPage() {
   const router = useRouter()
   const { login, isAuthenticated, isLoading: authLoading } = useAuth()
-  const { connectAndLogin, isConnecting } = useWalletAuth()
+  const { connectAndLogin, isConnecting, walletLoginSupported } =
+    useWalletAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -77,26 +78,39 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Sign in to continue</p>
         </div>
 
-        {/* Connect a Solana wallet — Phantom / Solflare / Trust / SafePal */}
-        <div className="space-y-3">
-          <p className="text-center text-sm font-medium">Connect your wallet</p>
-          <WalletList
-            wallets={allWallets}
-            onWalletConnect={connectAndLogin}
-            className="grid grid-cols-2 gap-3"
-          />
-        </div>
+        {/* A wallet can't open a session yet — offering the grid here just
+            leads to a signature prompt that ends in a 501. Say what the wallet
+            is actually for instead. */}
+        {walletLoginSupported ? (
+          <>
+            <div className="space-y-3">
+              <p className="text-center text-sm font-medium">
+                Connect your wallet
+              </p>
+              <WalletList
+                wallets={allWallets}
+                onWalletConnect={connectAndLogin}
+                className="grid grid-cols-2 gap-3"
+              />
+            </div>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-card px-2 text-muted-foreground">
-              Or sign in with email
-            </span>
-          </div>
-        </div>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or sign in with email
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="rounded-md border border-border bg-muted/40 p-3 text-center text-xs text-muted-foreground">
+            Accounts are email and password. Your Solana wallet connects after
+            sign-in, for signing transactions.
+          </p>
+        )}
 
         {showUnverifiedAlert && (
           <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm">

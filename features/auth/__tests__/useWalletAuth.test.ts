@@ -1,7 +1,18 @@
 import { renderHook, act } from '@testing-library/react'
+import toast from 'react-hot-toast'
 import { useWalletAuth } from '@/features/auth/lib/useWalletAuth'
 
 // --- mocks -----------------------------------------------------------------
+
+// Toggled per-describe: false is today's reality (IAM has no wallet-verify
+// endpoint), true covers the signing path that ships with it.
+let mockWalletLoginSupported = false
+jest.mock('@/lib/api/auth', () => ({
+  get WALLET_LOGIN_SUPPORTED() {
+    return mockWalletLoginSupported
+  },
+  WALLET_LOGIN_UNSUPPORTED_MESSAGE: 'wallet login unsupported',
+}))
 
 const mockSelect = jest.fn()
 const mockLoginWithWallet = jest.fn()
@@ -71,6 +82,7 @@ const makeWallet = (
 beforeEach(() => {
   jest.clearAllMocks()
   mockWallets = []
+  mockWalletLoginSupported = false
   mockAuthState = { user: null, isAuthenticated: false }
   jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
   ;(global as any).window = global.window || {}
@@ -81,7 +93,34 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
-describe('useWalletAuth — signed-out login flow', () => {
+describe('useWalletAuth — signed out, wallet login unsupported', () => {
+  it('never connects or prompts for a signature it cannot redeem', async () => {
+    const wallet = makeWallet('Phantom')
+    mockWallets = [wallet]
+
+    const { result } = renderHook(() => useWalletAuth())
+    await act(async () => {
+      await result.current.connectAndLogin('Phantom')
+    })
+
+    expect(mockSelect).not.toHaveBeenCalled()
+    expect(wallet.adapter.connect).not.toHaveBeenCalled()
+    expect(wallet.adapter.signMessage).not.toHaveBeenCalled()
+    expect(mockLoginWithWallet).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledWith('wallet login unsupported')
+  })
+
+  it('reports the capability so callers can hide the wallet grid', () => {
+    const { result } = renderHook(() => useWalletAuth())
+    expect(result.current.walletLoginSupported).toBe(false)
+  })
+})
+
+describe('useWalletAuth — signed-out login flow (endpoint available)', () => {
+  beforeEach(() => {
+    mockWalletLoginSupported = true
+  })
+
   it.each(['Phantom', 'Solflare', 'Trust', 'SafePal'])(
     'signs a challenge and calls loginWithWallet for %s',
     async (walletName) => {
@@ -145,6 +184,9 @@ describe('useWalletAuth — signed-in linking flow', () => {
 
 describe('useWalletAuth — not installed', () => {
   it('opens the install page and never connects', async () => {
+    // Signed in, so the flow gets past the wallet-login capability gate and
+    // reaches the readyState check.
+    mockAuthState = { user: { id: 'u1' }, isAuthenticated: true }
     const wallet = makeWallet('Phantom', { readyState: 'Unsupported' })
     mockWallets = [wallet]
 

@@ -11,6 +11,19 @@ import type {
   ResendVerificationResponse,
 } from '@/types/auth'
 
+/**
+ * Whether the backend can turn a wallet signature into a session. IAM exposes
+ * no such endpoint today (see `verifyWalletSignature` below), so the UI reads
+ * this instead of discovering it from a 501 *after* making the user sign — the
+ * wallet is for transaction signing, not for logging in. Flip to `true` in one
+ * place when `/api/v1/auth/wallet/verify` ships.
+ */
+export const WALLET_LOGIN_SUPPORTED: boolean = false
+
+/** Shown wherever a wallet is offered as a way in. */
+export const WALLET_LOGIN_UNSUPPORTED_MESSAGE =
+  'Wallet sign-in isn’t available yet — sign in with your email and password.'
+
 export class AuthApi {
   constructor(private getToken: () => string | undefined) { }
 

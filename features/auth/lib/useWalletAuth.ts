@@ -6,6 +6,10 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import toast from 'react-hot-toast'
 import bs58 from 'bs58'
 import { useAuth } from '@/features/auth/provider'
+import {
+  WALLET_LOGIN_SUPPORTED,
+  WALLET_LOGIN_UNSUPPORTED_MESSAGE,
+} from '@/lib/api/auth'
 
 // Wallet-name → install URL for the adapters wired in connectionprovider.tsx.
 const WALLET_INSTALL_URLS: Record<string, string> = {
@@ -17,13 +21,16 @@ const WALLET_INSTALL_URLS: Record<string, string> = {
 
 /**
  * Connect-and-authenticate flow for Solana wallets, shared by WalletModal and the
- * /login page. Backed by the backend JWT path (loginWithWallet →
- * /api/v1/auth/wallet/verify).
+ * /login page.
  *
  * - If the user is already authenticated, the connected wallet is *linked* to
- *   their account (updateWallet).
- * - Otherwise the wallet signs a timestamped message and we exchange the
- *   signature for a JWT (loginWithWallet).
+ *   their account (updateWallet). This is the only branch live today.
+ * - Otherwise the wallet would sign a timestamped message and we'd exchange the
+ *   signature for a JWT (loginWithWallet) — gated behind
+ *   WALLET_LOGIN_SUPPORTED, which is false until IAM grows
+ *   /api/v1/auth/wallet/verify. Note the challenge below is a client-chosen
+ *   timestamp with no server nonce; make it a server-issued nonce before
+ *   turning the flag on.
  *
  * Wallet-agnostic: works for Phantom / Solflare / Trust / SafePal (any adapter
  * registered in connectionprovider.tsx) — it keys off the adapter name only.
@@ -37,6 +44,15 @@ export function useWalletAuth() {
   const connectAndLogin = useCallback(
     async (walletName: string): Promise<void> => {
       if (isConnecting) return
+
+      // Signed out with no wallet-login endpoint: connecting and asking for a
+      // signature can only end in a rejection the user can't act on, so stop
+      // before the extension pops up at all. (Signed in, the same click still
+      // links the wallet to the account — that path does work.)
+      if (!user && !isAuthenticated && !WALLET_LOGIN_SUPPORTED) {
+        toast.error(WALLET_LOGIN_UNSUPPORTED_MESSAGE)
+        return
+      }
 
       setIsConnecting(true)
 
@@ -182,5 +198,9 @@ export function useWalletAuth() {
     [isConnecting, wallets, select, user, isAuthenticated, updateWallet, loginWithWallet, router]
   )
 
-  return { connectAndLogin, isConnecting }
+  return {
+    connectAndLogin,
+    isConnecting,
+    walletLoginSupported: WALLET_LOGIN_SUPPORTED,
+  }
 }

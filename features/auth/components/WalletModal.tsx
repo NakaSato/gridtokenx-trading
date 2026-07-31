@@ -81,13 +81,13 @@ function signInFieldError(username: string, password: string): string | null {
 export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
   const router = useRouter()
   const { login, isLoading: authLoading, isAuthenticated } = useAuth()
-  const { connectAndLogin } = useWalletAuth()
-  // Default to email sign-in: IAM has no wallet-signature login endpoint
-  // (verifyWalletSignature 501s locally), so the wallet tab can only link a
-  // wallet to an already-authenticated session.
-  const [authMode, setAuthMode] = useState<'wallet' | 'signin' | 'signup'>(
-    'signin'
-  )
+  const { connectAndLogin, walletLoginSupported } = useWalletAuth()
+  // Email only: IAM has no wallet-signature login endpoint
+  // (verifyWalletSignature 501s locally), and this modal is a signed-out
+  // surface — it closes itself once authenticated — so there is no session for
+  // a wallet to attach to here. The wallet grid stays gated on
+  // walletLoginSupported below.
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
 
   // Email/Password form states
   const [email, setEmail] = useState('')
@@ -330,18 +330,12 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
         <DialogHeader className="flex h-fit flex-row items-start justify-between space-y-0 pb-4 md:h-auto md:pb-2">
           <div className="space-y-2 pr-2">
             <DialogTitle className="text-xl font-medium text-foreground sm:text-2xl">
-              {authMode === 'wallet'
-                ? 'Connect Wallet'
-                : authMode === 'signin'
-                  ? 'Sign In'
-                  : 'Sign Up'}
+              {authMode === 'signin' ? 'Sign In' : 'Sign Up'}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {authMode === 'wallet'
-                ? 'Connect your Solana wallet to start trading'
-                : authMode === 'signin'
-                  ? 'Sign in to your account with email and password'
-                  : 'Create a new account to get started'}
+              {authMode === 'signin'
+                ? 'Sign in to your account with email and password'
+                : 'Create a new account to get started'}
             </DialogDescription>
           </div>
           <Button
@@ -352,22 +346,7 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
           </Button>
         </DialogHeader>
 
-        {authMode === 'wallet' ? (
-          <div className="flex w-full flex-col justify-between space-y-5">
-            <WalletList
-              wallets={allWallets}
-              onWalletConnect={connectAndLogin}
-            />
-            <div className="text-center">
-              <button
-                onClick={() => setAuthMode('signin')}
-                className="text-sm font-medium text-secondary-foreground transition-colors hover:text-primary"
-              >
-                Or sign in with email →
-              </button>
-            </div>
-          </div>
-        ) : authMode === 'signin' ? (
+        {authMode === 'signin' ? (
           <div className="w-full">
             <>
               {showUnverifiedAlert && (
@@ -518,26 +497,37 @@ export default function WalletModal({ isOpen, onClose }: WalletModalProps) {
                 </Button>
               </form>
 
-              <div className="mt-6">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <Separator />
+              {walletLoginSupported ? (
+                <>
+                  <div className="mt-6">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator />
+                      </div>
+                      <div className="relative flex justify-center text-xs">
+                        <span className="bg-accent px-2 text-muted-foreground">
+                          Or continue with
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-accent px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="mt-6">
-                <WalletList
-                  wallets={allWallets}
-                  onWalletConnect={connectAndLogin}
-                  className="grid grid-cols-3 gap-3"
-                />
-              </div>
+                  <div className="mt-6">
+                    <WalletList
+                      wallets={allWallets}
+                      onWalletConnect={connectAndLogin}
+                      className="grid grid-cols-3 gap-3"
+                    />
+                  </div>
+                </>
+              ) : (
+                // No wallet grid while wallet login is unsupported: it reads as
+                // "continue with Phantom" and can only dead-end.
+                <p className="mt-6 text-center text-xs text-muted-foreground">
+                  Connect your Solana wallet after signing in — it signs
+                  transactions, not sessions.
+                </p>
+              )}
 
               <div className="mt-6 border-t border-border pt-6">
                 <p className="text-center text-sm text-secondary-foreground">

@@ -36,7 +36,11 @@ jest.mock('@/features/auth/provider', () => ({
 }))
 
 jest.mock('@/features/auth/lib/useWalletAuth', () => ({
-  useWalletAuth: () => ({ connectAndLogin: jest.fn(), isConnecting: false }),
+  useWalletAuth: () => ({
+    connectAndLogin: jest.fn(),
+    isConnecting: false,
+    walletLoginSupported: false,
+  }),
 }))
 
 jest.mock('@/features/auth/lib/useResendVerification', () => ({
