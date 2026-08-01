@@ -136,6 +136,7 @@ export class ApiClient {
   async getMyMeters() { return this.metersApi.getMyMeters() }
   async getMetersMap() { return this.metersApi.getMetersMap() }
   async registerMeter(data: any) { return this.metersApi.registerMeter(data) }
+  async verifyMeter(serial: string) { return this.metersApi.verifyMeter(serial) }
   async getGridTopology() { return this.metersApi.getGridTopology() }
   async getGridFlows() { return this.metersApi.getGridFlows() }
   async getPublicMeters() { return this.metersApi.getPublicMeters() }

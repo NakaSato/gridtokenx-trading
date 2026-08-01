@@ -29,7 +29,9 @@ import { PriceInput } from '@/features/p2p/components/order-form/PriceInput'
 import { OrderSummary } from '@/features/p2p/components/order-form/OrderSummary'
 import { SubmitButton } from '@/features/p2p/components/order-form/SubmitButton'
 import { FeedbackMessage } from '@/components/shared/FeedbackMessage'
+import { UnverifiedMeterNotice } from '@/features/p2p/components/order-form/UnverifiedMeterNotice'
 import { meterSerialFromNode } from '@/features/p2p/components/order-form/meterId'
+import { useSellEligibility } from '@/features/meter/hooks/useSellEligibility'
 
 interface OrderFormProps {
   onOrderPlaced?: () => void
@@ -63,6 +65,11 @@ const OrderForm = React.memo(function OrderForm({
   // warning and market-order estimate don't go stale.
   const { bestBid, bestAsk } = useP2PBestPrices(token ?? undefined)
   const { activeOrderFill, setActiveOrderFill } = useOrderFill()
+  // Trading refuses a sell (403) from a user with no verified meter. Mirror the
+  // rule here to explain the block up front rather than after a failed submit —
+  // the server stays the authority, and this fails open (see the hook).
+  const { canSell, hasUnverifiedMetersOnly, hasNoMeters } = useSellEligibility()
+  const sellBlocked = orderType === 'sell' && !canSell
 
   const {
     data: balanceData,
@@ -189,6 +196,17 @@ const OrderForm = React.memo(function OrderForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Belt-and-braces alongside the disabled submit button: the server would
+    // refuse this anyway, but a 403 toast is a worse explanation than the notice
+    // already on screen.
+    if (sellBlocked) {
+      setMessage(
+        hasNoMeters
+          ? 'Register and verify a smart meter before selling energy.'
+          : 'Verify your smart meter before selling energy.'
+      )
+      return
+    }
     if (!amount || parseFloat(amount) <= 0) {
       setMessage('Please enter a valid amount')
       return
@@ -336,6 +354,13 @@ const OrderForm = React.memo(function OrderForm({
               onClearNode={onClearNode}
             />
 
+            {orderType === 'sell' && (
+              <UnverifiedMeterNotice
+                hasUnverifiedMetersOnly={hasUnverifiedMetersOnly}
+                hasNoMeters={hasNoMeters}
+              />
+            )}
+
             <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
               <ZoneSelector
                 orderType={orderType as 'buy' | 'sell'}
@@ -383,7 +408,9 @@ const OrderForm = React.memo(function OrderForm({
                 total={orderTotal}
                 resting={!!fillWarning}
                 cryptoLoaded={cryptoLoaded}
-                disabled={loading || !amount || parseFloat(amount) <= 0}
+                disabled={
+                  loading || !amount || parseFloat(amount) <= 0 || sellBlocked
+                }
               />
 
               <FeedbackMessage message={message} isSuccess={false} />
