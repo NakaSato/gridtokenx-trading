@@ -193,3 +193,29 @@ export interface RegisterMeterResponse {
     message: string
     meter?: MeterResponse
 }
+
+/**
+ * Evidence a verification decision rested on. `attested_readings` counts the
+ * readings from this meter whose device signature the Aggregator Bridge accepted
+ * within `window_hours` — zero is why a verification is refused.
+ */
+export interface MeterAttestation {
+    attested_readings: number
+    window_hours: number
+}
+
+/**
+ * Response of POST /api/v1/me/meters/{serial}/verify.
+ *
+ * Registering a meter only CLAIMS a serial (`is_verified: false`); this proves
+ * possession against signed telemetry the bridge already accepted. Until it
+ * succeeds the trading service refuses the owner's sell orders with 403.
+ */
+export interface VerifyMeterResponse {
+    success: boolean
+    message: string
+    /** True when the meter was already verified and the call changed nothing. */
+    already_verified: boolean
+    attestation: MeterAttestation
+    meter?: MeterResponse
+}

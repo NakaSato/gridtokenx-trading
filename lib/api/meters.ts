@@ -10,7 +10,8 @@ import type {
     MeterResponse,
     MeterMapPoint,
     RegisterMeterResponse,
-    MeterStats
+    MeterStats,
+    VerifyMeterResponse
 } from '@/types/meter'
 
 /** Raw meter shape returned by the GLM bus-network simulator's public endpoint. */
@@ -133,6 +134,29 @@ export class MetersApi {
             body: data,
             token: this.getToken(),
         })
+    }
+
+    /**
+     * Prove possession of a registered meter so its owner may open sell orders.
+     *
+     * Registration only CLAIMS a serial — the meter lands unverified, and the
+     * trading service refuses a sell (403) from a user with no verified meter.
+     * The backend passes this when the Aggregator Bridge has already accepted at
+     * least one Ed25519-signed reading from the device, so it is the *device*
+     * that gets verified, not the session; a meter that has never reported is
+     * refused with 409 and a message naming the reason.
+     *
+     * Idempotent: verifying an already-verified meter succeeds with
+     * `already_verified: true`.
+     */
+    async verifyMeter(serial: string): Promise<ApiResponse<VerifyMeterResponse>> {
+        return apiRequest<VerifyMeterResponse>(
+            `/api/v1/me/meters/${encodeURIComponent(serial)}/verify`,
+            {
+                method: 'POST',
+                token: this.getToken(),
+            }
+        )
     }
 
     // Minting is server-side only: the Aggregator Bridge mints surplus per 15-min
