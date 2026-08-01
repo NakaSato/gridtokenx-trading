@@ -3,6 +3,8 @@ import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/features/auth/provider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { useProfile } from '@/features/portfolio/hooks/usePortfolio'
+import { queryKeys } from '@/lib/query/keys'
+import { BALANCE_POLL_MS } from '@/features/wallet/lib/balance-poll'
 import type { TokenBalance } from '@/types/auth'
 
 /**
@@ -20,10 +22,15 @@ export function useWalletBalance() {
   // one stored as their DB profile.wallet_address, and showing the DB address's
   // balance instead is misleading (looks like "my wallet has 0" when the
   // connected one doesn't).
-  const walletAddress = publicKey?.toString() || profile?.wallet_address
+  // Normalized to undefined: profile.wallet_address is nullable, and a null in
+  // the key would not match the undefined the other two balance hooks pass.
+  const walletAddress = publicKey?.toString() || profile?.wallet_address || undefined
 
   return useQuery<TokenBalance>({
-    queryKey: ['wallet-balance', token, walletAddress],
+    // Shared with useUserBalance and usePortfolio's useWalletBalance. Was a
+    // hand-written ['wallet-balance', token, address] key, which meant the same
+    // balance sat in two cache entries and was polled twice.
+    queryKey: queryKeys.wallet.balance(walletAddress),
     queryFn: async () => {
       if (!token) throw new Error('Authentication required')
       if (!walletAddress) throw new Error('Wallet address required')
@@ -37,6 +44,6 @@ export function useWalletBalance() {
       return response.data
     },
     enabled: !!token && !!walletAddress,
-    refetchInterval: 10000, // Balance refreshes more frequently
+    refetchInterval: BALANCE_POLL_MS,
   })
 }

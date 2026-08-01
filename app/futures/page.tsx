@@ -1,11 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import TradingViewTopNav from '@/features/trading/components/TradingViewTopNav'
 import { useAuth } from '@/features/auth/provider'
-import { createApiClient } from '@/lib/api-client'
-import { FuturesProduct, FuturesPosition, OrderBook } from '@/types/futures'
+import {
+  useFuturesOrderBook,
+  useFuturesPositions,
+  useFuturesProducts,
+} from '@/features/trading/hooks/useFutures'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -44,65 +47,42 @@ const TradeHistory = dynamic(
 )
 
 export default function FuturesPage() {
-  const { token, isAuthenticated } = useAuth()
-  const [products, setProducts] = useState<FuturesProduct[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<FuturesProduct | null>(
-    null
+  const { isAuthenticated } = useAuth()
+
+  // Products (public) and positions (session-scoped) are separate queries, so
+  // an anonymous visitor still gets live marks. See features/trading/hooks/useFutures.ts.
+  const productsQuery = useFuturesProducts()
+  const positionsQuery = useFuturesPositions()
+
+  const products = useMemo(
+    () => productsQuery.data ?? [],
+    [productsQuery.data]
   )
-  const [positions, setPositions] = useState<FuturesPosition[]>([])
-  const [orderBook, setOrderBook] = useState<OrderBook | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  const fetchMarketData = useCallback(async () => {
-    try {
-      const api = createApiClient(token ?? undefined)
-      // Market data is public; positions belong to a session, so they're only
-      // requested once there is a token to request them with.
-      const [productsRes, positionsRes] = await Promise.all([
-        api.getFuturesProducts(),
-        token ? api.getFuturesPositions() : Promise.resolve(null),
-      ])
-
-      if (productsRes.data) {
-        setProducts(productsRes.data)
-        if (productsRes.data.length > 0 && !selectedProduct) {
-          setSelectedProduct(productsRes.data[0])
-        }
-      }
-
-      setPositions(positionsRes?.data ?? [])
-    } catch (err) {
-      console.error('Failed to fetch futures data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [token, selectedProduct])
-
-  const fetchOrderBook = useCallback(async () => {
-    if (!selectedProduct) return
-
-    try {
-      const api = createApiClient(token ?? undefined)
-      const response = await api.getFuturesOrderBook(selectedProduct.id)
-      if (response.data) {
-        setOrderBook(response.data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch order book:', err)
-    }
-  }, [token, selectedProduct])
-
+  // There is no product selector in this UI yet — the first product is the
+  // market. The id is latched on first load so a backend reordering between
+  // polls can't swap the market out from under the user, which is what the old
+  // `if (!selectedProduct)` guard achieved.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   useEffect(() => {
-    fetchMarketData()
-    const marketInterval = setInterval(fetchMarketData, 5000)
-    return () => clearInterval(marketInterval)
-  }, [fetchMarketData])
+    // Safe despite the rule (same reasoning as lib/ws/useSequencedChannel.ts):
+    // the guard makes this fire exactly once, and the state it sets is the
+    // guard, so it cannot cascade.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!selectedId && products.length > 0) setSelectedId(products[0].id)
+  }, [selectedId, products])
+  const selectedProduct =
+    products.find((p) => p.id === selectedId) ?? products[0] ?? null
 
-  useEffect(() => {
-    fetchOrderBook()
-    const obInterval = setInterval(fetchOrderBook, 2000)
-    return () => clearInterval(obInterval)
-  }, [fetchOrderBook])
+  const orderBookQuery = useFuturesOrderBook(selectedProduct?.id)
+  const orderBook = orderBookQuery.data ?? null
+  const positions = positionsQuery.data ?? []
+  const loading = productsQuery.isLoading
+
+  const refetchMarket = useCallback(() => {
+    productsQuery.refetch()
+    positionsQuery.refetch()
+  }, [productsQuery, positionsQuery])
 
   const currentPrice = selectedProduct
     ? parseFloat(selectedProduct.current_price)
@@ -144,7 +124,7 @@ export default function FuturesPage() {
                   {isAuthenticated ? (
                     <FuturesPositionList
                       positions={positions}
-                      onRefresh={fetchMarketData}
+                      onRefresh={refetchMarket}
                       loading={loading}
                     />
                   ) : (
@@ -187,7 +167,7 @@ export default function FuturesPage() {
                         productId={selectedProduct.id}
                         symbol={selectedProduct.symbol}
                         currentPrice={currentPrice}
-                        onOrderCreated={fetchMarketData}
+                        onOrderCreated={refetchMarket}
                       />
                     )
                   )}

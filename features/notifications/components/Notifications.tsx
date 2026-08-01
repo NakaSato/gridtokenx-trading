@@ -4,7 +4,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -14,8 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { XIcon, BellOff, CheckCheck, Settings2, Bell } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
-import { useAuth } from '@/features/auth/provider'
-import { createApiClient } from '@/lib/api-client'
+import { useNotifications } from '@/features/notifications/hooks/useNotifications'
 import type { Notification } from '@/types/features'
 import { formatDistanceToNow } from 'date-fns'
 import NotificationPreferences from '@/features/notifications/components/NotificationPreferences'
@@ -80,62 +79,22 @@ function NotificationItem({
 }
 
 export default function Notifications() {
-  const { token, isAuthenticated } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [loading, setLoading] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
   const [view, setView] = useState<'list' | 'settings'>('list')
 
-  const fetchNotifications = useCallback(async () => {
-    if (!token) return
-    setLoading(true)
-    try {
-      const apiClient = createApiClient(token)
-      const data = await apiClient.listNotifications({ limit: 20 })
-      if (data && data.data) {
-        setNotifications(data.data.notifications)
-        setUnreadCount(data.data.unread_count)
-      }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [token])
+  // Polls every 30s, and useNotificationToast invalidates the same key on WS
+  // events so the badge moves the instant a toast fires.
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead: markAll,
+  } = useNotifications()
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications()
-      const interval = setInterval(fetchNotifications, 30000)
-      return () => clearInterval(interval)
-    }
-  }, [isAuthenticated, fetchNotifications])
-
-  const markAsRead = async (id: string) => {
-    if (!token) return
-    try {
-      const apiClient = createApiClient(token)
-      await apiClient.markNotificationAsRead(id)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error)
-    }
-  }
-
-  const markAllAsRead = async () => {
-    if (!token || unreadCount === 0) return
-    try {
-      const apiClient = createApiClient(token)
-      await apiClient.markAllNotificationsAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-      setUnreadCount(0)
-    } catch (error) {
-      console.error('Failed to mark all as read:', error)
-    }
+  const markAllAsRead = () => {
+    if (unreadCount === 0) return
+    markAll()
   }
 
   return (

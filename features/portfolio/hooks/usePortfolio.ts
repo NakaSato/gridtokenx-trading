@@ -9,6 +9,8 @@ import type { ApiFuturesPosition, ApiOrder, TradeRecord } from '@/types/trading'
 import type { UserProfile, TokenBalance } from '@/types/auth'
 import type { Position, Order } from '@/types/trading'
 import { mapApiOrderToOrder } from '@/lib/api/adapters'
+import { queryKeys } from '@/lib/query/keys'
+import { BALANCE_POLL_MS } from '@/features/wallet/lib/balance-poll'
 import type { Transaction } from '@/types/wallet'
 
 /**
@@ -58,7 +60,9 @@ export function useWalletBalance(walletAddress?: string) {
   const apiClient = createApiClient(token || '')
 
   return useQuery<TokenBalance>({
-    queryKey: ['wallet-balance', token, walletAddress],
+    // Same key as features/wallet/hooks/useUserBalance + useWalletBalance —
+    // one cache entry, one poll, whichever of the three mounts.
+    queryKey: queryKeys.wallet.balance(walletAddress),
     queryFn: async () => {
       if (!token) throw new Error('Authentication required')
       if (!walletAddress) throw new Error('Wallet address required')
@@ -70,7 +74,7 @@ export function useWalletBalance(walletAddress?: string) {
       return response.data
     },
     enabled: !!token && !!walletAddress,
-    refetchInterval: 10000,
+    refetchInterval: BALANCE_POLL_MS,
   })
 }
 

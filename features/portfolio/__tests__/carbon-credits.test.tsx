@@ -1,18 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import { CarbonCredits } from '@/features/portfolio/components/carbon-credits'
 
-jest.mock('@/features/auth/provider', () => ({
-    useAuth: () => ({ token: 'test-token', isAuthenticated: true }),
-}))
+const mockUseCarbonCredits = jest.fn()
 
-const mockGetCarbonBalance = jest.fn()
-const mockGetCarbonHistory = jest.fn()
-
-jest.mock('@/lib/api-client', () => ({
-    createApiClient: () => ({
-        getCarbonBalance: mockGetCarbonBalance,
-        getCarbonHistory: mockGetCarbonHistory,
-    }),
+// The component is presentational now — fetching, polling and the WS refresh
+// live in the hook, which has its own test (useCarbonCredits.test.tsx). These
+// cases are about how a balance renders, so the hook is stubbed.
+jest.mock('@/features/portfolio/hooks/useCarbonCredits', () => ({
+    useCarbonCredits: () => mockUseCarbonCredits(),
 }))
 
 /**
@@ -20,15 +15,24 @@ jest.mock('@/lib/api-client', () => ({
  * (trading-api/src/rest.rs:1141) — four fields, decimal strings, no CO2.
  * If the backend shape drifts, these fixtures are what should be updated first.
  */
-const balanceResponse = (overrides: Record<string, unknown> = {}) => ({
-    data: {
-        total_credits: '10.0',
-        available_credits: '6.0',
-        retired_credits: '0.0',
-        last_updated: '2026-07-15T00:00:00Z',
-        ...overrides,
-    },
+const balance = (overrides: Record<string, unknown> = {}) => ({
+    total_credits: '10.0',
+    available_credits: '6.0',
+    retired_credits: '0.0',
+    last_updated: '2026-07-15T00:00:00Z',
+    ...overrides,
 })
+
+const givenBalance = (value: unknown) => {
+    mockUseCarbonCredits.mockReturnValue({
+        balance: value,
+        history: [],
+        isLoading: false,
+        isFetching: false,
+        error: null,
+        refetch: jest.fn(),
+    })
+}
 
 const renderCard = async () => {
     render(<CarbonCredits />)
@@ -39,19 +43,18 @@ const transferButton = () => screen.getByRole('button', { name: 'Transfer Credit
 
 beforeEach(() => {
     jest.clearAllMocks()
-    mockGetCarbonHistory.mockResolvedValue({ data: [] })
 })
 
 describe('CarbonCredits', () => {
     it('derives CO2 impact from total credits at 0.4 kg each', async () => {
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ total_credits: '10.0' }))
+        givenBalance(balance({ total_credits: '10.0' }))
         await renderCard()
 
         expect(screen.getByText('4.00 kg')).toBeInTheDocument()
     })
 
     it('reads active credits from the wire field `available_credits`', async () => {
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ available_credits: '6.0' }))
+        givenBalance(balance({ available_credits: '6.0' }))
         await renderCard()
 
         // Regression: this card read a non-existent `active_credits` and so
@@ -60,14 +63,14 @@ describe('CarbonCredits', () => {
     })
 
     it('enables transfer when credits are available', async () => {
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ available_credits: '6.0' }))
+        givenBalance(balance({ available_credits: '6.0' }))
         await renderCard()
 
         expect(transferButton()).toBeEnabled()
     })
 
     it('disables transfer at a zero balance', async () => {
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ available_credits: '0.0' }))
+        givenBalance(balance({ available_credits: '0.0' }))
         await renderCard()
 
         expect(transferButton()).toBeDisabled()
@@ -76,7 +79,7 @@ describe('CarbonCredits', () => {
     it('fails closed when the balance field is missing entirely', async () => {
         // The endpoint is untyped (`serde_json::Value`), so a field rename
         // backend-side lands here as undefined rather than a type error.
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ available_credits: undefined }))
+        givenBalance(balance({ available_credits: undefined }))
         await renderCard()
 
         // Regression: parseFloat(undefined) -> NaN, and `NaN <= 0` is false,
@@ -85,7 +88,7 @@ describe('CarbonCredits', () => {
     })
 
     it('renders without crashing when the response carries no balance', async () => {
-        mockGetCarbonBalance.mockResolvedValue({ data: null })
+        givenBalance(null)
         await renderCard()
 
         // Regression: `balance.kg_co2_equivalent.toFixed(2)` threw a TypeError
@@ -95,7 +98,7 @@ describe('CarbonCredits', () => {
     })
 
     it('renders CO2 as zero when total_credits is unparseable', async () => {
-        mockGetCarbonBalance.mockResolvedValue(balanceResponse({ total_credits: 'n/a' }))
+        givenBalance(balance({ total_credits: 'n/a' }))
         await renderCard()
 
         expect(screen.getByText('0.00 kg')).toBeInTheDocument()

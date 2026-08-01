@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { CheckCircle, Zap, Wallet, TrendingUp, AlertTriangle } from 'lucide-react'
 import {
@@ -9,6 +10,7 @@ import {
   useWebSocketMessage,
 } from '@/lib/ws/useWebSocket'
 import { useAuth } from '@/features/auth/provider'
+import { queryKeys } from '@/lib/query/keys'
 import type {
   ConditionalOrderTriggered,
   OrderFilled,
@@ -119,6 +121,19 @@ export function useNotificationToast() {
   const { user } = useAuth()
   // Use id as user identifier, fallback to wallet_address
   const currentUserId = user?.id || user?.wallet_address || ''
+  const queryClient = useQueryClient()
+
+  /**
+   * The backend writes a notification row for each of the events that toast
+   * below, so the bell's list and unread badge are stale the moment one fires.
+   * This hook is already mounted app-wide (NotificationToastProvider in
+   * app/providers.tsx) and already subscribed to those events — invalidating
+   * here means the badge updates with the toast, with no second subscription
+   * and nothing for the dropdown to do but render.
+   */
+  const refreshNotificationList = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list() })
+  }, [queryClient])
 
   // Order filled notification
   useOrderFilledWebSocket(
@@ -159,7 +174,8 @@ export function useNotificationToast() {
         <SettlementToast isBuyer={isBuyer} amount={data.energy_amount} total={data.total_cost} />,
         { duration: 6000, id: `settlement-${data.settlement_id}` }
       )
-    }, [currentUserId])
+      refreshNotificationList()
+    }, [currentUserId, refreshNotificationList])
   )
 
   // P2P order update notification
@@ -187,7 +203,8 @@ export function useNotificationToast() {
           { duration: 4000, id: `p2p-partial-${data.order_id}` }
         )
       }
-    }, [currentUserId])
+      refreshNotificationList()
+    }, [currentUserId, refreshNotificationList])
   )
 
   // Transaction status updates
@@ -201,6 +218,7 @@ export function useNotificationToast() {
           <TxErrorToast type={data.transaction_type} message={data.error_message} />,
           { duration: 6000, id: `tx-error-${data.operation_id}` }
         )
+        refreshNotificationList()
         return
       }
 
@@ -210,8 +228,9 @@ export function useNotificationToast() {
           <TxSuccessToast type={data.transaction_type} status={data.new_status} />,
           { duration: 4000, id: `tx-success-${data.operation_id}` }
         )
+        refreshNotificationList()
       }
-    }, [])
+    }, [refreshNotificationList])
   )
 
   // Conditional order trigger notification
@@ -243,7 +262,8 @@ export function useNotificationToast() {
           }
         }
       )
-    }, [currentUserId])
+      refreshNotificationList()
+    }, [currentUserId, refreshNotificationList])
   )
 }
 

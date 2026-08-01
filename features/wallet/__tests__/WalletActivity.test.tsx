@@ -1,13 +1,22 @@
+import React from 'react'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import WalletActivity from '@/features/wallet/components/WalletActivity'
 
 jest.mock('@/features/auth/provider', () => ({
     useAuth: () => ({ token: 'test-token', user: null }),
 }))
+jest.mock('@/features/portfolio/hooks/usePortfolio', () => ({
+    useProfile: () => ({ data: { id: 'user-1' } }),
+}))
 
-// The realtime WS feed is inert in these tests — the REST fetch is what we assert.
+// The realtime WS feed is inert in these tests — the REST fetch is what we
+// assert. Its behaviour is covered in useWalletActivity.test.tsx.
 jest.mock('@/features/trading/hooks/useTransactionUpdates', () => ({
     useTransactionUpdates: () => ({ latestUpdate: null }),
+}))
+jest.mock('@/lib/ws/useWebSocket', () => ({
+    useWebSocketMessage: () => ({ connected: false, latestMessage: null }),
 }))
 
 jest.mock('react-hot-toast', () => ({
@@ -17,8 +26,8 @@ jest.mock('react-hot-toast', () => ({
 
 const mockGetUserTransactions = jest.fn()
 
-jest.mock('@/lib/api-client', () => ({
-    createApiClient: () => ({
+jest.mock('@/lib/api/useApiClient', () => ({
+    useApiClient: () => ({
         getUserTransactions: (...args: unknown[]) => mockGetUserTransactions(...args),
     }),
 }))
@@ -48,6 +57,17 @@ const tx = (overrides: Partial<TxFixture> = {}): TxFixture => ({
     ...overrides,
 })
 
+const renderPanel = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <WalletActivity />
+        </QueryClientProvider>
+    )
+}
+
 beforeEach(() => {
     jest.clearAllMocks()
 })
@@ -56,7 +76,7 @@ describe('WalletActivity — bare TransactionData array contract', () => {
     it('renders rows from a bare array (regression: prior {transactions} wrapper left it empty)', async () => {
         mockGetUserTransactions.mockResolvedValue({ data: [tx()] })
 
-        render(<WalletActivity />)
+        renderPanel()
 
         // Row economics come straight off the array element.
         expect(await screen.findByText('Energy Trade')).toBeInTheDocument()
@@ -69,7 +89,7 @@ describe('WalletActivity — bare TransactionData array contract', () => {
     it('shows the empty state for an empty array', async () => {
         mockGetUserTransactions.mockResolvedValue({ data: [] })
 
-        render(<WalletActivity />)
+        renderPanel()
 
         expect(await screen.findByText('No transactions found')).toBeInTheDocument()
     })
@@ -77,7 +97,7 @@ describe('WalletActivity — bare TransactionData array contract', () => {
     it('surfaces an API error with a retry control', async () => {
         mockGetUserTransactions.mockResolvedValue({ error: 'Database error' })
 
-        render(<WalletActivity />)
+        renderPanel()
 
         expect(await screen.findByText('Database error')).toBeInTheDocument()
         expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()

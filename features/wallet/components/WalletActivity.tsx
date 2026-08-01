@@ -1,16 +1,13 @@
 'use client'
 import { copyText } from '@/lib/clipboard'
-import { useEffect, useState, useCallback } from 'react'
 import { format } from 'date-fns'
 import { Copy, RefreshCw } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { createApiClient } from '@/lib/api-client'
 import { useAuth } from '@/features/auth/provider'
-import { useTransactionUpdates } from '@/features/trading/hooks/useTransactionUpdates'
-import type { UserTransaction } from '@/types/transactions'
+import { useWalletActivity } from '@/features/wallet/hooks/useWalletActivity'
 import toast from 'react-hot-toast'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -59,57 +56,10 @@ function getTransactionIcon(type: string): string {
 
 export default function WalletActivity() {
   const { token } = useAuth()
-  const [transactions, setTransactions] = useState<UserTransaction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Real-time updates: best-effort merge of the WS status feed into the list.
-  // Keyed on the settlement id (WS `operation_id` ↔ REST `id`); a mismatch is a
-  // harmless no-op. Signature is runtime-only and only ever set here.
-  const { latestUpdate } = useTransactionUpdates({
-    showToasts: false,
-    onUpdate: (update) => {
-      setTransactions((prev) =>
-        prev.map((tx) =>
-          tx.id === update.operation_id
-            ? { ...tx, status: update.new_status, signature: update.signature }
-            : tx
-        )
-      )
-    },
-  })
-
-  const fetchTransactions = useCallback(async () => {
-    if (!token) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      setLoading(true)
-      setError(null)
-
-      const apiClient = createApiClient(token)
-      const response = await apiClient.getUserTransactions({ limit: 50 })
-
-      if (response.error) {
-        setError(response.error)
-      } else if (response.data) {
-        // Backend returns a bare array of TransactionData.
-        setTransactions(response.data || [])
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch transactions'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [token])
-
-  useEffect(() => {
-    fetchTransactions()
-  }, [fetchTransactions])
+  // Polls every 30s, patches statuses from the WS feed, and refetches when a
+  // settlement lands so brand-new rows appear — see the hook.
+  const { transactions, loading, isFetching, error, refetch, latestUpdate } =
+    useWalletActivity()
 
   const copyToClipboard = async (text: string) => {
     // See lib/clipboard: navigator.clipboard is undefined outside a secure
@@ -130,10 +80,10 @@ export default function WalletActivity() {
           variant="ghost"
           size="icon"
           className="h-6 w-6"
-          onClick={fetchTransactions}
-          disabled={loading}
+          onClick={() => refetch()}
+          disabled={isFetching}
         >
-          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
         </Button>
       </div>
 
@@ -152,7 +102,7 @@ export default function WalletActivity() {
               variant="outline"
               size="sm"
               className="w-full"
-              onClick={fetchTransactions}
+              onClick={() => refetch()}
             >
               Retry
             </Button>

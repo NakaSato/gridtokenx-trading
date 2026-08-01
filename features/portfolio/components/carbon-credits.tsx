@@ -1,15 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Leaf, Award, Recycle, Send, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/features/auth/provider'
-import { createApiClient } from '@/lib/api-client'
-import {
-  CarbonBalanceResponse,
-  CarbonCredit,
-  CarbonTransaction,
-} from '@/types/features'
+import { useCarbonCredits } from '@/features/portfolio/hooks/useCarbonCredits'
 import { format } from 'date-fns'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -26,35 +19,10 @@ const kgCo2FromCredits = (credits: string | undefined): number => {
 }
 
 export function CarbonCredits() {
-  const { token, isAuthenticated } = useAuth()
-  const [balance, setBalance] = useState<CarbonBalanceResponse | null>(null)
-  const [history, setHistory] = useState<CarbonCredit[]>([])
-  const [loading, setLoading] = useState(true)
+  // Polls every 60s and refreshes on `settlement_complete` — see the hook.
+  const { balance, history, isLoading } = useCarbonCredits()
 
-  useEffect(() => {
-    const fetchCarbonData = async () => {
-      if (!token || !isAuthenticated) return
-      setLoading(true)
-      try {
-        const apiClient = createApiClient(token)
-        const [balanceRes, historyRes] = await Promise.all([
-          apiClient.getCarbonBalance(),
-          apiClient.getCarbonHistory(),
-        ])
-
-        if (balanceRes.data) setBalance(balanceRes.data)
-        if (historyRes.data) setHistory(historyRes.data)
-      } catch (err) {
-        console.error('Failed to fetch carbon data:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchCarbonData()
-  }, [token, isAuthenticated])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Spinner className="h-8 w-8 text-primary" />

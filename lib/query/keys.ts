@@ -26,6 +26,8 @@ export const queryKeys = {
     all: () => ['p2p'] as const,
     orders: (zone?: number | string) => ['p2p', 'orders', zone] as const,
     activity: (owner?: string) => ['p2p', 'activity', owner] as const,
+    matchingStatus: () => ['p2p', 'matching-status'] as const,
+    settlementStats: () => ['p2p', 'settlement-stats'] as const,
     epoch: () => ['p2p', 'epoch'] as const,
   },
   futures: {
