@@ -37,6 +37,18 @@ function shortTimeAgo(date: Date): string {
 /** Terminal settlement state: the worker exhausted its retries and parked the row. */
 const PERMANENTLY_FAILED = 'permanently_failed'
 
+/// Display-only relabels for the status badge. The wire value stays untouched —
+/// every predicate here (and in settlement) still keys off the real status, so
+/// this map must never be consulted for logic. `processing` reads as PENDING
+/// because to a trader the trade is simply not settled yet; "processing" implies
+/// work they can watch, which they can't.
+const STATUS_LABELS: Record<string, string> = {
+  processing: 'PENDING',
+}
+
+const statusLabel = (status: string): string =>
+  STATUS_LABELS[status] ?? status.toUpperCase()
+
 /** One header for every state, so the title doesn't restyle itself when data lands. */
 function PanelHeader({ tradeCount }: { tradeCount?: number }) {
   return (
@@ -270,7 +282,7 @@ const TradeHistory = React.memo(function TradeHistory() {
                                 : 'border-amber-500 bg-amber-500/10 text-amber-500'
                             )}
                           >
-                            {trade.status.toUpperCase()}
+                            {statusLabel(trade.status)}
                           </Badge>
                         )}
 

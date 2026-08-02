@@ -110,6 +110,17 @@ describe('TradeHistory — permanently_failed settlements', () => {
     expect(screen.queryByLabelText(DIAGNOSTICS_LABEL)).not.toBeInTheDocument()
   })
 
+  it('labels a processing trade PENDING without touching the wire status', async () => {
+    // Relabel is display-only: "processing" implies work the trader can watch,
+    // which they can't — to them it is simply not settled yet. NOTE this makes
+    // `processing` and `pending` share one badge label, so the badge no longer
+    // distinguishes them; only the wire value does.
+    await renderWithTrades([trade({ id: 'trade-processing', status: 'processing' })])
+
+    expect(screen.getByText('PENDING')).toBeInTheDocument()
+    expect(screen.queryByText('PROCESSING')).not.toBeInTheDocument()
+  })
+
   it('surfaces the worker error message and retry count on hover', async () => {
     const user = userEvent.setup()
     await renderWithTrades([

@@ -76,6 +76,15 @@ Tests live in `__tests__/` dirs colocated with source (`testMatch` covers `**/__
   cross-feature UI goes in `components/shared/`, only feature-agnostic infrastructure in `lib/`.
   **No barrel files** — import full paths. `eslint.config.mjs` has a `no-restricted-imports`
   ratchet blocking every pre-refactor path.
+- **Selling energy requires a verified meter, and the server is the authority.** Trading refuses a
+  sell order with **403** unless the seller owns a verified meter — registering one only *claims* a
+  serial (`is_verified: false`); `MetersApi.verifyMeter` proves the device against signed telemetry
+  the Aggregator Bridge already accepted. The UI mirrors the rule in `useSellEligibility` purely to
+  explain the block before submit (notice + disabled button in `OrderForm`), and it **fails open**:
+  a meters-endpoint error or a pending load leaves `canSell` true, because a wrongly-allowed submit
+  surfaces the server's real 403 while a wrongly-blocked one leaves the user stuck. Never make this
+  hook the gate. Verifying from `MeterList` invalidates both `['smartMeter']` and `['meters','mine']`
+  so the Sell tab unblocks immediately rather than at the next poll.
 - **Server state is TanStack Query, not hand-rolled.** Keys come from the factory in
   `lib/query/keys.ts`. Don't add `useState` + `useEffect` + `setInterval` fetching; use a query
   with `refetchInterval`. React context is for session/UI state only — the provider stack is
