@@ -1,4 +1,37 @@
 import { test, expect } from '@playwright/test';
+import { execFileSync } from 'child_process';
+
+/**
+ * Point the freshly-registered user's primary wallet (Trading's
+ * `iam_wallet_read_model` mirror) at the funded dev payer, so the buy-side
+ * funding gate admits their bid. Trading refuses a buy (402) when the buyer's
+ * on-chain currency balance cannot cover the order's maximum spend, and a user
+ * registered seconds ago holds nothing. Same backdoor class as the pytest
+ * harness's `ensure_funded` (superproject tests/e2e/lib/db.py): seed only what
+ * the gate reads — its balance check still runs for real against the chain.
+ */
+function fundBuyer(username: string) {
+  const psql = (db: string, sql: string) =>
+    execFileSync(
+      'docker',
+      ['exec', 'gridtokenx-postgres', 'psql', '-U', 'gridtokenx_user', '-d', db, '-t', '-A', '-c', sql],
+      { encoding: 'utf8' }
+    ).trim();
+  const userId = psql('gridtokenx_iam', `SELECT id FROM users WHERE username = '${username}';`);
+  if (!userId) throw new Error(`fundBuyer: no user '${username}' in gridtokenx_iam`);
+  const wallet =
+    process.env.E2E_FUNDED_WALLET || 'EzudwoHvNPAc4dpPi5ndU8MEZVHVzq3Pj3Thm9ooKmiJ';
+  psql(
+    'gridtokenx_trading',
+    `UPDATE iam_wallet_read_model SET is_primary = false WHERE user_id = '${userId}';`
+  );
+  psql(
+    'gridtokenx_trading',
+    `INSERT INTO iam_wallet_read_model (user_id, wallet_address, is_primary, blockchain_registered, updated_at) ` +
+      `VALUES ('${userId}', '${wallet}', true, true, now()) ` +
+      `ON CONFLICT (user_id, wallet_address) DO UPDATE SET is_primary = true, updated_at = now();`
+  );
+}
 
 test.describe('Order Placement Flow', () => {
   test('should register, login, place a limit buy order, and cancel it', async ({ page }) => {
@@ -55,8 +88,10 @@ test.describe('Order Placement Flow', () => {
     await page.waitForTimeout(2000);
 
     // 4. Place a limit Buy order (orderType defaults to 'buy', no tab click needed).
-    // Order placement doesn't require GRX balance up front — only matching/settlement
-    // does — so a fresh zero-balance test user can still place (not fill) an order.
+    // Buys ARE gated on funding at submit (402 when the wallet cannot cover
+    // price x amount) — point this fresh zero-balance user at the funded dev
+    // payer first, or the submit below is refused before it reaches the book.
+    fundBuyer(username);
     await page.fill('[data-testid="order-amount-input"]', '5');
     await page.fill('[data-testid="order-price-input"]', '4.50');
     await page.click('[data-testid="order-submit-button"]');

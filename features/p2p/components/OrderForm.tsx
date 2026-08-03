@@ -76,8 +76,9 @@ const OrderForm = React.memo(function OrderForm({
     isLoading: balanceLoading,
     isError: balanceUnavailable,
   } = useWalletBalance()
-  // `null` = could not read (not zero). BalanceDisplay renders it as "—" and the
-  // sell-side check below skips rather than asserting a balance we don't have.
+  // `null` = could not read (not zero). BalanceDisplay renders it as "—".
+  // Display-only: order admission (meter credential for sells, funding for
+  // buys) is decided by the backend, never from this number.
   const balance = balanceUnavailable
     ? null
     : toBalanceNumber(balanceData?.token_balance)
@@ -244,16 +245,12 @@ const OrderForm = React.memo(function OrderForm({
       }
     }
 
-    if (
-      orderType === 'sell' &&
-      balance !== null &&
-      parseFloat(amount) > balance
-    ) {
-      setMessage(
-        `Insufficient balance. You have ${balance.toFixed(2)} GRX available.`
-      )
-      return
-    }
+    // Deliberately NO sell-side balance check: selling energy is a claim to
+    // have produced it, backed by a verified meter — the backend enforces that
+    // (403 without one) and never requires a token balance for asks. The old
+    // client-side `amount > balance` block wrongly stopped prosumers from
+    // selling energy their meter is producing this window. Buys are the funded
+    // side; the backend refuses an unfundable bid (402) with the amounts.
 
     const zone_id = orderType === 'buy' ? buyerZone : sellerZone
 
