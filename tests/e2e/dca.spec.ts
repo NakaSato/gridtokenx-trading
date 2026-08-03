@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('DCA Trading Flow', () => {
-  test('should register, login, create, pause, resume, and cancel a DCA order', async ({ page }) => {
+  test('should register, login, and create a DCA order (management UI removed in 63894b7)', async ({ page }) => {
     // Use a high timeout for e2e flow touching the db; bumped from 60s since the sum
     // of individual step waits (register/verify/login/create/pause/resume/cancel,
     // each with its own 15-20s budget against a cold Turbopack dev server) can exceed it.
@@ -124,50 +124,15 @@ test.describe('DCA Trading Flow', () => {
     // Check for success message inside form or toast
     await expect(page.locator('text=DCA strategy created')).toBeVisible({ timeout: 15000 });
 
-    // Workaround: The RecurringOrdersList doesn't auto-fetch after form submit yet
-    await page.reload();
-    // Wait for the auth context and data to fetch again
-    await page.waitForTimeout(2000);
-
-    // The page reloaded, so it's back on the default "Buy" tab. There are TWO unrelated
-    // "DCA" tabs on the page: order-type-tab-dca (top-right order entry, mounts the
-    // CREATE form RecurringOrderForm) and positions-tab-dca (TradingPositions' own tab
-    // strip — Positions/Live Grid/My Orders/History/Alerts/Expired/DCA — which mounts
-    // the LIST RecurringOrdersList). We want the list here, not the create form again.
-    await page.click('[data-testid="positions-tab-dca"]');
-    await page.waitForTimeout(1000);
-
-    // 6. Check Active Strategy in the List
-    // The list is on the same page, we look for the name
-    const strategyCard = page.locator(`text=${dcaName}`).locator('xpath=./ancestor::div[contains(@class, "group relative")]');
-
-    // Generous timeout: after page.reload(), AuthProvider must rehydrate the token
-    // before RecurringOrdersList's fetchOrders() effect re-fires (it's a no-op while
-    // token is undefined), and on a Turbopack dev server a cold route can itself take
-    // several seconds to compile — 10s intermittently wasn't enough.
-    await expect(strategyCard).toBeVisible({ timeout: 20000 });
-
-    // Verify it is active
-    await expect(strategyCard.locator('text=active')).toBeVisible();
-
-    // 7. Pause Strategy
-    await strategyCard.locator('button[title="Pause Strategy"]').click();
-    await expect(page.locator('text=Order paused successfully')).toBeVisible({ timeout: 15000 });
-    await expect(strategyCard.locator('text=paused')).toBeVisible({ timeout: 15000 });
-
-    // 8. Resume Strategy
-    await strategyCard.locator('button[title="Resume Strategy"]').click();
-    await expect(page.locator('text=Order resumed successfully')).toBeVisible({ timeout: 15000 });
-    await expect(strategyCard.locator('text=active')).toBeVisible({ timeout: 15000 });
-
-    // 9. Cancel Strategy
-    await strategyCard.locator('button[title="Cancel Strategy"]').click();
-    await expect(page.locator('text=Order canceled successfully')).toBeVisible({ timeout: 15000 });
-
-    // Verify it is cancelled. The list endpoint (RecurringOrdersList.tsx fetchOrders())
-    // refetches after every action and only returns non-terminal orders — cancelled
-    // strategies are dropped server-side, not shown with a "cancelled" badge — so the
-    // card itself disappears rather than its status badge changing.
-    await expect(strategyCard).not.toBeVisible({ timeout: 5000 });
+    // ── Management steps (list -> pause -> resume -> cancel) REMOVED ──────────
+    // They drove RecurringOrdersList via the positions-panel DCA tab
+    // (positions-tab-dca). Commit 63894b7 "refactor(trading): migrate to
+    // features/, dedupe the positions surface" removed BOTH: the tab strip is now
+    // Positions/LiveGrid/P2PActivity/OpenOrders/History/Alerts and no component
+    // renders "Pause Strategy"/"Resume Strategy" anywhere. Creation (asserted
+    // above) is the whole surface the UI still exposes for DCA; restore the
+    // management flow here when (if) a management surface returns. The backend
+    // CRUD is covered separately by tests/e2e/40_trading
+    // test_recurring_order_crud_lifecycle in the superproject.
   });
 });

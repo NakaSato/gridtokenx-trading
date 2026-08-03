@@ -41,8 +41,12 @@ test('carbon-credit page smoke: register, login, screenshot', async ({ page }) =
   await expect(page.locator(`text=Welcome back, ${username}!`)).toBeVisible({ timeout: 15000 });
   await page.waitForTimeout(2000);
 
-  // Navigate via the new navbar link
-  await page.locator('nav a[href="/carbon-credit"]').click();
+  // Navigate via the navbar. Page links live inside the "Main menu" dropdown
+  // (Radix DropdownMenu), whose content renders in a PORTAL outside <nav> — so
+  // `nav a[href]` matches only a hidden inline copy and times out "waiting for
+  // element to be visible". Open the menu, then click the portaled menu item.
+  await page.getByRole('button', { name: 'Main menu' }).click();
+  await page.getByRole('menuitem', { name: 'Carbon' }).click();
   await expect(page.locator('h1.text-2xl:has-text("Carbon Credits")')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('text=Total Credits')).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('Earning History', { exact: true })).toBeVisible();
