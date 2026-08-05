@@ -148,11 +148,19 @@ test.describe('Buy + Sell Flow', () => {
     await expect(cards.filter({ hasText: 'Buy' }).first()).toBeVisible({ timeout: 20000 });
     await expect(cards.filter({ hasText: 'Sell' }).first()).toBeVisible({ timeout: 20000 });
 
-    // 6. Cancel both so nothing lingers in the shared book.
+    // 6. Cancel both so nothing lingers in the shared book. Response-first, not
+    // toast-first: the first cancel's toast lingers long enough to satisfy the
+    // second cancel's toast assertion even if that cancel failed.
     for (const side of ['Buy', 'Sell']) {
       const card = cards.filter({ hasText: side }).first();
-      await card.getByTestId('cancel-order-button').click();
-      await expect(page.locator('text=Order canceled successfully')).toBeVisible({ timeout: 15000 });
+      const [cancelResp] = await Promise.all([
+        page.waitForResponse(
+          (r) => r.url().includes('/api/v1/orders/') && r.request().method() === 'DELETE',
+          { timeout: 20000 }
+        ),
+        card.getByTestId('cancel-order-button').click(),
+      ]);
+      expect(cancelResp.status(), await cancelResp.text().catch(() => '')).toBe(200);
       await page.waitForTimeout(1500);
     }
   });

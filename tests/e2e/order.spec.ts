@@ -94,7 +94,16 @@ test.describe('Order Placement Flow', () => {
     fundBuyer(username);
     await page.fill('[data-testid="order-amount-input"]', '5');
     await page.fill('[data-testid="order-price-input"]', '4.50');
-    await page.click('[data-testid="order-submit-button"]');
+    // Await the actual POST alongside the click — a toast can be missed on a
+    // cold dev server or matched stale (see buysell.spec.ts).
+    const [submitResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/api/v1/orders') && r.request().method() === 'POST',
+        { timeout: 20000 }
+      ),
+      page.click('[data-testid="order-submit-button"]'),
+    ]);
+    expect(submitResp.status(), await submitResp.text().catch(() => '')).toBe(200);
 
     await expect(page.locator('text=Order placed successfully')).toBeVisible({ timeout: 15000 });
 
@@ -114,7 +123,15 @@ test.describe('Order Placement Flow', () => {
 
     // 6. Cancel it and verify it disappears (list refetches and drops closed orders,
     // same pattern observed for cancelled DCA strategies in dca.spec.ts).
-    await orderCard.getByTestId('cancel-order-button').click();
+    // Response-first for the same stale-toast reason as the submit above.
+    const [cancelResp] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/api/v1/orders/') && r.request().method() === 'DELETE',
+        { timeout: 20000 }
+      ),
+      orderCard.getByTestId('cancel-order-button').click(),
+    ]);
+    expect(cancelResp.status(), await cancelResp.text().catch(() => '')).toBe(200);
     await expect(page.locator('text=Order canceled successfully')).toBeVisible({ timeout: 15000 });
     // Same cold-dev-server/refetch latency margin as dca.spec.ts's analogous assertion.
     await expect(orderCard).not.toBeVisible({ timeout: 20000 });

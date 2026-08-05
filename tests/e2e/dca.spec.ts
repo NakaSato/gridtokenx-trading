@@ -116,10 +116,22 @@ test.describe('DCA Trading Flow', () => {
     const startX = thumbBox.x + thumbBox.width / 2;
     const y = thumbBox.y + thumbBox.height / 2;
     const endX = trackBox.x + trackBox.width - thumbBox.width / 2 - 2; // far right, well past the 0.7 threshold
-    await page.mouse.move(startX, y);
-    await page.mouse.down();
-    await page.mouse.move(endX, y, { steps: 15 });
-    await page.mouse.up();
+    // Await the actual POST alongside the gesture, not just the toast — a toast
+    // can be missed on a cold dev server or matched stale (see buysell.spec.ts,
+    // where a lingering toast masked a network-aborted order POST).
+    const [createResp] = await Promise.all([
+        page.waitForResponse(
+            (r) => r.url().includes('/api/v1/orders/recurring') && r.request().method() === 'POST',
+            { timeout: 20000 }
+        ),
+        (async () => {
+            await page.mouse.move(startX, y);
+            await page.mouse.down();
+            await page.mouse.move(endX, y, { steps: 15 });
+            await page.mouse.up();
+        })(),
+    ]);
+    expect(createResp.status(), await createResp.text().catch(() => '')).toBe(200);
 
     // Check for success message inside form or toast
     await expect(page.locator('text=DCA strategy created')).toBeVisible({ timeout: 15000 });
